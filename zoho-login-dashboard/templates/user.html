@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent detail · Lucira</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:#0f1115; color:#e7e9ee; }
+  a { color:inherit; }
+  header { padding:18px 26px; border-bottom:1px solid #232833; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+  h1 { font-size:20px; margin:0; }
+  .muted { color:#8a92a1; font-size:12.5px; }
+  .wrap { padding:20px 26px; max-width:1080px; margin:0 auto; }
+  .btn { text-decoration:none; font-size:13px; font-weight:600; padding:8px 14px; border-radius:9px; background:#232833; color:#e7e9ee; border:1px solid #333a48; }
+  .pill { font-size:11.5px; padding:3px 10px; border-radius:20px; font-weight:600; }
+  .on{background:rgba(49,196,141,.15);color:#31c48d;} .off{background:rgba(148,157,173,.15);color:#98a1b0;}
+  .act{background:rgba(224,182,74,.15);color:#e0b64a;} .ina{background:rgba(249,128,128,.15);color:#f98080;}
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin:18px 0; }
+  .kpi { background:#171a21; border:1px solid #262b36; border-radius:14px; padding:15px 16px; }
+  .kpi .n { font-size:23px; font-weight:700; } .kpi .l { color:#8a92a1; font-size:12px; margin-top:2px; }
+  .n.blue{color:#7aa2ff;} .n.green{color:#31c48d;} .n.purp{color:#c084fc;}
+  .card { background:#171a21; border:1px solid #262b36; border-radius:14px; padding:16px 20px; margin-bottom:18px; }
+  .card h3 { margin:0 0 14px; font-size:14px; color:#cfd4de; }
+  .chart { display:flex; align-items:flex-end; gap:6px; height:160px; padding-top:8px; overflow-x:auto; }
+  .bar { flex:1 0 26px; display:flex; flex-direction:column; align-items:center; gap:6px; min-width:26px; }
+  .bar > .b { width:100%; max-width:34px; border-radius:5px 5px 0 0; }
+  .bar.day > .b { background:linear-gradient(180deg,#7aa2ff,#4b6ef5); }
+  .bar.sess > .b { background:linear-gradient(180deg,#c084fc,#8b5cf6); }
+  .bar > .d { font-size:10px; color:#8a92a1; white-space:nowrap; } .bar > .v { font-size:10px; color:#aeb6c4; }
+  table { width:100%; border-collapse:collapse; } th,td { text-align:left; padding:9px 12px; font-size:13px; border-bottom:1px solid #21262f; white-space:nowrap; }
+  th { color:#9aa3b2; font-weight:600; } td.num,th.num { text-align:right; }
+  .tblwrap{overflow-x:auto;}
+  .hm { display:grid; grid-template-columns:64px repeat(24, 1fr); gap:3px; align-items:center; min-width:740px; }
+  .hm .dlab { font-size:11px; color:#8a92a1; white-space:nowrap; }
+  .hm .cell { position:relative; height:22px; border-radius:4px; background:#1b1f28; }
+  .hm .cell.on { background:#1f6f4f; } .hm .cell.on.hi { background:#31c48d; }
+  .hm .cell.abt { background:#274067; }
+  .hm .cell .cdot { position:absolute; right:2px; top:2px; min-width:12px; height:12px; border-radius:7px;
+    background:#8b5cf6; color:#fff; font-size:8.5px; font-weight:700; line-height:12px; text-align:center; padding:0 2px; }
+  .hm .hlab { font-size:9px; color:#6d7585; text-align:center; }
+  .hmwrap { overflow-x:auto; }
+  .legend { font-size:11.5px; color:#8a92a1; margin-top:10px; }
+  .sw { display:inline-block; width:11px; height:11px; border-radius:3px; vertical-align:-1px; margin:0 3px 0 10px; }
+  .spin { display:inline-block; width:16px; height:16px; border:2px solid #333a48; border-top-color:#e0b64a; border-radius:50%; animation:sp .7s linear infinite; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+  .loading { color:#8a92a1; font-size:13px; padding:22px; text-align:center; }
+  .err { color:#f9a8a8; font-size:13px; padding:14px; background:rgba(249,128,128,.08); border-radius:10px; }
+</style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1 id="title">Agent detail</h1>
+      <div class="muted" id="subtitle">{{ d_from }} → {{ d_to }}</div>
+    </div>
+    <a class="btn" href="/dashboard?from={{ d_from }}&to={{ d_to }}">← Back</a>
+  </header>
+
+  <div class="wrap">
+    <div class="cards" id="kpis"><div class="loading"><span class="spin"></span> loading…</div></div>
+
+    <div class="card"><h3>Online / offline by hour (IST) — session transitions</h3>
+      <div id="hourlycard"><div class="loading"><span class="spin"></span> loading hourly timeline…</div></div>
+      <div class="legend">each row = a day, each cell = 1 hour ·
+        <span class="sw" style="background:#1b1f28"></span>no signal
+        <span class="sw" style="background:#274067"></span>active (calls/tasks/meetings prove presence)
+        <span class="sw" style="background:#1f6f4f"></span>partly online (polled)
+        <span class="sw" style="background:#31c48d"></span>mostly online (polled)
+        <span class="sw" style="background:#8b5cf6"></span>calls that hour</div></div>
+
+    <div class="card"><h3>Login hours per day</h3>
+      <div id="dailycard"><div class="loading"><span class="spin"></span> loading trend…</div></div></div>
+
+    <div class="card"><h3>Session-hour trend (each bar = one login session)</h3>
+      <div id="sesschart"><div class="loading"><span class="spin"></span> loading sessions…</div></div></div>
+
+    <div class="card"><h3>Login sessions</h3>
+      <div id="sesstable"><div class="loading"><span class="spin"></span> loading…</div></div></div>
+
+    <div class="card"><h3>Recent deals</h3>
+      <div id="dealscard"><div class="loading"><span class="spin"></span> loading…</div></div></div>
+  </div>
+
+<script>
+const UID = "{{ user_id }}", FROM = "{{ d_from }}", TO = "{{ d_to }}";
+const $ = id => document.getElementById(id);
+const fmtInr = v => '₹' + Math.round(v||0).toLocaleString('en-IN');
+const fmtHrs = v => (v||0).toFixed(1);
+const fmtDur = h => { const m = Math.round((h||0)*60);
+  return m < 60 ? m + 'm' : Math.floor(m/60) + 'h ' + (m%60) + 'm'; };
+const fmtMin = m => { m = Math.round(m||0);
+  return m < 60 ? m + 'm' : Math.floor(m/60) + 'h ' + (m%60) + 'm'; };
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const rng = `from=${FROM}&to=${TO}`;
+
+function barsChart(items, cls, label, val){
+  if(!items.length) return '<div class="loading">No data in this range yet — accumulates every 15 min.</div>';
+  const max = Math.max(...items.map(val)) || 1;
+  return '<div class="chart">' + items.map(it => {
+    const h = Math.max(2, Math.round(130*val(it)/max));
+    return `<div class="bar ${cls}" title="${esc(label(it))}: ${fmtDur(val(it))}">
+       <div class="v">${fmtDur(val(it))}</div><div class="b" style="height:${h}px"></div>
+       <div class="d">${esc(label(it))}</div></div>`;
+  }).join('') + '</div>';
+}
+
+async function loadOverview(){
+  try {
+    const d = await (await fetch(`/api/user/${UID}/overview?${rng}`)).json();
+    if (d.error){ $('kpis').innerHTML = `<div class="err">${esc(d.error)}</div>`; return; }
+    const u = d.user;
+    $('title').innerHTML = `${esc(u.full_name)||'—'}
+      ${u.is_online?'<span class="pill on">online</span>':'<span class="pill off">offline</span>'}
+      ${(u.status||'').toLowerCase()==='active'?'<span class="pill act">active</span>':'<span class="pill ina">'+esc(u.status||'—')+'</span>'}`;
+    $('subtitle').textContent = `${u.email||''} · ${u.role||'—'} · ${u.profile||'—'} · ${FROM} → ${TO}`;
+    $('kpis').innerHTML = `
+      <div class="kpi"><div class="n blue">${fmtDur(u.online_hours)}</div><div class="l">Login time</div></div>
+      <div class="kpi"><div class="n blue">${u.active_days}</div><div class="l">Active days</div></div>
+      <div class="kpi"><div class="n" style="font-size:15px">${esc(u.last_seen_online)||'—'}</div><div class="l">Last seen online</div></div>
+      <div class="kpi"><div class="n purp">${u.deals_created}</div><div class="l">Deals created</div></div>
+      <div class="kpi"><div class="n green">${u.won_deals}</div><div class="l">Won deals</div></div>
+      <div class="kpi"><div class="n green">${fmtInr(u.won_amount)}</div><div class="l">Won value</div></div>
+      <div class="kpi"><div class="n gold">${u.calls_cnt}</div><div class="l">Calls</div></div>
+      <div class="kpi"><div class="n gold">${fmtMin(u.talk_min)}</div><div class="l">Talk time</div></div>
+      <div class="kpi"><div class="n">${u.meetings}</div><div class="l">Meetings</div></div>
+      <div class="kpi"><div class="n">${u.tasks_cnt}</div><div class="l">Tasks</div></div>
+      <div class="kpi"><div class="n">${u.online_acts}</div><div class="l">Online activities</div></div>
+      <div class="kpi"><div class="n" style="font-size:15px">${esc(d.activity.first)||'—'} → ${esc(d.activity.last)||'—'}</div><div class="l">Active span (by activity)</div></div>
+      <div class="kpi"><div class="n blue">${d.activity.active_hours}</div><div class="l">Active hours (by activity)</div></div>`;
+    $('dailycard').innerHTML = barsChart(d.daily, 'day', x=>x.day, x=>x.hrs);
+    // deals
+    if(!d.deals.length){ $('dealscard').innerHTML='<div class="loading">No deals for this agent.</div>'; }
+    else $('dealscard').innerHTML = `<div class="tblwrap"><table>
+      <thead><tr><th>Deal</th><th>Stage</th><th class="num">Amount</th><th>Created</th><th>Closing</th></tr></thead>
+      <tbody>${d.deals.map(x=>`<tr><td>${esc(x.name)||'—'}</td><td>${esc(x.stage)||'—'}</td>
+        <td class="num">${fmtInr(x.amount)}</td><td class="muted">${esc(x.created)||'—'}</td>
+        <td class="muted">${esc(x.closing)||'—'}</td></tr>`).join('')}</tbody></table></div>`;
+  } catch(err){ $('kpis').innerHTML = `<div class="err">Failed: ${esc(err)}</div>`; }
+}
+
+async function loadSessions(){
+  try {
+    const d = await (await fetch(`/api/user/${UID}/sessions?${rng}`)).json();
+    const s = d.sessions;
+    $('sesschart').innerHTML = barsChart(s, 'sess', x=>x.date, x=>x.hours);
+    if(!s.length){ $('sesstable').innerHTML='<div class="loading">No login sessions in this range yet.</div>'; return; }
+    $('sesstable').innerHTML = `<div class="tblwrap"><table>
+      <thead><tr><th>#</th><th>Started</th><th>Ended</th><th class="num">Duration</th>
+        <th class="num">Polls</th><th class="num">Gap since prev</th></tr></thead>
+      <tbody>${s.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.started)}</td><td>${esc(x.ended)}</td>
+        <td class="num">${fmtDur(x.hours)}</td><td class="num">${x.polls}</td>
+        <td class="num">${x.gap_hours==null?'—':fmtDur(x.gap_hours)}</td></tr>`).join('')}</tbody></table></div>`;
+  } catch(err){ $('sesschart').innerHTML = $('sesstable').innerHTML = `<div class="err">Failed: ${esc(err)}</div>`; }
+}
+
+async function loadHourly(){
+  const el = $('hourlycard');
+  try {
+    const d = await (await fetch(`/api/user/${UID}/hourly?${rng}`)).json();
+    if (!d.days.length){ el.innerHTML = '<div class="loading">No hourly data in this range yet — accumulates every 15 min.</div>'; return; }
+    let html = '<div class="hmwrap"><div class="hm">';
+    html += '<div></div>' + Array.from({length:24},(_,h)=>`<div class="hlab">${h}</div>`).join('');
+    for (const day of d.days){
+      html += `<div class="dlab">${esc(day)}</div>`;
+      for (let h=0; h<24; h++){
+        const c = (d.grid[day]||{})[h] || {mins:0, calls:0, acts:0};
+        // green = polled online; blue = no polling data but activity proves presence
+        const cls = c.mins >= 30 ? 'cell on hi'
+                  : c.mins > 0  ? 'cell on'
+                  : c.acts > 0  ? 'cell abt' : 'cell';
+        const dot = c.calls > 0 ? `<span class="cdot">${c.calls}</span>` : '';
+        html += `<div class="${cls}" title="${esc(day)} ${String(h).padStart(2,'0')}:00 — online ${fmtMin(c.mins)}, ${c.calls} calls, ${c.acts||0} activities">${dot}</div>`;
+      }
+    }
+    el.innerHTML = html + '</div></div>';
+  } catch(err){ el.innerHTML = `<div class="err">Failed: ${esc(err)}</div>`; }
+}
+
+loadOverview(); loadSessions(); loadHourly();
+</script>
+</body>
+</html>

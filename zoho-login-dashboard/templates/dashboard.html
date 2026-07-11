@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zoho Login &amp; Status · Lucira</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:#0f1115; color:#e7e9ee; }
+  a { color:inherit; }
+  header { padding:18px 26px; border-bottom:1px solid #232833; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+  h1 { font-size:18px; margin:0; }
+  .muted { color:#8a92a1; font-size:12.5px; }
+  .wrap { padding:20px 26px; max-width:1300px; margin:0 auto; }
+  .btn { text-decoration:none; font-size:13px; font-weight:600; padding:8px 14px; border-radius:9px; background:#e0b64a; color:#1a1a1a; border:0; cursor:pointer; }
+  .btn.ghost { background:#232833; color:#e7e9ee; border:1px solid #333a48; }
+  .btn.sm { padding:6px 11px; font-size:12px; }
+  form.filters { display:flex; flex-wrap:wrap; gap:10px; align-items:end; background:#171a21; border:1px solid #262b36; border-radius:14px; padding:14px 16px; margin-bottom:14px; }
+  .fld { display:flex; flex-direction:column; gap:4px; }
+  .fld label { font-size:10.5px; color:#8a92a1; text-transform:uppercase; letter-spacing:.04em; }
+  .fld input, .fld select { background:#0f1115; color:#e7e9ee; border:1px solid #333a48; border-radius:8px; padding:8px 10px; font-size:13px; min-width:120px; }
+  .presets { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+  .chip { font-size:12px; padding:6px 12px; border-radius:20px; background:#1b1f28; border:1px solid #2b313c; color:#c7cdd8; cursor:pointer; }
+  .chip:hover { border-color:#e0b64a; color:#e0b64a; }
+  .tabs { display:flex; gap:4px; border-bottom:1px solid #232833; margin-bottom:18px; }
+  .tab { padding:10px 16px; font-size:13.5px; font-weight:600; color:#8a92a1; cursor:pointer; border-bottom:2px solid transparent; }
+  .tab.active { color:#e7e9ee; border-bottom-color:#e0b64a; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:18px; }
+  .kpi { background:#171a21; border:1px solid #262b36; border-radius:14px; padding:15px 16px; }
+  .kpi .n { font-size:25px; font-weight:700; } .kpi .l { color:#8a92a1; font-size:12px; margin-top:2px; }
+  .n.green{color:#31c48d;} .n.gold{color:#e0b64a;} .n.red{color:#f98080;} .n.blue{color:#7aa2ff;} .n.purp{color:#c084fc;}
+  .card { background:#171a21; border:1px solid #262b36; border-radius:14px; padding:16px 18px; margin-bottom:18px; }
+  .card h3 { margin:0 0 12px; font-size:14px; color:#cfd4de; display:flex; align-items:center; justify-content:space-between; }
+  .tblwrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; min-width:820px; }
+  th,td { text-align:left; padding:9px 12px; font-size:13px; border-bottom:1px solid #21262f; white-space:nowrap; }
+  th { color:#9aa3b2; font-weight:600; }
+  td.num, th.num { text-align:right; }
+  tbody tr:hover { background:#1b1f28; }
+  .pill { font-size:11px; padding:3px 9px; border-radius:20px; font-weight:600; }
+  .on{background:rgba(49,196,141,.15);color:#31c48d;} .off{background:rgba(148,157,173,.15);color:#98a1b0;}
+  .act{background:rgba(224,182,74,.15);color:#e0b64a;} .ina{background:rgba(249,128,128,.15);color:#f98080;}
+  .name { font-weight:600; text-decoration:none; } .name:hover { color:#e0b64a; }
+  .ai h3 span.badge { background:linear-gradient(90deg,#6d5efc,#a855f7); color:#fff; font-size:10.5px; padding:2px 9px; border-radius:20px; font-weight:700; }
+  .doc { line-height:1.6; font-size:14px; } .doc h3{ font-size:15px; color:#fff; border-bottom:1px solid #262b36; padding-bottom:5px; margin-top:18px;}
+  .doc ul{ padding-left:18px;} .doc table{min-width:0;} .doc th,.doc td{border:1px solid #2b313c;}
+  .hchart { display:flex; align-items:flex-end; gap:4px; height:150px; padding-top:6px; overflow-x:auto; }
+  .hcol { flex:1 0 26px; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:26px; }
+  .hbars { display:flex; align-items:flex-end; gap:2px; height:112px; }
+  .hbars .onl { width:11px; background:linear-gradient(180deg,#7aa2ff,#4b6ef5); border-radius:3px 3px 0 0; }
+  .hbars .cal { width:11px; background:linear-gradient(180deg,#c084fc,#8b5cf6); border-radius:3px 3px 0 0; }
+  .hcol .hl { font-size:9.5px; color:#8a92a1; }
+  .hcol .hv { font-size:9.5px; color:#aeb6c4; white-space:nowrap; }
+  .spin { display:inline-block; width:16px; height:16px; border:2px solid #333a48; border-top-color:#e0b64a; border-radius:50%; animation:sp .7s linear infinite; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+  .loading { color:#8a92a1; font-size:13px; padding:22px; text-align:center; }
+  .err { color:#f9a8a8; font-size:13px; padding:14px; background:rgba(249,128,128,.08); border-radius:10px; }
+  .hidden { display:none; }
+  code { background:#232833; padding:1px 6px; border-radius:5px; font-size:12px; }
+</style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Zoho User Login &amp; Status</h1>
+      <div class="muted" id="lastsync">Loading sync status…</div>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <a class="btn ghost sm" href="/ui/sync">Sync now</a>
+      <a class="btn ghost sm" href="/">Home</a>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <form class="filters" id="filters" onsubmit="applyFilters(event)">
+      <div class="fld"><label>From</label><input type="date" id="from" value="{{ d_from }}"></div>
+      <div class="fld"><label>To</label><input type="date" id="to" value="{{ d_to }}"></div>
+      <div class="fld"><label>Role</label>
+        <select id="role"><option value="">All</option>
+          {% for r in opts.roles %}<option value="{{ r }}" {{ 'selected' if filt.role==r }}>{{ r }}</option>{% endfor %}
+        </select></div>
+      <div class="fld"><label>Profile</label>
+        <select id="profile"><option value="">All</option>
+          {% for p in opts.profiles %}<option value="{{ p }}" {{ 'selected' if filt.profile==p }}>{{ p }}</option>{% endfor %}
+        </select></div>
+      <div class="fld"><label>Status</label>
+        <select id="status"><option value="">All</option>
+          {% for s in opts.statuses %}<option value="{{ s }}" {{ 'selected' if filt.status==s }}>{{ s }}</option>{% endfor %}
+        </select></div>
+      <div class="fld"><label>Online</label>
+        <select id="online"><option value="">All</option>
+          <option value="true" {{ 'selected' if filt.online=='true' }}>Online</option>
+          <option value="false" {{ 'selected' if filt.online=='false' }}>Offline</option>
+        </select></div>
+      <div class="fld"><label>Search</label><input type="text" id="q" value="{{ filt.q }}" placeholder="name / email"></div>
+      <button class="btn" type="submit">Apply</button>
+      <button class="btn ghost" type="button" onclick="resetFilters()">Reset</button>
+    </form>
+
+    <div class="presets">
+      <span class="chip" onclick="preset(0)">Today</span>
+      <span class="chip" onclick="preset(6)">Last 7 days</span>
+      <span class="chip" onclick="preset(29)">Last 30 days</span>
+      <span class="chip" onclick="preset(59)">Last 60 days</span>
+      <span class="chip" onclick="presetMonth()">This month</span>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="overview" onclick="switchTab('overview')">Overview</div>
+      <div class="tab" data-tab="data" onclick="switchTab('data')">Data &amp; Sync</div>
+    </div>
+
+    <!-- OVERVIEW TAB -->
+    <div id="tab-overview">
+      <div class="cards" id="kpis"><div class="loading"><span class="spin"></span> loading summary…</div></div>
+
+      <div class="card">
+        <h3>Hourly trend (IST) <span class="muted">🟦 online time · 🟪 calls</span></h3>
+        <div id="hourlycard"><div class="loading"><span class="spin"></span> loading hourly trend…</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Agents <span class="muted" id="usercount"></span></h3>
+        <div id="userscard"><div class="loading"><span class="spin"></span> loading agents…</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Website customer events <span class="muted" id="cecount"></span></h3>
+        <div id="cecard"><div class="loading"><span class="spin"></span> loading customer events…</div></div>
+      </div>
+
+      <div class="card ai">
+        <h3><span><span class="badge">✨ AI</span> Insights (Gemini)</span>
+            <button class="btn ghost sm" onclick="loadInsights()">↻ Regenerate</button></h3>
+        <div id="insightscard"><div class="loading"><span class="spin"></span> generating insights…</div></div>
+      </div>
+    </div>
+
+    <!-- DATA & SYNC TAB -->
+    <div id="tab-data" class="hidden">
+      <div class="card">
+        <h3>Sync details</h3>
+        <div id="synccard"><div class="loading"><span class="spin"></span> loading…</div></div>
+      </div>
+      <div class="card">
+        <h3>BigQuery tables</h3>
+        <div id="tablescard"><div class="loading"><span class="spin"></span> loading…</div></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmtInr = v => '₹' + Math.round(v||0).toLocaleString('en-IN');
+const fmtHrs = v => (v||0).toFixed(1);
+// hours -> "42m" | "3h 20m"
+const fmtDur = h => { const m = Math.round((h||0)*60);
+  return m < 60 ? m + 'm' : Math.floor(m/60) + 'h ' + (m%60) + 'm'; };
+// minutes -> "42m" | "3h 20m"
+const fmtMin = m => { m = Math.round(m||0);
+  return m < 60 ? m + 'm' : Math.floor(m/60) + 'h ' + (m%60) + 'm'; };
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// calendar opens on click anywhere in the date field
+['from','to'].forEach(id => {
+  document.addEventListener('DOMContentLoaded', () => {
+    const el = $(id);
+    el.addEventListener('click', () => { try { el.showPicker(); } catch(e){} });
+  });
+});
+
+function qs() {
+  const p = new URLSearchParams();
+  p.set('from', $('from').value); p.set('to', $('to').value);
+  ['role','profile','status','online','q'].forEach(k => p.set(k, $(k).value));
+  return p.toString();
+}
+function iso(d){ return d.toISOString().slice(0,10); }
+function preset(daysBack){
+  const to = new Date(); const from = new Date(); from.setDate(to.getDate()-daysBack);
+  $('from').value = iso(from); $('to').value = iso(to); applyFilters();
+}
+function presetMonth(){
+  const now = new Date(); const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  $('from').value = iso(first); $('to').value = iso(now); applyFilters();
+}
+function resetFilters(){
+  ['role','profile','online','q'].forEach(k => $(k).value='');
+  $('status').value = 'active';           // default = active users
+  preset(59);                             // default = last 60 days
+}
+
+let dataLoaded = false;
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===t));
+  $('tab-overview').classList.toggle('hidden', t!=='overview');
+  $('tab-data').classList.toggle('hidden', t!=='data');
+  if (t==='data' && !dataLoaded) { loadData(); dataLoaded = true; }
+}
+
+function applyFilters(e){
+  if (e) e.preventDefault();
+  loadSummary(); loadHourly(); loadUsers(); loadEvents(); loadInsights();
+  if (!$('tab-data').classList.contains('hidden')) loadData();
+}
+
+// ---- independent card loaders --------------------------------------------
+async function loadSummary(){
+  const el = $('kpis'); el.innerHTML = '<div class="loading"><span class="spin"></span> loading summary…</div>';
+  try {
+    const s = await (await fetch('/api/summary?'+qs())).json();
+    el.innerHTML = `
+      <div class="kpi"><div class="n">${s.total}</div><div class="l">Users</div></div>
+      <div class="kpi"><div class="n green">${s.online}</div><div class="l">Online now</div></div>
+      <div class="kpi"><div class="n gold">${s.active}</div><div class="l">Active</div></div>
+      <div class="kpi"><div class="n red">${s.inactive}</div><div class="l">Inactive</div></div>
+      <div class="kpi"><div class="n blue">${fmtDur(s.tot_hrs)}</div><div class="l">Login time (polled)</div></div>
+      <div class="kpi"><div class="n blue">${s.active_hours}</div><div class="l">Active hrs (by activity)</div></div>
+      <div class="kpi"><div class="n purp">${s.deals_created}</div><div class="l">Deals created</div></div>
+      <div class="kpi"><div class="n purp">${s.won_cnt}</div><div class="l">Won deals</div></div>
+      <div class="kpi"><div class="n purp">${fmtInr(s.won_amt)}</div><div class="l">Won value</div></div>
+      <div class="kpi"><div class="n gold">${s.calls}</div><div class="l">Calls</div></div>
+      <div class="kpi"><div class="n gold">${fmtMin(s.talk_min)}</div><div class="l">Talk time</div></div>
+      <div class="kpi"><div class="n green">${s.meetings}</div><div class="l">Meetings</div></div>
+      <div class="kpi"><div class="n">${s.tasks}</div><div class="l">Tasks</div></div>
+      <div class="kpi"><div class="n">${s.online_acts}</div><div class="l">Online activities</div></div>`;
+  } catch(err){ el.innerHTML = `<div class="err">Failed to load summary: ${esc(err)}</div>`; }
+}
+
+async function loadUsers(){
+  const el = $('userscard'); el.innerHTML = '<div class="loading"><span class="spin"></span> loading agents…</div>';
+  try {
+    const d = await (await fetch('/api/users?'+qs())).json();
+    $('usercount').textContent = `(${d.users.length})`;
+    const f = $('from').value, t = $('to').value;
+    if (!d.users.length){ el.innerHTML = '<div class="loading">No agents match these filters.</div>'; return; }
+    const rows = d.users.map(u => `
+      <tr>
+        <td><a class="name" href="/user/${u.user_id}?from=${f}&to=${t}">${esc(u.full_name)||'—'}</a></td>
+        <td>${esc(u.role)||'—'}</td>
+        <td>${(u.status||'').toLowerCase()==='active'?'<span class="pill act">active</span>':'<span class="pill ina">'+esc(u.status||'—')+'</span>'}</td>
+        <td>${u.is_online?'<span class="pill on">online</span>':'<span class="pill off">offline</span>'}</td>
+        <td class="num">${u.active_hours}</td>
+        <td class="muted">${esc(u.last_activity)||'—'}</td>
+        <td class="num">${fmtDur(u.online_hours)}</td>
+        <td class="num">${u.deals_created}</td>
+        <td class="num">${u.won_deals}</td>
+        <td class="num">${fmtInr(u.won_amount)}</td>
+        <td class="num">${u.calls_cnt}</td>
+        <td class="num">${fmtMin(u.talk_min)}</td>
+        <td class="num">${u.meetings}</td>
+        <td class="num">${u.tasks_cnt}</td>
+        <td class="num">${u.online_acts}</td>
+      </tr>`).join('');
+    el.innerHTML = `<div class="tblwrap"><table>
+      <thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Online</th>
+        <th class="num">Active hrs</th><th>Last activity</th><th class="num">Login (polled)</th>
+        <th class="num">Deals</th><th class="num">Won</th><th class="num">Won value</th>
+        <th class="num">Calls</th><th class="num">Talk time</th><th class="num">Meetings</th>
+        <th class="num">Tasks</th><th class="num">Online acts</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+  } catch(err){ el.innerHTML = `<div class="err">Failed to load agents: ${esc(err)}</div>`; }
+}
+
+async function loadHourly(){
+  const el = $('hourlycard'); el.innerHTML = '<div class="loading"><span class="spin"></span> loading hourly trend…</div>';
+  try {
+    const d = await (await fetch('/api/team_hourly?'+qs())).json();
+    const H = d.hours;
+    const maxM = Math.max(...H.map(x=>x.mins)) || 1;
+    const maxC = Math.max(...H.map(x=>x.calls)) || 1;
+    if (!H.some(x=>x.mins>0 || x.calls>0)){ el.innerHTML='<div class="loading">No activity in this range yet.</div>'; return; }
+    el.innerHTML = '<div class="hchart">' + H.map(x=>`
+      <div class="hcol" title="${String(x.hr).padStart(2,'0')}:00 — online ${fmtMin(x.mins)}, ${x.calls} calls">
+        <div class="hv">${x.calls>0?x.calls:''}</div>
+        <div class="hbars">
+          <div class="onl" style="height:${Math.max(2,Math.round(112*x.mins/maxM))}px"></div>
+          <div class="cal" style="height:${Math.max(2,Math.round(112*x.calls/maxC))}px"></div>
+        </div>
+        <div class="hl">${String(x.hr).padStart(2,'0')}</div>
+      </div>`).join('') + '</div>';
+  } catch(err){ el.innerHTML = `<div class="err">Failed: ${esc(err)}</div>`; }
+}
+
+async function loadEvents(){
+  const el = $('cecard'); el.innerHTML = '<div class="loading"><span class="spin"></span> loading customer events…</div>';
+  try {
+    const d = await (await fetch('/api/customer_events?'+qs())).json();
+    if (d.error){ el.innerHTML = `<div class="err">${esc(d.error)}</div>`; return; }
+    if (!d.types.length){ el.innerHTML = '<div class="loading">No customer events in range (run the backfill first).</div>'; $('cecount').textContent=''; return; }
+    $('cecount').textContent = `(${d.total.toLocaleString()} events · ${fmtInr(d.order_value)})`;
+    const max = Math.max(...d.types.map(t=>t.n)) || 1;
+    el.innerHTML = d.types.map(t => `
+      <div style="display:grid;grid-template-columns:130px 1fr 90px 110px;gap:10px;align-items:center;margin:7px 0;font-size:13px;">
+        <div>${esc(t.type)}</div>
+        <div style="height:9px;background:#232833;border-radius:5px;overflow:hidden;">
+          <div style="height:100%;width:${Math.round(100*t.n/max)}%;background:linear-gradient(90deg,#e0b64a,#c98d1a);"></div>
+        </div>
+        <div style="text-align:right;color:#9aa3b2;">${t.n.toLocaleString()}</div>
+        <div style="text-align:right;color:#9aa3b2;">${t.order_value>0?fmtInr(t.order_value):''}</div>
+      </div>`).join('');
+  } catch(err){ el.innerHTML = `<div class="err">Failed: ${esc(err)}</div>`; }
+}
+
+async function loadInsights(){
+  const el = $('insightscard'); el.innerHTML = '<div class="loading"><span class="spin"></span> generating insights (Gemini)…</div>';
+  try {
+    const d = await (await fetch('/api/insights?'+qs())).json();
+    el.innerHTML = d.error ? `<div class="err">${esc(d.error)}</div>` : `<div class="doc">${d.html}</div>`;
+  } catch(err){ el.innerHTML = `<div class="err">Failed: ${esc(err)}</div>`; }
+}
+
+async function loadData(){
+  const sc = $('synccard'), tc = $('tablescard');
+  sc.innerHTML = tc.innerHTML = '<div class="loading"><span class="spin"></span> loading…</div>';
+  try {
+    const d = await (await fetch('/api/tables?'+qs())).json();
+    const s = d.sync;
+    sc.innerHTML = `<div class="tblwrap"><table><tbody>
+      <tr><th>Scheduler job</th><td><code>${esc(s.scheduler_job)}</code></td></tr>
+      <tr><th>Cadence</th><td>${esc(s.cadence)}</td></tr>
+      <tr><th>Last user sync</th><td>${esc(s.last_user_sync)||'—'}</td></tr>
+      <tr><th>Last snapshot</th><td>${esc(s.last_snapshot)||'—'}</td></tr>
+      <tr><th>First snapshot</th><td>${esc(s.first_snapshot)||'—'}</td></tr>
+      <tr><th>Sync runs (snapshots)</th><td>${s.sync_runs}</td></tr>
+      <tr><th>Snapshot rows</th><td>${s.snapshot_rows}</td></tr>
+    </tbody></table></div>`;
+    const trows = d.tables.map(t => t.error
+      ? `<tr><td>${esc(t.table)}</td><td colspan="3" class="err">${esc(t.error)}</td></tr>`
+      : `<tr><td>${esc(t.table)}</td><td class="num">${(t.rows||0).toLocaleString()}</td>
+           <td class="num">${t.mb} MB</td><td>${esc(t.modified)||'—'}</td><td>${esc(t.mode)}</td></tr>`).join('');
+    tc.innerHTML = `<div class="tblwrap"><table>
+      <thead><tr><th>Table</th><th class="num">Rows</th><th class="num">Size</th><th>Last modified</th><th>Sync mode</th></tr></thead>
+      <tbody>${trows}</tbody></table></div>`;
+    $('lastsync').textContent = 'Last sync: ' + (s.last_snapshot || '—');
+  } catch(err){ sc.innerHTML = tc.innerHTML = `<div class="err">Failed: ${esc(err)}</div>`; }
+}
+
+async function headerSync(){
+  try { const d = await (await fetch('/api/tables?'+qs())).json();
+        $('lastsync').textContent = 'Last sync: ' + (d.sync.last_snapshot || '—') + ' · ' + d.sync.cadence; }
+  catch(e){ $('lastsync').textContent = ''; }
+}
+
+// initial independent loads
+loadSummary(); loadHourly(); loadUsers(); loadEvents(); loadInsights(); headerSync();
+</script>
+</body>
+</html>
