@@ -62,6 +62,23 @@ All work done on 2026-07-11 (Cloud Run revisions in parentheses).
   - heatmap: green = polled online, **blue = active by activity**, purple = calls;
   - Gemini told to prefer activity-hours over polled login-hours.
 
+## v6 — today-default, conversational insights, Deals time-slot tab
+- Default date range switched from **last 60 days** to **Today** (both ends = today, IST);
+  the "Reset" button now returns to Today.
+- **Conversational insights**: the Overview insights card keeps the Gemini briefing but
+  adds a chat thread — managers ask follow-ups grounded on the same range-scoped numbers,
+  with prior turns kept in context. New `POST /api/insights/chat`; briefing regeneration or
+  a filter change resets the conversation. Refactored the prompt into a shared
+  `_insights_context()` used by both the briefing and Q&A.
+- **New Deals tab** (`/api/deals_slots`): deals bucketed into 5 IST time-slots — four
+  3-hour working blocks (9–12, 12–15, 15–18, 18–21) + one non-working block (21:00–09:00) —
+  with a **Created / Modified** toggle (buckets by `Created_Time` or `Modified_Time`) and the
+  shared date range. Metrics per slot + totals: created deals, connected deals
+  (`Number_of_activity > 0`), connectivity ratio, conversion (Closed Won), conversion ratio,
+  deal→activity ratio (activities/deal). Plus a stage funnel (count + amount per stage).
+  - Note: the 4 working blocks span 9 AM–9 PM, so the non-working block is treated as the
+    complement (9 PM–9 AM) to keep the 5 buckets mutually exclusive.
+
 ## Open items
 - Lock down public access to the dashboard.
 - Rotate the Zoho admin password (was shared in chat during setup).

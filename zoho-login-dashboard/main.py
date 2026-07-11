@@ -636,8 +636,9 @@ def _hrs(v):
 
 
 def _default_range():
+    # Default to *today* (IST). Both ends = today gives a single-day view.
     today = (dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)).date()
-    return (today - dt.timedelta(days=59)).isoformat(), today.isoformat()
+    return today.isoformat(), today.isoformat()
 
 
 def _parse_range(args):
@@ -1004,6 +1005,32 @@ def api_insights():
         return jsonify(html=None, error=str(e))
 
 
+@app.route("/api/insights/chat", methods=["POST"])
+def api_insights_chat():
+    """Conversational follow-up on the insights: grounded on the same range-scoped
+    data. Body: {from, to, filters..., history:[{role,content}], question}."""
+    body = request.get_json(silent=True) or {}
+    question = (body.get("question") or "").strip()
+    if not question:
+        return jsonify(html=None, error="Empty question.")
+    d_from, d_to = _parse_range(request.args)
+    filt = _parse_filters(request.args)
+    try:
+        rows = _users_query(d_from, d_to, filt)
+    except Exception as e:
+        return jsonify(html=None, error=f"Query failed: {e}")
+    if not rows:
+        return jsonify(html=None, error="No data in range.")
+    try:
+        import markdown as _md
+        context = _insights_context(rows, d_from, d_to)
+        answer = _gemini_chat_answer(context, body.get("history") or [], question)
+        html = _md.markdown(answer, extensions=["tables", "sane_lists"])
+        return jsonify(html=html, model=GEMINI_MODEL, error=None)
+    except Exception as e:
+        return jsonify(html=None, error=str(e))
+
+
 @app.route("/api/tables")
 def api_tables():
     return jsonify(tables=_table_stats(), sync=_sync_status())
@@ -1071,6 +1098,112 @@ def api_team_hourly():
                            "calls": int(r["calls"] or 0)} for r in rows])
 
 
+# --------------------------------------------------------------------------- #
+# Deal analytics by time-slot (Deals tab)
+#   Working blocks (IST): 09–12, 12–15, 15–18, 18–21. Everything else
+#   (21:00–09:00) is the single non-working block. Toggle buckets deals by
+#   Created_Time or Modified_Time; date range comes from the filter.
+# --------------------------------------------------------------------------- #
+DEAL_SLOTS = [
+    {"label": "9 AM – 12 PM", "hours": "09:00–12:00", "working": True},
+    {"label": "12 PM – 3 PM", "hours": "12:00–15:00", "working": True},
+    {"label": "3 PM – 6 PM",  "hours": "15:00–18:00", "working": True},
+    {"label": "6 PM – 9 PM",  "hours": "18:00–21:00", "working": True},
+    {"label": "9 PM – 9 AM",  "hours": "21:00–09:00", "working": False},
+]
+
+
+def _ratio(num, den):
+    return round(100.0 * num / den, 1) if den else 0.0
+
+
+@app.route("/api/deals_slots")
+def api_deals_slots():
+    """Deal metrics bucketed into the 4 working + 1 non-working IST time-slots.
+    ?mode=created|modified selects which timestamp buckets each deal.
+    ?from=&to= scope the range (defaults to today)."""
+    d_from, d_to = _parse_range(request.args)
+    mode = "modified" if request.args.get("mode") == "modified" else "created"
+    tscol = "modified_time" if mode == "modified" else "created_time"
+    D = f"`{PROJECT}.{DATASET}.cdc_deals`"
+    params = [_P("d_from", "DATE", d_from), _P("d_to", "DATE", d_to)]
+
+    slot_sql = f"""
+    WITH rng AS (SELECT TIMESTAMP(@d_from,'{TZ}') a, TIMESTAMP(DATE_ADD(@d_to,INTERVAL 1 DAY),'{TZ}') b),
+    base AS (
+      SELECT EXTRACT(HOUR FROM DATETIME({tscol},'{TZ}')) h,
+             COALESCE(SAFE_CAST(JSON_VALUE(data,'$.Number_of_activity') AS INT64),0) acts,
+             JSON_VALUE(data,'$.Stage') stage
+      FROM {D}, rng
+      WHERE {tscol} >= rng.a AND {tscol} < rng.b
+    ),
+    slotted AS (
+      SELECT CASE
+               WHEN h >= 9  AND h < 12 THEN 0
+               WHEN h >= 12 AND h < 15 THEN 1
+               WHEN h >= 15 AND h < 18 THEN 2
+               WHEN h >= 18 AND h < 21 THEN 3
+               ELSE 4 END slot,
+             acts, stage
+      FROM base
+    )
+    SELECT slot,
+           COUNT(*) created,
+           COUNTIF(acts > 0) connected,
+           COUNTIF(stage = 'Closed Won') won,
+           SUM(acts) activities
+    FROM slotted GROUP BY slot
+    """
+    funnel_sql = f"""
+    WITH rng AS (SELECT TIMESTAMP(@d_from,'{TZ}') a, TIMESTAMP(DATE_ADD(@d_to,INTERVAL 1 DAY),'{TZ}') b)
+    SELECT COALESCE(JSON_VALUE(data,'$.Stage'),'—') stage, COUNT(*) n,
+           SUM(COALESCE(SAFE_CAST(JSON_VALUE(data,'$.Amount') AS FLOAT64),0)) amount
+    FROM {D}, rng
+    WHERE {tscol} >= rng.a AND {tscol} < rng.b
+    GROUP BY 1 ORDER BY n DESC
+    """
+    try:
+        cfg = bigquery.QueryJobConfig(query_parameters=params)
+        raw = {int(r["slot"]): r for r in _bq.query(slot_sql, job_config=cfg).result()}
+        funnel_rows = list(_bq.query(funnel_sql, job_config=cfg).result())
+    except Exception as e:
+        return jsonify(error=str(e), slots=[], funnel=[])
+
+    slots = []
+    for i, meta in enumerate(DEAL_SLOTS):
+        r = raw.get(i)
+        created    = int(r["created"]) if r else 0
+        connected  = int(r["connected"]) if r else 0
+        won        = int(r["won"]) if r else 0
+        activities = int(r["activities"] or 0) if r else 0
+        slots.append({
+            "label": meta["label"], "hours": meta["hours"], "working": meta["working"],
+            "created": created, "connected": connected, "won": won,
+            "activities": activities,
+            "connectivity_ratio": _ratio(connected, created),  # % of deals with any activity
+            "conversion": won,
+            "conversion_ratio": _ratio(won, created),          # % of deals won
+            "acts_per_deal": round(activities / created, 2) if created else 0.0,
+        })
+
+    def agg(k):
+        return sum(s[k] for s in slots)
+    tot_created, tot_conn = agg("created"), agg("connected")
+    tot_won, tot_acts = agg("won"), agg("activities")
+    totals = {
+        "created": tot_created, "connected": tot_conn, "won": tot_won,
+        "activities": tot_acts,
+        "connectivity_ratio": _ratio(tot_conn, tot_created),
+        "conversion": tot_won,
+        "conversion_ratio": _ratio(tot_won, tot_created),
+        "acts_per_deal": round(tot_acts / tot_created, 2) if tot_created else 0.0,
+    }
+    funnel = [{"stage": r["stage"], "n": int(r["n"]),
+               "amount": float(r["amount"] or 0)} for r in funnel_rows]
+    return jsonify(mode=mode, d_from=d_from, d_to=d_to,
+                   slots=slots, totals=totals, funnel=funnel)
+
+
 @app.route("/api/user/<user_id>/hourly")
 def api_user_hourly(user_id):
     """Day x hour grid for one agent: online minutes + calls per cell (IST)."""
@@ -1121,11 +1254,9 @@ VERTEX_LOCATION = os.environ.get("VERTEX_LOCATION", "us-central1")
 GEMINI_MODEL    = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 
 
-def _gemini_insights(rows, d_from, d_to):
-    """Summarize the login/activity data and ask Gemini for manager insights."""
-    import vertexai
-    from vertexai.generative_models import GenerativeModel
-
+def _insights_context(rows, d_from, d_to):
+    """Build the shared data context (brand + team totals + per-agent summary)
+    that both the auto-briefing and the conversational Q&A are grounded on."""
     # Compact the data so we send a small, structured summary (not raw rows).
     ranked = sorted(rows, key=lambda r: r["online_hours"], reverse=True)
     def line(r):
@@ -1143,7 +1274,7 @@ def _gemini_insights(rows, d_from, d_to):
     tot_hrs = sum(r["online_hours"] for r in rows)
     tot_calls = sum(r["calls_cnt"] for r in rows)
 
-    prompt = f"""You are a data analyst for Lucira Jewelry (lucirajewelry.com), an Indian
+    return f"""You are a data analyst for Lucira Jewelry (lucirajewelry.com), an Indian
 ecommerce + omnichannel lab-grown diamond jewellery brand (founded by the Candere founder;
 flagship stores in Mumbai, Pune, Noida, Delhi plus the online store). The "users" below are
 CRM agents: sales executives and store teams (some accounts represent whole stores, e.g.
@@ -1160,7 +1291,19 @@ engagement measure — prefer it over login_hrs when they disagree.
 Team totals: {total} users, {online} online now, {tot_hrs:.1f} login hours, {tot_calls} calls in range.
 
 Per-user (sorted by login hours):
-{summary}
+{summary}"""
+
+
+def _gemini_model():
+    import vertexai
+    from vertexai.generative_models import GenerativeModel
+    vertexai.init(project=PROJECT, location=VERTEX_LOCATION)
+    return GenerativeModel(GEMINI_MODEL)
+
+
+def _gemini_insights(rows, d_from, d_to):
+    """Summarize the login/activity data and ask Gemini for a manager briefing."""
+    prompt = _insights_context(rows, d_from, d_to) + """
 
 Give a concise, manager-ready briefing in Markdown with these sections:
 ### Headline (2-3 bullets)
@@ -1170,11 +1313,30 @@ Give a concise, manager-ready briefing in Markdown with these sections:
 ### Anomalies or things to check
 ### 3 concrete recommendations
 Keep it tight and specific to the numbers. Do not invent data you weren't given."""
+    return _gemini_model().generate_content(prompt).text
 
-    vertexai.init(project=PROJECT, location=VERTEX_LOCATION)
-    model = GenerativeModel(GEMINI_MODEL)
-    resp = model.generate_content(prompt)
-    return resp.text
+
+def _gemini_chat_answer(context, history, question):
+    """Answer a follow-up question grounded on the same range-scoped data context.
+    `history` is a list of {role: 'user'|'assistant', content: str} turns."""
+    convo = "\n".join(
+        f'{"MANAGER" if h.get("role") == "user" else "ANALYST"}: {h.get("content", "")}'
+        for h in (history or [])
+    )
+    prompt = f"""{context}
+
+You are answering a manager's follow-up questions about the data above in a running
+conversation. Answer ONLY from the numbers provided in the context and the conversation.
+If the answer isn't in the data, say so plainly and suggest what to check instead of
+guessing. Be concise and specific; reply in Markdown (short paragraphs, bullets, or a
+small table where it helps).
+
+Conversation so far:
+{convo}
+
+MANAGER: {question}
+ANALYST:"""
+    return _gemini_model().generate_content(prompt).text
 
 
 @app.route("/insights")

@@ -73,19 +73,33 @@ historical load. The 60-day backfill loaded ~118k records.
 |---|---|
 | `/` | landing + Connect Zoho (OAuth) |
 | `/oauth/login`, `/oauth/callback` | Zoho OAuth (server-based app, `.in` DC) |
-| `/dashboard` | shell page — every card loads independently via the JSON APIs |
+| `/dashboard` | shell page — Overview / **Deals** / Data & Sync tabs, every card loads independently via the JSON APIs |
 | `/user/<id>` | agent detail: KPIs, hourly heatmap, sessions, daily trend, deals |
-| `/insights` | Gemini-generated manager briefing |
+| `/insights` | Gemini-generated manager briefing (standalone page) |
 | `/sync` (POST) | scheduler entrypoint (X-Sync-Token header) |
 | `/ui/sync` | browser-safe manual sync |
 | `/backfill` | historical module load (token protected) |
 | `/health` | status |
-| `/api/summary`, `/api/users`, `/api/team_hourly`, `/api/customer_events`, `/api/insights`, `/api/tables`, `/api/user/<id>/overview`, `/api/user/<id>/sessions`, `/api/user/<id>/hourly` | JSON APIs backing the cards |
+| `/api/summary`, `/api/users`, `/api/team_hourly`, `/api/customer_events`, `/api/insights`, `/api/insights/chat` (POST), `/api/deals_slots`, `/api/tables`, `/api/user/<id>/overview`, `/api/user/<id>/sessions`, `/api/user/<id>/hourly` | JSON APIs backing the cards |
 
 Dashboard features: calendar date-range (click-to-open) + presets (Today/7/30/60/This month,
-default **last 60 days**), filters (role/profile/status — default **active** — online, search),
+default **Today**), filters (role/profile/status — default **active** — online, search),
 KPI cards, hourly team trend (online vs calls), agents table (activity-first),
 website customer-events funnel card, Data & Sync tab (table stats + cursors + last sync).
+
+**Deals tab** — deals bucketed into 5 IST time-slots (four 3-hour working blocks
+9 AM–9 PM, plus one non-working 9 PM–9 AM block), with a **Created / Modified**
+toggle (buckets by `Created_Time` or `Modified_Time`) and the shared date range.
+Per slot + totals: created deals, connected deals (any linked activity),
+connectivity ratio, conversion (Closed Won), conversion ratio, and deal→activity
+ratio (activities per deal). Plus a stage funnel (count + amount per stage).
+Backed by `/api/deals_slots?mode=created|modified&from=&to=`.
+
+**Conversational insights** — the Overview insights card renders the Gemini
+briefing, then lets a manager ask follow-up questions in a chat thread. Each answer
+is grounded on the same range-scoped numbers and carries prior turns for context
+(`/api/insights/chat`, POST). Regenerating the briefing or changing filters resets
+the conversation.
 
 ## AI insights
 
