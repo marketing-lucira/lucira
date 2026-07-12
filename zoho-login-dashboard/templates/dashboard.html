@@ -220,6 +220,14 @@
         <h3>Stage funnel <span class="muted" id="funnelcount"></span></h3>
         <div id="dealfunnelcard"><div class="loading"><span class="spin"></span> loading funnel…</div></div>
       </div>
+
+      <div class="card">
+        <h3>Entry trigger &amp; probability <span class="muted" id="triggercount"></span></h3>
+        <div class="muted" style="margin:-4px 0 12px;">What action created each deal, with average win probability and conversion.</div>
+        <div id="triggercard"><div class="loading"><span class="spin"></span> loading triggers…</div></div>
+        <h3 style="margin-top:18px;">Probability distribution</h3>
+        <div id="probcard"><div class="loading"><span class="spin"></span> loading…</div></div>
+      </div>
     </div>
 
     <!-- DATA & SYNC TAB -->
@@ -573,6 +581,7 @@ async function loadDeals(){
   const kp = $('dealkpis'), sl = $('dealslotscard'), fn = $('dealfunnelcard');
   kp.innerHTML = sl.innerHTML = fn.innerHTML = '<div class="loading"><span class="spin"></span> loading…</div>';
   $('dealsrange').textContent = `· ${$('from').value} → ${$('to').value}`;
+  loadTriggers();
   try {
     const d = await (await fetch('/api/deals_slots?'+qs()+'&mode='+dealMode)).json();
     if (d.error){ kp.innerHTML = `<div class="err">${esc(d.error)}</div>`; sl.innerHTML = fn.innerHTML=''; return; }
@@ -855,6 +864,42 @@ async function loadChat(){
           <div class="sd">${x.date.slice(5)}</div></div>`; }).join('') +'</div>';
     }
   } catch(err){ kp.innerHTML=`<div class="err">Failed to load chat metrics: ${esc(err)}</div>`; }
+}
+
+async function loadTriggers(){
+  const tc=$('triggercard'), pc=$('probcard');
+  tc.innerHTML = pc.innerHTML = '<div class="loading"><span class="spin"></span> loading…</div>';
+  try {
+    const d = await (await fetch('/api/deal_triggers?'+qs()+'&mode='+dealMode)).json();
+    if(d.error){ tc.innerHTML=`<div class="err">${esc(d.error)}</div>`; pc.innerHTML=''; return; }
+    $('triggercount').textContent = `(${(d.total||0).toLocaleString()} deals)`;
+    if(!d.triggers.length){ tc.innerHTML='<div class="loading">No deals in this range for the selected mode.</div>'; pc.innerHTML=''; return; }
+    const rows = d.triggers.map(t=>`
+      <tr>
+        <td><b>${esc(t.trigger)}</b></td>
+        <td class="num">${t.deals.toLocaleString()}</td>
+        <td style="min-width:150px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;height:8px;background:#232833;border-radius:5px;overflow:hidden;"><div style="height:100%;width:${Math.min(100,Math.round(t.avg_prob))}%;background:linear-gradient(90deg,#7aa2ff,#4b6ef5);"></div></div>
+            <span style="color:#aeb6c4;min-width:34px;text-align:right;">${t.avg_prob.toFixed(0)}%</span>
+          </div>
+        </td>
+        <td class="num">${t.won}</td>
+        <td class="num">${t.conv_pct.toFixed(2)}%</td>
+      </tr>`).join('');
+    tc.innerHTML = `<div class="tblwrap"><table style="min-width:620px;">
+      <thead><tr><th>Entry trigger</th><th class="num">Deals</th><th>Avg win probability</th><th class="num">Won</th><th class="num">Conv.</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+    if(!d.prob.length){ pc.innerHTML='<div class="loading">No probability data.</div>'; return; }
+    const maxP = Math.max(...d.prob.map(p=>p.deals))||1;
+    pc.innerHTML = d.prob.map(p=>`
+      <div style="display:grid;grid-template-columns:52px 1fr 90px 66px;gap:10px;align-items:center;margin:6px 0;font-size:13px;">
+        <div><b>${p.prob==null?'—':p.prob+'%'}</b></div>
+        <div style="height:9px;background:#232833;border-radius:5px;overflow:hidden;"><div style="height:100%;width:${Math.round(100*p.deals/maxP)}%;background:linear-gradient(90deg,#e0b64a,#c98d1a);"></div></div>
+        <div style="text-align:right;color:#9aa3b2;">${p.deals.toLocaleString()}</div>
+        <div style="text-align:right;color:#31c48d;">${p.won>0?p.won+' won':''}</div>
+      </div>`).join('');
+  } catch(err){ tc.innerHTML=`<div class="err">Failed: ${esc(err)}</div>`; pc.innerHTML=''; }
 }
 
 async function headerSync(){

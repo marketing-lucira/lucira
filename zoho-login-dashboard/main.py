@@ -1442,6 +1442,52 @@ def api_user_sessions(user_id):
     return jsonify(sessions=_sessions_for(d_from, d_to, user_id))
 
 
+@app.route("/api/deal_triggers")
+def api_deal_triggers():
+    """Deals by entry trigger (Deal_Trigger_Event) + probability distribution,
+    scoped to the deal date range. ?mode=created|modified selects the timestamp."""
+    d_from, d_to = _parse_range(request.args)
+    mode = "modified" if request.args.get("mode") == "modified" else "created"
+    tscol = "modified_time" if mode == "modified" else "created_time"
+    D = f"`{PROJECT}.{DATASET}.cdc_deals`"
+    params = [_P("d_from", "DATE", d_from), _P("d_to", "DATE", d_to)]
+    rng = f"DATE({tscol},'{TZ}') BETWEEN @d_from AND @d_to"
+    norm = ("CASE LOWER(TRIM(COALESCE(JSON_VALUE(data,'$.Deal_Trigger_Event'),'(none)')))"
+            " WHEN 'add to cart' THEN 'atc' WHEN 'whatsapp chat' THEN 'whatsapp'"
+            " WHEN 'sign up' THEN 'signup'"
+            " ELSE LOWER(TRIM(COALESCE(JSON_VALUE(data,'$.Deal_Trigger_Event'),'(none)'))) END")
+    trig_sql = f"""
+      WITH d AS (
+        SELECT {norm} trigger,
+          SAFE_CAST(JSON_VALUE(data,'$.Probability') AS FLOAT64) prob,
+          JSON_VALUE(data,'$.Stage')='Closed Won' won
+        FROM {D} WHERE {rng}
+      )
+      SELECT trigger, COUNT(*) deals, ROUND(AVG(prob),1) avg_prob,
+        COUNTIF(won) won, ROUND(100*COUNTIF(won)/COUNT(*),2) conv_pct
+      FROM d GROUP BY trigger ORDER BY deals DESC LIMIT 30
+    """
+    prob_sql = f"""
+      SELECT CAST(SAFE_CAST(JSON_VALUE(data,'$.Probability') AS FLOAT64) AS INT64) prob,
+        COUNT(*) deals, COUNTIF(JSON_VALUE(data,'$.Stage')='Closed Won') won
+      FROM {D} WHERE {rng} AND JSON_VALUE(data,'$.Probability') IS NOT NULL
+      GROUP BY prob ORDER BY prob DESC
+    """
+    try:
+        cfg = bigquery.QueryJobConfig(query_parameters=params)
+        trig = [dict(r) for r in _bq.query(trig_sql, job_config=cfg).result()]
+        prob = [dict(r) for r in _bq.query(prob_sql, job_config=cfg).result()]
+    except Exception as e:
+        return jsonify(error=str(e), triggers=[], prob=[]), 500
+    return jsonify(
+        triggers=[{"trigger": t["trigger"], "deals": t["deals"],
+                   "avg_prob": float(t["avg_prob"] or 0), "won": t["won"],
+                   "conv_pct": float(t["conv_pct"] or 0)} for t in trig],
+        prob=[{"prob": p["prob"], "deals": p["deals"], "won": p["won"]} for p in prob],
+        total=sum(t["deals"] for t in trig),
+    )
+
+
 # --------------------------------------------------------------------------- #
 # Session Quality Index (SQI) — derived from the GA4 BigQuery export
 # --------------------------------------------------------------------------- #
