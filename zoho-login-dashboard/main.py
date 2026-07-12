@@ -1469,7 +1469,7 @@ SQI_METRICS = [
     ("Traffic Quality", "funnel_split",    "Funnel Split",     10,
      lambda a: _safe_div(a["tof_sessions"], a["sessions"]),           "<=", 0.60,  "pct", "TOF ≤ 60% (MOF+BOF ≥ 40%)"),
     ("Traffic Quality", "new_returning",   "New vs Returning", 10,
-     lambda a: _safe_div(a["new_sessions"], a["sessions"]),           "<=", 0.75,  "pct", "New ≤ 75% (Returning ≥ 25%)"),
+     lambda a: _safe_div(a["new_users"], a["total_users"]),           "<=", 0.75,  "pct", "New users ≤ 75% (Returning ≥ 25%)"),
     ("Engagement",      "engagement_time", "Engagement Time",  10,
      lambda a: _safe_div(a["eng_sec"], a["sessions"]),                ">=", 30.0,  "sec", "Avg engagement ≥ 30 sec"),
     ("Engagement",      "engaged_session", "Engaged Session",  10,
@@ -1486,8 +1486,8 @@ SQI_METRICS = [
      lambda a: _safe_div(a["begin_checkout"], a["sessions"]),         ">=", 0.0060,"pct", "Begin checkout ÷ session ≥ 0.60%"),
     ("Intent Signals",  "payment_attempt", "Payment Attempt",   5,
      lambda a: _safe_div(a["add_payment_info"], a["begin_checkout"]), ">=", 0.10,  "pct", "Payment attempt ÷ begin checkout ≥ 10%"),
-    ("Trust Signals",   "faq",             "FAQ View",          5,
-     lambda a: _safe_div(a["faq_sessions"], a["sessions"]),           ">=", 0.0003,"pct", "FAQ clicked ÷ session ≥ 0.03%"),
+    ("Trust Signals",   "pincode",         "Pincode Entered",   5,
+     lambda a: _safe_div(a["pincode_sessions"], a["sessions"]),       ">=", 0.05,  "pct", "Pincode entered ÷ session ≥ 5%"),
     ("Trust Signals",   "whatsapp",        "WhatsApp Click",    5,
      lambda a: _safe_div(a["chat_sessions"], a["sessions"]),          ">=", 0.0003,"pct", "Chat with expert ÷ session ≥ 0.03%"),
 ]
@@ -1526,6 +1526,7 @@ def _sqi_daily(start_yyyymmdd, end_yyyymmdd):
     WITH base AS (
       SELECT
         CONCAT(user_pseudo_id,'-',CAST((SELECT value.int_value FROM UNNEST(event_params) WHERE key='ga_session_id') AS STRING)) sk,
+        user_pseudo_id upid,
         PARSE_DATE('%Y%m%d', event_date) ed,
         event_name,
         (SELECT value.int_value FROM UNNEST(event_params) WHERE key='ga_session_number') snum,
@@ -1539,15 +1540,16 @@ def _sqi_daily(start_yyyymmdd, end_yyyymmdd):
       WHERE _TABLE_SUFFIX BETWEEN @start AND @end
     ),
     sess AS (
-      SELECT sk, MIN(ed) d, MAX(snum) snum, MAX(eng) eng, SUM(IFNULL(emsec,0)) emsec,
+      SELECT sk, ANY_VALUE(upid) upid, MIN(ed) d, MAX(snum) snum, MAX(eng) eng, SUM(IFNULL(emsec,0)) emsec,
         COUNT(*) events,
+        MAX(IF(event_name='first_visit',1,0)) is_fv,
         COUNTIF(event_name='page_view') page_views,
         COUNTIF(event_name='view_item') view_items,
         COUNTIF(event_name='add_to_cart') atc,
         COUNTIF(event_name='view_cart') view_cart,
         COUNTIF(event_name='begin_checkout') begin_checkout,
         COUNTIF(event_name='add_payment_info') add_payment_info,
-        MAX(IF(event_name='select_promotion' AND creative='FAQ Clicked',1,0)) faq,
+        MAX(IF(event_name='select_promotion' AND creative='pincodeEntered',1,0)) pincode,
         MAX(IF(event_name='select_promotion' AND creative='chatWithExperts',1,0)) chat,
         ANY_VALUE(med) med, ANY_VALUE(src) src, ANY_VALUE(camp) camp
       FROM base GROUP BY sk
@@ -1563,7 +1565,6 @@ def _sqi_daily(start_yyyymmdd, end_yyyymmdd):
           WHEN LOWER(IFNULL(med,'')) = 'retargeting' THEN 'MOF'
           WHEN IFNULL(src,'(not set)') IN ('(not set)','(direct)','(none)') THEN 'MOF'
           ELSE 'TOF' END funnel,
-        IF(IFNULL(snum,1) = 1, 1, 0) is_new,
         IF(IFNULL(eng,0) = 1, 1, 0) is_engaged
       FROM sess
     )
@@ -1572,9 +1573,11 @@ def _sqi_daily(start_yyyymmdd, end_yyyymmdd):
       SUM(view_items) view_items, SUM(atc) atc, SUM(view_cart) view_cart,
       SUM(begin_checkout) begin_checkout, SUM(add_payment_info) add_payment_info,
       SUM(emsec)/1000.0 eng_sec, SUM(is_engaged) engaged_sessions,
-      SUM(is_new) new_sessions, SUM(is_paid) paid_sessions,
+      COUNT(DISTINCT upid) total_users,
+      COUNT(DISTINCT IF(is_fv=1, upid, NULL)) new_users,
+      SUM(is_paid) paid_sessions,
       COUNTIF(funnel='TOF') tof_sessions, COUNTIF(funnel='MOF') mof_sessions,
-      COUNTIF(funnel='BOF') bof_sessions, SUM(faq) faq_sessions, SUM(chat) chat_sessions
+      COUNTIF(funnel='BOF') bof_sessions, SUM(pincode) pincode_sessions, SUM(chat) chat_sessions
     FROM cls GROUP BY day ORDER BY day
     """
     params = [
