@@ -1490,7 +1490,7 @@ SQI_METRICS = [
     ("Trust Signals",   "pincode",         "Pincode Entered",   5,
      lambda a: _safe_div(a["pincode_sessions"], a["sessions"]),       ">=", 0.05,  "pct", "Pincode entered ÷ session ≥ 5%"),
     ("Trust Signals",   "whatsapp",        "WhatsApp Click",    5,
-     lambda a: _safe_div(a["chat_sessions"], a["sessions"]),          ">=", 0.01,  "pct", "Chat with expert ÷ session ≥ 1%"),
+     lambda a: _safe_div(a["chat_sessions"], a["sessions"]),          ">=", 0.008, "pct", "Chat with expert ÷ session ≥ 0.8%"),
 ]
 SQI_GROUP_WEIGHT = {"Traffic Quality": 30, "Engagement": 25,
                     "Intent Signals": 35, "Trust Signals": 10}
@@ -1663,32 +1663,33 @@ def api_sqi():
 # Deals-based (never leads). Quality is driven by source mix, GA4 session
 # quality, connectivity (the one activity metric = deal has a >=30s call), and
 # conversion. Each metric earns its weight when it beats the June benchmark.
-# Strong = marketing-acquired sources that convert well. Shopify is EXCLUDED —
-# it's store footfall that converted (confirmed store sales), not marketing lead
-# quality, so it's neutral (neither strong nor junk).
-DQI_STRONG_SOURCES = ("google", "facebook", "criteo", "nector")
+# Junk = marketing sources that barely convert (nitro dominates). Shopify is
+# neutral (store footfall that converted, not marketing lead quality).
 DQI_JUNK_SOURCES = ("nitro", "ig", "fb", "broadcast", "trigger", "rtbcom", "direct", "chat", "c")
 
-# (group, key, label, weight, value_fn(agg)->ratio, cmp, June threshold, fmt, rule)
+# Benchmarks are June's daily 25th-percentile (softened so a typical June day
+# scores well). "High-converting" is now ATC-and-above deal share (funnel stage),
+# not source buckets.
+# (group, key, label, weight, value_fn(agg)->ratio, cmp, June-P25 threshold, fmt, rule)
 DQI_METRICS = [
-    ("Session Quality", "session_deal",   "Session → Deal rate",         10,
-     lambda a: _safe_div(a["deals"], a["sessions"]),        ">=", 0.0167, "pct", "Deals ÷ sessions ≥ 1.67% (June)"),
-    ("Session Quality", "quality_session", "Quality-session share",       10,
-     lambda a: _safe_div(a["engaged"], a["sessions"]),      ">=", 0.5443, "pct", "Engaged ÷ sessions ≥ 54.4% (June)"),
-    ("Source Quality",  "strong_src",      "High-converting-source share", 15,
-     lambda a: _safe_div(a["strong"], a["deals"]),          ">=", 0.0858, "pct", "Strong-source deals ≥ 8.6% (June)"),
-    ("Source Quality",  "junk_src",        "Junk-source share",           15,
-     lambda a: _safe_div(a["junk"], a["deals"]),            "<=", 0.4893, "pct", "Junk-source deals ≤ 48.9% (June)"),
-    ("Source Quality",  "diversity",       "Source diversity",            10,
-     lambda a: 1 - _safe_div(a["top_c"], a["deals"]),       ">=", 0.5342, "pct", "1 − top-source share ≥ 53.4% (June)"),
-    ("Connectivity",    "connectivity",    "Connectivity %",              15,
-     lambda a: _safe_div(a["connected"], a["deals"]),       ">=", 0.15,   "pct", "Deals w/ ≥30s call ≥ 15% (June)"),
-    ("Conversion",      "conversion",      "Deal conversion %",           15,
-     lambda a: _safe_div(a["won"], a["deals"]),             ">=", 0.0246, "pct", "Closed Won ÷ deals ≥ 2.46% (June)"),
-    ("Conversion",      "connected_won",   "Connected → Won %",           10,
-     lambda a: _safe_div(a["won"], a["connected"]),         ">=", 0.1642, "pct", "Won ÷ connected ≥ 16.4% (June)"),
+    ("Session Quality", "session_deal",   "Session → Deal rate",   10,
+     lambda a: _safe_div(a["deals"], a["sessions"]),   ">=", 0.011,  "pct", "Deals ÷ sessions ≥ 1.1% (June)"),
+    ("Session Quality", "quality_session", "Quality-session share", 10,
+     lambda a: _safe_div(a["engaged"], a["sessions"]), ">=", 0.53,   "pct", "Engaged ÷ sessions ≥ 53% (June)"),
+    ("Source & Intent", "atc_above",       "ATC+ deal share",       15,
+     lambda a: _safe_div(a["atc_above"], a["deals"]),  ">=", 0.016,  "pct", "ATC-and-above deals ≥ 1.6% (June)"),
+    ("Source & Intent", "junk_src",        "Junk-source share",     15,
+     lambda a: _safe_div(a["junk"], a["deals"]),       "<=", 0.654,  "pct", "Junk-source deals ≤ 65% (June)"),
+    ("Source & Intent", "diversity",       "Source diversity",      10,
+     lambda a: 1 - _safe_div(a["top_c"], a["deals"]),  ">=", 0.31,   "pct", "1 − top-source share ≥ 31% (June)"),
+    ("Connectivity",    "connectivity",    "Connectivity %",        15,
+     lambda a: _safe_div(a["connected"], a["deals"]),  ">=", 0.115,  "pct", "Deals w/ ≥30s call ≥ 11.5% (June)"),
+    ("Conversion",      "conversion",      "Deal conversion %",     15,
+     lambda a: _safe_div(a["won"], a["deals"]),        ">=", 0.005,  "pct", "Closed Won ÷ deals ≥ 0.5% (June)"),
+    ("Conversion",      "connected_won",   "Connected → Won %",     10,
+     lambda a: _safe_div(a["won"], a["connected"]),    ">=", 0.05,   "pct", "Won ÷ connected ≥ 5% (June)"),
 ]
-DQI_GROUP_WEIGHT = {"Session Quality": 20, "Source Quality": 40,
+DQI_GROUP_WEIGHT = {"Session Quality": 20, "Source & Intent": 40,
                     "Connectivity": 15, "Conversion": 25}
 
 
@@ -1709,7 +1710,6 @@ def _dqi_deals_daily(d_from, d_to):
     D = f"`{PROJECT}.{DATASET}.cdc_deals`"
     C = f"`{PROJECT}.{DATASET}.cdc_calls`"
     params = [_P("d_from", "DATE", d_from), _P("d_to", "DATE", d_to),
-              bigquery.ArrayQueryParameter("strong", "STRING", list(DQI_STRONG_SOURCES)),
               bigquery.ArrayQueryParameter("junk", "STRING", list(DQI_JUNK_SOURCES))]
     sql = f"""
     WITH d AS (
@@ -1723,13 +1723,15 @@ def _dqi_deals_daily(d_from, d_to):
         AND JSON_VALUE(data,'$.What_Id.id') IS NOT NULL
     ),
     b AS (
-      SELECT day, id, stage, src IN UNNEST(@strong) strong, src IN UNNEST(@junk) junk, src,
+      SELECT day, id, stage,
+        stage IN ('Add to Cart','Checkout','Payment','Closed Won') atc_above,
+        src IN UNNEST(@junk) junk, src,
         id IN (SELECT deal_id FROM conn) connected FROM d
     ),
     per_src AS (SELECT day, src, COUNT(*) c FROM b GROUP BY day, src),
     top AS (SELECT day, MAX(c) top_c FROM per_src GROUP BY day)
     SELECT FORMAT_DATE('%Y-%m-%d', b.day) day, COUNT(*) deals,
-      COUNTIF(stage='Closed Won') won, COUNTIF(strong) strong, COUNTIF(junk) junk,
+      COUNTIF(stage='Closed Won') won, COUNTIF(atc_above) atc_above, COUNTIF(junk) junk,
       COUNTIF(connected) connected, ANY_VALUE(top.top_c) top_c
     FROM b JOIN top ON b.day=top.day GROUP BY b.day
     """
@@ -1782,7 +1784,7 @@ def api_dqi():
         g = ga4.get(day, {})
         agg[day] = {
             "deals": d.get("deals", 0), "won": d.get("won", 0),
-            "strong": d.get("strong", 0), "junk": d.get("junk", 0),
+            "atc_above": d.get("atc_above", 0), "junk": d.get("junk", 0),
             "connected": d.get("connected", 0), "top_c": d.get("top_c", 0),
             "sessions": g.get("sessions", 0), "engaged": g.get("engaged", 0),
         }
