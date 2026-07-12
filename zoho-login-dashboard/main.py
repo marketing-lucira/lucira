@@ -14,6 +14,7 @@ login/status is derived from the CRM Users API `Isonline` flag + status,
 polled on a schedule (Cloud Scheduler -> /sync) to build an activity timeline.
 """
 import os
+import hmac
 import json
 import secrets
 import datetime as dt
@@ -21,7 +22,7 @@ import datetime as dt
 import requests
 from flask import (
     Flask, request, redirect, session, url_for,
-    render_template, jsonify, abort,
+    render_template, jsonify, abort, Response,
 )
 from google.cloud import bigquery, storage
 
@@ -62,6 +63,39 @@ app.secret_key = os.environ.get("FLASK_SECRET", "change-me-in-secret-manager")
 
 _bq  = bigquery.Client(project=PROJECT)
 _gcs = storage.Client(project=PROJECT)
+
+
+# --------------------------------------------------------------------------- #
+# Access control (HTTP Basic Auth)
+# --------------------------------------------------------------------------- #
+# Human-facing pages sit behind a shared username/password. Machine endpoints
+# are exempt — they either carry their own protection (sync token / OAuth state)
+# or must stay reachable by Google Scheduler / Zoho:
+#   /health           liveness probe
+#   /sync, /backfill  Cloud Scheduler (X-Sync-Token protected)
+#   /oauth/callback   Zoho redirect target (own CSRF state check)
+# The gate is OFF until both DASH_USER and DASH_PASS are set (avoids locking out
+# an un-provisioned deploy); set them as env/secret on the service to turn it on.
+DASH_USER = os.environ.get("DASH_USER", "")
+DASH_PASS = os.environ.get("DASH_PASS", "")
+_AUTH_EXEMPT = frozenset(("/health", "/sync", "/backfill", "/oauth/callback"))
+
+
+@app.before_request
+def _require_login():
+    if not (DASH_USER and DASH_PASS):
+        return None
+    if request.path in _AUTH_EXEMPT:
+        return None
+    auth = request.authorization
+    if (auth is not None
+            and hmac.compare_digest(auth.username or "", DASH_USER)
+            and hmac.compare_digest(auth.password or "", DASH_PASS)):
+        return None
+    return Response(
+        "Authentication required.", 401,
+        {"WWW-Authenticate": 'Basic realm="Lucira Dashboard"'},
+    )
 
 
 # --------------------------------------------------------------------------- #
