@@ -1759,10 +1759,10 @@ def _dqi_ga4_daily(start_yyyymmdd, end_yyyymmdd):
 
 @app.route("/api/dqi")
 def api_dqi():
-    """Deal Quality Index. Defaults to T-2 (GA4 settle lag). ?date=YYYY-MM-DD
-    selects the day whose metric breakdown is returned."""
+    """Deal Quality Index. Defaults to T-1. ?date=YYYY-MM-DD selects the day
+    whose metric breakdown is returned. (GA4 session metrics settle at T-2.)"""
     today = (dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)).date()
-    t2 = today - dt.timedelta(days=2)
+    t2 = today - dt.timedelta(days=1)
     try:
         sel_date = dt.date.fromisoformat(request.args.get("date", "")) if request.args.get("date") else t2
     except ValueError:
@@ -1803,7 +1803,7 @@ def api_dqi():
         return (round(sum(vals) / len(vals), 1), len(vals)) if vals else (None, 0)
 
     period_defs = [
-        ("T-2", t2, t2), ("Last 7 Days", t2 - dt.timedelta(days=6), t2),
+        ("T-1", t2, t2), ("Last 7 Days", t2 - dt.timedelta(days=6), t2),
         ("Last 14 Days", t2 - dt.timedelta(days=13), t2),
         ("Last Month", t2 - dt.timedelta(days=29), t2),
         ("Last 3 Months", t2 - dt.timedelta(days=89), t2),
