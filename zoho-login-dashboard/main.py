@@ -1644,7 +1644,7 @@ def api_sqi():
         periods.append({"label": label, "avg_sqi": avg, "days": n,
                         "from": a.isoformat(), "to": b.isoformat()})
 
-    trend, d = [], t2 - dt.timedelta(days=59)
+    trend, d = [], t2 - dt.timedelta(days=29)
     while d <= t2:
         k = d.isoformat()
         trend.append({"date": k, "sqi": scored.get(k)})
