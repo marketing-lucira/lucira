@@ -78,7 +78,8 @@ _gcs = storage.Client(project=PROJECT)
 # an un-provisioned deploy); set them as env/secret on the service to turn it on.
 DASH_USER = os.environ.get("DASH_USER", "")
 DASH_PASS = os.environ.get("DASH_PASS", "")
-_AUTH_EXEMPT = frozenset(("/health", "/sync", "/backfill", "/oauth/callback"))
+_AUTH_EXEMPT = frozenset(("/health", "/sync", "/backfill", "/oauth/callback",
+                          "/limechat/webhook"))
 
 
 @app.before_request
@@ -1654,6 +1655,50 @@ def api_sqi():
         selected={"sqi": sqi_sel, "sessions": sessions_sel, "metrics": metrics_sel},
         group_weight=SQI_GROUP_WEIGHT, periods=periods, trend=trend,
     )
+
+
+# --------------------------------------------------------------------------- #
+# LimeChat webhook ingestion
+# --------------------------------------------------------------------------- #
+# LimeChat POSTs conversation/message events here. We verify a shared secret
+# (LimeChat can't do our Basic Auth, so /limechat/webhook is auth-exempt) and
+# stream the raw payload into limechat.events for later parsing. Schema is
+# intentionally generic (full JSON in `payload`) since LimeChat's exact event
+# shape is discovered from real traffic.
+LIMECHAT_TOKEN = os.environ.get("LIMECHAT_WEBHOOK_TOKEN", "")
+LIMECHAT_TABLE = f"{PROJECT}.limechat.events"
+
+
+@app.route("/limechat/webhook", methods=["GET", "POST"])
+def limechat_webhook():
+    # Some providers validate a webhook with a GET challenge — echo it back.
+    if request.method == "GET":
+        chal = request.args.get("challenge") or request.args.get("hub.challenge")
+        return (chal, 200) if chal else jsonify(ok=True, ready=True)
+
+    if LIMECHAT_TOKEN:
+        supplied = (request.headers.get("X-Limechat-Token")
+                    or request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+                    or request.args.get("token", ""))
+        if not hmac.compare_digest(supplied or "", LIMECHAT_TOKEN):
+            abort(401)
+
+    raw = request.get_data(as_text=True) or ""
+    body = request.get_json(silent=True) or {}
+    etype = body.get("event") or body.get("type") or body.get("event_type") or body.get("action")
+    row = {
+        "received_at": dt.datetime.utcnow().isoformat() + "Z",
+        "event_type": etype,
+        "source_ip": request.headers.get("X-Forwarded-For", request.remote_addr),
+        "payload": raw if raw else json.dumps(body, ensure_ascii=False),
+    }
+    try:
+        errors = _bq.insert_rows_json(LIMECHAT_TABLE, [row])
+        if errors:
+            return jsonify(ok=False, errors=errors), 500
+    except Exception as e:
+        return jsonify(ok=False, error=str(e)), 500
+    return jsonify(ok=True), 200
 
 
 if __name__ == "__main__":
