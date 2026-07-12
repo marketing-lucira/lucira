@@ -153,6 +153,7 @@
       <div class="tab active" data-tab="overview" onclick="switchTab('overview')">Overview</div>
       <div class="tab" data-tab="deals" onclick="switchTab('deals')">Deals</div>
       <div class="tab" data-tab="sqi" onclick="switchTab('sqi')">SQI</div>
+      <div class="tab" data-tab="chat" onclick="switchTab('chat')">Chat</div>
       <div class="tab" data-tab="data" onclick="switchTab('data')">Data &amp; Sync</div>
     </div>
 
@@ -264,6 +265,30 @@
         <div id="sqibreak"><div class="loading"><span class="spin"></span> loading metrics…</div></div>
       </div>
     </div>
+
+    <!-- CHAT / HELPDESK TAB -->
+    <div id="tab-chat" class="hidden">
+      <div class="card">
+        <h3>
+          <span>LimeChat Helpdesk <span class="muted">· WhatsApp chat performance</span></span>
+          <span class="fld" style="flex-direction:row;align-items:center;gap:8px;">
+            <label style="margin:0;">From</label><input type="date" id="chatfrom" onchange="loadChat()">
+            <label style="margin:0;">To</label><input type="date" id="chatto" onchange="loadChat()">
+          </span>
+        </h3>
+        <div class="cards" id="chatkpis"><div class="loading"><span class="spin"></span> loading chat metrics…</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Agent performance <span class="muted">· FRT = first human reply · TTR = time to resolve</span></h3>
+        <div id="chatagents"><div class="loading"><span class="spin"></span> loading agents…</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Conversation volume <span class="muted">· 🟦 human-handled · 🟪 bot-only</span></h3>
+        <div id="chatvol"><div class="loading"><span class="spin"></span> loading volume…</div></div>
+      </div>
+    </div>
   </div>
 
 <script>
@@ -307,16 +332,18 @@ function resetFilters(){
   preset(0);                              // default = today
 }
 
-let dataLoaded = false, dealsLoaded = false, sqiLoaded = false;
+let dataLoaded = false, dealsLoaded = false, sqiLoaded = false, chatLoaded = false;
 function switchTab(t){
   document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===t));
   $('tab-overview').classList.toggle('hidden', t!=='overview');
   $('tab-deals').classList.toggle('hidden', t!=='deals');
   $('tab-sqi').classList.toggle('hidden', t!=='sqi');
+  $('tab-chat').classList.toggle('hidden', t!=='chat');
   $('tab-data').classList.toggle('hidden', t!=='data');
   if (t==='data'  && !dataLoaded)  { loadData();  dataLoaded  = true; }
   if (t==='deals' && !dealsLoaded) { loadDeals();  dealsLoaded = true; }
   if (t==='sqi'  && !sqiLoaded)   { loadSQI();   sqiLoaded   = true; }
+  if (t==='chat' && !chatLoaded)  { loadChat();  chatLoaded  = true; }
 }
 
 function applyFilters(e){
@@ -651,6 +678,65 @@ async function loadSQI(){
   } catch(err){ head.innerHTML = `<div class="err">Failed to load SQI: ${esc(err)}</div>`; }
 }
 function pickSQI(date){ $('sqidate').value = date; loadSQI(); }
+
+// ---- Chat / Helpdesk tab --------------------------------------------------
+const fmtSecMin = s => { if(s==null) return '—'; s=Math.round(s); return s<90? s+'s' : (s/60).toFixed(1)+'m'; };
+const fmtMinNice = m => { if(m==null) return '—'; return m<60? m.toFixed(1)+'m' : (m/60).toFixed(1)+'h'; };
+const fmtHrNice = h => { if(h==null) return '—'; return h<1? Math.round(h*60)+'m' : h.toFixed(1)+'h'; };
+function chatDefaults(){
+  if(!$('chatto').value){ const t=new Date(); const f=new Date(); f.setDate(t.getDate()-89);
+    $('chatfrom').value=iso(f); $('chatto').value=iso(t); }
+}
+async function loadChat(){
+  chatDefaults();
+  const kp=$('chatkpis'), ag=$('chatagents'), vl=$('chatvol');
+  kp.innerHTML='<div class="loading"><span class="spin"></span> loading chat metrics…</div>'; ag.innerHTML=vl.innerHTML='';
+  const p = new URLSearchParams({from:$('chatfrom').value, to:$('chatto').value});
+  try {
+    const d = await (await fetch('/api/chat?'+p.toString())).json();
+    if(d.error){ kp.innerHTML=`<div class="err">${esc(d.error)}</div>`; return; }
+    const s=d.summary;
+    if(!s.convs){ kp.innerHTML='<div class="loading">No conversations in this range. Try widening the dates.</div>'; return; }
+    kp.innerHTML = `
+      <div class="kpi"><div class="n">${s.convs}</div><div class="l">Conversations</div></div>
+      <div class="kpi"><div class="n gold">${s.open}</div><div class="l">Open</div></div>
+      <div class="kpi"><div class="n green">${s.resolved}</div><div class="l">Resolved</div></div>
+      <div class="kpi"><div class="n blue">${fmtMinNice(s.frt_med_min)}</div><div class="l">Median FRT (human)</div></div>
+      <div class="kpi"><div class="n blue">${fmtMinNice(s.frt_avg_min)}</div><div class="l">Avg FRT (human)</div></div>
+      <div class="kpi"><div class="n green">${fmtSecMin(s.bot_resp_med_sec)}</div><div class="l">Median bot response</div></div>
+      <div class="kpi"><div class="n gold">${fmtHrNice(s.ttr_med_hr)}</div><div class="l">Median resolution</div></div>
+      <div class="kpi"><div class="n purp">${s.bot_deflection==null?'—':s.bot_deflection+'%'}</div><div class="l">Bot deflection</div></div>
+      <div class="kpi"><div class="n">${s.with_human}</div><div class="l">Human-handled</div></div>`;
+    // agent table
+    if(!d.agents.length){ ag.innerHTML='<div class="loading">No agents in range.</div>'; }
+    else {
+      const rows = d.agents.map(a=>`<tr>
+        <td><b>${esc(a.agent)}</b></td>
+        <td class="num">${a.convs}</td><td class="num">${a.handled}</td><td class="num">${a.resolved}</td>
+        <td class="num">${fmtMinNice(a.frt_med_min)}</td><td class="num">${fmtHrNice(a.ttr_med_hr)}</td>
+        <td class="num">${a.msgs_human}</td></tr>`).join('');
+      ag.innerHTML = `<div class="tblwrap"><table style="min-width:640px;">
+        <thead><tr><th>Agent</th><th class="num">Convs</th><th class="num">Handled</th><th class="num">Resolved</th>
+          <th class="num">Median FRT</th><th class="num">Median TTR</th><th class="num">Msgs sent</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>`;
+    }
+    // volume mini bar chart
+    if(!d.daily.length){ vl.innerHTML='<div class="loading">No volume.</div>'; }
+    else {
+      const mx = Math.max(...d.daily.map(x=>x.convs))||1;
+      vl.innerHTML = '<div class="strend" style="height:150px;">'+ d.daily.map(x=>{
+        const hH=Math.round(120*x.human/mx), hB=Math.round(120*x.bot/mx), hO=Math.round(120*(x.convs-x.human-x.bot)/mx);
+        return `<div class="scol" style="cursor:default" title="${x.date}: ${x.convs} convs (${x.human} human, ${x.bot} bot-only)">
+          <div class="sv">${x.convs}</div>
+          <div style="display:flex;flex-direction:column-reverse;height:120px;justify-content:flex-start;">
+            <div style="width:18px;height:${hH}px;background:#4b6ef5;border-radius:0 0 0 0;"></div>
+            <div style="width:18px;height:${hB}px;background:#8b5cf6;"></div>
+            <div style="width:18px;height:${Math.max(0,hO)}px;background:#3a4150;border-radius:3px 3px 0 0;"></div>
+          </div>
+          <div class="sd">${x.date.slice(5)}</div></div>`; }).join('') +'</div>';
+    }
+  } catch(err){ kp.innerHTML=`<div class="err">Failed to load chat metrics: ${esc(err)}</div>`; }
+}
 
 async function headerSync(){
   try { const d = await (await fetch('/api/tables?'+qs())).json();

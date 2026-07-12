@@ -79,7 +79,7 @@ _gcs = storage.Client(project=PROJECT)
 DASH_USER = os.environ.get("DASH_USER", "")
 DASH_PASS = os.environ.get("DASH_PASS", "")
 _AUTH_EXEMPT = frozenset(("/health", "/sync", "/backfill", "/oauth/callback",
-                          "/limechat/webhook"))
+                          "/limechat/webhook", "/limechat/sync"))
 
 
 @app.before_request
@@ -1699,6 +1699,234 @@ def limechat_webhook():
     except Exception as e:
         return jsonify(ok=False, error=str(e)), 500
     return jsonify(ok=True), 200
+
+
+# --------------------------------------------------------------------------- #
+# LimeChat helpdesk sync (Chatwoot-based API) -> BigQuery limechat.conversations
+# --------------------------------------------------------------------------- #
+# Pulls conversations across all statuses, fetches each conversation's full
+# message history, and derives per-conversation performance metrics:
+#   sender.type: contact = customer, agent_bot = AI, user = human agent.
+#   FRT = first human (user) reply - conversation created; bot-first likewise.
+# Stored one row per conversation (full refresh) for the Chat/Helpdesk tab.
+LIMECHAT_BASE      = os.environ.get("LIMECHAT_BASE", "https://app.limechat.ai")
+LIMECHAT_ACCOUNT   = os.environ.get("LIMECHAT_ACCOUNT", "28613")
+LIMECHAT_API_TOKEN = os.environ.get("LIMECHAT_API_TOKEN", "")
+LC_CONV_TABLE = f"{PROJECT}.limechat.conversations"
+
+
+def _lc_get(path, params=None):
+    r = requests.get(f"{LIMECHAT_BASE}{path}",
+                     headers={"api_access_token": LIMECHAT_API_TOKEN},
+                     params=params or {}, timeout=60)
+    r.raise_for_status()
+    return r.json()
+
+
+def _lc_epoch(v):
+    """Chatwoot timestamp (epoch int or ISO string) -> epoch seconds."""
+    if v is None:
+        return None
+    if isinstance(v, (int, float)):
+        return int(v)
+    try:
+        return int(dt.datetime.fromisoformat(str(v).replace("Z", "+00:00")).timestamp())
+    except Exception:
+        return None
+
+
+def _lc_iso(epoch):
+    return dt.datetime.utcfromtimestamp(epoch).isoformat() + "Z" if epoch else None
+
+
+def _lc_all_messages(acct, cid):
+    """Page a conversation's messages oldest-first (walks backward via `before`)."""
+    out, before = [], None
+    for _ in range(30):
+        data = _lc_get(f"/api/v1/accounts/{acct}/conversations/{cid}/messages",
+                       {"before": before} if before else None)
+        batch = data.get("payload") if isinstance(data, dict) else data
+        if not batch:
+            break
+        out.extend(batch)
+        ids = [m.get("id") for m in batch if m.get("id")]
+        if not ids:
+            break
+        mn = min(ids)
+        if before is not None and mn >= before:
+            break
+        before = mn
+        if len(batch) < 20:
+            break
+    return out
+
+
+def _lc_conv_row(conv, messages, synced_at):
+    created = _lc_epoch(conv.get("created_at"))
+    assignee = (conv.get("meta") or {}).get("assignee") or {}
+    sender = (conv.get("meta") or {}).get("sender") or {}
+    first_bot = first_human = first_any = None
+    n_in = n_bot = n_human = 0
+    for m in sorted([x for x in messages if not x.get("private")],
+                    key=lambda x: x.get("created_at") or 0):
+        mt = m.get("message_type")
+        st = ((m.get("sender") or {}).get("type") or "").lower()
+        ts = _lc_epoch(m.get("created_at"))
+        if mt == 0 or st == "contact":
+            n_in += 1
+        elif mt == 1:
+            if first_any is None:
+                first_any = ts
+            if st == "agent_bot":
+                n_bot += 1
+                if first_bot is None:
+                    first_bot = ts
+            elif st == "user":
+                n_human += 1
+                if first_human is None:
+                    first_human = ts
+    d = lambda a: (a - created) if (a and created) else None
+    status = conv.get("status")
+    resolved = _lc_epoch(conv.get("timestamp")) if status == "resolved" else None
+    return {
+        "conversation_id": conv.get("id"),
+        "created_at": _lc_iso(created), "status": status,
+        "inbox_id": conv.get("inbox_id"),
+        "assignee_id": assignee.get("id"), "assignee_name": assignee.get("name"),
+        "contact_name": sender.get("name"),
+        "contact_phone": (sender.get("phone_number") or "").lstrip("+") or None,
+        "first_response_sec": d(first_any),
+        "first_bot_response_sec": d(first_bot),
+        "first_human_response_sec": d(first_human),
+        "resolution_sec": (resolved - created) if (resolved and created) else None,
+        "resolved_at": _lc_iso(resolved),
+        "msgs_in": n_in, "msgs_bot": n_bot, "msgs_human": n_human,
+        "bot_handled_only": (n_bot > 0 and n_human == 0),
+        "had_human": n_human > 0, "synced_at": synced_at,
+    }
+
+
+def _lc_conv_schema():
+    S = bigquery.SchemaField
+    return [
+        S("conversation_id", "INT64"), S("created_at", "TIMESTAMP"), S("status", "STRING"),
+        S("inbox_id", "INT64"), S("assignee_id", "INT64"), S("assignee_name", "STRING"),
+        S("contact_name", "STRING"), S("contact_phone", "STRING"),
+        S("first_response_sec", "INT64"), S("first_bot_response_sec", "INT64"),
+        S("first_human_response_sec", "INT64"), S("resolution_sec", "INT64"),
+        S("resolved_at", "TIMESTAMP"), S("msgs_in", "INT64"), S("msgs_bot", "INT64"),
+        S("msgs_human", "INT64"), S("bot_handled_only", "BOOL"), S("had_human", "BOOL"),
+        S("synced_at", "TIMESTAMP"),
+    ]
+
+
+def sync_limechat(statuses=("open", "resolved"), max_pages=80):
+    if not LIMECHAT_API_TOKEN:
+        raise RuntimeError("LIMECHAT_API_TOKEN not configured")
+    acct = LIMECHAT_ACCOUNT
+    now = dt.datetime.utcnow().isoformat() + "Z"
+    seen, rows = set(), []
+    for status in statuses:
+        for page in range(1, max_pages + 1):
+            try:
+                data = _lc_get(f"/api/v1/accounts/{acct}/conversations",
+                               {"assignee_type": "all", "status": status, "page": page})
+            except Exception:
+                break  # invalid status / transient error — skip rest of this status
+            payload = (data.get("data") or {}).get("payload") or []
+            if not payload:
+                break
+            for conv in payload:
+                cid = conv.get("id")
+                if cid in seen:
+                    continue
+                seen.add(cid)
+                try:
+                    msgs = _lc_all_messages(acct, cid)
+                except Exception:
+                    msgs = conv.get("messages") or []
+                rows.append(_lc_conv_row(conv, msgs, now))
+    if rows:
+        _bq.load_table_from_json(
+            rows, LC_CONV_TABLE, location="asia-south1",
+            job_config=bigquery.LoadJobConfig(
+                schema=_lc_conv_schema(),
+                write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE),
+        ).result()
+    return {"conversations": len(rows), "synced_at": now}
+
+
+def _chat_range(args):
+    today = (dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)).date()
+    f = args.get("from") or (today - dt.timedelta(days=89)).isoformat()
+    t = args.get("to") or today.isoformat()
+    return f, t
+
+
+@app.route("/api/chat")
+def api_chat():
+    """LimeChat helpdesk metrics (FRT, resolution, agent performance, bot deflection)
+    scoped to conversation created_at in range. Defaults to last 90 days."""
+    d_from, d_to = _chat_range(request.args)
+    T = f"`{PROJECT}.limechat.conversations`"
+    P = [_P("d_from", "DATE", d_from), _P("d_to", "DATE", d_to)]
+    rng = "DATE(created_at) BETWEEN @d_from AND @d_to"
+
+    def q(sql):
+        return list(_bq.query(sql, job_config=bigquery.QueryJobConfig(query_parameters=P)).result())
+
+    try:
+        s = q(f"""
+          SELECT COUNT(*) convs, COUNTIF(status='open') open, COUNTIF(status='resolved') resolved,
+            COUNTIF(had_human) with_human, COUNTIF(bot_handled_only) bot_only,
+            ROUND(100*SAFE_DIVIDE(COUNTIF(bot_handled_only),COUNT(*)),1) bot_deflection,
+            ROUND(APPROX_QUANTILES(first_human_response_sec,2)[OFFSET(1)]/60,1) frt_med_min,
+            ROUND(AVG(first_human_response_sec)/60,1) frt_avg_min,
+            ROUND(APPROX_QUANTILES(first_bot_response_sec,2)[OFFSET(1)],1) bot_resp_med_sec,
+            ROUND(APPROX_QUANTILES(resolution_sec,2)[OFFSET(1)]/3600,1) ttr_med_hr,
+            SUM(msgs_in) msgs_in, SUM(msgs_bot) msgs_bot, SUM(msgs_human) msgs_human
+          FROM {T} WHERE {rng}
+        """)[0]
+        agents = q(f"""
+          SELECT COALESCE(assignee_name,'(unassigned)') agent, COUNT(*) convs,
+            COUNTIF(had_human) handled, COUNTIF(status='resolved') resolved,
+            ROUND(APPROX_QUANTILES(first_human_response_sec,2)[OFFSET(1)]/60,1) frt_med_min,
+            ROUND(APPROX_QUANTILES(resolution_sec,2)[OFFSET(1)]/3600,1) ttr_med_hr,
+            SUM(msgs_human) msgs_human
+          FROM {T} WHERE {rng} GROUP BY agent ORDER BY convs DESC
+        """)
+        daily = q(f"""
+          SELECT DATE(created_at) d, COUNT(*) convs,
+            COUNTIF(had_human) human, COUNTIF(bot_handled_only) bot
+          FROM {T} WHERE {rng} GROUP BY d ORDER BY d
+        """)
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
+    def num(v):
+        return None if v is None else (float(v) if isinstance(v, float) else v)
+    summary = {k: num(s[k]) for k in s.keys()}
+    return jsonify(
+        d_from=d_from, d_to=d_to, summary=summary,
+        agents=[{"agent": a["agent"], "convs": a["convs"], "handled": a["handled"],
+                 "resolved": a["resolved"], "frt_med_min": num(a["frt_med_min"]),
+                 "ttr_med_hr": num(a["ttr_med_hr"]), "msgs_human": a["msgs_human"]}
+                for a in agents],
+        daily=[{"date": d["d"].isoformat(), "convs": d["convs"],
+                "human": d["human"], "bot": d["bot"]} for d in daily],
+    )
+
+
+@app.route("/limechat/sync", methods=["GET", "POST"])
+def limechat_sync():
+    if SYNC_TOKEN:
+        supplied = request.headers.get("X-Sync-Token") or request.args.get("token")
+        if supplied != SYNC_TOKEN:
+            abort(401)
+    try:
+        return jsonify(sync_limechat())
+    except Exception as e:
+        return jsonify(error=str(e)), 500
 
 
 if __name__ == "__main__":
