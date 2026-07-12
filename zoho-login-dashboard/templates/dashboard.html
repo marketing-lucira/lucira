@@ -80,6 +80,27 @@
   .bubble.err { align-self:flex-start; background:rgba(249,128,128,.08); border:1px solid rgba(249,128,128,.3); color:#f9a8a8; }
   .chatbar { display:flex; gap:8px; margin-top:14px; }
   .chatbar input { flex:1; background:#0f1115; color:#e7e9ee; border:1px solid #333a48; border-radius:9px; padding:10px 12px; font-size:13.5px; }
+  /* SQI */
+  .sqi-head { display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
+  .sqi-score { font-size:52px; font-weight:800; line-height:1; }
+  .sqi-meta { color:#8a92a1; font-size:13px; }
+  .sqi-ring { --p:0; width:104px; height:104px; border-radius:50%; flex:0 0 auto;
+    background:conic-gradient(var(--c) calc(var(--p)*1%), #232833 0);
+    display:flex; align-items:center; justify-content:center; }
+  .sqi-ring > div { width:82px; height:82px; border-radius:50%; background:#171a21; display:flex;
+    flex-direction:column; align-items:center; justify-content:center; }
+  .sqi-ring b { font-size:24px; font-weight:800; } .sqi-ring span { font-size:10px; color:#8a92a1; }
+  .sc-good{color:#31c48d;} .sc-mid{color:#e0b64a;} .sc-bad{color:#f98080;}
+  .bg-good{background:rgba(49,196,141,.14);} .bg-mid{background:rgba(224,182,74,.14);} .bg-bad{background:rgba(249,128,128,.14);}
+  .grow{background:rgba(255,255,255,.02);} .grow td{font-weight:700;color:#cfd4de;}
+  .mpass{color:#31c48d;font-weight:700;} .mfail{color:#f98080;font-weight:700;}
+  .strend { display:flex; align-items:flex-end; gap:3px; height:130px; overflow-x:auto; padding-top:6px; }
+  .scol { flex:1 0 20px; min-width:20px; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; }
+  .scol .sbar { width:16px; border-radius:3px 3px 0 0; transition:opacity .15s; }
+  .scol:hover .sbar { opacity:.75; }
+  .scol.sel .sbar { outline:2px solid #fff; outline-offset:1px; }
+  .scol .sd { font-size:8.5px; color:#8a92a1; transform:rotate(-60deg); white-space:nowrap; height:26px; }
+  .scol .sv { font-size:9px; color:#aeb6c4; }
 </style>
 </head>
 <body>
@@ -131,6 +152,7 @@
     <div class="tabs">
       <div class="tab active" data-tab="overview" onclick="switchTab('overview')">Overview</div>
       <div class="tab" data-tab="deals" onclick="switchTab('deals')">Deals</div>
+      <div class="tab" data-tab="sqi" onclick="switchTab('sqi')">SQI</div>
       <div class="tab" data-tab="data" onclick="switchTab('data')">Data &amp; Sync</div>
     </div>
 
@@ -209,6 +231,39 @@
         <div id="tablescard"><div class="loading"><span class="spin"></span> loading…</div></div>
       </div>
     </div>
+
+    <!-- SQI TAB -->
+    <div id="tab-sqi" class="hidden">
+      <div class="card">
+        <h3>
+          <span>Session Quality Index <span class="muted">· GA4 · 0–100</span></span>
+          <span class="fld" style="flex-direction:row;align-items:center;gap:8px;">
+            <label style="margin:0;">Date</label>
+            <input type="date" id="sqidate" onchange="loadSQI()">
+          </span>
+        </h3>
+        <div class="muted" style="margin:-4px 0 12px;">
+          Each metric earns its full weight when its benchmark is met (green) else 0.
+          GA4 data settles ~2 days late, so the default date is <b>T-2</b>.
+        </div>
+        <div class="sqi-head" id="sqihead"><div class="loading"><span class="spin"></span> computing SQI…</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Daily average by period <span class="muted">(avg of each day's SQI)</span></h3>
+        <div class="cards" id="sqiperiods" style="margin-bottom:0;"><div class="loading"><span class="spin"></span> loading…</div></div>
+      </div>
+
+      <div class="card">
+        <h3>SQI trend <span class="muted">· last 30 days · click a bar to inspect that day</span></h3>
+        <div id="sqitrend"><div class="loading"><span class="spin"></span> loading trend…</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Metric breakdown <span class="muted" id="sqibreakhdr"></span></h3>
+        <div id="sqibreak"><div class="loading"><span class="spin"></span> loading metrics…</div></div>
+      </div>
+    </div>
   </div>
 
 <script>
@@ -252,14 +307,16 @@ function resetFilters(){
   preset(0);                              // default = today
 }
 
-let dataLoaded = false, dealsLoaded = false;
+let dataLoaded = false, dealsLoaded = false, sqiLoaded = false;
 function switchTab(t){
   document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===t));
   $('tab-overview').classList.toggle('hidden', t!=='overview');
   $('tab-deals').classList.toggle('hidden', t!=='deals');
+  $('tab-sqi').classList.toggle('hidden', t!=='sqi');
   $('tab-data').classList.toggle('hidden', t!=='data');
   if (t==='data'  && !dataLoaded)  { loadData();  dataLoaded  = true; }
   if (t==='deals' && !dealsLoaded) { loadDeals();  dealsLoaded = true; }
+  if (t==='sqi'  && !sqiLoaded)   { loadSQI();   sqiLoaded   = true; }
 }
 
 function applyFilters(e){
@@ -507,6 +564,93 @@ async function loadDeals(){
     }
   } catch(err){ kp.innerHTML = `<div class="err">Failed: ${esc(err)}</div>`; sl.innerHTML = fn.innerHTML=''; }
 }
+
+// ---- SQI tab --------------------------------------------------------------
+function sqiClass(s){ return s==null?'sc-mid':(s>=80?'sc-good':(s>=60?'sc-mid':'sc-bad')); }
+function sqiColor(s){ return s==null?'#8a92a1':(s>=80?'#31c48d':(s>=60?'#e0b64a':'#f98080')); }
+function sqiBg(s){ return s==null?'':(s>=80?'bg-good':(s>=60?'bg-mid':'bg-bad')); }
+
+async function loadSQI(){
+  const head=$('sqihead'), per=$('sqiperiods'), tr=$('sqitrend'), bk=$('sqibreak');
+  head.innerHTML = '<div class="loading"><span class="spin"></span> computing SQI…</div>';
+  per.innerHTML = tr.innerHTML = bk.innerHTML = '';
+  const dv = $('sqidate').value;
+  try {
+    const d = await (await fetch('/api/sqi' + (dv?('?date='+dv):''))).json();
+    if (d.error){ head.innerHTML = `<div class="err">${esc(d.error)}</div>`; return; }
+    $('sqidate').value = d.selected_date; $('sqidate').max = d.max_date;
+
+    // headline ring
+    const s = d.selected.sqi;
+    if (s==null){
+      head.innerHTML = `<div class="loading">No GA4 data for ${esc(d.selected_date)}.</div>`;
+    } else {
+      head.innerHTML = `
+        <div class="sqi-ring" style="--p:${s};--c:${sqiColor(s)}">
+          <div><b class="${sqiClass(s)}">${s}</b><span>/ 100</span></div>
+        </div>
+        <div>
+          <div class="sqi-score ${sqiClass(s)}">${s}<span style="font-size:20px;color:#8a92a1;font-weight:600;"> / 100</span></div>
+          <div class="sqi-meta">Session Quality Index · <b>${esc(d.selected_date)}</b> · ${(d.selected.sessions||0).toLocaleString()} sessions</div>
+        </div>`;
+    }
+
+    // period cards
+    per.innerHTML = d.periods.map(p => `
+      <div class="kpi ${sqiBg(p.avg_sqi)}">
+        <div class="n ${sqiClass(p.avg_sqi)}">${p.avg_sqi==null?'—':p.avg_sqi}</div>
+        <div class="l">${esc(p.label)}</div>
+        <div class="muted" style="font-size:10.5px;margin-top:3px;">${p.days} day${p.days===1?'':'s'}</div>
+      </div>`).join('');
+
+    // trend
+    const T = d.trend, vals = T.filter(x=>x.sqi!=null).map(x=>x.sqi);
+    if (!vals.length){ tr.innerHTML = '<div class="loading">No daily SQI in the last 30 days.</div>'; }
+    else {
+      tr.innerHTML = '<div class="strend">' + T.map(x => {
+        const h = x.sqi==null?0:Math.max(3,Math.round(x.sqi*1.15));
+        const sel = x.date===d.selected_date ? ' sel' : '';
+        const md = x.date.slice(5);
+        return `<div class="scol${sel}" title="${x.date}: ${x.sqi==null?'no data':x.sqi}" onclick="pickSQI('${x.date}')">
+          <div class="sv">${x.sqi==null?'':x.sqi}</div>
+          <div class="sbar" style="height:${h}px;background:${sqiColor(x.sqi)}"></div>
+          <div class="sd">${md}</div>
+        </div>`; }).join('') + '</div>';
+    }
+
+    // breakdown table grouped by group
+    if (!d.selected.metrics.length){ bk.innerHTML = '<div class="loading">No metrics for this day.</div>'; }
+    else {
+      $('sqibreakhdr').textContent = `· ${d.selected_date} · ${s} / 100`;
+      const groups = {};
+      d.selected.metrics.forEach(m => { (groups[m.group] = groups[m.group]||[]).push(m); });
+      let body = '';
+      Object.keys(groups).forEach(g => {
+        const gw = d.group_weight[g] || groups[g].reduce((a,m)=>a+m.weight,0);
+        const gEarned = groups[g].reduce((a,m)=>a+m.earned,0);
+        body += `<tr class="grow"><td colspan="3">${esc(g)}</td><td class="num">${gw}%</td><td class="num">${gEarned}</td><td></td></tr>`;
+        body += groups[g].map(m => `
+          <tr>
+            <td style="padding-left:22px;">${esc(m.label)}</td>
+            <td class="num ${m.passed?'mpass':'mfail'}">${esc(m.value_str)}</td>
+            <td class="muted">${esc(m.rule)}</td>
+            <td class="num">${m.weight}</td>
+            <td class="num">${m.earned}</td>
+            <td>${m.passed?'<span class="pill on">pass</span>':'<span class="pill ina">miss</span>'}</td>
+          </tr>`).join('');
+      });
+      bk.innerHTML = `<div class="tblwrap"><table style="min-width:720px;">
+        <thead><tr><th>Metric</th><th class="num">Value</th><th>Benchmark rule</th>
+          <th class="num">Weight</th><th class="num">Score</th><th>Result</th></tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr style="font-weight:800;border-top:2px solid #2b313c;">
+          <td colspan="3">Total SQI</td><td class="num">100</td>
+          <td class="num ${sqiClass(s)}">${s==null?'—':s}</td><td></td>
+        </tr></tfoot></table></div>`;
+    }
+  } catch(err){ head.innerHTML = `<div class="err">Failed to load SQI: ${esc(err)}</div>`; }
+}
+function pickSQI(date){ $('sqidate').value = date; loadSQI(); }
 
 async function headerSync(){
   try { const d = await (await fetch('/api/tables?'+qs())).json();

@@ -1441,5 +1441,217 @@ def api_user_sessions(user_id):
     return jsonify(sessions=_sessions_for(d_from, d_to, user_id))
 
 
+# --------------------------------------------------------------------------- #
+# Session Quality Index (SQI) — derived from the GA4 BigQuery export
+# --------------------------------------------------------------------------- #
+# Session = user_pseudo_id + ga_session_id. We aggregate GA4 events into one row
+# per calendar day, score each day against the benchmark rules below (each metric
+# earns its full weight when its benchmark is met, else 0), and expose per-day
+# SQI (0-100), a trend series, and rolling/quarter daily-average cards.
+#
+# Traffic-source & funnel classification follows Lucira's channel rules:
+#   Paid  = performance media (medium cpc/paid/display/retargeting/affiliate…)
+#   TOF/MOF/BOF = utm_campaign token (online_tof_/_mof_/_bof_), with organic→TOF,
+#                 retargeting→MOF, direct→MOF as defaults.
+GA4_DATASET = os.environ.get("GA4_DATASET", "analytics_478308692")
+PAID_MEDIA  = ("cpc", "ppc", "paid", "paidsearch", "display", "retargeting",
+               "cpm", "affiliate")
+
+
+def _safe_div(n, d):
+    return (float(n) / float(d)) if d else 0.0
+
+
+# (group, key, label, weight, value_fn(agg)->ratio, cmp, threshold, fmt, rule)
+SQI_METRICS = [
+    ("Traffic Quality", "source_split",    "Source Split",     10,
+     lambda a: _safe_div(a["paid_sessions"], a["sessions"]),          "<=", 0.80,  "pct", "Paid share ≤ 80%"),
+    ("Traffic Quality", "funnel_split",    "Funnel Split",     10,
+     lambda a: _safe_div(a["tof_sessions"], a["sessions"]),           "<=", 0.60,  "pct", "TOF ≤ 60% (MOF+BOF ≥ 40%)"),
+    ("Traffic Quality", "new_returning",   "New vs Returning", 10,
+     lambda a: _safe_div(a["new_sessions"], a["sessions"]),           "<=", 0.75,  "pct", "New ≤ 75% (Returning ≥ 25%)"),
+    ("Engagement",      "engagement_time", "Engagement Time",  10,
+     lambda a: _safe_div(a["eng_sec"], a["sessions"]),                ">=", 30.0,  "sec", "Avg engagement ≥ 30 sec"),
+    ("Engagement",      "engaged_session", "Engaged Session",  10,
+     lambda a: _safe_div(a["engaged_sessions"], a["sessions"]),       ">=", 0.48,  "pct", "Engaged sessions ÷ sessions ≥ 48%"),
+    ("Engagement",      "event_count",     "Event Count",       5,
+     lambda a: _safe_div(a["events"], a["sessions"]),                 ">=", 5.8,   "num", "Events ÷ session ≥ 5.8"),
+    ("Intent Signals",  "product_view",    "Product View",      5,
+     lambda a: _safe_div(a["view_items"], a["sessions"]),             ">=", 1.00,  "pct", "Product views ÷ session ≥ 100%"),
+    ("Intent Signals",  "add_to_cart",     "Add to Cart",      10,
+     lambda a: _safe_div(a["atc"], a["view_items"]),                  ">=", 0.017, "pct", "Add to cart ÷ product view ≥ 1.7%"),
+    ("Intent Signals",  "view_cart",       "View Cart",         5,
+     lambda a: _safe_div(a["view_cart"], a["page_views"]),            ">=", 0.0020,"pct", "View cart ÷ page view ≥ 0.20%"),
+    ("Intent Signals",  "checkout_start",  "Checkout Start",   10,
+     lambda a: _safe_div(a["begin_checkout"], a["sessions"]),         ">=", 0.0060,"pct", "Begin checkout ÷ session ≥ 0.60%"),
+    ("Intent Signals",  "payment_attempt", "Payment Attempt",   5,
+     lambda a: _safe_div(a["add_payment_info"], a["begin_checkout"]), ">=", 0.10,  "pct", "Payment attempt ÷ begin checkout ≥ 10%"),
+    ("Trust Signals",   "faq",             "FAQ View",          5,
+     lambda a: _safe_div(a["faq_sessions"], a["sessions"]),           ">=", 0.0003,"pct", "FAQ clicked ÷ session ≥ 0.03%"),
+    ("Trust Signals",   "whatsapp",        "WhatsApp Click",    5,
+     lambda a: _safe_div(a["chat_sessions"], a["sessions"]),          ">=", 0.0003,"pct", "Chat with expert ÷ session ≥ 0.03%"),
+]
+SQI_GROUP_WEIGHT = {"Traffic Quality": 30, "Engagement": 25,
+                    "Intent Signals": 35, "Trust Signals": 10}
+
+
+def _fmt_metric_value(val, fmt):
+    if fmt == "pct":
+        return f"{val * 100:.2f}%"
+    if fmt == "sec":
+        return f"{val:.1f}s"
+    return f"{val:.2f}"
+
+
+def _score_day(a):
+    """Return (sqi_score, [metric dicts]) for one day-aggregate row."""
+    sqi, metrics = 0, []
+    for grp, key, label, wt, vfn, cmp, thr, fmt, rule in SQI_METRICS:
+        val = vfn(a)
+        passed = (val <= thr) if cmp == "<=" else (val >= thr)
+        earned = wt if passed else 0
+        sqi += earned
+        metrics.append({
+            "group": grp, "key": key, "label": label, "weight": wt,
+            "earned": earned, "passed": passed, "rule": rule,
+            "value": round(val, 5), "value_str": _fmt_metric_value(val, fmt),
+        })
+    return sqi, metrics
+
+
+def _sqi_daily(start_yyyymmdd, end_yyyymmdd):
+    """One aggregate row per GA4 day between the two YYYYMMDD suffixes."""
+    E = f"`{PROJECT}.{GA4_DATASET}.events_*`"
+    sql = f"""
+    WITH base AS (
+      SELECT
+        CONCAT(user_pseudo_id,'-',CAST((SELECT value.int_value FROM UNNEST(event_params) WHERE key='ga_session_id') AS STRING)) sk,
+        PARSE_DATE('%Y%m%d', event_date) ed,
+        event_name,
+        (SELECT value.int_value FROM UNNEST(event_params) WHERE key='ga_session_number') snum,
+        (SELECT COALESCE(value.int_value, SAFE_CAST(value.string_value AS INT64)) FROM UNNEST(event_params) WHERE key='session_engaged') eng,
+        (SELECT value.int_value FROM UNNEST(event_params) WHERE key='engagement_time_msec') emsec,
+        (SELECT value.string_value FROM UNNEST(event_params) WHERE key='creative_name') creative,
+        session_traffic_source_last_click.manual_campaign.medium med,
+        session_traffic_source_last_click.manual_campaign.source src,
+        session_traffic_source_last_click.manual_campaign.campaign_name camp
+      FROM {E}
+      WHERE _TABLE_SUFFIX BETWEEN @start AND @end
+    ),
+    sess AS (
+      SELECT sk, MIN(ed) d, MAX(snum) snum, MAX(eng) eng, SUM(IFNULL(emsec,0)) emsec,
+        COUNT(*) events,
+        COUNTIF(event_name='page_view') page_views,
+        COUNTIF(event_name='view_item') view_items,
+        COUNTIF(event_name='add_to_cart') atc,
+        COUNTIF(event_name='view_cart') view_cart,
+        COUNTIF(event_name='begin_checkout') begin_checkout,
+        COUNTIF(event_name='add_payment_info') add_payment_info,
+        MAX(IF(event_name='select_promotion' AND creative='FAQ Clicked',1,0)) faq,
+        MAX(IF(event_name='select_promotion' AND creative='chatWithExperts',1,0)) chat,
+        ANY_VALUE(med) med, ANY_VALUE(src) src, ANY_VALUE(camp) camp
+      FROM base GROUP BY sk
+    ),
+    cls AS (
+      SELECT *,
+        IF(LOWER(IFNULL(med,'')) IN UNNEST(@paid), 1, 0) is_paid,
+        CASE
+          WHEN REGEXP_CONTAINS(LOWER(IFNULL(camp,'')), r'bof') THEN 'BOF'
+          WHEN REGEXP_CONTAINS(LOWER(IFNULL(camp,'')), r'mof') THEN 'MOF'
+          WHEN REGEXP_CONTAINS(LOWER(IFNULL(camp,'')), r'tof') THEN 'TOF'
+          WHEN LOWER(IFNULL(med,'')) = 'organic' THEN 'TOF'
+          WHEN LOWER(IFNULL(med,'')) = 'retargeting' THEN 'MOF'
+          WHEN IFNULL(src,'(not set)') IN ('(not set)','(direct)','(none)') THEN 'MOF'
+          ELSE 'TOF' END funnel,
+        IF(IFNULL(snum,1) = 1, 1, 0) is_new,
+        IF(IFNULL(eng,0) = 1, 1, 0) is_engaged
+      FROM sess
+    )
+    SELECT FORMAT_DATE('%Y-%m-%d', d) day,
+      COUNT(*) sessions, SUM(events) events, SUM(page_views) page_views,
+      SUM(view_items) view_items, SUM(atc) atc, SUM(view_cart) view_cart,
+      SUM(begin_checkout) begin_checkout, SUM(add_payment_info) add_payment_info,
+      SUM(emsec)/1000.0 eng_sec, SUM(is_engaged) engaged_sessions,
+      SUM(is_new) new_sessions, SUM(is_paid) paid_sessions,
+      COUNTIF(funnel='TOF') tof_sessions, COUNTIF(funnel='MOF') mof_sessions,
+      COUNTIF(funnel='BOF') bof_sessions, SUM(faq) faq_sessions, SUM(chat) chat_sessions
+    FROM cls GROUP BY day ORDER BY day
+    """
+    params = [
+        _P("start", "STRING", start_yyyymmdd),
+        _P("end", "STRING", end_yyyymmdd),
+        bigquery.ArrayQueryParameter("paid", "STRING", list(PAID_MEDIA)),
+    ]
+    rows = _bq.query(sql, job_config=bigquery.QueryJobConfig(query_parameters=params)).result()
+    return {r["day"]: dict(r) for r in rows}
+
+
+def _prev_quarter_range(today):
+    """Previous complete calendar quarter (start, end) relative to `today`."""
+    curr_q_start = dt.date(today.year, ((today.month - 1) // 3) * 3 + 1, 1)
+    pq_end = curr_q_start - dt.timedelta(days=1)
+    pq_start = dt.date(pq_end.year, ((pq_end.month - 1) // 3) * 3 + 1, 1)
+    return pq_start, pq_end
+
+
+@app.route("/api/sqi")
+def api_sqi():
+    """Session Quality Index. Defaults to T-2 (GA4's last fully-baked day).
+    ?date=YYYY-MM-DD selects the day whose metric breakdown is returned."""
+    today = (dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)).date()
+    t2 = today - dt.timedelta(days=2)
+    try:
+        sel_date = dt.date.fromisoformat(request.args.get("date", "")) if request.args.get("date") else t2
+    except ValueError:
+        sel_date = t2
+
+    pq_start, pq_end = _prev_quarter_range(today)
+    window_start = min(pq_start, t2 - dt.timedelta(days=92), sel_date)
+    window_end = max(t2, sel_date)
+    try:
+        daily = _sqi_daily(window_start.strftime("%Y%m%d"), window_end.strftime("%Y%m%d"))
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
+    scored = {day: _score_day(a)[0] for day, a in daily.items()}
+
+    sel_key = sel_date.isoformat()
+    if sel_key in daily:
+        sqi_sel, metrics_sel = _score_day(daily[sel_key])
+        sessions_sel = int(daily[sel_key]["sessions"])
+    else:
+        sqi_sel, metrics_sel, sessions_sel = None, [], 0
+
+    def avg_over(a, b):
+        vals = [v for d, v in scored.items() if a.isoformat() <= d <= b.isoformat()]
+        return (round(sum(vals) / len(vals), 1), len(vals)) if vals else (None, 0)
+
+    period_defs = [
+        ("T-2", t2, t2),
+        ("Last 7 Days", t2 - dt.timedelta(days=6), t2),
+        ("Last 14 Days", t2 - dt.timedelta(days=13), t2),
+        ("Last Month", t2 - dt.timedelta(days=29), t2),
+        ("Last 3 Months", t2 - dt.timedelta(days=89), t2),
+        ("Last Quarter", pq_start, pq_end),
+    ]
+    periods = []
+    for label, a, b in period_defs:
+        avg, n = avg_over(a, b)
+        periods.append({"label": label, "avg_sqi": avg, "days": n,
+                        "from": a.isoformat(), "to": b.isoformat()})
+
+    trend, d = [], t2 - dt.timedelta(days=29)
+    while d <= t2:
+        k = d.isoformat()
+        trend.append({"date": k, "sqi": scored.get(k)})
+        d += dt.timedelta(days=1)
+
+    return jsonify(
+        t2=t2.isoformat(), max_date=t2.isoformat(), selected_date=sel_key,
+        selected={"sqi": sqi_sel, "sessions": sessions_sel, "metrics": metrics_sel},
+        group_weight=SQI_GROUP_WEIGHT, periods=periods, trend=trend,
+    )
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
