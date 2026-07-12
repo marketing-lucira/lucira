@@ -1454,7 +1454,7 @@ def api_deal_triggers():
     rng = f"DATE({tscol},'{TZ}') BETWEEN @d_from AND @d_to"
     norm = ("CASE LOWER(TRIM(COALESCE(JSON_VALUE(data,'$.Deal_Trigger_Event'),'(none)')))"
             " WHEN 'add to cart' THEN 'atc' WHEN 'whatsapp chat' THEN 'whatsapp'"
-            " WHEN 'sign up' THEN 'signup'"
+            " WHEN 'sign up' THEN 'signup' WHEN 'purchase' THEN 'payment'"
             " ELSE LOWER(TRIM(COALESCE(JSON_VALUE(data,'$.Deal_Trigger_Event'),'(none)'))) END")
     trig_sql = f"""
       WITH d AS (
