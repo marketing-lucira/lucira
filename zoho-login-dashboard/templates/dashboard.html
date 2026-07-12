@@ -94,7 +94,7 @@
   .bg-good{background:rgba(49,196,141,.14);} .bg-mid{background:rgba(224,182,74,.14);} .bg-bad{background:rgba(249,128,128,.14);}
   .grow{background:rgba(255,255,255,.02);} .grow td{font-weight:700;color:#cfd4de;}
   .mpass{color:#31c48d;font-weight:700;} .mfail{color:#f98080;font-weight:700;}
-  .strend { display:flex; align-items:flex-end; gap:4px; height:230px; overflow-x:auto; padding:6px 2px 4px; }
+  .strend { display:flex; align-items:flex-end; gap:4px; height:180px; overflow-x:auto; padding:6px 2px 4px; }
   .scol { flex:0 0 26px; width:26px; display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; }
   .scol .sbar { width:20px; border-radius:3px 3px 0 0; transition:opacity .15s; }
   .scol:hover .sbar { opacity:.75; }
@@ -634,8 +634,9 @@ async function loadSQI(){
     const T = d.trend, vals = T.filter(x=>x.sqi!=null).map(x=>x.sqi);
     if (!vals.length){ tr.innerHTML = '<div class="loading">No daily SQI in the last 30 days.</div>'; }
     else {
+      const maxV = Math.max(...vals, 1);
       tr.innerHTML = '<div class="strend">' + T.map(x => {
-        const h = x.sqi==null?0:Math.max(3,Math.round(x.sqi*1.7));
+        const h = x.sqi==null?0:Math.max(4,Math.round(135*x.sqi/maxV));
         const sel = x.date===d.selected_date ? ' sel' : '';
         const md = x.date.slice(5);
         return `<div class="scol${sel}" title="${x.date}: ${x.sqi==null?'no data':x.sqi}" onclick="pickSQI('${x.date}')">
@@ -684,8 +685,8 @@ const fmtSecMin = s => { if(s==null) return '—'; s=Math.round(s); return s<90?
 const fmtMinNice = m => { if(m==null) return '—'; return m<60? m.toFixed(1)+'m' : (m/60).toFixed(1)+'h'; };
 const fmtHrNice = h => { if(h==null) return '—'; return h<1? Math.round(h*60)+'m' : h.toFixed(1)+'h'; };
 function chatDefaults(){
-  if(!$('chatto').value){ const t=new Date(); const f=new Date(); f.setDate(t.getDate()-89);
-    $('chatfrom').value=iso(f); $('chatto').value=iso(t); }
+  if(!$('chatto').value){ const t1=new Date(); t1.setDate(t1.getDate()-1);
+    $('chatfrom').value=iso(t1); $('chatto').value=iso(t1); }
 }
 async function loadChat(){
   chatDefaults();
@@ -698,15 +699,22 @@ async function loadChat(){
     const s=d.summary;
     if(!s.convs){ kp.innerHTML='<div class="loading">No conversations in this range. Try widening the dates.</div>'; return; }
     kp.innerHTML = `
-      <div class="kpi"><div class="n">${s.convs}</div><div class="l">Conversations</div></div>
+      <div class="kpi"><div class="n">${s.convs.toLocaleString()}</div><div class="l">Conversations</div></div>
       <div class="kpi"><div class="n gold">${s.open}</div><div class="l">Open</div></div>
       <div class="kpi"><div class="n green">${s.resolved}</div><div class="l">Resolved</div></div>
+      <div class="kpi"><div class="n">${(s.closed||0).toLocaleString()}</div><div class="l">Closed</div></div>
       <div class="kpi"><div class="n blue">${fmtMinNice(s.frt_med_min)}</div><div class="l">Median FRT (human)</div></div>
       <div class="kpi"><div class="n blue">${fmtMinNice(s.frt_avg_min)}</div><div class="l">Avg FRT (human)</div></div>
       <div class="kpi"><div class="n green">${fmtSecMin(s.bot_resp_med_sec)}</div><div class="l">Median bot response</div></div>
       <div class="kpi"><div class="n gold">${fmtHrNice(s.ttr_med_hr)}</div><div class="l">Median resolution</div></div>
       <div class="kpi"><div class="n purp">${s.bot_deflection==null?'—':s.bot_deflection+'%'}</div><div class="l">Bot deflection</div></div>
       <div class="kpi"><div class="n">${s.with_human}</div><div class="l">Human-handled</div></div>`;
+    if(s.detailed_convs < s.convs){
+      const note=document.createElement('div');
+      note.className='muted'; note.style.cssText='font-size:11.5px;margin-top:8px;';
+      note.textContent=`Counts cover all tickets. Human FRT / bot-split are precise for ${s.detailed_convs} of ${s.convs} conversations (last ~7 days); older tickets show counts only.`;
+      kp.appendChild(note);
+    }
     // agent table
     if(!d.agents.length){ ag.innerHTML='<div class="loading">No agents in range.</div>'; }
     else {
