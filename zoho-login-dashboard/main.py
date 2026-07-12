@@ -1658,6 +1658,172 @@ def api_sqi():
 
 
 # --------------------------------------------------------------------------- #
+# Deal Quality Index (DQI) — marketing-driven, benchmarked to June 2026
+# --------------------------------------------------------------------------- #
+# Deals-based (never leads). Quality is driven by source mix, GA4 session
+# quality, connectivity (the one activity metric = deal has a >=30s call), and
+# conversion. Each metric earns its weight when it beats the June benchmark.
+# Strong = marketing-acquired sources that convert well. Shopify is EXCLUDED —
+# it's store footfall that converted (confirmed store sales), not marketing lead
+# quality, so it's neutral (neither strong nor junk).
+DQI_STRONG_SOURCES = ("google", "facebook", "criteo", "nector")
+DQI_JUNK_SOURCES = ("nitro", "ig", "fb", "broadcast", "trigger", "rtbcom", "direct", "chat", "c")
+
+# (group, key, label, weight, value_fn(agg)->ratio, cmp, June threshold, fmt, rule)
+DQI_METRICS = [
+    ("Session Quality", "session_deal",   "Session → Deal rate",         10,
+     lambda a: _safe_div(a["deals"], a["sessions"]),        ">=", 0.0167, "pct", "Deals ÷ sessions ≥ 1.67% (June)"),
+    ("Session Quality", "quality_session", "Quality-session share",       10,
+     lambda a: _safe_div(a["engaged"], a["sessions"]),      ">=", 0.5443, "pct", "Engaged ÷ sessions ≥ 54.4% (June)"),
+    ("Source Quality",  "strong_src",      "High-converting-source share", 15,
+     lambda a: _safe_div(a["strong"], a["deals"]),          ">=", 0.0858, "pct", "Strong-source deals ≥ 8.6% (June)"),
+    ("Source Quality",  "junk_src",        "Junk-source share",           15,
+     lambda a: _safe_div(a["junk"], a["deals"]),            "<=", 0.4893, "pct", "Junk-source deals ≤ 48.9% (June)"),
+    ("Source Quality",  "diversity",       "Source diversity",            10,
+     lambda a: 1 - _safe_div(a["top_c"], a["deals"]),       ">=", 0.5342, "pct", "1 − top-source share ≥ 53.4% (June)"),
+    ("Connectivity",    "connectivity",    "Connectivity %",              15,
+     lambda a: _safe_div(a["connected"], a["deals"]),       ">=", 0.15,   "pct", "Deals w/ ≥30s call ≥ 15% (June)"),
+    ("Conversion",      "conversion",      "Deal conversion %",           15,
+     lambda a: _safe_div(a["won"], a["deals"]),             ">=", 0.0246, "pct", "Closed Won ÷ deals ≥ 2.46% (June)"),
+    ("Conversion",      "connected_won",   "Connected → Won %",           10,
+     lambda a: _safe_div(a["won"], a["connected"]),         ">=", 0.1642, "pct", "Won ÷ connected ≥ 16.4% (June)"),
+]
+DQI_GROUP_WEIGHT = {"Session Quality": 20, "Source Quality": 40,
+                    "Connectivity": 15, "Conversion": 25}
+
+
+def _score_day_dqi(a):
+    sqi, metrics = 0, []
+    for grp, key, label, wt, vfn, cmp, thr, fmt, rule in DQI_METRICS:
+        val = vfn(a)
+        passed = (val <= thr) if cmp == "<=" else (val >= thr)
+        earned = wt if passed else 0
+        sqi += earned
+        metrics.append({"group": grp, "key": key, "label": label, "weight": wt,
+                        "earned": earned, "passed": passed, "rule": rule,
+                        "value": round(val, 5), "value_str": _fmt_metric_value(val, fmt)})
+    return sqi, metrics
+
+
+def _dqi_deals_daily(d_from, d_to):
+    D = f"`{PROJECT}.{DATASET}.cdc_deals`"
+    C = f"`{PROJECT}.{DATASET}.cdc_calls`"
+    params = [_P("d_from", "DATE", d_from), _P("d_to", "DATE", d_to),
+              bigquery.ArrayQueryParameter("strong", "STRING", list(DQI_STRONG_SOURCES)),
+              bigquery.ArrayQueryParameter("junk", "STRING", list(DQI_JUNK_SOURCES))]
+    sql = f"""
+    WITH d AS (
+      SELECT id, DATE(created_time,'{TZ}') day, JSON_VALUE(data,'$.Stage') stage,
+        LOWER(COALESCE(JSON_VALUE(data,'$.UTM_Source'),'(none)')) src
+      FROM {D} WHERE DATE(created_time,'{TZ}') BETWEEN @d_from AND @d_to
+    ),
+    conn AS (
+      SELECT DISTINCT JSON_VALUE(data,'$.What_Id.id') deal_id FROM {C}
+      WHERE SAFE_CAST(JSON_VALUE(data,'$.Call_Duration_in_seconds') AS FLOAT64) >= 30
+        AND JSON_VALUE(data,'$.What_Id.id') IS NOT NULL
+    ),
+    b AS (
+      SELECT day, id, stage, src IN UNNEST(@strong) strong, src IN UNNEST(@junk) junk, src,
+        id IN (SELECT deal_id FROM conn) connected FROM d
+    ),
+    per_src AS (SELECT day, src, COUNT(*) c FROM b GROUP BY day, src),
+    top AS (SELECT day, MAX(c) top_c FROM per_src GROUP BY day)
+    SELECT FORMAT_DATE('%Y-%m-%d', b.day) day, COUNT(*) deals,
+      COUNTIF(stage='Closed Won') won, COUNTIF(strong) strong, COUNTIF(junk) junk,
+      COUNTIF(connected) connected, ANY_VALUE(top.top_c) top_c
+    FROM b JOIN top ON b.day=top.day GROUP BY b.day
+    """
+    rows = _bq.query(sql, job_config=bigquery.QueryJobConfig(query_parameters=params)).result()
+    return {r["day"]: dict(r) for r in rows}
+
+
+def _dqi_ga4_daily(start_yyyymmdd, end_yyyymmdd):
+    E = f"`{PROJECT}.{GA4_DATASET}.events_*`"
+    sql = f"""
+    WITH base AS (
+      SELECT CONCAT(user_pseudo_id,'-',CAST((SELECT value.int_value FROM UNNEST(event_params) WHERE key='ga_session_id') AS STRING)) sk,
+        PARSE_DATE('%Y%m%d', event_date) day,
+        (SELECT COALESCE(value.int_value, SAFE_CAST(value.string_value AS INT64)) FROM UNNEST(event_params) WHERE key='session_engaged') eng
+      FROM {E} WHERE _TABLE_SUFFIX BETWEEN @start AND @end
+    ),
+    sess AS (SELECT sk, MIN(day) day, MAX(eng) eng FROM base GROUP BY sk)
+    SELECT FORMAT_DATE('%Y-%m-%d', day) day, COUNT(*) sessions,
+      SUM(IF(IFNULL(eng,0)=1,1,0)) engaged FROM sess GROUP BY day
+    """
+    params = [_P("start", "STRING", start_yyyymmdd), _P("end", "STRING", end_yyyymmdd)]
+    rows = _bq.query(sql, job_config=bigquery.QueryJobConfig(query_parameters=params)).result()
+    return {r["day"]: dict(r) for r in rows}
+
+
+@app.route("/api/dqi")
+def api_dqi():
+    """Deal Quality Index. Defaults to T-2 (GA4 settle lag). ?date=YYYY-MM-DD
+    selects the day whose metric breakdown is returned."""
+    today = (dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)).date()
+    t2 = today - dt.timedelta(days=2)
+    try:
+        sel_date = dt.date.fromisoformat(request.args.get("date", "")) if request.args.get("date") else t2
+    except ValueError:
+        sel_date = t2
+
+    pq_start, pq_end = _prev_quarter_range(today)
+    window_start = min(pq_start, t2 - dt.timedelta(days=92), sel_date)
+    window_end = max(t2, sel_date)
+    try:
+        deals = _dqi_deals_daily(window_start.isoformat(), window_end.isoformat())
+        ga4 = _dqi_ga4_daily(window_start.strftime("%Y%m%d"), window_end.strftime("%Y%m%d"))
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
+    days = set(deals) | set(ga4)
+    agg = {}
+    for day in days:
+        d = deals.get(day, {})
+        g = ga4.get(day, {})
+        agg[day] = {
+            "deals": d.get("deals", 0), "won": d.get("won", 0),
+            "strong": d.get("strong", 0), "junk": d.get("junk", 0),
+            "connected": d.get("connected", 0), "top_c": d.get("top_c", 0),
+            "sessions": g.get("sessions", 0), "engaged": g.get("engaged", 0),
+        }
+    scored = {day: _score_day_dqi(a)[0] for day, a in agg.items()}
+
+    sel_key = sel_date.isoformat()
+    if sel_key in agg and agg[sel_key]["deals"]:
+        dqi_sel, metrics_sel = _score_day_dqi(agg[sel_key])
+        deals_sel = agg[sel_key]["deals"]
+    else:
+        dqi_sel, metrics_sel, deals_sel = None, [], 0
+
+    def avg_over(a, b):
+        vals = [scored[dd] for dd in scored if a.isoformat() <= dd <= b.isoformat()
+                and agg[dd]["deals"]]
+        return (round(sum(vals) / len(vals), 1), len(vals)) if vals else (None, 0)
+
+    period_defs = [
+        ("T-2", t2, t2), ("Last 7 Days", t2 - dt.timedelta(days=6), t2),
+        ("Last 14 Days", t2 - dt.timedelta(days=13), t2),
+        ("Last Month", t2 - dt.timedelta(days=29), t2),
+        ("Last 3 Months", t2 - dt.timedelta(days=89), t2),
+        ("Last Quarter", pq_start, pq_end),
+    ]
+    periods = [{"label": lbl, "avg_sqi": avg_over(a, b)[0], "days": avg_over(a, b)[1],
+                "from": a.isoformat(), "to": b.isoformat()} for lbl, a, b in period_defs]
+
+    trend, d = [], t2 - dt.timedelta(days=29)
+    while d <= t2:
+        k = d.isoformat()
+        trend.append({"date": k, "sqi": scored.get(k) if agg.get(k, {}).get("deals") else None})
+        d += dt.timedelta(days=1)
+
+    return jsonify(
+        t2=t2.isoformat(), max_date=t2.isoformat(), selected_date=sel_key,
+        selected={"sqi": dqi_sel, "sessions": deals_sel, "metrics": metrics_sel},
+        group_weight=DQI_GROUP_WEIGHT, periods=periods, trend=trend,
+    )
+
+
+# --------------------------------------------------------------------------- #
 # LimeChat webhook ingestion
 # --------------------------------------------------------------------------- #
 # LimeChat POSTs conversation/message events here. We verify a shared secret
@@ -1715,12 +1881,18 @@ LIMECHAT_API_TOKEN = os.environ.get("LIMECHAT_API_TOKEN", "")
 LC_CONV_TABLE = f"{PROJECT}.limechat.conversations"
 
 
-def _lc_get(path, params=None):
-    r = requests.get(f"{LIMECHAT_BASE}{path}",
-                     headers={"api_access_token": LIMECHAT_API_TOKEN},
-                     params=params or {}, timeout=60)
-    r.raise_for_status()
-    return r.json()
+def _lc_get(path, params=None, attempts=3):
+    last = None
+    for _ in range(attempts):
+        try:
+            r = requests.get(f"{LIMECHAT_BASE}{path}",
+                             headers={"api_access_token": LIMECHAT_API_TOKEN},
+                             params=params or {}, timeout=60)
+            r.raise_for_status()
+            return r.json()
+        except Exception as e:
+            last = e
+    raise last
 
 
 def _lc_epoch(v):
@@ -1761,13 +1933,13 @@ def _lc_all_messages(acct, cid):
     return out
 
 
-def _lc_conv_row(conv, messages, synced_at):
-    created = _lc_epoch(conv.get("created_at"))
-    assignee = (conv.get("meta") or {}).get("assignee") or {}
-    sender = (conv.get("meta") or {}).get("sender") or {}
+def _lc_msg_metrics(messages, created):
+    """Response timings + message counts from a message list. sender.type is only
+    populated on the per-conversation messages endpoint (detailed), not on the
+    embedded list payload — so bot/human split is only meaningful when detailed."""
     first_bot = first_human = first_any = None
-    n_in = n_bot = n_human = 0
-    for m in sorted([x for x in messages if not x.get("private")],
+    n_in = n_out = n_bot = n_human = 0
+    for m in sorted([x for x in (messages or []) if not x.get("private")],
                     key=lambda x: x.get("created_at") or 0):
         mt = m.get("message_type")
         st = ((m.get("sender") or {}).get("type") or "").lower()
@@ -1775,6 +1947,7 @@ def _lc_conv_row(conv, messages, synced_at):
         if mt == 0 or st == "contact":
             n_in += 1
         elif mt == 1:
+            n_out += 1
             if first_any is None:
                 first_any = ts
             if st == "agent_bot":
@@ -1786,8 +1959,22 @@ def _lc_conv_row(conv, messages, synced_at):
                 if first_human is None:
                     first_human = ts
     d = lambda a: (a - created) if (a and created) else None
+    return {"first_any": d(first_any), "first_bot": d(first_bot),
+            "first_human": d(first_human), "n_in": n_in, "n_out": n_out,
+            "n_bot": n_bot, "n_human": n_human}
+
+
+def _lc_conv_row(conv, messages, synced_at, detailed):
+    """detailed=True: messages are the full per-conversation history (accurate
+    human FRT / bot split). detailed=False: metadata only (embedded messages) —
+    human/bot inferred from whether a human agent is assigned."""
+    created = _lc_epoch(conv.get("created_at"))
+    assignee = (conv.get("meta") or {}).get("assignee") or {}
+    sender = (conv.get("meta") or {}).get("sender") or {}
+    has_assignee = bool(assignee.get("id"))
+    m = _lc_msg_metrics(messages, created)
     status = conv.get("status")
-    resolved = _lc_epoch(conv.get("timestamp")) if status == "resolved" else None
+    resolved = _lc_epoch(conv.get("timestamp")) if status in ("resolved", "closed") else None
     return {
         "conversation_id": conv.get("id"),
         "created_at": _lc_iso(created), "status": status,
@@ -1795,14 +1982,18 @@ def _lc_conv_row(conv, messages, synced_at):
         "assignee_id": assignee.get("id"), "assignee_name": assignee.get("name"),
         "contact_name": sender.get("name"),
         "contact_phone": (sender.get("phone_number") or "").lstrip("+") or None,
-        "first_response_sec": d(first_any),
-        "first_bot_response_sec": d(first_bot),
-        "first_human_response_sec": d(first_human),
+        "first_response_sec": m["first_any"],
+        "first_bot_response_sec": m["first_bot"] if detailed else None,
+        "first_human_response_sec": m["first_human"] if detailed else None,
         "resolution_sec": (resolved - created) if (resolved and created) else None,
         "resolved_at": _lc_iso(resolved),
-        "msgs_in": n_in, "msgs_bot": n_bot, "msgs_human": n_human,
-        "bot_handled_only": (n_bot > 0 and n_human == 0),
-        "had_human": n_human > 0, "synced_at": synced_at,
+        "msgs_in": m["n_in"], "msgs_out": m["n_out"],
+        "msgs_bot": m["n_bot"] if detailed else None,
+        "msgs_human": m["n_human"] if detailed else None,
+        "had_human": (m["n_human"] > 0) if detailed else has_assignee,
+        "bot_handled_only": (m["n_bot"] > 0 and m["n_human"] == 0) if detailed
+                            else (not has_assignee and m["n_out"] > 0),
+        "detailed": detailed, "synced_at": synced_at,
     }
 
 
@@ -1814,18 +2005,22 @@ def _lc_conv_schema():
         S("contact_name", "STRING"), S("contact_phone", "STRING"),
         S("first_response_sec", "INT64"), S("first_bot_response_sec", "INT64"),
         S("first_human_response_sec", "INT64"), S("resolution_sec", "INT64"),
-        S("resolved_at", "TIMESTAMP"), S("msgs_in", "INT64"), S("msgs_bot", "INT64"),
-        S("msgs_human", "INT64"), S("bot_handled_only", "BOOL"), S("had_human", "BOOL"),
-        S("synced_at", "TIMESTAMP"),
+        S("resolved_at", "TIMESTAMP"), S("msgs_in", "INT64"), S("msgs_out", "INT64"),
+        S("msgs_bot", "INT64"), S("msgs_human", "INT64"), S("bot_handled_only", "BOOL"),
+        S("had_human", "BOOL"), S("detailed", "BOOL"), S("synced_at", "TIMESTAMP"),
     ]
 
 
-def sync_limechat(statuses=("open", "resolved"), max_pages=80):
+def sync_limechat(statuses=("open", "resolved", "closed"), max_pages=2500, enrich_days=7):
+    """Metadata sync of ALL conversations (list API only, no per-conversation
+    calls) so counts match LimeChat, then fetch full message history only for
+    conversations created within the last `enrich_days` to compute accurate
+    human FRT / bot split. Full refresh."""
     if not LIMECHAT_API_TOKEN:
         raise RuntimeError("LIMECHAT_API_TOKEN not configured")
     acct = LIMECHAT_ACCOUNT
     now = dt.datetime.utcnow().isoformat() + "Z"
-    seen, rows = set(), []
+    seen = {}
     for status in statuses:
         for page in range(1, max_pages + 1):
             try:
@@ -1838,14 +2033,34 @@ def sync_limechat(statuses=("open", "resolved"), max_pages=80):
                 break
             for conv in payload:
                 cid = conv.get("id")
-                if cid in seen:
-                    continue
-                seen.add(cid)
+                if cid and cid not in seen:
+                    seen[cid] = _lc_conv_row(conv, conv.get("messages") or [], now, detailed=False)
+
+    enriched = 0
+    if enrich_days:
+        today = (dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)).date()
+        cutoff = (today - dt.timedelta(days=enrich_days)).isoformat()
+        for cid, row in seen.items():
+            if row["created_at"] and row["created_at"][:10] >= cutoff:
                 try:
-                    msgs = _lc_all_messages(acct, cid)
+                    full = _lc_all_messages(acct, cid)
+                    created = _lc_epoch(row["created_at"])
+                    mm = _lc_msg_metrics(full, created)
+                    row.update({
+                        "first_response_sec": mm["first_any"],
+                        "first_bot_response_sec": mm["first_bot"],
+                        "first_human_response_sec": mm["first_human"],
+                        "msgs_in": mm["n_in"], "msgs_out": mm["n_out"],
+                        "msgs_bot": mm["n_bot"], "msgs_human": mm["n_human"],
+                        "had_human": mm["n_human"] > 0,
+                        "bot_handled_only": mm["n_bot"] > 0 and mm["n_human"] == 0,
+                        "detailed": True,
+                    })
+                    enriched += 1
                 except Exception:
-                    msgs = conv.get("messages") or []
-                rows.append(_lc_conv_row(conv, msgs, now))
+                    pass
+
+    rows = list(seen.values())
     if rows:
         _bq.load_table_from_json(
             rows, LC_CONV_TABLE, location="asia-south1",
@@ -1853,13 +2068,14 @@ def sync_limechat(statuses=("open", "resolved"), max_pages=80):
                 schema=_lc_conv_schema(),
                 write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE),
         ).result()
-    return {"conversations": len(rows), "synced_at": now}
+    return {"conversations": len(rows), "enriched": enriched, "synced_at": now}
 
 
 def _chat_range(args):
-    today = (dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)).date()
-    f = args.get("from") or (today - dt.timedelta(days=89)).isoformat()
-    t = args.get("to") or today.isoformat()
+    # GA4/LimeChat settle a day late — default to T-1 (yesterday), single day.
+    t1 = (dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)).date() - dt.timedelta(days=1)
+    f = args.get("from") or t1.isoformat()
+    t = args.get("to") or t1.isoformat()
     return f, t
 
 
@@ -1878,6 +2094,7 @@ def api_chat():
     try:
         s = q(f"""
           SELECT COUNT(*) convs, COUNTIF(status='open') open, COUNTIF(status='resolved') resolved,
+            COUNTIF(status='closed') closed, COUNTIF(detailed) detailed_convs,
             COUNTIF(had_human) with_human, COUNTIF(bot_handled_only) bot_only,
             ROUND(100*SAFE_DIVIDE(COUNTIF(bot_handled_only),COUNT(*)),1) bot_deflection,
             ROUND(APPROX_QUANTILES(first_human_response_sec,2)[OFFSET(1)]/60,1) frt_med_min,
@@ -1923,8 +2140,15 @@ def limechat_sync():
         supplied = request.headers.get("X-Sync-Token") or request.args.get("token")
         if supplied != SYNC_TOKEN:
             abort(401)
+    kwargs = {}
+    if request.args.get("max_pages"):
+        kwargs["max_pages"] = int(request.args["max_pages"])
+    if request.args.get("enrich_days") is not None:
+        kwargs["enrich_days"] = int(request.args.get("enrich_days"))
+    if request.args.get("statuses"):
+        kwargs["statuses"] = tuple(request.args["statuses"].split(","))
     try:
-        return jsonify(sync_limechat())
+        return jsonify(sync_limechat(**kwargs))
     except Exception as e:
         return jsonify(error=str(e)), 500
 

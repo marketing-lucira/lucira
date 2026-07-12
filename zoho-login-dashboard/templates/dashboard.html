@@ -153,6 +153,7 @@
       <div class="tab active" data-tab="overview" onclick="switchTab('overview')">Overview</div>
       <div class="tab" data-tab="deals" onclick="switchTab('deals')">Deals</div>
       <div class="tab" data-tab="sqi" onclick="switchTab('sqi')">SQI</div>
+      <div class="tab" data-tab="dqi" onclick="switchTab('dqi')">DQI</div>
       <div class="tab" data-tab="chat" onclick="switchTab('chat')">Chat</div>
       <div class="tab" data-tab="data" onclick="switchTab('data')">Data &amp; Sync</div>
     </div>
@@ -266,6 +267,40 @@
       </div>
     </div>
 
+    <!-- DQI TAB -->
+    <div id="tab-dqi" class="hidden">
+      <div class="card">
+        <h3>
+          <span>Deal Quality Index <span class="muted">· deals · June-benchmarked · 0–100</span></span>
+          <span class="fld" style="flex-direction:row;align-items:center;gap:8px;">
+            <label style="margin:0;">Date</label>
+            <input type="date" id="dqidate" onchange="loadDQI()">
+          </span>
+        </h3>
+        <div class="muted" style="margin:-4px 0 12px;">
+          Marketing-driven deal quality (source mix, sessions, connectivity, conversion). Each metric passes
+          when it beats its <b>June 2026</b> benchmark — so ~50 ≈ a typical June day, higher = above June.
+          GA4 settles ~2 days late, so default is <b>T-2</b>.
+        </div>
+        <div class="sqi-head" id="dqihead"><div class="loading"><span class="spin"></span> computing DQI…</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Daily average by period <span class="muted">(avg of each day's DQI)</span></h3>
+        <div class="cards" id="dqiperiods" style="margin-bottom:0;"><div class="loading"><span class="spin"></span> loading…</div></div>
+      </div>
+
+      <div class="card">
+        <h3>DQI trend <span class="muted">· last 30 days · click a bar to inspect that day</span></h3>
+        <div id="dqitrend"><div class="loading"><span class="spin"></span> loading trend…</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Metric breakdown <span class="muted" id="dqibreakhdr"></span></h3>
+        <div id="dqibreak"><div class="loading"><span class="spin"></span> loading metrics…</div></div>
+      </div>
+    </div>
+
     <!-- CHAT / HELPDESK TAB -->
     <div id="tab-chat" class="hidden">
       <div class="card">
@@ -332,17 +367,19 @@ function resetFilters(){
   preset(0);                              // default = today
 }
 
-let dataLoaded = false, dealsLoaded = false, sqiLoaded = false, chatLoaded = false;
+let dataLoaded = false, dealsLoaded = false, sqiLoaded = false, chatLoaded = false, dqiLoaded = false;
 function switchTab(t){
   document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===t));
   $('tab-overview').classList.toggle('hidden', t!=='overview');
   $('tab-deals').classList.toggle('hidden', t!=='deals');
   $('tab-sqi').classList.toggle('hidden', t!=='sqi');
+  $('tab-dqi').classList.toggle('hidden', t!=='dqi');
   $('tab-chat').classList.toggle('hidden', t!=='chat');
   $('tab-data').classList.toggle('hidden', t!=='data');
   if (t==='data'  && !dataLoaded)  { loadData();  dataLoaded  = true; }
   if (t==='deals' && !dealsLoaded) { loadDeals();  dealsLoaded = true; }
   if (t==='sqi'  && !sqiLoaded)   { loadSQI();   sqiLoaded   = true; }
+  if (t==='dqi'  && !dqiLoaded)   { loadDQI();   dqiLoaded   = true; }
   if (t==='chat' && !chatLoaded)  { loadChat();  chatLoaded  = true; }
 }
 
@@ -679,6 +716,80 @@ async function loadSQI(){
   } catch(err){ head.innerHTML = `<div class="err">Failed to load SQI: ${esc(err)}</div>`; }
 }
 function pickSQI(date){ $('sqidate').value = date; loadSQI(); }
+
+// ---- DQI tab (same renderer as SQI, deals-based) --------------------------
+async function loadDQI(){
+  const head=$('dqihead'), per=$('dqiperiods'), tr=$('dqitrend'), bk=$('dqibreak');
+  head.innerHTML = '<div class="loading"><span class="spin"></span> computing DQI…</div>';
+  per.innerHTML = tr.innerHTML = bk.innerHTML = '';
+  const dv = $('dqidate').value;
+  try {
+    const d = await (await fetch('/api/dqi' + (dv?('?date='+dv):''))).json();
+    if (d.error){ head.innerHTML = `<div class="err">${esc(d.error)}</div>`; return; }
+    $('dqidate').value = d.selected_date; $('dqidate').max = d.max_date;
+    const s = d.selected.sqi;
+    if (s==null){
+      head.innerHTML = `<div class="loading">No deals for ${esc(d.selected_date)}.</div>`;
+    } else {
+      head.innerHTML = `
+        <div class="sqi-ring" style="--p:${s};--c:${sqiColor(s)}">
+          <div><b class="${sqiClass(s)}">${s}</b><span>/ 100</span></div>
+        </div>
+        <div>
+          <div class="sqi-score ${sqiClass(s)}">${s}<span style="font-size:20px;color:#8a92a1;font-weight:600;"> / 100</span></div>
+          <div class="sqi-meta">Deal Quality Index · <b>${esc(d.selected_date)}</b> · ${(d.selected.sessions||0).toLocaleString()} deals created</div>
+        </div>`;
+    }
+    per.innerHTML = d.periods.map(p => `
+      <div class="kpi ${sqiBg(p.avg_sqi)}">
+        <div class="n ${sqiClass(p.avg_sqi)}">${p.avg_sqi==null?'—':p.avg_sqi}</div>
+        <div class="l">${esc(p.label)}</div>
+        <div class="muted" style="font-size:10.5px;margin-top:3px;">${p.days} day${p.days===1?'':'s'}</div>
+      </div>`).join('');
+    const T = d.trend, vals = T.filter(x=>x.sqi!=null).map(x=>x.sqi);
+    if (!vals.length){ tr.innerHTML = '<div class="loading">No daily DQI in the last 30 days.</div>'; }
+    else {
+      const maxV = Math.max(...vals, 1);
+      tr.innerHTML = '<div class="strend">' + T.map(x => {
+        const h = x.sqi==null?0:Math.max(4,Math.round(135*x.sqi/maxV));
+        const sel = x.date===d.selected_date ? ' sel' : '';
+        return `<div class="scol${sel}" title="${x.date}: ${x.sqi==null?'no data':x.sqi}" onclick="pickDQI('${x.date}')">
+          <div class="sv">${x.sqi==null?'':x.sqi}</div>
+          <div class="sbar" style="height:${h}px;background:${sqiColor(x.sqi)}"></div>
+          <div class="sd">${x.date.slice(5)}</div></div>`; }).join('') + '</div>';
+    }
+    if (!d.selected.metrics.length){ bk.innerHTML = '<div class="loading">No metrics for this day.</div>'; }
+    else {
+      $('dqibreakhdr').textContent = `· ${d.selected_date} · ${s} / 100`;
+      const groups = {};
+      d.selected.metrics.forEach(m => { (groups[m.group] = groups[m.group]||[]).push(m); });
+      let body = '';
+      Object.keys(groups).forEach(g => {
+        const gw = d.group_weight[g] || groups[g].reduce((a,m)=>a+m.weight,0);
+        const gEarned = groups[g].reduce((a,m)=>a+m.earned,0);
+        body += `<tr class="grow"><td colspan="3">${esc(g)}</td><td class="num">${gw}%</td><td class="num">${gEarned}</td><td></td></tr>`;
+        body += groups[g].map(m => `
+          <tr>
+            <td style="padding-left:22px;">${esc(m.label)}</td>
+            <td class="num ${m.passed?'mpass':'mfail'}">${esc(m.value_str)}</td>
+            <td class="muted">${esc(m.rule)}</td>
+            <td class="num">${m.weight}</td>
+            <td class="num">${m.earned}</td>
+            <td>${m.passed?'<span class="pill on">pass</span>':'<span class="pill ina">miss</span>'}</td>
+          </tr>`).join('');
+      });
+      bk.innerHTML = `<div class="tblwrap"><table style="min-width:720px;">
+        <thead><tr><th>Metric</th><th class="num">Value</th><th>Benchmark rule</th>
+          <th class="num">Weight</th><th class="num">Score</th><th>Result</th></tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr style="font-weight:800;border-top:2px solid #2b313c;">
+          <td colspan="3">Total DQI</td><td class="num">100</td>
+          <td class="num ${sqiClass(s)}">${s==null?'—':s}</td><td></td>
+        </tr></tfoot></table></div>`;
+    }
+  } catch(err){ head.innerHTML = `<div class="err">Failed to load DQI: ${esc(err)}</div>`; }
+}
+function pickDQI(date){ $('dqidate').value = date; loadDQI(); }
 
 // ---- Chat / Helpdesk tab --------------------------------------------------
 const fmtSecMin = s => { if(s==null) return '—'; s=Math.round(s); return s<90? s+'s' : (s/60).toFixed(1)+'m'; };
