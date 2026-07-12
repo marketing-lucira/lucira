@@ -94,13 +94,13 @@
   .bg-good{background:rgba(49,196,141,.14);} .bg-mid{background:rgba(224,182,74,.14);} .bg-bad{background:rgba(249,128,128,.14);}
   .grow{background:rgba(255,255,255,.02);} .grow td{font-weight:700;color:#cfd4de;}
   .mpass{color:#31c48d;font-weight:700;} .mfail{color:#f98080;font-weight:700;}
-  .strend { display:flex; align-items:flex-end; gap:3px; height:130px; overflow-x:auto; padding-top:6px; }
-  .scol { flex:1 0 20px; min-width:20px; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; }
-  .scol .sbar { width:16px; border-radius:3px 3px 0 0; transition:opacity .15s; }
+  .strend { display:flex; align-items:flex-end; gap:4px; height:230px; overflow-x:auto; padding:6px 2px 4px; }
+  .scol { flex:0 0 26px; width:26px; display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; }
+  .scol .sbar { width:20px; border-radius:3px 3px 0 0; transition:opacity .15s; }
   .scol:hover .sbar { opacity:.75; }
   .scol.sel .sbar { outline:2px solid #fff; outline-offset:1px; }
-  .scol .sd { font-size:8.5px; color:#8a92a1; transform:rotate(-60deg); white-space:nowrap; height:26px; }
-  .scol .sv { font-size:9px; color:#aeb6c4; }
+  .scol .sd { font-size:9px; color:#8a92a1; transform:rotate(-60deg); white-space:nowrap; height:30px; transform-origin:center; }
+  .scol .sv { font-size:11px; font-weight:700; color:#cfd4de; }
 </style>
 </head>
 <body>
@@ -255,7 +255,7 @@
       </div>
 
       <div class="card">
-        <h3>SQI trend <span class="muted">· last 30 days · click a bar to inspect that day</span></h3>
+        <h3>SQI trend <span class="muted">· last 60 days · click a bar to inspect that day</span></h3>
         <div id="sqitrend"><div class="loading"><span class="spin"></span> loading trend…</div></div>
       </div>
 
@@ -608,7 +608,7 @@ async function loadSQI(){
     if (!vals.length){ tr.innerHTML = '<div class="loading">No daily SQI in the last 30 days.</div>'; }
     else {
       tr.innerHTML = '<div class="strend">' + T.map(x => {
-        const h = x.sqi==null?0:Math.max(3,Math.round(x.sqi*1.15));
+        const h = x.sqi==null?0:Math.max(3,Math.round(x.sqi*1.7));
         const sel = x.date===d.selected_date ? ' sel' : '';
         const md = x.date.slice(5);
         return `<div class="scol${sel}" title="${x.date}: ${x.sqi==null?'no data':x.sqi}" onclick="pickSQI('${x.date}')">

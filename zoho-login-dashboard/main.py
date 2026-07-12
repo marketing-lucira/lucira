@@ -1489,7 +1489,7 @@ SQI_METRICS = [
     ("Trust Signals",   "pincode",         "Pincode Entered",   5,
      lambda a: _safe_div(a["pincode_sessions"], a["sessions"]),       ">=", 0.05,  "pct", "Pincode entered ÷ session ≥ 5%"),
     ("Trust Signals",   "whatsapp",        "WhatsApp Click",    5,
-     lambda a: _safe_div(a["chat_sessions"], a["sessions"]),          ">=", 0.0003,"pct", "Chat with expert ÷ session ≥ 0.03%"),
+     lambda a: _safe_div(a["chat_sessions"], a["sessions"]),          ">=", 0.01,  "pct", "Chat with expert ÷ session ≥ 1%"),
 ]
 SQI_GROUP_WEIGHT = {"Traffic Quality": 30, "Engagement": 25,
                     "Intent Signals": 35, "Trust Signals": 10}
@@ -1643,7 +1643,7 @@ def api_sqi():
         periods.append({"label": label, "avg_sqi": avg, "days": n,
                         "from": a.isoformat(), "to": b.isoformat()})
 
-    trend, d = [], t2 - dt.timedelta(days=29)
+    trend, d = [], t2 - dt.timedelta(days=59)
     while d <= t2:
         k = d.isoformat()
         trend.append({"date": k, "sqi": scored.get(k)})
