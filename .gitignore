@@ -1,0 +1,7 @@
+# Third-party IDE extensions (large, reinstallable)
+extensions/
+
+# OS / editor cruft
+Thumbs.db
+Desktop.ini
+.DS_Store
