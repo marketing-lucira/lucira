@@ -152,6 +152,7 @@
     <div class="tabs">
       <div class="tab active" data-tab="overview" onclick="switchTab('overview')">Overview</div>
       <div class="tab" data-tab="deals" onclick="switchTab('deals')">Deals</div>
+      <div class="tab" data-tab="products" onclick="switchTab('products')">Products</div>
       <div class="tab" data-tab="sqi" onclick="switchTab('sqi')">SQI</div>
       <div class="tab" data-tab="dqi" onclick="switchTab('dqi')">DQI</div>
       <div class="tab" data-tab="chat" onclick="switchTab('chat')">Chat</div>
@@ -239,6 +240,28 @@
       <div class="card">
         <h3>BigQuery tables</h3>
         <div id="tablescard"><div class="loading"><span class="spin"></span> loading…</div></div>
+      </div>
+    </div>
+
+    <!-- PRODUCTS TAB -->
+    <div id="tab-products" class="hidden">
+      <div class="card">
+        <h3>Deals by product type <span class="muted" id="prodwindow"></span></h3>
+        <div class="muted" style="margin:-4px 0 12px;">From the corefactor lead history joined to the Zoho product master. Product type is present on ~36% of deals; material/colour on deals with a known SKU.</div>
+        <div id="prodtype"><div class="loading"><span class="spin"></span> loading product types…</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Deals by material &amp; colour</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;">
+          <div><h4 style="margin:0 0 8px;font-size:13px;color:#9aa3b2;">Material</h4><div id="prodmaterial"><div class="loading"><span class="spin"></span> loading…</div></div></div>
+          <div><h4 style="margin:0 0 8px;font-size:13px;color:#9aa3b2;">Metal colour</h4><div id="prodcolour"></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Agent × product-type conversion <span class="muted">· cell = conversion % (deals)</span></h3>
+        <div id="prodagents"><div class="loading"><span class="spin"></span> loading agents…</div></div>
       </div>
     </div>
 
@@ -375,17 +398,19 @@ function resetFilters(){
   preset(0);                              // default = today
 }
 
-let dataLoaded = false, dealsLoaded = false, sqiLoaded = false, chatLoaded = false, dqiLoaded = false;
+let dataLoaded = false, dealsLoaded = false, sqiLoaded = false, chatLoaded = false, dqiLoaded = false, prodLoaded = false;
 function switchTab(t){
   document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===t));
   $('tab-overview').classList.toggle('hidden', t!=='overview');
   $('tab-deals').classList.toggle('hidden', t!=='deals');
+  $('tab-products').classList.toggle('hidden', t!=='products');
   $('tab-sqi').classList.toggle('hidden', t!=='sqi');
   $('tab-dqi').classList.toggle('hidden', t!=='dqi');
   $('tab-chat').classList.toggle('hidden', t!=='chat');
   $('tab-data').classList.toggle('hidden', t!=='data');
   if (t==='data'  && !dataLoaded)  { loadData();  dataLoaded  = true; }
   if (t==='deals' && !dealsLoaded) { loadDeals();  dealsLoaded = true; }
+  if (t==='products' && !prodLoaded) { loadProducts(); prodLoaded = true; }
   if (t==='sqi'  && !sqiLoaded)   { loadSQI();   sqiLoaded   = true; }
   if (t==='dqi'  && !dqiLoaded)   { loadDQI();   dqiLoaded   = true; }
   if (t==='chat' && !chatLoaded)  { loadChat();  chatLoaded  = true; }
@@ -900,6 +925,54 @@ async function loadTriggers(){
         <div style="text-align:right;color:#31c48d;">${p.won>0?p.won+' won':''}</div>
       </div>`).join('');
   } catch(err){ tc.innerHTML=`<div class="err">Failed: ${esc(err)}</div>`; pc.innerHTML=''; }
+}
+
+// ---- Products tab ---------------------------------------------------------
+function convColor(p){ return p==null?'#8a92a1':(p>=2?'#31c48d':(p>=1?'#e0b64a':'#f98080')); }
+function cutTable(rows, keyName, keyLabel){
+  if(!rows.length) return '<div class="loading">No data.</div>';
+  const maxD = Math.max(...rows.map(r=>r.deals))||1;
+  const body = rows.map(r=>`<tr>
+    <td><b>${esc(r[keyName])}</b></td>
+    <td class="num">${r.deals.toLocaleString()}</td>
+    <td style="min-width:110px;"><div style="height:8px;background:#232833;border-radius:5px;overflow:hidden;"><div style="height:100%;width:${Math.round(100*r.deals/maxD)}%;background:linear-gradient(90deg,#e0b64a,#c98d1a);"></div></div></td>
+    <td class="num">${r.converted}</td>
+    <td class="num" style="color:${convColor(r.conv_pct)};font-weight:600;">${r.conv_pct.toFixed(2)}%</td>
+    ${r.avg_price!==undefined?`<td class="num">${r.avg_price>0?fmtInr(r.avg_price):'—'}</td>`:''}
+  </tr>`).join('');
+  return `<div class="tblwrap"><table style="min-width:${keyName==='category'?'560':'380'}px;">
+    <thead><tr><th>${keyLabel}</th><th class="num">Deals</th><th></th><th class="num">Won</th><th class="num">Conv.</th>${rows[0].avg_price!==undefined?'<th class="num">Avg price</th>':''}</tr></thead>
+    <tbody>${body}</tbody></table></div>`;
+}
+async function loadProducts(){
+  const pt=$('prodtype'), pm=$('prodmaterial'), pc=$('prodcolour'), pa=$('prodagents');
+  pt.innerHTML='<div class="loading"><span class="spin"></span> loading…</div>';
+  try{
+    const d = await (await fetch('/api/products')).json();
+    if(d.error){ pt.innerHTML=`<div class="err">${esc(d.error)}</div>`; return; }
+    if(d.window) $('prodwindow').textContent = `· ${d.window.frm} – ${d.window.too}`;
+    pt.innerHTML = cutTable(d.by_type, 'category', 'Product type');
+    pm.innerHTML = cutTable(d.by_material, 'material', 'Material');
+    pc.innerHTML = cutTable(d.by_colour, 'colour', 'Colour');
+    // agent × product-type matrix
+    const cats = d.matrix_cats;
+    if(!d.agents.length){ pa.innerHTML='<div class="loading">No agents.</div>'; }
+    else {
+      const head = `<tr><th>Agent</th><th class="num">Deals</th><th class="num">Overall</th>${cats.map(c=>`<th class="num">${esc(c)}</th>`).join('')}</tr>`;
+      const rows = d.agents.filter(a=>a.total_deals>=10).map(a=>{
+        const cells = cats.map(c=>{
+          const x=a.cats[c];
+          if(!x||!x.deals) return '<td class="num muted">—</td>';
+          return `<td class="num" style="color:${convColor(x.conv_pct)};" title="${x.converted} of ${x.deals} converted">${x.conv_pct.toFixed(1)}%<br><span style="font-size:10px;color:#8a92a1;">${x.deals}</span></td>`;
+        }).join('');
+        return `<tr><td><b>${esc(a.agent)}</b></td><td class="num">${a.total_deals.toLocaleString()}</td>
+          <td class="num" style="color:${convColor(a.conv_pct)};font-weight:600;">${a.conv_pct.toFixed(2)}%</td>${cells}</tr>`;
+      }).join('');
+      pa.innerHTML = `<div class="tblwrap"><table style="min-width:820px;">
+        <thead>${head}</thead><tbody>${rows}</tbody></table></div>
+        <div class="muted" style="font-size:11.5px;margin-top:8px;">Each cell: conversion % over the deals that agent handled in that category (deal count below). Agents with ≥10 deals shown.</div>`;
+    }
+  } catch(err){ pt.innerHTML=`<div class="err">Failed to load products: ${esc(err)}</div>`; }
 }
 
 async function headerSync(){

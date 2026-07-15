@@ -1489,6 +1489,98 @@ def api_deal_triggers():
 
 
 # --------------------------------------------------------------------------- #
+# Products — category / material / agent-by-category deal cuts
+# --------------------------------------------------------------------------- #
+# Deal↔product link lives in ds_imputed_reporting.corefactor_leads_data
+# (Category ~36% filled, product_sku ~3.5%, agent 99.9%). Data currently ends
+# ~30 May 2026, so this tab reports over all available lead history.
+CF_LEADS = f"`{PROJECT}.ds_imputed_reporting.corefactor_leads_data`"
+_CAT_NORM = """CASE LOWER(TRIM(Category))
+  WHEN 'ring' THEN 'Rings' WHEN 'earring' THEN 'Earrings' WHEN 'bracelet' THEN 'Bracelets'
+  WHEN 'necklace' THEN 'Necklaces' WHEN 'pendent' THEN 'Pendants' WHEN 'pendant' THEN 'Pendants'
+  WHEN 'charms & pendants' THEN 'Pendants' WHEN 'charms' THEN 'Pendants' WHEN 'bangle' THEN 'Bangles'
+  WHEN 'nosepins' THEN 'Nose Pin' WHEN 'nosepin' THEN 'Nose Pin' WHEN 'chain' THEN 'Chains'
+  WHEN '' THEN NULL ELSE INITCAP(TRIM(Category)) END"""
+# From SKU 3rd segment (e.g. 14YGLGD): hero MATERIAL (Diamond/Gold/Platinum) +
+# metal COLOUR (YG->Yellow Gold). LGD=lab-grown diamond, PG=plain gold, PT=platinum.
+_MATERIAL = """(SELECT CASE
+    WHEN mc IS NULL THEN NULL
+    WHEN REGEXP_CONTAINS(mc,'LGD') THEN 'Diamond'
+    WHEN ENDS_WITH(mc,'PG') THEN 'Gold'
+    WHEN STARTS_WITH(mc,'95') OR SUBSTR(mc,3,2)='PT' THEN 'Platinum'
+    WHEN REGEXP_CONTAINS(mc,'GEM|CS') THEN 'Gemstone'
+    ELSE 'Other' END FROM (SELECT SPLIT(product_sku,'-')[SAFE_OFFSET(2)] mc))"""
+_COLOUR = """(SELECT CASE SUBSTR(mc,3,2)
+    WHEN 'YG' THEN 'Yellow Gold' WHEN 'RG' THEN 'Rose Gold' WHEN 'WG' THEN 'White Gold'
+    WHEN 'YW' THEN 'Yellow/White Gold' WHEN 'RW' THEN 'Rose/White Gold' WHEN 'PT' THEN 'Platinum'
+    ELSE NULL END FROM (SELECT SPLIT(product_sku,'-')[SAFE_OFFSET(2)] mc))"""
+_MATRIX_CATS = ["Rings", "Earrings", "Bracelets", "Necklaces", "Pendants", "Chains"]
+
+
+@app.route("/api/products")
+def api_products():
+    """Deal cuts by product type & material, plus agent × product-type conversion.
+    Sourced from corefactor leads joined to Zoho product master."""
+    def rows(sql):
+        return [dict(r) for r in _bq.query(sql).result()]
+    try:
+        win = rows(f"SELECT FORMAT_DATE('%d %b %Y', MIN(DATE(created_date))) frm, "
+                   f"FORMAT_DATE('%d %b %Y', MAX(DATE(created_date))) too, COUNT(*) total FROM {CF_LEADS}")[0]
+        by_type = rows(f"""
+          SELECT {_CAT_NORM} category, COUNT(*) deals,
+            COUNTIF(converted_date IS NOT NULL) converted,
+            ROUND(100*COUNTIF(converted_date IS NOT NULL)/COUNT(*),2) conv_pct,
+            ROUND(AVG(NULLIF(product_price,0)),0) avg_price
+          FROM {CF_LEADS} WHERE {_CAT_NORM} IS NOT NULL
+          GROUP BY category ORDER BY deals DESC LIMIT 20""")
+        by_material = rows(f"""
+          SELECT {_MATERIAL} material, COUNT(*) deals,
+            COUNTIF(converted_date IS NOT NULL) converted,
+            ROUND(100*COUNTIF(converted_date IS NOT NULL)/COUNT(*),2) conv_pct
+          FROM {CF_LEADS} WHERE product_sku IS NOT NULL AND product_sku!=''
+          GROUP BY material HAVING material IS NOT NULL ORDER BY deals DESC LIMIT 10""")
+        by_colour = rows(f"""
+          SELECT {_COLOUR} colour, COUNT(*) deals,
+            COUNTIF(converted_date IS NOT NULL) converted,
+            ROUND(100*COUNTIF(converted_date IS NOT NULL)/COUNT(*),2) conv_pct
+          FROM {CF_LEADS} WHERE product_sku IS NOT NULL AND product_sku!=''
+          GROUP BY colour HAVING colour IS NOT NULL ORDER BY deals DESC LIMIT 10""")
+        agent_long = rows(f"""
+          SELECT lead_owner agent, {_CAT_NORM} category, COUNT(*) deals,
+            COUNTIF(converted_date IS NOT NULL) converted
+          FROM {CF_LEADS}
+          WHERE lead_owner IS NOT NULL AND lead_owner!='' AND {_CAT_NORM} IS NOT NULL
+          GROUP BY agent, category""")
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
+    # pivot agent × category matrix (restricted to the main categories)
+    agents = {}
+    for r in agent_long:
+        a = agents.setdefault(r["agent"], {"agent": r["agent"], "total_deals": 0,
+                                           "total_conv": 0, "cats": {}})
+        a["total_deals"] += r["deals"]
+        a["total_conv"] += r["converted"]
+        if r["category"] in _MATRIX_CATS:
+            a["cats"][r["category"]] = {"deals": r["deals"], "converted": r["converted"],
+                                        "conv_pct": round(100 * r["converted"] / r["deals"], 1) if r["deals"] else 0}
+    agent_rows = sorted(agents.values(), key=lambda x: x["total_deals"], reverse=True)
+    for a in agent_rows:
+        a["conv_pct"] = round(100 * a["total_conv"] / a["total_deals"], 2) if a["total_deals"] else 0
+
+    return jsonify(
+        window=win, matrix_cats=_MATRIX_CATS,
+        by_type=[{"category": t["category"], "deals": t["deals"], "converted": t["converted"],
+                  "conv_pct": float(t["conv_pct"] or 0), "avg_price": float(t["avg_price"] or 0)} for t in by_type],
+        by_material=[{"material": m["material"], "deals": m["deals"], "converted": m["converted"],
+                      "conv_pct": float(m["conv_pct"] or 0)} for m in by_material],
+        by_colour=[{"colour": c["colour"], "deals": c["deals"], "converted": c["converted"],
+                    "conv_pct": float(c["conv_pct"] or 0)} for c in by_colour],
+        agents=agent_rows,
+    )
+
+
+# --------------------------------------------------------------------------- #
 # Session Quality Index (SQI) — derived from the GA4 BigQuery export
 # --------------------------------------------------------------------------- #
 # Session = user_pseudo_id + ga_session_id. We aggregate GA4 events into one row
