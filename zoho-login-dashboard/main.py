@@ -1519,46 +1519,67 @@ _MATRIX_CATS = ["Rings", "Earrings", "Bracelets", "Necklaces", "Pendants", "Chai
 
 @app.route("/api/products")
 def api_products():
-    """Deal cuts by product type & material, plus agent × product-type conversion.
-    Sourced from corefactor leads joined to Zoho product master."""
+    """Deal cuts by product type, material, colour, gender, purity + agent ×
+    product-type conversion. Date-filterable via ?from&to on the lead created_date."""
+    d_from, d_to = request.args.get("from"), request.args.get("to")
+    params, rng = [], "1=1"
+    if d_from and d_to:
+        params = [_P("d_from", "DATE", d_from), _P("d_to", "DATE", d_to)]
+        rng = "DATE(created_date) BETWEEN @d_from AND @d_to"
+
     def rows(sql):
-        return [dict(r) for r in _bq.query(sql).result()]
+        return [dict(r) for r in _bq.query(
+            sql, job_config=bigquery.QueryJobConfig(query_parameters=params)).result()]
+
+    PROD = (f"(SELECT product_sku, ANY_VALUE(product_gender) g, ANY_VALUE(product_purity) p "
+            f"FROM `{PROJECT}.ds_imputed_reporting.zoho_product_details` "
+            f"WHERE product_sku IS NOT NULL GROUP BY product_sku)")
+    conv = "COUNTIF(converted_date IS NOT NULL)"
     try:
         win = rows(f"SELECT FORMAT_DATE('%d %b %Y', MIN(DATE(created_date))) frm, "
-                   f"FORMAT_DATE('%d %b %Y', MAX(DATE(created_date))) too, COUNT(*) total FROM {CF_LEADS}")[0]
+                   f"FORMAT_DATE('%d %b %Y', MAX(DATE(created_date))) too, COUNT(*) total "
+                   f"FROM {CF_LEADS} WHERE {rng}")[0]
         by_type = rows(f"""
-          SELECT {_CAT_NORM} category, COUNT(*) deals,
-            COUNTIF(converted_date IS NOT NULL) converted,
-            ROUND(100*COUNTIF(converted_date IS NOT NULL)/COUNT(*),2) conv_pct,
-            ROUND(AVG(NULLIF(product_price,0)),0) avg_price
-          FROM {CF_LEADS} WHERE {_CAT_NORM} IS NOT NULL
+          SELECT {_CAT_NORM} category, COUNT(*) deals, {conv} converted,
+            ROUND(100*{conv}/COUNT(*),2) conv_pct,
+            ROUND(AVG(NULLIF(product_price,0)),0) avg_price,
+            ROUND(SUM(IF(converted_date IS NOT NULL, IFNULL(product_price,0),0)),0) won_value,
+            ROUND(AVG(NULLIF(score,0)),1) avg_score,
+            ROUND(AVG(conversion_duration_days),1) avg_days
+          FROM {CF_LEADS} WHERE {rng} AND {_CAT_NORM} IS NOT NULL
           GROUP BY category ORDER BY deals DESC LIMIT 20""")
         by_material = rows(f"""
-          SELECT {_MATERIAL} material, COUNT(*) deals,
-            COUNTIF(converted_date IS NOT NULL) converted,
-            ROUND(100*COUNTIF(converted_date IS NOT NULL)/COUNT(*),2) conv_pct
-          FROM {CF_LEADS} WHERE product_sku IS NOT NULL AND product_sku!=''
+          SELECT {_MATERIAL} material, COUNT(*) deals, {conv} converted, ROUND(100*{conv}/COUNT(*),2) conv_pct
+          FROM {CF_LEADS} WHERE {rng} AND product_sku IS NOT NULL AND product_sku!=''
           GROUP BY material HAVING material IS NOT NULL ORDER BY deals DESC LIMIT 10""")
         by_colour = rows(f"""
-          SELECT {_COLOUR} colour, COUNT(*) deals,
-            COUNTIF(converted_date IS NOT NULL) converted,
-            ROUND(100*COUNTIF(converted_date IS NOT NULL)/COUNT(*),2) conv_pct
-          FROM {CF_LEADS} WHERE product_sku IS NOT NULL AND product_sku!=''
+          SELECT {_COLOUR} colour, COUNT(*) deals, {conv} converted, ROUND(100*{conv}/COUNT(*),2) conv_pct
+          FROM {CF_LEADS} WHERE {rng} AND product_sku IS NOT NULL AND product_sku!=''
           GROUP BY colour HAVING colour IS NOT NULL ORDER BY deals DESC LIMIT 10""")
+        by_gender = rows(f"""
+          SELECT COALESCE(pr.g,'(unknown)') gender, COUNT(*) deals,
+            COUNTIF(l.converted_date IS NOT NULL) converted,
+            ROUND(100*COUNTIF(l.converted_date IS NOT NULL)/COUNT(*),2) conv_pct
+          FROM {CF_LEADS} l JOIN {PROD} pr ON pr.product_sku=l.product_sku
+          WHERE {rng} GROUP BY gender ORDER BY deals DESC LIMIT 8""")
+        by_purity = rows(f"""
+          SELECT CASE WHEN LOWER(pr.p) LIKE 'platin%' THEN 'Platinum'
+                      WHEN pr.p IN ('14KT','18KT','9KT','22KT') THEN pr.p ELSE '(other)' END purity,
+            COUNT(*) deals, COUNTIF(l.converted_date IS NOT NULL) converted,
+            ROUND(100*COUNTIF(l.converted_date IS NOT NULL)/COUNT(*),2) conv_pct
+          FROM {CF_LEADS} l JOIN {PROD} pr ON pr.product_sku=l.product_sku
+          WHERE {rng} GROUP BY purity ORDER BY deals DESC LIMIT 8""")
         agent_long = rows(f"""
-          SELECT lead_owner agent, {_CAT_NORM} category, COUNT(*) deals,
-            COUNTIF(converted_date IS NOT NULL) converted
+          SELECT lead_owner agent, {_CAT_NORM} category, COUNT(*) deals, {conv} converted
           FROM {CF_LEADS}
-          WHERE lead_owner IS NOT NULL AND lead_owner!='' AND {_CAT_NORM} IS NOT NULL
+          WHERE {rng} AND lead_owner IS NOT NULL AND lead_owner!='' AND {_CAT_NORM} IS NOT NULL
           GROUP BY agent, category""")
     except Exception as e:
         return jsonify(error=str(e)), 500
 
-    # pivot agent × category matrix (restricted to the main categories)
     agents = {}
     for r in agent_long:
-        a = agents.setdefault(r["agent"], {"agent": r["agent"], "total_deals": 0,
-                                           "total_conv": 0, "cats": {}})
+        a = agents.setdefault(r["agent"], {"agent": r["agent"], "total_deals": 0, "total_conv": 0, "cats": {}})
         a["total_deals"] += r["deals"]
         a["total_conv"] += r["converted"]
         if r["category"] in _MATRIX_CATS:
@@ -1568,14 +1589,21 @@ def api_products():
     for a in agent_rows:
         a["conv_pct"] = round(100 * a["total_conv"] / a["total_deals"], 2) if a["total_deals"] else 0
 
+    def n(v):
+        return float(v) if v is not None else None
+
+    def cut(lst, key):
+        return [{key: r[key], "deals": r["deals"], "converted": r["converted"],
+                 "conv_pct": float(r["conv_pct"] or 0)} for r in lst]
+
     return jsonify(
         window=win, matrix_cats=_MATRIX_CATS,
         by_type=[{"category": t["category"], "deals": t["deals"], "converted": t["converted"],
-                  "conv_pct": float(t["conv_pct"] or 0), "avg_price": float(t["avg_price"] or 0)} for t in by_type],
-        by_material=[{"material": m["material"], "deals": m["deals"], "converted": m["converted"],
-                      "conv_pct": float(m["conv_pct"] or 0)} for m in by_material],
-        by_colour=[{"colour": c["colour"], "deals": c["deals"], "converted": c["converted"],
-                    "conv_pct": float(c["conv_pct"] or 0)} for c in by_colour],
+                  "conv_pct": float(t["conv_pct"] or 0), "avg_price": n(t["avg_price"]),
+                  "won_value": n(t["won_value"]), "avg_score": n(t["avg_score"]),
+                  "avg_days": n(t["avg_days"])} for t in by_type],
+        by_material=cut(by_material, "material"), by_colour=cut(by_colour, "colour"),
+        by_gender=cut(by_gender, "gender"), by_purity=cut(by_purity, "purity"),
         agents=agent_rows,
     )
 

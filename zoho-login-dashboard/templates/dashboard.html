@@ -252,10 +252,18 @@
       </div>
 
       <div class="card">
-        <h3>Deals by material &amp; colour</h3>
+        <h3>Deals by material &amp; colour <span class="muted">· on deals carrying a product SKU</span></h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;">
           <div><h4 style="margin:0 0 8px;font-size:13px;color:#9aa3b2;">Material</h4><div id="prodmaterial"><div class="loading"><span class="spin"></span> loading…</div></div></div>
           <div><h4 style="margin:0 0 8px;font-size:13px;color:#9aa3b2;">Metal colour</h4><div id="prodcolour"></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Deals by gender &amp; purity</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;">
+          <div><h4 style="margin:0 0 8px;font-size:13px;color:#9aa3b2;">Gender</h4><div id="prodgender"><div class="loading"><span class="spin"></span> loading…</div></div></div>
+          <div><h4 style="margin:0 0 8px;font-size:13px;color:#9aa3b2;">Purity</h4><div id="prodpurity"></div></div>
         </div>
       </div>
 
@@ -421,6 +429,7 @@ function applyFilters(e){
   loadSummary(); loadHourly(); loadUsers(); loadEvents(); loadInsights();
   if (!$('tab-data').classList.contains('hidden')) loadData();
   if (!$('tab-deals').classList.contains('hidden')) loadDeals();
+  if (!$('tab-products').classList.contains('hidden')) loadProducts();
 }
 
 // ---- independent card loaders --------------------------------------------
@@ -944,16 +953,40 @@ function cutTable(rows, keyName, keyLabel){
     <thead><tr><th>${keyLabel}</th><th class="num">Deals</th><th></th><th class="num">Won</th><th class="num">Conv.</th>${rows[0].avg_price!==undefined?'<th class="num">Avg price</th>':''}</tr></thead>
     <tbody>${body}</tbody></table></div>`;
 }
+function typeTable(rows){
+  if(!rows.length) return '<div class="loading">No deals with a product type in this range.</div>';
+  const maxD = Math.max(...rows.map(r=>r.deals))||1;
+  const body = rows.map(r=>`<tr>
+    <td><b>${esc(r.category)}</b></td>
+    <td class="num">${r.deals.toLocaleString()}</td>
+    <td style="min-width:90px;"><div style="height:8px;background:#232833;border-radius:5px;overflow:hidden;"><div style="height:100%;width:${Math.round(100*r.deals/maxD)}%;background:linear-gradient(90deg,#e0b64a,#c98d1a);"></div></div></td>
+    <td class="num">${r.converted}</td>
+    <td class="num" style="color:${convColor(r.conv_pct)};font-weight:600;">${r.conv_pct.toFixed(2)}%</td>
+    <td class="num">${r.avg_price>0?fmtInr(r.avg_price):'—'}</td>
+    <td class="num">${r.won_value>0?fmtInr(r.won_value):'—'}</td>
+    <td class="num">${r.avg_score!=null?r.avg_score:'—'}</td>
+    <td class="num">${r.avg_days!=null?r.avg_days+'d':'—'}</td>
+  </tr>`).join('');
+  return `<div class="tblwrap"><table style="min-width:720px;">
+    <thead><tr><th>Product type</th><th class="num">Deals</th><th></th><th class="num">Won</th><th class="num">Conv.</th>
+      <th class="num">Avg price</th><th class="num">Won value</th><th class="num">Avg score</th><th class="num">Days→win</th></tr></thead>
+    <tbody>${body}</tbody></table></div>
+    <div class="muted" style="font-size:11.5px;margin-top:8px;">Avg score = lead-quality score · Won value = ₹ of product price on converted deals · Days→win = avg days to convert.</div>`;
+}
 async function loadProducts(){
-  const pt=$('prodtype'), pm=$('prodmaterial'), pc=$('prodcolour'), pa=$('prodagents');
+  const pt=$('prodtype'), pm=$('prodmaterial'), pc=$('prodcolour'), pg=$('prodgender'), pp=$('prodpurity'), pa=$('prodagents');
   pt.innerHTML='<div class="loading"><span class="spin"></span> loading…</div>';
+  let f=$('from').value, t=$('to').value;
+  if(f===t) f='2025-01-01';   // single-day default -> show full history
   try{
-    const d = await (await fetch('/api/products')).json();
+    const d = await (await fetch('/api/products?'+new URLSearchParams({from:f,to:t}).toString())).json();
     if(d.error){ pt.innerHTML=`<div class="err">${esc(d.error)}</div>`; return; }
-    if(d.window) $('prodwindow').textContent = `· ${d.window.frm} – ${d.window.too}`;
-    pt.innerHTML = cutTable(d.by_type, 'category', 'Product type');
+    if(d.window) $('prodwindow').textContent = `· ${d.window.frm} – ${d.window.too} · ${(d.window.total||0).toLocaleString()} deals`;
+    pt.innerHTML = typeTable(d.by_type);
     pm.innerHTML = cutTable(d.by_material, 'material', 'Material');
     pc.innerHTML = cutTable(d.by_colour, 'colour', 'Colour');
+    pg.innerHTML = cutTable(d.by_gender, 'gender', 'Gender');
+    pp.innerHTML = cutTable(d.by_purity, 'purity', 'Purity');
     // agent × product-type matrix
     const cats = d.matrix_cats;
     if(!d.agents.length){ pa.innerHTML='<div class="loading">No agents.</div>'; }
