@@ -1583,6 +1583,11 @@ def api_products():
           SELECT INITCAP(TRIM(city)) city, COUNT(*) deals, {conv} converted, ROUND(100*{conv}/COUNT(*),2) conv_pct
           FROM {CF_LEADS} WHERE {rng} AND city IS NOT NULL AND TRIM(city)!=''
           GROUP BY city ORDER BY deals DESC LIMIT 15""")
+        by_month = rows(f"""
+          SELECT FORMAT_DATE('%Y-%m', DATE(created_date)) month, COUNT(*) deals, {conv} converted,
+            ROUND(100*{conv}/COUNT(*),2) conv_pct
+          FROM {CF_LEADS} WHERE {rng} AND created_date IS NOT NULL
+          GROUP BY month ORDER BY month""")
         by_segment = rows(f"""
           SELECT sg.segment, COUNT(*) deals, COUNTIF(l.converted_date IS NOT NULL) converted,
             ROUND(100*COUNTIF(l.converted_date IS NOT NULL)/COUNT(*),2) conv_pct
@@ -1632,6 +1637,8 @@ def api_products():
         by_price=[{"band": b["band"].split("·", 1)[-1], "deals": b["deals"], "converted": b["converted"],
                    "conv_pct": float(b["conv_pct"] or 0)} for b in by_price],
         by_city=cut(by_city, "city"), by_segment=cut(by_segment, "segment"),
+        by_month=[{"month": m["month"], "deals": m["deals"], "converted": m["converted"],
+                   "conv_pct": float(m["conv_pct"] or 0)} for m in by_month],
         agents=agent_rows,
     )
 
@@ -2207,7 +2214,7 @@ def _lc_conv_schema():
     ]
 
 
-def sync_limechat(statuses=("open", "resolved", "closed"), max_pages=2500, enrich_days=7):
+def sync_limechat(statuses=("open", "resolved"), max_pages=40, enrich_days=7):
     """Metadata sync of ALL conversations (list API only, no per-conversation
     calls) so counts match LimeChat, then fetch full message history only for
     conversations created within the last `enrich_days` to compute accurate

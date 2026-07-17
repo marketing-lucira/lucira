@@ -247,6 +247,11 @@
     <!-- PRODUCTS TAB -->
     <div id="tab-products" class="hidden">
       <div class="card">
+        <h3>Deals over time <span class="muted">· monthly · 🟨 deals · 🟩 converted</span></h3>
+        <div id="prodtrend"><div class="loading"><span class="spin"></span> loading trend…</div></div>
+      </div>
+
+      <div class="card">
         <h3>Deals by product type <span class="muted" id="prodwindow"></span></h3>
         <div class="muted" style="margin:-4px 0 12px;">From the corefactor lead history joined to the Zoho product master. Product type is present on ~36% of deals; material/colour on deals with a known SKU.</div>
         <div id="prodtype"><div class="loading"><span class="spin"></span> loading product types…</div></div>
@@ -1004,6 +1009,22 @@ async function loadProducts(){
     const d = await (await fetch('/api/products?'+new URLSearchParams({from:f,to:t}).toString())).json();
     if(d.error){ pt.innerHTML=`<div class="err">${esc(d.error)}</div>`; return; }
     if(d.window) $('prodwindow').textContent = `· ${d.window.frm} – ${d.window.too} · ${(d.window.total||0).toLocaleString()} deals`;
+    // monthly trend (date-level view)
+    const M = d.by_month||[];
+    if(!M.length){ $('prodtrend').innerHTML='<div class="loading">No monthly data in range.</div>'; }
+    else {
+      const maxM = Math.max(...M.map(x=>x.deals))||1;
+      $('prodtrend').innerHTML = '<div class="strend" style="height:170px;">' + M.map(x=>{
+        const hD=Math.max(3,Math.round(120*x.deals/maxM));
+        const hC=Math.max(0,Math.round(120*x.converted/maxM));
+        return `<div class="scol" style="cursor:default" title="${x.month}: ${x.deals} deals, ${x.converted} won (${x.conv_pct}%)">
+          <div class="sv">${x.deals}</div>
+          <div style="display:flex;align-items:flex-end;gap:2px;height:120px;">
+            <div style="width:10px;height:${hD}px;background:#e0b64a;border-radius:3px 3px 0 0;"></div>
+            <div style="width:10px;height:${hC}px;background:#31c48d;border-radius:3px 3px 0 0;"></div>
+          </div>
+          <div class="sd">${x.month.slice(2)}</div></div>`; }).join('') + '</div>';
+    }
     pt.innerHTML = typeTable(d.by_type);
     pm.innerHTML = cutTable(d.by_material, 'material', 'Material');
     pc.innerHTML = cutTable(d.by_colour, 'colour', 'Colour');
