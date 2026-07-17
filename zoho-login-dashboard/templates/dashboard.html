@@ -143,6 +143,7 @@
 
     <div class="presets">
       <span class="chip" onclick="preset(0)">Today</span>
+      <span class="chip" onclick="yesterday()">Yesterday</span>
       <span class="chip" onclick="preset(6)">Last 7 days</span>
       <span class="chip" onclick="preset(29)">Last 30 days</span>
       <span class="chip" onclick="preset(59)">Last 60 days</span>
@@ -265,6 +266,19 @@
           <div><h4 style="margin:0 0 8px;font-size:13px;color:#9aa3b2;">Gender</h4><div id="prodgender"><div class="loading"><span class="spin"></span> loading…</div></div></div>
           <div><h4 style="margin:0 0 8px;font-size:13px;color:#9aa3b2;">Purity</h4><div id="prodpurity"></div></div>
         </div>
+      </div>
+
+      <div class="card">
+        <h3>Deals by price band &amp; segment</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;">
+          <div><h4 style="margin:0 0 8px;font-size:13px;color:#9aa3b2;">Price band</h4><div id="prodprice"><div class="loading"><span class="spin"></span> loading…</div></div></div>
+          <div><h4 style="margin:0 0 8px;font-size:13px;color:#9aa3b2;">Segment <span class="muted">· New Arrival / Bestseller</span></h4><div id="prodsegment"></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Deals by city <span class="muted">· top demand geographies</span></h3>
+        <div id="prodcity"><div class="loading"><span class="spin"></span> loading…</div></div>
       </div>
 
       <div class="card">
@@ -396,6 +410,10 @@ function preset(daysBack){
   const to = new Date(); const from = new Date(); from.setDate(to.getDate()-daysBack);
   $('from').value = iso(from); $('to').value = iso(to); applyFilters();
 }
+function yesterday(){
+  const d = new Date(); d.setDate(d.getDate()-1);
+  $('from').value = iso(d); $('to').value = iso(d); applyFilters();
+}
 function presetMonth(){
   const now = new Date(); const first = new Date(now.getFullYear(), now.getMonth(), 1);
   $('from').value = iso(first); $('to').value = iso(now); applyFilters();
@@ -430,6 +448,9 @@ function applyFilters(e){
   if (!$('tab-data').classList.contains('hidden')) loadData();
   if (!$('tab-deals').classList.contains('hidden')) loadDeals();
   if (!$('tab-products').classList.contains('hidden')) loadProducts();
+  if (!$('tab-sqi').classList.contains('hidden'))  { $('sqidate').value = $('to').value; loadSQI(); }
+  if (!$('tab-dqi').classList.contains('hidden'))  { $('dqidate').value = $('to').value; loadDQI(); }
+  if (!$('tab-chat').classList.contains('hidden')) { $('chatfrom').value = $('from').value; $('chatto').value = $('to').value; loadChat(); }
 }
 
 // ---- independent card loaders --------------------------------------------
@@ -975,6 +996,7 @@ function typeTable(rows){
 }
 async function loadProducts(){
   const pt=$('prodtype'), pm=$('prodmaterial'), pc=$('prodcolour'), pg=$('prodgender'), pp=$('prodpurity'), pa=$('prodagents');
+  const ppr=$('prodprice'), pseg=$('prodsegment'), pcity=$('prodcity');
   pt.innerHTML='<div class="loading"><span class="spin"></span> loading…</div>';
   let f=$('from').value, t=$('to').value;
   if(f===t) f='2025-01-01';   // single-day default -> show full history
@@ -987,6 +1009,9 @@ async function loadProducts(){
     pc.innerHTML = cutTable(d.by_colour, 'colour', 'Colour');
     pg.innerHTML = cutTable(d.by_gender, 'gender', 'Gender');
     pp.innerHTML = cutTable(d.by_purity, 'purity', 'Purity');
+    ppr.innerHTML = cutTable(d.by_price, 'band', 'Price band');
+    pseg.innerHTML = cutTable(d.by_segment, 'segment', 'Segment');
+    pcity.innerHTML = cutTable(d.by_city, 'city', 'City');
     // agent × product-type matrix
     const cats = d.matrix_cats;
     if(!d.agents.length){ pa.innerHTML='<div class="loading">No agents.</div>'; }

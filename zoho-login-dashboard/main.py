@@ -1569,6 +1569,31 @@ def api_products():
             ROUND(100*COUNTIF(l.converted_date IS NOT NULL)/COUNT(*),2) conv_pct
           FROM {CF_LEADS} l JOIN {PROD} pr ON pr.product_sku=l.product_sku
           WHERE {rng} GROUP BY purity ORDER BY deals DESC LIMIT 8""")
+        by_price = rows(f"""
+          SELECT band, {conv} converted, COUNT(*) deals, ROUND(100*{conv}/COUNT(*),2) conv_pct
+          FROM (SELECT converted_date, CASE
+              WHEN product_price < 10000 THEN '01·0–10k'   WHEN product_price < 20000 THEN '02·10k–20k'
+              WHEN product_price < 30000 THEN '03·20k–30k' WHEN product_price < 40000 THEN '04·30k–40k'
+              WHEN product_price < 50000 THEN '05·40k–50k' WHEN product_price < 75000 THEN '06·50k–75k'
+              WHEN product_price < 100000 THEN '07·75k–100k' WHEN product_price < 150000 THEN '08·100k–150k'
+              WHEN product_price < 200000 THEN '09·150k–200k' ELSE '10·200k+' END band
+            FROM {CF_LEADS} WHERE {rng} AND product_price > 0)
+          GROUP BY band ORDER BY band""")
+        by_city = rows(f"""
+          SELECT INITCAP(TRIM(city)) city, COUNT(*) deals, {conv} converted, ROUND(100*{conv}/COUNT(*),2) conv_pct
+          FROM {CF_LEADS} WHERE {rng} AND city IS NOT NULL AND TRIM(city)!=''
+          GROUP BY city ORDER BY deals DESC LIMIT 15""")
+        by_segment = rows(f"""
+          SELECT sg.segment, COUNT(*) deals, COUNTIF(l.converted_date IS NOT NULL) converted,
+            ROUND(100*COUNTIF(l.converted_date IS NOT NULL)/COUNT(*),2) conv_pct
+          FROM {CF_LEADS} l JOIN (
+            SELECT z.product_sku, CASE WHEN na.product_id IS NOT NULL THEN 'New Arrival'
+              WHEN bs.product_id IS NOT NULL THEN 'Bestseller' ELSE 'Other' END segment
+            FROM (SELECT DISTINCT product_sku, product_code FROM `{PROJECT}.ds_imputed_reporting.zoho_product_details` WHERE product_sku IS NOT NULL) z
+            LEFT JOIN (SELECT DISTINCT product_id FROM `{PROJECT}.product_segments.segments_newly_added_products`) na ON na.product_id=z.product_code
+            LEFT JOIN (SELECT DISTINCT product_id FROM `{PROJECT}.product_segments.product_segments_table` WHERE segment='bestsellers') bs ON bs.product_id=z.product_code
+          ) sg ON sg.product_sku=l.product_sku
+          WHERE {rng} GROUP BY segment ORDER BY deals DESC""")
         agent_long = rows(f"""
           SELECT lead_owner agent, {_CAT_NORM} category, COUNT(*) deals, {conv} converted
           FROM {CF_LEADS}
@@ -1604,6 +1629,9 @@ def api_products():
                   "avg_days": n(t["avg_days"])} for t in by_type],
         by_material=cut(by_material, "material"), by_colour=cut(by_colour, "colour"),
         by_gender=cut(by_gender, "gender"), by_purity=cut(by_purity, "purity"),
+        by_price=[{"band": b["band"].split("·", 1)[-1], "deals": b["deals"], "converted": b["converted"],
+                   "conv_pct": float(b["conv_pct"] or 0)} for b in by_price],
+        by_city=cut(by_city, "city"), by_segment=cut(by_segment, "segment"),
         agents=agent_rows,
     )
 
