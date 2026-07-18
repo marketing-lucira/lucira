@@ -12,7 +12,8 @@ name: Deploy Dashboards to Pages
 # Per-dashboard config is injected inline at deploy time from GitHub repo
 # Variables (Settings → Secrets and variables → Actions → Variables):
 #   GCP cost : GCP_COST_API_BASE, GCP_MONTHLY_BUDGET, GCP_BILLING_CURRENCY, GCP_USD_FX
-#   GA4      : GA4_API_BASE, GA4_CURRENCY, GA4_AUTO_REFRESH_MIN
+#   GA4      : GA4_SNAPSHOT_URL (daily static snapshot the dashboard reads), GA4_API_BASE
+#              (optional, for the AI assistant), GA4_CURRENCY
 # Unset → the dashboard uses its built-in defaults (sample data / manual CSV).
 
 on:
@@ -47,10 +48,10 @@ jobs:
           GCP_MONTHLY_BUDGET:   ${{ vars.GCP_MONTHLY_BUDGET }}
           GCP_BILLING_CURRENCY: ${{ vars.GCP_BILLING_CURRENCY }}
           GCP_USD_FX:           ${{ vars.GCP_USD_FX }}
-          # GA4 dashboard
+          # GA4 dashboard (daily-snapshot model)
+          GA4_SNAPSHOT_URL:     ${{ vars.GA4_SNAPSHOT_URL }}
           GA4_API_BASE:         ${{ vars.GA4_API_BASE }}
           GA4_CURRENCY:         ${{ vars.GA4_CURRENCY }}
-          GA4_AUTO_REFRESH_MIN: ${{ vars.GA4_AUTO_REFRESH_MIN }}
         run: |
           set -euo pipefail
           mkdir -p _site/gcp-cost _site/ga4
@@ -87,13 +88,12 @@ jobs:
           inject dashboard/gcp-cost-dashboard.html _site/gcp-cost/index.html \
                  GCP_COST_CONFIG_INJECT __GCP_COST_CONFIG__ "$GCP_CFG"
 
-          # ---- GA4 config ----
+          # ---- GA4 config (daily-snapshot model) ----
           GA4_CFG="$(jq -nc \
-            --arg api "${GA4_API_BASE:-}" --arg cur "${GA4_CURRENCY:-}" \
-            --arg ref "${GA4_AUTO_REFRESH_MIN:-}" '
-            {} | (if $api!="" then .API_BASE=$api else . end)
-               | (if $cur!="" then .CURRENCY=$cur else . end)
-               | (if $ref!="" then .AUTO_REFRESH_MIN=($ref|tonumber) else . end)')"
+            --arg snap "${GA4_SNAPSHOT_URL:-}" --arg api "${GA4_API_BASE:-}" --arg cur "${GA4_CURRENCY:-}" '
+            {} | (if $snap!="" then .SNAPSHOT_URL=$snap else . end)
+               | (if $api !="" then .API_BASE=$api else . end)
+               | (if $cur !="" then .CURRENCY=$cur else . end)')"
           inject dashboard/ga4-dashboard.html _site/ga4/index.html \
                  GA4_CONFIG_INJECT __GA4_CONFIG__ "$GA4_CFG"
 

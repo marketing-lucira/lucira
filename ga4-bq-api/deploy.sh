@@ -18,6 +18,8 @@ SERVICE="ga4-bq-api"
 DATASET="ga4_dashboard"
 GA4_EXPORT_DATASET="analytics_478308692"   # raw GA4 export dataset (events_*)
 BACKFILL_DAYS="90"                          # set 0 to skip backfill
+SNAPSHOT_BUCKET="lucira-dashboards"         # GCS bucket for the daily static snapshot object
+SNAPSHOT_PREFIX="ga4"                        # → gs://$SNAPSHOT_BUCKET/ga4/latest.json
 # Set these to enable generative AI (else the dashboard uses its local assistant):
 GEMINI_SECRET=""                            # Secret Manager secret name holding the Gemini key, e.g. gemini-api-key
 CORS_ORIGIN="https://marketing-lucira.github.io"
@@ -46,9 +48,16 @@ if [ "${BACKFILL_DAYS}" -gt 0 ]; then
   done
 fi
 
+# ── 2b. snapshot bucket (static daily JSON the dashboard reads) ─────────────
+echo "▸ Ensuring snapshot bucket + public read…"
+gsutil mb -l "$REGION" "gs://${SNAPSHOT_BUCKET}" 2>/dev/null || true
+# Public-read on the snapshot prefix so the static GitHub Pages dashboard can GET it.
+# (If you prefer not to expose it publicly, front it with a CDN/proxy instead.)
+gsutil iam ch allUsers:objectViewer "gs://${SNAPSHOT_BUCKET}" || true
+
 # ── 3. deploy Cloud Run (authenticated; source-based build) ─────────────────
 echo "▸ Deploying Cloud Run service…"
-ENV="GCP_PROJECT=${PROJECT},GA4_DASHBOARD_DATASET=${DATASET},GA4_CURRENCY=INR,WINDOW_DAYS=90,CORS_ORIGIN=${CORS_ORIGIN}"
+ENV="GCP_PROJECT=${PROJECT},GA4_DASHBOARD_DATASET=${DATASET},GA4_CURRENCY=INR,WINDOW_DAYS=90,CORS_ORIGIN=${CORS_ORIGIN},SNAPSHOT_BUCKET=${SNAPSHOT_BUCKET},SNAPSHOT_PREFIX=${SNAPSHOT_PREFIX},SNAPSHOT_DAYS=400"
 SECRET_ARG=()
 if [ -n "${GEMINI_SECRET}" ]; then
   SECRET_ARG=(--set-secrets "GEMINI_API_KEY=${GEMINI_SECRET}:latest")
@@ -78,6 +87,14 @@ gcloud scheduler jobs create http ga4-daily-refresh \
   2>/dev/null || gcloud scheduler jobs update http ga4-daily-refresh --location "$REGION" \
   --schedule "0 9 * * *" --time-zone "Asia/Kolkata" --uri "${URL}/refresh"
 
+gcloud scheduler jobs create http ga4-daily-snapshot \
+  --location "$REGION" --schedule "5 9 * * *" --time-zone "Asia/Kolkata" \
+  --uri "${URL}/snapshot" --http-method POST \
+  --oidc-service-account-email "$SA" --oidc-token-audience "$URL" \
+  --headers "Content-Type=application/json" --message-body '{}' \
+  2>/dev/null || gcloud scheduler jobs update http ga4-daily-snapshot --location "$REGION" \
+  --schedule "5 9 * * *" --time-zone "Asia/Kolkata" --uri "${URL}/snapshot"
+
 gcloud scheduler jobs create http ga4-daily-report \
   --location "$REGION" --schedule "15 9 * * *" --time-zone "Asia/Kolkata" \
   --uri "${URL}/report" --http-method POST \
@@ -86,8 +103,12 @@ gcloud scheduler jobs create http ga4-daily-report \
   2>/dev/null || gcloud scheduler jobs update http ga4-daily-report --location "$REGION" \
   --schedule "15 9 * * *" --time-zone "Asia/Kolkata" --uri "${URL}/report"
 
-echo "✓ Done. Set the dashboard's API_BASE (GitHub Variable GA4_API_BASE) to: ${URL}"
-echo "  Note: the service is PRIVATE (--no-allow-unauthenticated). For the static"
-echo "  dashboard to call /data from the browser, either (a) put /data behind an"
-echo "  authenticated proxy, or (b) redeploy with --allow-unauthenticated and keep"
-echo "  /refresh + /report guarded by REFRESH_TOKEN. See README 'Auth & the browser'."
+SNAP_URL="https://storage.googleapis.com/${SNAPSHOT_BUCKET}/${SNAPSHOT_PREFIX}/latest.json"
+echo "✓ Done."
+echo "  Daily schedule (Asia/Kolkata): 09:00 refresh → 09:05 snapshot → 09:15 AI report."
+echo "  Set the dashboard GitHub Variable  GA4_SNAPSHOT_URL = ${SNAP_URL}"
+echo "  (This static object is the dashboard's data source — read once/day, no live querying.)"
+echo "  Optional: set GA4_API_BASE = ${URL}  to enable the Gemini AI assistant (/ai)."
+echo "  Trigger the first snapshot now:  gcloud scheduler jobs run ga4-daily-snapshot --location ${REGION}"
+echo "  Note: /snapshot + /refresh + /report are guarded (Scheduler OIDC / REFRESH_TOKEN);"
+echo "        the snapshot OBJECT is public-read so the static dashboard can fetch it."

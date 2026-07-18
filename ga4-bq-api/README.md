@@ -21,13 +21,23 @@ GA4 export (raw events_YYYYMMDD)                    ← scanned ONCE/day, one pa
         │  sql/10..15_*.sql  (incremental: DELETE+INSERT one date)
         ▼
 ga4_dashboard.*  (6 small, partitioned + clustered summary tables, HLL user sketches)
-        │  main.py /data  (GROUP BY over aggregates only — cheap)
+        │  main.py /snapshot  (GROUP BY over aggregates → one wide-window JSON)
+        ▼
+gs://<bucket>/ga4/latest.json   (STATIC daily snapshot — public-read)
+        │  dashboard fetches this ONCE/day, caches in localStorage, reuses all day
         ▼
 dashboard/ga4-dashboard.html   (same JSON contract as the old GA4 Data API function → drop-in)
 
-Cloud Scheduler ──09:00 IST──▶ POST /refresh  (rebuild yesterday's partition in all 6 tables)
-                └─09:15 IST──▶ POST /report   (Gemini daily report → ga4_ai_reports history)
+Cloud Scheduler ──09:00 IST──▶ POST /refresh   (rebuild yesterday's partition in all 6 tables)
+                ├─09:05 IST──▶ POST /snapshot  (build + write the static daily JSON)
+                └─09:15 IST──▶ POST /report    (Gemini daily report → ga4_ai_reports history)
 ```
+
+**Daily-snapshot model (not live querying).** The dashboard does **not** query BigQuery per load.
+Once a day at 09:00 IST the backend rebuilds the aggregates and writes a single static JSON object;
+the dashboard reads that object once, caches it, and reuses it all day (re-fetching only at the next
+09:00 IST). So BigQuery is touched **once/day**, and dashboard loads cost nothing. `/data` remains
+available for ad-hoc/date-range queries but is not on the dashboard's hot path.
 
 Why it's cheap: raw events are scanned **once per day** by the refresh (a single date partition
 each). Every dashboard load reads only the aggregated tables, which are partitioned by `event_date`
@@ -53,7 +63,8 @@ sum-of-daily error).
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/`, `/health` | liveness + config echo |
-| GET | `/data?from&to` or `?days=` | full dashboard payload (the contract the dashboard consumes) |
+| POST | `/snapshot` | build the wide-window payload + write `gs://…/ga4/latest.json` (the dashboard's daily data source) |
+| GET | `/data?from&to` or `?days=` | full dashboard payload for ad-hoc/date-range queries (not the hot path) |
 | POST | `/refresh` `{date?}` | rebuild the 6 aggregates for a date (default: yesterday IST) |
 | POST | `/ai` `{question, days?}` | Gemini answer grounded on recent aggregates |
 | GET/POST | `/report` | GET latest stored daily report · POST generate+store (Scheduler) |
@@ -71,24 +82,27 @@ Prereqs: `gcloud` + `bq` authenticated with BigQuery + Cloud Run + Cloud Schedul
 
 ```bash
 cd ga4-bq-api
-bash deploy.sh          # creates dataset+tables, backfills 90d, deploys Cloud Run, wires Scheduler (09:00/09:15 IST)
+bash deploy.sh          # dataset+tables, backfill 90d, snapshot bucket, deploy Cloud Run, wire Scheduler (09:00 refresh / 09:05 snapshot / 09:15 report)
 ```
 
-Set the dashboard's `GA4_API_BASE` GitHub Variable to the printed `<service-url>/data`.
+Set the dashboard's `GA4_SNAPSHOT_URL` GitHub Variable to the printed snapshot object URL
+(`https://storage.googleapis.com/<bucket>/ga4/latest.json`). Optionally set `GA4_API_BASE` to the
+service URL to enable the Gemini AI assistant.
 
 ### Auth & the browser (read this)
 
-`deploy.sh` deploys the service **private** (`--no-allow-unauthenticated`) and lets Cloud Scheduler
-invoke `/refresh` + `/report` via OIDC. But a **static GitHub Pages dashboard cannot send OIDC
-tokens**, so for the browser to call `/data` you must pick one:
+The daily-snapshot model keeps this clean: the dashboard reads a **static, public GCS object**
+(`gs://…/ga4/latest.json`), so the Cloud Run **service can stay fully private**
+(`--no-allow-unauthenticated`) — only Cloud Scheduler invokes `/refresh`, `/snapshot`, `/report`
+via OIDC. There is **no browser → Cloud Run call for data**.
 
-- **A. Public read, guarded writes (simplest):** redeploy with `--allow-unauthenticated`, keep
-  `/refresh` + `/report` protected by `REFRESH_TOKEN` (and Scheduler OIDC). `/data` is read-only
-  aggregates; lock `CORS_ORIGIN` to `https://marketing-lucira.github.io`.
-- **B. Authenticated proxy:** front `/data` with an authenticated proxy / API gateway that injects
-  credentials. More secure, more setup.
-
-`deploy.sh` prints this reminder too.
+- The snapshot **object** is public-read (`deploy.sh` sets `allUsers:objectViewer` on the bucket).
+  If you'd rather not expose it, front the object with a CDN/signed-URL and set `GA4_SNAPSHOT_URL`
+  to that instead — the dashboard just needs a GET-able JSON URL.
+- The only optional browser → Cloud Run call is the **AI assistant** (`/ai`). To enable it for the
+  static page, either redeploy with `--allow-unauthenticated` (and keep the write endpoints guarded
+  by `REFRESH_TOKEN`) with `CORS_ORIGIN` locked to `https://marketing-lucira.github.io`, or proxy
+  it. If you skip this, the dashboard's assistant simply stays in local rule-based mode.
 
 ### Gemini (optional AI)
 

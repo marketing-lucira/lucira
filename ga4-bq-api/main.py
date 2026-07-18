@@ -49,6 +49,11 @@ TOP_LIMIT     = int(os.environ.get("TOP_LIMIT", "30"))
 REFRESH_TOKEN = os.environ.get("REFRESH_TOKEN", "")           # optional shared secret for /refresh
 GEMINI_KEY    = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_MODEL  = os.environ.get("GA4_GEMINI_MODEL", "gemini-2.0-flash")
+# Daily snapshot: /snapshot writes the day's payload as a static JSON object to
+# this GCS bucket; the dashboard reads that object once/day (no per-load query).
+SNAPSHOT_BUCKET = os.environ.get("SNAPSHOT_BUCKET", "")
+SNAPSHOT_PREFIX = os.environ.get("SNAPSHOT_PREFIX", "ga4")
+SNAPSHOT_DAYS   = int(os.environ.get("SNAPSHOT_DAYS", "400"))  # history the snapshot covers (client filters within it)
 SQL_DIR       = Path(__file__).parent / "sql"
 FQ            = f"`{PROJECT}.{DATASET}"                        # helper prefix (close with .table`)
 
@@ -505,6 +510,40 @@ def report():
         ]),
     ).result()
     return jsonify({"ok": True, "report_date": report_date, "report_md": text}), 200
+
+
+# ─────────────────────────────────────────────────────────────
+#  /snapshot — build the daily static JSON the dashboard reads.
+#  Cloud Scheduler calls this once/day (after /refresh). The dashboard loads the
+#  resulting GCS object once and reuses it all day — no per-load BigQuery.
+# ─────────────────────────────────────────────────────────────
+@app.route("/snapshot", methods=["POST", "OPTIONS"])
+def snapshot():
+    if request.method == "OPTIONS":
+        return _cors(make_response("", 204))
+    if not _authed():
+        return jsonify({"error": "unauthorized"}), 401
+    if not SNAPSHOT_BUCKET:
+        return jsonify({"error": "no_bucket", "detail": "Set SNAPSHOT_BUCKET to enable static snapshots."}), 400
+    # Build a wide-window payload so the dashboard can filter any preset (incl. YTD) client-side.
+    to = dt.datetime.now(dt.timezone(dt.timedelta(hours=5, minutes=30))).date()
+    frm = to - dt.timedelta(days=SNAPSHOT_DAYS - 1)
+    payload = build_payload(frm, to)
+    payload["snapshot"] = {"built_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+                           "refresh_ist": "09:00", "days": SNAPSHOT_DAYS}
+    body = json.dumps(payload, separators=(",", ":"))
+    date_str = payload["window"]["to"]
+    try:
+        from google.cloud import storage
+        bucket = storage.Client(project=PROJECT).bucket(SNAPSHOT_BUCKET)
+        for name in (f"{SNAPSHOT_PREFIX}/latest.json", f"{SNAPSHOT_PREFIX}/{date_str}.json"):
+            blob = bucket.blob(name)
+            blob.cache_control = "public, max-age=300"
+            blob.upload_from_string(body, content_type="application/json")
+        url = f"https://storage.googleapis.com/{SNAPSHOT_BUCKET}/{SNAPSHOT_PREFIX}/latest.json"
+        return jsonify({"ok": True, "date": date_str, "url": url, "bytes": len(body)}), 200
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(e)[:400]}), 500
 
 
 if __name__ == "__main__":

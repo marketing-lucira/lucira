@@ -289,10 +289,18 @@ svg{display:block;overflow:visible}
    so the full experience is visible. Set CONFIG.API_BASE to go live.
    ══════════════════════════════════════════════════════════════════ */
 const CONFIG = {
-  API_BASE: "",                 // e.g. "https://asia-south1-xxx.cloudfunctions.net/ga4-data"
+  // Daily-snapshot model (NOT continuous live querying). The dashboard loads ONE
+  // snapshot built server-side at 09:00 IST and reuses it all day, refreshing only
+  // at the next 09:00 IST boundary. Point SNAPSHOT_URL at the prebuilt daily JSON
+  // (a public GCS object written by ga4-bq-api /snapshot). If SNAPSHOT_URL is empty
+  // but API_BASE is set, the dashboard instead fetches one wide-window payload from
+  // <API_BASE>/data once per day. Both empty = built-in deterministic sample.
+  SNAPSHOT_URL: "",
+  API_BASE: "",                 // ga4-bq-api base — used by the AI assistant (/ai) and as a /data snapshot fallback
+  SNAPSHOT_DAYS: 400,           // history the snapshot covers; the UI filters client-side within it
+  REFRESH_HOUR_IST: 9,          // daily refresh hour, IST
   CURRENCY: "INR",
-  AUTO_REFRESH_MIN: 30,
-  TODAY: "2026-07-16",          // sample anchor; overwritten by live window.to
+  TODAY: "2026-07-16",          // sample anchor; overwritten by the snapshot's window.to
 };
 /* Deploy-time overrides: CI injects an inline <script> at the config marker
    above that sets window.__GA4_CONFIG__ from GitHub repo Variables. Merge
@@ -1590,22 +1598,55 @@ function exportMenu(){
 /* ══════════════════════════════════════════════════════════════════
    LIVE DATA (GA4 API) — optional
    ══════════════════════════════════════════════════════════════════ */
-async function tryLive(){
-  if(!CONFIG.API_BASE)return false;
+/* ── Daily-snapshot model ──────────────────────────────────────────
+   No continuous BigQuery querying. The dashboard loads ONE snapshot (built
+   server-side at 09:00 IST), caches it in localStorage, and reuses it all day.
+   It re-fetches only when the next 09:00 IST boundary passes (a single scheduled
+   timer, not polling). Changing the date filter re-slices the loaded snapshot
+   client-side — it never triggers a new query. */
+const IST_OFFSET_MS = 5.5*3600*1000;
+function _istNow(){ return new Date(Date.now()+IST_OFFSET_MS); }   // Date whose UTC fields read as IST wall-clock
+function snapshotKey(){                                            // yyyy-mm-dd of the most recent 09:00 IST boundary
+  const d=_istNow(); if(d.getUTCHours()<CONFIG.REFRESH_HOUR_IST) d.setUTCDate(d.getUTCDate()-1);
+  return d.toISOString().slice(0,10);
+}
+function msUntilNextRefresh(){
+  const d=_istNow(), t=new Date(d); t.setUTCHours(CONFIG.REFRESH_HOUR_IST,0,0,0);
+  if(t.getTime()<=d.getTime()) t.setUTCDate(t.getUTCDate()+1);
+  return (t.getTime()-d.getTime())+15000;                         // +15s cushion past the boundary
+}
+function snapshotUrl(){
+  if(CONFIG.SNAPSHOT_URL) return CONFIG.SNAPSHOT_URL;             // prebuilt static daily JSON
+  if(CONFIG.API_BASE){ const b=CONFIG.API_BASE.replace(/\/(data|ga4-data)\/?$/i,'').replace(/\/$/,'');
+    return b+'/data?days='+(CONFIG.SNAPSHOT_DAYS||400); }         // one wide-window pull/day
+  return '';
+}
+async function loadSnapshot(force){
+  const url=snapshotUrl(), key=snapshotKey();
+  if(!url){ setLiveChip(false,'Sample data · configure daily snapshot to go live'); return false; }
+  if(!force){                                                     // reuse today's cached snapshot — no network
+    try{ const c=JSON.parse(localStorage.getItem('ga4_snapshot')||'null');
+      if(c&&c.key===key&&c.payload){ ingestLive(c.payload); STATE.source='snapshot';
+        setLiveChip(true,'Snapshot · '+((c.payload.window||{}).to||key)+' · 09:00 IST'); return true; } }catch(e){}
+  }
   try{
-    const[from,to]=activeRange();
-    const res=await fetch(`${CONFIG.API_BASE}?from=${from}&to=${to}`);
+    const res=await fetch(url+(url.includes('?')?'&':'?')+'d='+key);   // per-day cache-bust
     const j=await res.json();
     if(j.error)throw new Error(j.detail||j.error);
-    ingestLive(j);
-    STATE.source='live';
-    setLiveChip(true,'Live · GA4 · '+(j.window?j.window.to:to));
+    ingestLive(j); STATE.source='snapshot';
+    try{ localStorage.setItem('ga4_snapshot',JSON.stringify({key,at:Date.now(),payload:j})); }catch(e){}
+    setLiveChip(true,'Snapshot · '+((j.window||{}).to||key)+' · 09:00 IST');
     return true;
   }catch(e){
-    setLiveChip(false,'Sample data (API error)');
-    console.warn('GA4 live fetch failed, using sample:',e.message);
+    setLiveChip(false,'Sample data (snapshot unavailable)');
+    console.warn('GA4 snapshot load failed, using sample:',e.message);
     return false;
   }
+}
+function scheduleDailyRefresh(){
+  clearTimeout(window._ga4RefreshT);
+  window._ga4RefreshT=setTimeout(async()=>{ const ok=await loadSnapshot(true); if(ok)render(); scheduleDailyRefresh(); },
+    msUntilNextRefresh());
 }
 /* The live API returns pre-aggregated arrays. GA4 (unlike raw BigQuery export)
    cannot hand us joined session-level rows, so we synthesise a session fact
@@ -1686,13 +1727,12 @@ function boot(){
   document.getElementById('btnTheme').onclick=()=>{setTheme(isDark()?'light':'dark');render();};
   document.getElementById('btnFull').onclick=()=>{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();};
   document.getElementById('btnRefresh').onclick=async()=>{document.getElementById('btnRefresh').style.transform='rotate(360deg)';
-    if(CONFIG.API_BASE){await tryLive();}render();setTimeout(()=>document.getElementById('btnRefresh').style.transform='',400);};
+    if(snapshotUrl()){await loadSnapshot(true);}render();setTimeout(()=>document.getElementById('btnRefresh').style.transform='',400);};
   // active-filter chip clears
   document.getElementById('activeFilters').onclick=e=>{const b=e.target.closest('[data-clear]');if(b){const k=b.dataset.clear;if(k==='price'){STATE.filters.priceMin=null;STATE.filters.priceMax=null;}else STATE.filters[k]='';render();}};
-  // try live if configured
-  if(CONFIG.API_BASE){tryLive().then(ok=>{if(ok)render();});
-    if(CONFIG.AUTO_REFRESH_MIN>0)setInterval(()=>tryLive().then(ok=>ok&&render()),CONFIG.AUTO_REFRESH_MIN*60000);}
-  else setLiveChip(false,'Sample data · set API to go live');
+  // Daily snapshot: load once (cached), reuse all day, auto-refresh at 09:00 IST.
+  if(snapshotUrl()){ loadSnapshot(false).then(ok=>{if(ok)render();}); scheduleDailyRefresh(); }
+  else setLiveChip(false,'Sample data · configure daily snapshot to go live');
   initAssistant();
 }
 

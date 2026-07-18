@@ -15,27 +15,35 @@ alongside the GCP cost dashboard.
 ## One-time setup
 
 1. GitHub → **Settings → Pages → Source: GitHub Actions**.
-2. (Optional) **Settings → Secrets and variables → Actions → Variables** — set to point the
-   dashboard at the live BigQuery backend without editing the HTML:
+2. (Optional) **Settings → Secrets and variables → Actions → Variables** — point the dashboard at
+   the daily snapshot without editing the HTML:
 
    | Variable | Purpose | Example |
    |---|---|---|
-   | `GA4_API_BASE` | The ga4-bq-api Cloud Run URL **including `/data`**. Empty = built-in GA4 sample. | `https://ga4-bq-api-xxxx-el.a.run.app/data` |
+   | `GA4_SNAPSHOT_URL` | The **daily static snapshot** the dashboard reads (public GCS object written by the backend's `/snapshot` at 09:00 IST). Empty = built-in GA4 sample. | `https://storage.googleapis.com/lucira-dashboards/ga4/latest.json` |
+   | `GA4_API_BASE` | *(optional)* ga4-bq-api Cloud Run base URL — enables the **Gemini AI** assistant (`/ai`) and acts as a once-daily `/data` fallback if no snapshot URL is set. | `https://ga4-bq-api-xxxx-el.a.run.app` |
    | `GA4_CURRENCY` | Reporting currency | `INR` |
-   | `GA4_AUTO_REFRESH_MIN` | Auto-refresh cadence (minutes) | `30` |
 
 3. Push (or **Actions → Run workflow**).
 
-## How the data path works
+## How the data path works — daily snapshot, not live querying
+
+The dashboard uses a **once-daily snapshot**, by design (no continuous BigQuery querying):
+
+- At **09:00 IST** Cloud Scheduler runs the backend: refresh aggregates → build a wide-window
+  payload → write it as a **static JSON object** (`gs://…/ga4/latest.json`).
+- The dashboard **loads that object once**, caches it in `localStorage`, and **reuses it all day**.
+  Changing the date filter re-slices the loaded snapshot client-side — it never triggers a query.
+- It re-fetches only when the **next 09:00 IST** boundary passes (a single scheduled timer). The
+  header shows `Snapshot · <date> · 09:00 IST`.
 
 | Path | Status | Notes |
 |---|---|---|
-| **Built-in GA4 sample** | ✅ works now | Deterministic seeded session dataset. What you see with no `GA4_API_BASE`. |
-| **Live BigQuery export** | ⛔ deploy-gated | Needs the `ga4-bq-api` Cloud Run backend deployed against the BigQuery GA4 export (`analytics_478308692`) with the 6 aggregated summary tables + 09:00 IST Cloud Scheduler refresh. This account is **view-only** with **no deploy rights**, so someone with access deploys it. See [`../../ga4-bq-api/README.md`](../../ga4-bq-api/README.md). |
+| **Built-in GA4 sample** | ✅ works now | Deterministic seeded session dataset. What you see with no `GA4_SNAPSHOT_URL`. |
+| **Daily snapshot (production)** | ⛔ deploy-gated | Needs `ga4-bq-api` deployed against the GA4 export (`analytics_478308692`): 6 aggregated tables + 09:00 IST Scheduler (refresh→snapshot). View-only account has **no deploy rights**, so someone with access deploys it. See [`../../ga4-bq-api/README.md`](../../ga4-bq-api/README.md). |
 
-Once the backend is live, set `GA4_API_BASE` to `<service-url>/data` and push — the dashboard
-flips to live mode and auto-refreshes. The backend serves the **exact JSON shape** the dashboard
-already consumes, so no dashboard code changes are needed.
+Once deployed, set `GA4_SNAPSHOT_URL` to the printed object URL and push. No dashboard code changes
+are needed — the payload is the exact shape the dashboard already consumes.
 
 ## AI assistant
 
