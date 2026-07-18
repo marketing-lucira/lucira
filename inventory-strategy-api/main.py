@@ -48,6 +48,13 @@ INVENTORY_TABLE = os.environ.get("INVENTORY_TABLE", "lucirajewelry-prod.ds_imput
 SALES_TABLE     = os.environ.get("SALES_TABLE", "lucirajewelry-prod.ornaverse_erp_administration.Sales_overview_table")
 GA4_DATASET     = os.environ.get("GA4_DATASET", "lucirajewelry-prod.analytics_478308692")
 
+# Master reporting tables (refreshed by a BigQuery Scheduled Query). When set, the
+# main dashboard bundle reads ONLY these — no live joins / GA4 event scans per
+# request → far lower BigQuery cost and latency. Empty → falls back to live tables.
+MASTER_TABLE     = os.environ.get("MASTER_TABLE", "")       # reporting.inventory_master
+GA4_GEO_TABLE    = os.environ.get("GA4_GEO_TABLE", "")      # reporting.inv_ga4_geo
+GA4_FUNNEL_TABLE = os.environ.get("GA4_FUNNEL_TABLE", "")   # reporting.inv_ga4_funnel
+
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Kolkata")
 CURRENCY = os.environ.get("CURRENCY", "INR")
 
@@ -148,6 +155,8 @@ def price_band(v):
 # ═════════════════════════════════════════════════════════════════════════
 def item_query():
     """Item grain: Store_name × location_name × Full_sku, enriched with velocity + GA4 signals."""
+    if MASTER_TABLE:
+        return f"SELECT * FROM `{MASTER_TABLE}` ORDER BY cost_value DESC LIMIT @cap"
     return f"""
     WITH sales_vel AS (
       SELECT Full_sku,
@@ -212,6 +221,8 @@ def item_query():
 
 
 def ga4_funnel_query():
+    if GA4_FUNNEL_TABLE:
+        return f"SELECT event_name, events, users FROM `{GA4_FUNNEL_TABLE}`"
     return f"""
     SELECT
       event_name,
@@ -227,6 +238,9 @@ def ga4_funnel_query():
 
 
 def ga4_geo_query():
+    if GA4_GEO_TABLE:
+        return (f"SELECT city, region, view_item, add_to_cart, add_to_wishlist, "
+                f"begin_checkout, purchase FROM `{GA4_GEO_TABLE}` ORDER BY view_item DESC LIMIT 40")
     return f"""
     SELECT
       geo.city   AS city,
@@ -284,17 +298,21 @@ def build_bundle():
     def run(sql, params):
         return list(c.query(sql, job_config=bigquery.QueryJobConfig(query_parameters=params)).result())
 
-    item_params = [
-        bigquery.ScalarQueryParameter("vel_days", "INT64", VELOCITY_DAYS),
-        bigquery.ScalarQueryParameter("cap", "INT64", ITEM_CAP),
-        bigquery.ArrayQueryParameter("excl_metals", "STRING", EXCLUDE_METALS or [""]),
-        bigquery.ArrayQueryParameter("excl_types", "STRING", EXCLUDE_TYPES or [""]),
-    ]
-    geo_params = [bigquery.ScalarQueryParameter("geo_days", "INT64", GEO_DAYS)]
+    if MASTER_TABLE:
+        item_params = [bigquery.ScalarQueryParameter("cap", "INT64", ITEM_CAP)]
+    else:
+        item_params = [
+            bigquery.ScalarQueryParameter("vel_days", "INT64", VELOCITY_DAYS),
+            bigquery.ScalarQueryParameter("cap", "INT64", ITEM_CAP),
+            bigquery.ArrayQueryParameter("excl_metals", "STRING", EXCLUDE_METALS or [""]),
+            bigquery.ArrayQueryParameter("excl_types", "STRING", EXCLUDE_TYPES or [""]),
+        ]
+    geo_params  = [] if GA4_GEO_TABLE else [bigquery.ScalarQueryParameter("geo_days", "INT64", GEO_DAYS)]
+    fun_params  = [] if GA4_FUNNEL_TABLE else [bigquery.ScalarQueryParameter("geo_days", "INT64", GEO_DAYS)]
 
     rows = run(item_query(), item_params)
     try:
-        funnel_rows = run(ga4_funnel_query(), geo_params)
+        funnel_rows = run(ga4_funnel_query(), fun_params)
     except Exception:
         funnel_rows = []
     try:
@@ -774,8 +792,9 @@ def build_product(days, store, category):
                 "demand_score": round(0.02*(r["pdp"] or 0) + 1.0*(r["atc"] or 0) + 2.5*(r["chk"] or 0), 1),
             })
     try:
+        geo_p = [] if GA4_GEO_TABLE else [bigquery.ScalarQueryParameter("geo_days", "INT64", days)]
         geo_rows = list(c.query(ga4_geo_query(), job_config=bigquery.QueryJobConfig(
-            query_parameters=[bigquery.ScalarQueryParameter("geo_days", "INT64", days)])).result())
+            query_parameters=geo_p)).result())
     except Exception:
         geo_rows = []
 

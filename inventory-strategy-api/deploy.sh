@@ -13,7 +13,7 @@ gcloud functions deploy "$NAME" \
   --source=. --entry-point=inventory_data \
   --trigger-http --allow-unauthenticated \
   --memory=1Gi --timeout=120s --max-instances=5 \
-  --set-env-vars "^@^BQ_PROJECT=$PROJECT@INVENTORY_TABLE=lucirajewelry-prod.ds_imputed_reporting.Live_inventory@SALES_TABLE=lucirajewelry-prod.ornaverse_erp_administration.Sales_overview_table@GA4_DATASET=lucirajewelry-prod.analytics_478308692@TIMEZONE=Asia/Kolkata@CURRENCY=INR@EXCLUDE_METALS=Silver@EXCLUDE_TYPES=Silver Coin,Gold Coin@VELOCITY_DAYS=90@LEAD_TIME_DAYS=21@SAFETY_DAYS=14@GEO_DAYS=30@CRITICAL_COVER=14@LOW_COVER=30@OVERSTOCK_COVER=270@DEAD_DAYS=180@VERTEX_LOCATION=us-central1@VERTEX_MODEL=gemini-2.5-flash@CHAT_MAX_GB=2"
+  --set-env-vars "^@^BQ_PROJECT=$PROJECT@INVENTORY_TABLE=lucirajewelry-prod.ds_imputed_reporting.Live_inventory@SALES_TABLE=lucirajewelry-prod.ornaverse_erp_administration.Sales_overview_table@GA4_DATASET=lucirajewelry-prod.analytics_478308692@TIMEZONE=Asia/Kolkata@CURRENCY=INR@EXCLUDE_METALS=Silver@EXCLUDE_TYPES=Silver Coin,Gold Coin@VELOCITY_DAYS=90@LEAD_TIME_DAYS=21@SAFETY_DAYS=14@GEO_DAYS=30@CRITICAL_COVER=14@LOW_COVER=30@OVERSTOCK_COVER=270@DEAD_DAYS=180@VERTEX_LOCATION=us-central1@VERTEX_MODEL=gemini-2.5-flash@CHAT_MAX_GB=2@MASTER_TABLE=lucirajewelry-prod.reporting.inventory_master@GA4_GEO_TABLE=lucirajewelry-prod.reporting.inv_ga4_geo@GA4_FUNNEL_TABLE=lucirajewelry-prod.reporting.inv_ga4_funnel"
 
 echo ""
 echo "Deployed. URL:"
