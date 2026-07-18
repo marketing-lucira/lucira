@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucira Jewelry — Inventory Strategy Command Center</title>
+<style>
+:root{
+  color-scheme: dark;
+  --plane:#0d0d0d; --surface:#1a1a19; --surface-2:#222220; --surface-3:#2a2a28;
+  --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+  --s1:#3987e5; --s2:#199e70; --s3:#d55181; --s4:#c98500; --s5:#8b5cf6;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --gold:#d9a441;
+  --radius:14px; --radius-sm:9px;
+  --font:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+body.light{
+  color-scheme: light;
+  --plane:#f4f4f1; --surface:#ffffff; --surface-2:#f2f1ec; --surface-3:#e8e7e0;
+  --ink:#1b1b18; --ink-2:#4c4b44; --muted:#7a786f;
+  --grid:#e6e5df; --axis:#d3d2ca; --border:rgba(0,0,0,0.12);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--plane); color:var(--ink); font-family:var(--font); font-size:14px; line-height:1.45; -webkit-font-smoothing:antialiased;}
+a{color:var(--s1)}
+.tnum{font-variant-numeric:tabular-nums}
+header.app{position:sticky; top:0; z-index:40; background:color-mix(in srgb, var(--plane) 92%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); padding:12px 22px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+.brand{display:flex; align-items:center; gap:11px; margin-right:auto}
+.brand .mark{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#d9a441,#b5732a);color:#1a1200;font-weight:800;font-size:15px;box-shadow:0 2px 10px rgba(217,164,65,.3)}
+.brand h1{font-size:15px;margin:0;font-weight:700;letter-spacing:.2px}
+.brand small{display:block;color:var(--muted);font-size:11px;font-weight:500;letter-spacing:.3px}
+.hdr-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px rgba(12,163,12,.18)}
+.dot.demo{background:var(--warn);box-shadow:0 0 0 3px rgba(250,178,25,.18)}
+.dot.err{background:var(--crit);box-shadow:0 0 0 3px rgba(208,59,59,.18)}
+.btn{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:9px;padding:7px 13px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:var(--font)}
+.btn:hover{background:var(--surface-3)}
+.btn.primary{background:var(--s1);border-color:transparent;color:#fff}
+.btn.gold{background:var(--gold);border-color:transparent;color:#1a1200}
+.btn.ghost{background:transparent}
+.wrap{display:flex;min-height:calc(100vh - 60px)}
+nav.tabs{width:230px;flex:0 0 230px;border-right:1px solid var(--border);padding:16px 12px;position:sticky;top:60px;height:calc(100vh - 60px);overflow:auto}
+nav.tabs .grp{color:var(--muted);font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin:14px 10px 6px}
+nav.tabs a{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;color:var(--ink-2);text-decoration:none;font-size:13.5px;font-weight:600;cursor:pointer;margin-bottom:2px}
+nav.tabs a:hover{background:var(--surface-2);color:var(--ink)}
+nav.tabs a.on{background:var(--surface-2);color:var(--ink)}
+nav.tabs a.on .ic{color:var(--gold)}
+nav.tabs a .ic{width:18px;text-align:center;opacity:.9;font-size:15px}
+nav.tabs a .badge{margin-left:auto;background:var(--crit);color:#fff;border-radius:20px;font-size:10.5px;font-weight:700;padding:1px 7px;min-width:18px;text-align:center}
+nav.tabs a .badge.warn{background:var(--warn);color:#1a1200}
+main{flex:1;min-width:0;padding:20px 24px 60px}
+.filters{display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.filters .fl{display:flex;flex-direction:column;gap:3px}
+.filters label{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding-left:2px}
+.filters select,.filters input[type=text]{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:12.5px;font-family:var(--font);min-width:130px;max-width:220px}
+.filters .spacer{flex:1}
+.page{display:none}
+.page.on{display:block}
+.h2{font-size:17px;font-weight:700;margin:2px 0 3px}
+.sub{color:var(--muted);font-size:12.5px;margin-bottom:16px}
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px}
+.kpi .lbl{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.4px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.kpi .val{font-size:25px;font-weight:800;margin-top:7px;letter-spacing:-.5px}
+.kpi .foot{font-size:11.5px;color:var(--ink-2);margin-top:5px}
+.kpi .val.crit{color:var(--crit)} .kpi .val.warn{color:var(--warn)} .kpi .val.good{color:var(--good)} .kpi .val.gold{color:var(--gold)}
+.two{grid-template-columns:1.3fr 1fr}
+.three{grid-template-columns:repeat(3,1fr)}
+@media(max-width:1050px){.two,.three{grid-template-columns:1fr}}
+.card h3{font-size:13.5px;font-weight:700;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.card h3 .rt{margin-left:auto;font-size:11.5px;color:var(--muted);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;color:var(--muted);font-weight:700;font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;padding:7px 9px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);cursor:pointer;white-space:nowrap}
+th:hover{color:var(--ink)}
+td{padding:7px 9px;border-bottom:1px solid var(--border);white-space:nowrap}
+tr:hover td{background:var(--surface-2)}
+.tbl-wrap{max-height:560px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius)}
+.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700;letter-spacing:.3px}
+.pill.CRITICAL{background:rgba(208,59,59,.16);color:#ff6b6b}
+.pill.LOW{background:rgba(250,178,25,.16);color:var(--warn)}
+.pill.HEALTHY{background:rgba(12,163,12,.16);color:#3ec93e}
+.pill.OVERSTOCK{background:rgba(139,92,246,.18);color:#a884fb}
+.pill.DEAD{background:rgba(137,135,129,.2);color:#b8b6ad}
+.pill.NO_VELOCITY{background:rgba(57,135,229,.14);color:#6ba7ee}
+.pill.BULLION{background:rgba(217,164,65,.18);color:var(--gold)}
+.pill.Transfer{background:rgba(25,158,112,.16);color:#3ec93e}
+.pill.Reorder{background:rgba(57,135,229,.14);color:#6ba7ee}
+.ratio-hi{color:#3ec93e;font-weight:700}.ratio-lo{color:var(--warn);font-weight:700}
+.split-bar{display:flex;height:20px;border-radius:5px;overflow:hidden;background:var(--surface-3)}
+.split-bar span{display:block;height:100%}
+.info-i{display:inline-grid;place-items:center;width:19px;height:19px;border-radius:50%;background:var(--surface-3);border:1px solid var(--border);color:var(--s1);font-size:11px;font-weight:800;font-style:italic;cursor:help;position:relative;font-family:Georgia,serif}
+.info-i:hover{background:var(--s1);color:#fff;border-color:transparent}
+.info-i .tip{visibility:hidden;opacity:0;position:absolute;right:0;top:24px;z-index:60;width:340px;background:var(--surface-3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font:500 11.5px/1.5 var(--font);font-style:normal;color:var(--ink-2);text-align:left;box-shadow:0 10px 34px rgba(0,0,0,.45);transition:opacity .12s;pointer-events:none}
+.info-i:hover .tip{visibility:visible;opacity:1}
+.bar{height:9px;border-radius:5px;background:var(--surface-3);overflow:hidden}
+.bar > span{display:block;height:100%;border-radius:5px}
+.mini{font-size:11px;color:var(--muted)}
+.thumb{width:30px;height:30px;border-radius:6px;object-fit:cover;background:var(--surface-3);vertical-align:middle}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2);margin-top:10px}
+.legend .li{display:flex;align-items:center;gap:6px}
+.legend .sw{width:11px;height:11px;border-radius:3px}
+.row-bars .rb{display:grid;grid-template-columns:150px 1fr 70px;gap:10px;align-items:center;margin-bottom:9px;font-size:12px}
+.row-bars .rb .nm{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row-bars .rb .amt{text-align:right;font-weight:700}
+/* chat */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 210px);min-height:440px}
+.chat-log{flex:1;overflow:auto;padding:6px 2px;display:flex;flex-direction:column;gap:14px}
+.msg{max-width:80%;padding:11px 14px;border-radius:13px;font-size:13px;line-height:1.5}
+.msg.u{align-self:flex-end;background:var(--s1);color:#fff;border-bottom-right-radius:4px}
+.msg.a{align-self:flex-start;background:var(--surface-2);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg .sql{margin-top:9px;background:var(--plane);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--ink-2);white-space:pre-wrap;overflow:auto;max-height:160px}
+.msg .mt{font-size:10.5px;color:var(--muted);margin-top:7px}
+.chat-in{display:flex;gap:9px;margin-top:14px}
+.chat-in input{flex:1;background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:13.5px;font-family:var(--font)}
+.suggest{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.suggest .s{background:var(--surface-2);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--ink-2);cursor:pointer}
+.suggest .s:hover{background:var(--surface-3);color:var(--ink)}
+.md h1,.md h2,.md h3{margin:16px 0 8px;font-weight:700}
+.md h1{font-size:18px} .md h2{font-size:15.5px;color:var(--gold)} .md h3{font-size:14px}
+.md p{margin:8px 0} .md ul{margin:8px 0;padding-left:22px} .md li{margin:4px 0}
+.md strong{color:var(--ink)} .md hr{border:0;border-top:1px solid var(--border);margin:14px 0}
+.md code{background:var(--surface-2);padding:1px 5px;border-radius:4px;font-size:12px}
+.kb details{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;background:var(--surface);overflow:hidden}
+.kb summary{padding:13px 16px;font-weight:700;font-size:13.5px;cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px}
+.kb summary::-webkit-details-marker{display:none}
+.kb summary .ic{color:var(--gold)}
+.kb .body{padding:2px 16px 14px;color:var(--ink-2);font-size:13px;line-height:1.6}
+.kb .body b{color:var(--ink)} .kb .body code{background:var(--surface-2);padding:1px 6px;border-radius:5px;font-size:12px}
+.kb .body ul{padding-left:20px}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+.spin{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:sp 1s linear infinite;margin:30px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface-3);border:1px solid var(--border);padding:10px 16px;border-radius:10px;font-size:12.5px;z-index:100;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.donut-wrap{display:flex;align-items:center;gap:18px}
+.setup{max-width:520px;margin:60px auto;text-align:center}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:38px 18px;overflow:auto;backdrop-filter:blur(2px)}
+.modal-bg.on{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:1040px;width:100%;padding:20px 22px;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+.modal .x{float:right;cursor:pointer;color:var(--muted);font-size:19px;border:0;background:none;line-height:1}
+.modal h2{font-size:17px;margin:0 0 4px}
+.modal .mkpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:14px 0 16px}
+.modal .mk{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.modal .mk .l{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.modal .mk .v{font-size:18px;font-weight:800;margin-top:4px}
+.pb-row{cursor:pointer;border-radius:8px;padding:2px 6px;margin:0 -6px;transition:background .12s}
+.pb-row:hover{background:var(--surface-2)}
+/* ── Filter drawer ── */
+.fbackdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150;opacity:0;visibility:hidden;transition:opacity .25s}
+.fbackdrop.on{opacity:1;visibility:visible}
+.fdrawer{position:fixed;top:0;left:0;height:100vh;width:340px;max-width:88vw;background:var(--surface);border-right:1px solid var(--border);z-index:160;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:6px 0 30px rgba(0,0,0,.35)}
+.fdrawer.on{transform:translateX(0)}
+.fdrawer .fhead{padding:15px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.fdrawer .fhead h3{margin:0;font-size:14.5px;font-weight:700;flex:1;display:flex;align-items:center;gap:8px}
+.fdrawer .fhead .ctx{font-size:10.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;background:var(--surface-2);border:1px solid var(--border);padding:2px 8px;border-radius:20px}
+.fdrawer .fhead .fx{background:none;border:0;color:var(--muted);font-size:19px;cursor:pointer;line-height:1}
+.fdrawer .fbody{flex:1;overflow:auto;padding:6px 14px 14px}
+.fdrawer .ffoot{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:9px}
+.fdrawer .ffoot .btn{flex:1;justify-content:center}
+.fgrp{border-bottom:1px solid var(--border);padding:11px 2px}
+.fgrp:last-child{border-bottom:0}
+.fgrp .ft{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:9px;text-transform:uppercase;letter-spacing:.3px}
+.fgrp .ft .n{margin-left:auto;background:var(--gold);color:#1a1200;border-radius:20px;font-size:10px;font-weight:700;padding:1px 7px;display:none}
+.fgrp.act .ft .n{display:inline-block}
+.ms{position:relative}
+.ms .msbtn{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12.5px;color:var(--ink);text-align:left;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:var(--font)}
+.ms .msbtn:hover{border-color:var(--gold)}
+.ms .msbtn .cv{color:var(--muted);margin-left:auto;font-size:11px}
+.ms .mspop{display:none;margin-top:6px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.ms.open .mspop{display:block}
+.ms .mssearch{padding:8px;border-bottom:1px solid var(--border)}
+.ms .mssearch input{width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:7px;padding:6px 9px;font-size:12px;font-family:var(--font)}
+.ms .msquick{display:flex;gap:6px;padding:7px 8px;border-bottom:1px solid var(--border)}
+.ms .msquick button{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px;font-size:10.5px;color:var(--ink-2);cursor:pointer;font-weight:600}
+.ms .msquick button:hover{color:var(--ink);border-color:var(--gold)}
+.ms .mslist{max-height:190px;overflow:auto;padding:4px}
+.ms .msopt{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12.5px}
+.ms .msopt:hover{background:var(--surface-3)}
+.ms .msopt input{accent-color:var(--gold);width:14px;height:14px}
+.ms .msopt .c{margin-left:auto;color:var(--muted);font-size:10.5px}
+.rng .rngval{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-2);margin-bottom:6px;font-weight:600}
+.rng .rngwrap{position:relative;height:26px}
+.rng input[type=range]{position:absolute;width:100%;pointer-events:none;-webkit-appearance:none;appearance:none;background:none;top:8px;height:4px;margin:0}
+.rng input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:15px;height:15px;border-radius:50%;background:var(--gold);border:2px solid var(--surface);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.rng .rngtrack{position:absolute;top:9.5px;left:0;right:0;height:4px;background:var(--surface-3);border-radius:3px}
+.rng .rngfill{position:absolute;top:9.5px;height:4px;background:var(--gold);border-radius:3px}
+.fqd{display:flex;flex-wrap:wrap;gap:6px}
+.fqd button{background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:11px;color:var(--ink-2);cursor:pointer;font-weight:600}
+.fqd button.on{background:var(--gold);color:#1a1200;border-color:transparent}
+.fsearchbox input{width:100%;background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12.5px;font-family:var(--font)}
+.filterbtn.hasfilters{background:var(--gold);color:#1a1200;border-color:transparent}
+.filterbtn .fcount{background:rgba(0,0,0,.25);border-radius:20px;padding:0 6px;font-size:10.5px;font-weight:700}
+.setup input{width:100%;background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:13px;margin:12px 0}
+</style>
+</head>
+<body>
+<header class="app">
+  <div class="brand">
+    <div class="mark">L</div>
+    <div><h1>Inventory Strategy Command Center</h1><small>Lucira Jewelry · refresh · alerts · rolling · refill · AI</small></div>
+  </div>
+  <div class="hdr-status"><span class="dot" id="statusDot"></span><span id="statusTxt">Connecting…</span></div>
+  <button class="btn filterbtn" id="filterBtn">⛃ Filters<span class="fcount" id="filterCount" style="display:none">0</span></button>
+  <button class="btn gold" id="aiBtn">✦ AI Strategy</button>
+  <button class="btn ghost" id="themeBtn" title="Toggle theme">◑</button>
+  <button class="btn ghost" id="cfgBtn" title="API settings">⚙</button>
+  <button class="btn" id="reloadBtn">↻ Refresh</button>
+</header>
+
+<div class="wrap">
+  <nav class="tabs" id="nav">
+    <div class="grp">Command</div>
+    <a data-tab="overview" class="on"><span class="ic">▤</span> Overview</a>
+    <a data-tab="alerts"><span class="ic">⚠</span> Stock Alerts <span class="badge" id="badgeAlerts" style="display:none"></span></a>
+    <a data-tab="reorder"><span class="ic">⟳</span> Refill / Reorder</a>
+    <a data-tab="product"><span class="ic">📈</span> Product Performance</a>
+    <div class="grp">Rolling & Capital</div>
+    <a data-tab="rolling"><span class="ic">♻</span> Inventory Rolling</a>
+    <a data-tab="stores"><span class="ic">▦</span> Store-level</a>
+    <div class="grp">Demand (GA4)</div>
+    <a data-tab="visibility"><span class="ic">◎</span> AI Visibility</a>
+    <a data-tab="geo"><span class="ic">⌖</span> Geo Targeting</a>
+    <div class="grp">Intelligence</div>
+    <a data-tab="chat"><span class="ic">💬</span> Ask AI (Chat)</a>
+    <a data-tab="strategy"><span class="ic">✦</span> AI Strategy</a>
+    <a data-tab="kb"><span class="ic">📖</span> Knowledge Base</a>
+  </nav>
+
+  <main id="main">
+    <!-- Setup screen (shown if API unreachable) -->
+    <div id="setup" class="setup" style="display:none">
+      <h2>Connect to the Inventory API</h2>
+      <p class="sub">Enter the API base URL (local dev or the deployed Cloud Run URL).</p>
+      <input id="apiInput" type="text" placeholder="http://localhost:8080  or  https://inventory-strategy-api-…run.app">
+      <button class="btn primary" id="apiSave">Connect</button>
+      <p class="mini" id="setupErr" style="color:var(--crit);margin-top:12px"></p>
+    </div>
+
+    <div id="loading"><div class="spin"></div><p class="empty">Loading live inventory from BigQuery…</p></div>
+
+    <!-- OVERVIEW -->
+    <section class="page" data-page="overview">
+      <div class="h2">Inventory Overview</div>
+      <div class="sub" id="ovSub">Live position across all stores.</div>
+      <div class="grid kpis" id="ovKpis" style="margin-bottom:16px"></div>
+      <div class="grid two" style="margin-bottom:16px">
+        <div class="card"><h3>Stock health by status <span class="rt" id="ovStatusRt"></span></h3><div class="donut-wrap"><div id="ovDonut"></div><div id="ovDonutLeg" style="flex:1"></div></div></div>
+        <div class="card"><h3>Capital by aging bucket</h3><div id="ovAging" class="row-bars"></div></div>
+      </div>
+      <div class="grid two" style="margin-bottom:16px">
+        <div class="card"><h3>Top refill priorities <span class="rt">by reorder value</span></h3><div id="ovReorder" class="row-bars"></div></div>
+        <div class="card"><h3>Online demand funnel <span class="rt" id="ovFunnelRt">last 30d · GA4</span></h3><div id="ovFunnel" class="row-bars"></div></div>
+      </div>
+      <div class="card"><h3>💰 Price-band strategy <span class="rt">capital held vs GA4 demand — where's the money stuck?</span></h3><div id="ovPriceBands"></div></div>
+    </section>
+
+    <!-- ALERTS -->
+    <section class="page" data-page="alerts">
+      <div class="h2">Running Stock Alerts</div>
+      <div class="sub">Days-of-cover = on-hand ÷ network daily run-rate. Act on <b>CRITICAL</b> & <b>LOW</b> first.</div>
+      <div class="filters" style="align-items:center;gap:12px"><button class="btn" id="openFiltersAlerts">⛃ Filters</button><div class="mini" id="chips_alerts" style="flex:1"></div><button class="btn" id="expAlerts">⭳ CSV</button></div>
+      <div class="tbl-wrap"><table id="tblAlerts"></table></div>
+    </section>
+
+    <!-- REORDER -->
+    <section class="page" data-page="reorder">
+      <div class="h2">Refill / Reorder Plan</div>
+      <div class="sub">Reorder qty = run-rate × (lead-time + safety) − on-hand. Ranked by capital-at-work.</div>
+      <div class="grid kpis" id="roKpis" style="margin-bottom:16px"></div>
+      <div class="filters" style="align-items:center;gap:12px"><button class="btn" id="openFiltersReorder">⛃ Filters</button><div class="mini" id="chips_reorder" style="flex:1"></div><button class="btn" id="expReorder">⭳ CSV</button></div>
+      <div class="tbl-wrap"><table id="tblReorder"></table></div>
+    </section>
+
+    <!-- PRODUCT PERFORMANCE -->
+    <section class="page" data-page="product">
+      <div class="h2">Product Performance & Demand</div>
+      <div class="sub">Where products sell, grouped by units-sold range, with city demand (purchases + GA4) and per-product stock insight.</div>
+      <div class="filters">
+        <div class="fl"><label>GA4 / sales window</label><select id="pDays"><option value="30">Last 30 days</option><option value="60" selected>Last 60 days</option><option value="90">Last 90 days</option><option value="180">Last 180 days</option><option value="365">Last 365 days</option></select></div>
+        <div class="fl"><label>Store (sold at)</label><select id="pStore"><option value="">All stores</option></select></div>
+        <div class="fl"><label>Category</label><select id="pCat"><option value="">All categories</option></select></div>
+        <div class="fl"><label>Sold range</label><select id="pRange"><option value="">All</option></select></div>
+        <div class="fl"><label>Stock</label><select id="pStock"><option value="">All</option><option value="in">In stock</option><option value="out">Out of stock</option></select></div>
+        <div class="fl"><label>Price band</label><select id="pBand"><option value="">All</option></select></div>
+        <div class="fl"><label>Metal</label><select id="pMetal"><option value="">All</option></select></div>
+        <div class="fl"><label>Insight</label><select id="pInsight"><option value="">All</option></select></div>
+        <div class="fl"><label>Search SKU / parent / name</label><input type="text" id="pSearch" placeholder="type to filter…"></div>
+        <div class="spacer"></div>
+        <div class="fl"><label>&nbsp;</label><button class="btn" id="pApply">↻ Apply window</button></div>
+        <div class="fl"><label>&nbsp;</label><button class="btn" id="pExp">⭳ CSV</button></div>
+      </div>
+      <div id="pLoading" style="display:none"><div class="spin"></div></div>
+      <div id="pContent">
+        <div class="grid kpis" id="pKpis" style="margin-bottom:16px"></div>
+        <div class="card" style="margin-bottom:16px"><h3>✅ Action plan <span class="rt" id="pActionRt"></span></h3><div id="pAction"></div></div>
+        <div class="card" style="margin-bottom:16px"><h3>Units-sold ranges <span class="rt">products, sales & GA4 conversion per band</span></h3><div class="tbl-wrap" style="max-height:340px"><table id="pRanges"></table></div></div>
+        <div class="card" style="margin-bottom:16px"><h3>Category breakdown
+            <span class="seg" style="margin-left:10px"><button id="pCbCat" class="on" style="padding:4px 10px;border:0;background:var(--gold);color:#1a1200;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">Category</button><button id="pCbSub" style="padding:4px 10px;border:0;background:transparent;color:var(--ink-2);border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">Category › Sub-type</button></span>
+            <span class="rt">same metrics as sold-ranges</span></h3><div class="tbl-wrap" style="max-height:380px"><table id="pCatBreak"></table></div></div>
+        <div class="card" style="margin-bottom:16px"><h3>City demand <span class="rt">purchases + GA4</span></h3><div class="tbl-wrap" style="max-height:360px"><table id="pCity"></table></div></div>
+        <div class="card" id="pToStockCard" style="display:none;margin-bottom:16px"><h3>🛒 Add to this store — web-demanded, not stocked here <span class="rt" id="pToStockRt">GA4 demand · not on hand at store</span></h3>
+          <div class="sub" style="margin:0 0 12px">Products with strong online (GA4) pull that this store does not currently carry — stock them to convert local demand.</div>
+          <div class="tbl-wrap" style="max-height:380px"><table id="pToStock"></table></div>
+        </div>
+        <div class="card"><h3>Products
+            <span class="seg" style="margin-left:10px"><button id="pViewSku" class="on" style="padding:4px 10px;border:0;background:var(--gold);color:#1a1200;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">By SKU</button><button id="pViewParent" style="padding:4px 10px;border:0;background:transparent;color:var(--ink-2);border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">By Parent (style)</button></span>
+            <span class="rt" id="pProdRt"></span></h3>
+          <div class="tbl-wrap" style="max-height:560px"><table id="pProd"></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROLLING -->
+    <section class="page" data-page="rolling">
+      <div class="h2">Inventory Rolling & Capital Release</div>
+      <div class="sub">Age the stock, surface dead capital, and roll pieces toward live demand.</div>
+      <div class="grid kpis" id="rlKpis" style="margin-bottom:16px"></div>
+      <div class="grid two" style="margin-bottom:16px">
+        <div class="card"><h3>Aging ladder</h3><div id="rlAging" class="row-bars"></div></div>
+        <div class="card"><h3>Dead capital by category</h3><div id="rlDeadCat" class="row-bars"></div></div>
+      </div>
+      <div class="card" style="margin-bottom:16px"><h3>♻ Transfer / redistribution suggestions <span class="rt">stuck stock → stores with demand</span></h3><div class="tbl-wrap" style="max-height:340px"><table id="tblTransfer"></table></div></div>
+      <div class="card"><h3>💀 Dead stock — liquidation candidates <span class="rt" id="rlDeadRt"></span></h3><div class="tbl-wrap" style="max-height:420px"><table id="tblDead"></table></div></div>
+    </section>
+
+    <!-- STORES -->
+    <section class="page" data-page="stores">
+      <div class="h2">Store-level Inventory Working</div>
+      <div class="sub">Per-store capital, health and demand. Click a store to drill into its lines.</div>
+      <div class="grid three" id="storeCards" style="margin-bottom:18px"></div>
+      <div class="card" style="margin-bottom:16px"><h3>🎯 Store stocking plan <span class="rt" id="assortRt">core assortment = top products by GA4 demand</span></h3>
+        <div class="sub" style="margin:0 0 12px">Each store's coverage of the demand-validated core assortment, and the gap it should bring in (Transfer from stuck stock where possible, else Reorder).</div>
+        <div class="tbl-wrap" style="max-height:300px"><table id="tblAssort"></table></div>
+      </div>
+      <div class="card" style="margin-bottom:16px"><h3 id="gapTitle">Stocking gap — pick a store above</h3>
+        <div class="filters" style="margin-bottom:12px"><div class="fl"><label>Source</label><select id="gapSource"><option value="">All</option><option>Transfer</option><option>Reorder</option></select></div><div class="fl"><label>Price band</label><select id="gapBand"></select></div><div class="spacer"></div><div class="fl"><label>&nbsp;</label><button class="btn" id="expGap">⭳ CSV</button></div></div>
+        <div class="tbl-wrap" style="max-height:400px"><table id="tblGap"></table></div>
+      </div>
+      <div class="card"><h3 id="storeDrillTitle">Select a store to drill in</h3><div class="tbl-wrap" style="max-height:420px"><table id="tblStoreDrill"></table></div></div>
+    </section>
+
+    <!-- VISIBILITY -->
+    <section class="page" data-page="visibility">
+      <div class="h2">AI Visibility — Demand vs Stock</div>
+      <div class="sub">GA4 web signals crossed with stock. Push what's wanted; expose what's hidden.</div>
+      <div class="grid two">
+        <div class="card"><h3>🔥 High demand, low stock <span class="rt">restock / prioritise</span></h3><div class="tbl-wrap" style="max-height:520px"><table id="tblHot"></table></div></div>
+        <div class="card"><h3>🕳 Silent stock <span class="rt">0 web views · needs exposure</span></h3><div class="tbl-wrap" style="max-height:520px"><table id="tblSilent"></table></div></div>
+      </div>
+    </section>
+
+    <!-- GEO -->
+    <section class="page" data-page="geo">
+      <div class="h2">Geo Demand → Store Targeting</div>
+      <div class="sub">GA4 catchment demand vs each store's stock — the ratio says who to stock up and who to trim.</div>
+      <div class="card" style="margin-bottom:16px"><h3>⚖ Demand-vs-stock ratio by store catchment <span class="rt">ratio &gt;1.2 = under-served · &lt;0.8 = over-served</span></h3><div class="tbl-wrap" style="max-height:340px"><table id="tblGeoTarget"></table></div></div>
+      <div class="card"><h3>City-level demand <span class="rt">GA4 · India · last 30d</span></h3><div class="tbl-wrap" style="max-height:460px"><table id="tblGeo"></table></div></div>
+    </section>
+
+    <!-- CHAT -->
+    <section class="page" data-page="chat">
+      <div class="h2">Ask the Inventory AI</div>
+      <div class="sub">Natural-language questions → guarded BigQuery SQL → answer. Powered by Vertex Gemini.</div>
+      <div class="suggest" id="chatSuggest"></div>
+      <div class="chat-wrap">
+        <div class="chat-log" id="chatLog"></div>
+        <div class="chat-in">
+          <input type="text" id="chatInput" placeholder="e.g. Which SKUs at Borivali have under 14 days of cover?">
+          <button class="btn primary" id="chatSend">Ask ▸</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STRATEGY -->
+    <section class="page" data-page="strategy">
+      <div class="h2">AI Strategy Brief</div>
+      <div class="sub">Gemini reads the live position and writes a CEO-ready inventory strategy.</div>
+      <div style="margin-bottom:14px"><button class="btn gold" id="genStrategy">✦ Generate strategy brief</button></div>
+      <div class="card md" id="strategyOut"><p class="empty">Click “Generate strategy brief” to produce a fresh, quantified plan.</p></div>
+    </section>
+
+    <!-- KB -->
+    <section class="page" data-page="kb">
+      <div class="h2">Knowledge Base</div>
+      <div class="sub">How every number is defined and how to act on it.</div>
+      <div class="kb" id="kbBody"></div>
+    </section>
+  </main>
+</div>
+<div id="toast" class="toast" style="display:none"></div>
+<div class="modal-bg" id="modalBg"><div class="modal"><button class="x" id="modalX">✕</button><div id="modalBody"></div></div></div>
+<!-- INV_CONFIG_INJECT · CI (GitHub Actions) replaces THIS line with an inline <script> that sets window.__INV_CONFIG__ (e.g. {API_BASE:"https://inventory-strategy-api-…run.app"}) from GitHub Variables. Left as a plain comment locally so file:// use is unaffected and the default API_BASE applies. -->
+<div class="fbackdrop" id="fbackdrop"></div>
+<aside class="fdrawer" id="fdrawer">
+  <div class="fhead"><h3>⛃ Filters <span class="ctx" id="fctx">—</span></h3><button class="fx" id="fdrawerX">✕</button></div>
+  <div class="fbody" id="fbody"></div>
+  <div class="ffoot"><button class="btn ghost" id="fClearAll">Clear all</button><button class="btn primary" id="fApply">Apply</button></div>
+</aside>
+
+<script>
+/* ─────────────────────────── config ─────────────────────────── */
+const qs = new URLSearchParams(location.search);
+const INVCFG = (typeof window!=='undefined' && window.__INV_CONFIG__) ? window.__INV_CONFIG__ : {};
+let API = qs.get('api') || localStorage.getItem('inv_api') || INVCFG.API_BASE || 'http://localhost:8080';
+let DATA = null, curTab = 'overview', chatBusy = false;
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const toast = m => { const t=$('#toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(()=>t.style.display='none',2600); };
+
+/* INR formatting with Cr / L compaction */
+function inr(n){ if(n==null||isNaN(n)) return '—'; n=+n;
+  const a=Math.abs(n); const sign=n<0?'-':'';
+  if(a>=1e7) return sign+'₹'+(a/1e7).toFixed(2)+' Cr';
+  if(a>=1e5) return sign+'₹'+(a/1e5).toFixed(2)+' L';
+  return sign+'₹'+Math.round(a).toLocaleString('en-IN'); }
+function inrFull(n){ if(n==null||isNaN(n)) return '—'; return '₹'+Math.round(+n).toLocaleString('en-IN'); }
+const numf = n => (n==null||isNaN(n))?'—':(+n).toLocaleString('en-IN');
+const STATUS_COLORS = {CRITICAL:'#d03b3b',LOW:'#fab219',HEALTHY:'#0ca30c',OVERSTOCK:'#8b5cf6',DEAD:'#898781',NO_VELOCITY:'#3987e5',BULLION:'#d9a441'};
+const STATUS_ORDER = ['CRITICAL','LOW','HEALTHY','OVERSTOCK','NO_VELOCITY','DEAD'];
+const JEWEL = i => i.segment !== 'Bullion';
+
+/* ─────────────────────────── fetch ─────────────────────────── */
+async function api(path, opts){ const r = await fetch(API.replace(/\/$/,'')+path, opts); if(!r.ok){ let d; try{d=await r.json()}catch{} throw new Error((d&&d.detail)||('HTTP '+r.status)); } return r.json(); }
+
+async function boot(){
+  $('#loading').style.display='block'; $('#setup').style.display='none';
+  try{
+    DATA = await api('/');
+    $('#statusDot').className='dot'; $('#statusTxt').textContent='Live · '+new Date(DATA.generated_at).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
+    $('#loading').style.display='none';
+    renderAll(); showTab(curTab);
+  }catch(e){
+    $('#loading').style.display='none';
+    $('#statusDot').className='dot err'; $('#statusTxt').textContent='Offline';
+    $('#setup').style.display='block'; $('#apiInput').value=API; $('#setupErr').textContent='Could not reach '+API+' — '+e.message;
+  }
+}
+
+/* ─────────────────────────── render all ─────────────────────────── */
+function renderAll(){
+  // populate gap-filter band options + bind (was in old buildFilters)
+  const bands=(DATA.price_bands||[]).map(b=>b.band);
+  $('#gapBand').innerHTML=`<option value="">All price bands</option>`+bands.map(v=>`<option>${esc(v)}</option>`).join('');
+  ['#gapSource','#gapBand'].forEach(s=>$(s).oninput=()=>renderGap());
+  const _e=[];
+  const safe=(fn,l)=>{ try{ fn(); }catch(err){ _e.push(l); console.error('[render]',l,err); } };
+  safe(renderOverview,'overview'); safe(renderReorderKpis,'reorderKpis'); safe(renderRolling,'rolling'); safe(renderStores,'stores');
+  safe(renderVisibility,'visibility'); safe(renderGeo,'geo'); safe(renderAlerts,'alerts'); safe(renderReorderTable,'reorder');
+  safe(renderKB,'kb'); safe(renderChatSuggest,'chat'); safe(updateFilterUI,'filterUI');
+  if(_e.length){ console.warn('render sections with errors:', _e.join(', ')); toast('⚠ Render issue in: '+_e.join(', ')); const st=$('#statusTxt'); if(st) st.textContent+='  ·  ⚠ '+_e.join(','); }
+  const crit = DATA.kpis.critical_lines, low = DATA.kpis.low_lines;
+  const b=$('#badgeAlerts'); if(crit+low>0){ b.style.display='inline-block'; b.textContent=crit+low; b.className='badge'+(crit? '':' warn'); }
+}
+
+/* ---------- Overview ---------- */
+function kpiCard(lbl,val,foot,cls){ return `<div class="card kpi"><div class="lbl">${lbl}</div><div class="val ${cls||''}">${val}</div><div class="foot">${foot||''}</div></div>`; }
+function renderOverview(){
+  const p=DATA.params; const VI=viewItems(); const k=computeKpis(VI);
+  const filt=activeCount()>0;
+  $('#ovSub').textContent = `${numf(k.distinct_skus)} SKUs · ${numf(k.total_pieces)} pieces · ${k.stores} stores · velocity ${p.velocity_days}d · lead ${p.lead_time_days}+${p.safety_days}d`+(filt?`  ·  filtered (${numf(k.sku_lines)} of ${numf(DATA.items.length)} lines)`:'');
+  $('#ovKpis').innerHTML =
+    kpiCard('Jewelry Value', inr(k.jewelry_value), numf(k.sku_lines)+' jewelry lines','gold')+
+    kpiCard('Dead Capital', inr(k.dead_value), k.dead_pct+'% of value · '+numf(k.dead_lines)+' lines','crit')+
+    kpiCard('Critical', numf(k.critical_lines), '&lt; '+p.critical_cover+'d cover','crit')+
+    kpiCard('Low Stock', numf(k.low_lines), '&lt; '+p.low_cover+'d cover','warn')+
+    kpiCard('Refill Need', inr(k.reorder_value), numf(k.reorder_units)+' units to reorder','good')+
+    kpiCard('Healthy', numf(k.healthy_lines), 'well-covered lines','good');
+  // donut
+  const seg = STATUS_ORDER.map(s=>({s,n:VI.filter(i=>i.status===s).length})).filter(x=>x.n>0);
+  $('#ovStatusRt').textContent = numf(k.sku_lines)+' lines';
+  $('#ovDonut').innerHTML = seg.length?donut(seg.map(x=>({v:x.n,c:STATUS_COLORS[x.s]})),120):'<p class="empty">No data</p>';
+  $('#ovDonutLeg').innerHTML = seg.map(x=>`<div class="li" style="display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12.5px"><span class="sw" style="width:11px;height:11px;border-radius:3px;background:${STATUS_COLORS[x.s]}"></span><span style="color:var(--ink-2)">${x.s.replace('_',' ')}</span><b style="margin-left:auto">${numf(x.n)}</b></div>`).join('');
+  rowBars('#ovAging', computeAging(VI).map(a=>({nm:a.bucket, v:a.value, amt:inr(a.value)})), '#c98500');
+  const rr=[...VI].filter(i=>i.reorder_qty>0).sort((a,b)=>b.reorder_value-a.reorder_value).slice(0,8);
+  rowBars('#ovReorder', rr.map(i=>({nm:i.name||i.sku, v:i.reorder_value, amt:i.reorder_qty+'u · '+inr(i.reorder_value)})), '#199e70');
+  const order=['view_item','add_to_cart','add_to_wishlist','begin_checkout','purchase'];
+  const f=DATA.funnel||{}; const fr=order.filter(e=>f[e]).map(e=>({nm:e.replace(/_/g,' '), v:f[e].events, amt:numf(f[e].events)}));
+  rowBars('#ovFunnel', fr, '#3987e5');
+  renderPriceBands(computePriceBands(VI));
+}
+function renderPriceBands(pbArg){
+  const pb=pbArg||DATA.price_bands||[]; const el=$('#ovPriceBands'); if(!pb.length){el.innerHTML='<p class="empty">No data</p>';return;}
+  el.innerHTML = `<div style="display:grid;grid-template-columns:130px 1fr 1fr 20px;gap:12px;font-size:10.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px"><span>Price band</span><span>Capital held</span><span>GA4 demand</span><span></span></div>`+
+    pb.map(b=>{
+      const mism = b.demand_share - b.value_share;
+      const flag = mism>15?'<span class="ratio-hi" title="demand far exceeds stock — stock up here"> ▲ under-stocked</span>':(mism<-15?'<span class="ratio-lo" title="capital exceeds demand — too heavy"> ▼ over-invested</span>':'');
+      return `<div class="pb-row" data-band="${esc(b.band)}" title="Click for GA4 detail">
+        <div style="display:grid;grid-template-columns:130px 1fr 1fr 20px;gap:12px;align-items:center;margin-bottom:5px;font-size:12px">
+          <span style="font-weight:600">${esc(b.band)}${flag}</span>
+          <span class="bar"><span style="width:${b.value_share}%;background:#c98500"></span></span>
+          <span class="bar"><span style="width:${b.demand_share}%;background:#3987e5"></span></span>
+          <span style="color:var(--muted)">›</span>
+        </div>
+        <div style="display:grid;grid-template-columns:130px 1fr 1fr 20px;gap:12px;font-size:10.5px;color:var(--muted);margin-bottom:6px"><span></span><span>${b.value_share}% · ${inr(b.value)}</span><span>${b.demand_share}% demand · ${numf(b.atc)} ATC</span><span></span></div>
+      </div>`;
+    }).join('')+
+    `<div class="legend"><div class="li"><span class="sw" style="background:#c98500"></span>Capital held (cost value)</div><div class="li"><span class="sw" style="background:#3987e5"></span>GA4 demand share</div><div class="li" style="margin-left:auto;color:var(--muted)">Click a band for GA4 detail ›</div></div>`;
+  if(!el._deleg){ el._deleg=true; el.addEventListener('click',e=>{const row=e.target.closest('.pb-row'); if(row) showBandDetail(row.dataset.band);}); }
+}
+function showBandDetail(band){
+  const items=viewItems().filter(i=>i.price_band===band);
+  const meta=(DATA.price_bands||[]).find(b=>b.band===band)||{};
+  const tot=(k)=>items.reduce((s,i)=>s+(i[k]||0),0);
+  const pdp=tot('pdp_views'), atc=tot('add_to_cart'), chk=tot('begin_checkout'), sold=tot('sold_win'), val=tot('cost_value');
+  const conv = pdp? (100*atc/pdp):0, atcChk = atc? (100*chk/atc):0;
+  const body=$('#modalBody');
+  body.innerHTML=`<h2>💰 ${esc(band)} <span style="font-size:12px;color:var(--muted);font-weight:600">· price-band GA4 detail</span></h2>
+    <div class="sub" style="margin:0">${numf(items.length)} jewelry lines · ${meta.value_share||0}% of capital · ${meta.demand_share||0}% of GA4 demand</div>
+    <div class="mkpis">
+      <div class="mk"><div class="l">Stock value</div><div class="v" style="color:var(--gold)">${inr(val)}</div></div>
+      <div class="mk"><div class="l">GA4 views</div><div class="v">${numf(pdp)}</div></div>
+      <div class="mk"><div class="l">Add to cart</div><div class="v">${numf(atc)}</div></div>
+      <div class="mk"><div class="l">Begin checkout</div><div class="v">${numf(chk)}</div></div>
+      <div class="mk"><div class="l">Units sold (win)</div><div class="v">${numf(sold)}</div></div>
+      <div class="mk"><div class="l">View→ATC</div><div class="v">${conv.toFixed(1)}%</div></div>
+      <div class="mk"><div class="l">ATC→Checkout</div><div class="v">${atcChk.toFixed(1)}%</div></div>
+    </div>
+    <div class="card" style="padding:0"><div class="tbl-wrap" style="max-height:440px;border:0"><table id="mBandTbl"></table></div></div>`;
+  sortableTable('#mBandTbl',
+    [['img','',9],['sku','SKU'],['name','Item'],['category','Category'],['store','Store'],['status','Status',9],
+     ['pdp_views','Views',1],['add_to_cart','ATC',1],['begin_checkout','Chk',1],['sold_win','Sold',1],['on_hand','Qty',1],['cover','Cover',1],['cost_value','Value',1]],
+    items, r=>({img:thumb(r.image),sku:r.sku,name:trunc(r.name,26),category:r.category,store:trunc(r.store,16),status:pill(r.status),
+      pdp_views:numf(r.pdp_views),add_to_cart:numf(r.add_to_cart),begin_checkout:numf(r.begin_checkout),sold_win:numf(r.sold_win),
+      on_hand:numf(r.on_hand),cover:r.cover==null?'—':r.cover,cost_value:inr(r.cost_value)}), 'add_to_cart', true);
+  openModal();
+}
+function openModal(){ $('#modalBg').classList.add('on'); }
+function closeModal(){ $('#modalBg').classList.remove('on'); }
+
+/* ═══════════════════════ CONTEXT FILTER ENGINE ═══════════════════════ */
+const PB_ORDER=['< ₹25K','₹25K–50K','₹50K–1L','₹1L–2L','₹2L–5L','₹5L+','Unpriced'];
+const FS={};   // dim -> Set (multi) | {lo,hi} (range) | string (search)
+const DIMS={
+  store:      {label:'Store', kind:'multi', get:i=>i.store},
+  location:   {label:'Location', kind:'multi', get:i=>i.location},
+  category:   {label:'Category', kind:'multi', get:i=>i.category},
+  subtype:    {label:'Sub Category', kind:'multi', get:i=>i.subtype},
+  collection: {label:'Collection', kind:'multi', get:i=>i.collection},
+  metal:      {label:'Metal', kind:'multi', get:i=>i.metal},
+  stone:      {label:'Stone', kind:'multi', get:i=>i.stone},
+  purity:     {label:'Purity / Karat', kind:'multi', get:i=>i.purity},
+  price_band: {label:'Price Band', kind:'multi', get:i=>i.price_band},
+  status:     {label:'Stock Status', kind:'multi', get:i=>i.status},
+  aging:      {label:'Inventory Age', kind:'multi', get:i=>i.aging},
+  priceRange: {label:'Price ₹ (retail)', kind:'range', get:i=>i.retail, step:5000, unit:'₹'},
+  coverRange: {label:'Days of Cover', kind:'range', get:i=>i.cover, step:5},
+  ageRange:   {label:'Inventory Age (days)', kind:'range', get:i=>i.days_in_stock, step:15},
+  stockRange: {label:'Stock Qty', kind:'range', get:i=>i.on_hand, step:1},
+  search:     {label:'Search — SKU / name / parent', kind:'search'},
+};
+const TABDIMS={
+  overview:   ['store','category','subtype','collection','metal','stone','purity','price_band','status','aging'],
+  alerts:     ['store','status','category','subtype','collection','metal','stone','price_band','aging','priceRange','coverRange','search'],
+  reorder:    ['store','category','subtype','metal','price_band','priceRange','stockRange','search'],
+  rolling:    ['store','category','collection','metal','price_band','aging','ageRange','priceRange'],
+  stores:     ['category','subtype','collection','metal','stone','price_band','status'],
+  visibility: ['store','category','price_band','status'],
+};
+function tabDims(){ return TABDIMS[curTab]||[]; }
+function domainVals(dim){ const g=DIMS[dim]; const m=new Map(); (DATA.items||[]).forEach(i=>{const v=g.get(i)||'—'; m.set(v,(m.get(v)||0)+1);}); return [...m.entries()].sort((a,b)=>b[1]-a[1]); }
+function domainRange(dim){ const g=DIMS[dim]; let lo=Infinity,hi=-Infinity; (DATA.items||[]).forEach(i=>{const x=g.get(i); if(x!=null&&!isNaN(x)){lo=Math.min(lo,x);hi=Math.max(hi,x);}}); if(lo===Infinity){lo=0;hi=0;} return {min:Math.floor(lo),max:Math.ceil(hi)}; }
+function applyF(items,dims){
+  return items.filter(it=>{
+    for(const dim of dims){ const d=DIMS[dim], v=FS[dim]; if(!v) continue;
+      if(d.kind==='multi'){ if(v.size && !v.has(d.get(it)||'—')) return false; }
+      else if(d.kind==='range'){ const x=d.get(it); if(x==null) continue; if(v.lo!=null&&x<v.lo) return false; if(v.hi!=null&&x>v.hi) return false; }
+      else if(d.kind==='search'){ if(v && !((it.sku+' '+it.name+' '+(it.style||'')).toLowerCase().includes(String(v).toLowerCase()))) return false; }
+    }
+    return true;
+  });
+}
+function viewItems(){ return applyF(DATA.items||[], tabDims()); }
+function dimActive(dim){ const v=FS[dim], d=DIMS[dim]; if(!v||!d) return false;
+  if(d.kind==='multi') return v.size>0;
+  if(d.kind==='range'){ const dr=domainRange(dim); return (v.lo!=null&&v.lo>dr.min)||(v.hi!=null&&v.hi<dr.max); }
+  return !!v; }
+function activeCount(){ return tabDims().filter(dimActive).length; }
+function computeKpis(items){
+  const val=items.reduce((s,i)=>s+(i.cost_value||0),0), by={};
+  items.forEach(i=>by[i.status]=(by[i.status]||0)+1);
+  const dead=items.filter(i=>i.status==='DEAD').reduce((s,i)=>s+(i.cost_value||0),0);
+  return {jewelry_value:val, sku_lines:items.length, distinct_skus:new Set(items.map(i=>i.sku)).size,
+    total_pieces:items.reduce((s,i)=>s+(i.on_hand||0),0), stores:new Set(items.map(i=>i.store)).size,
+    dead_value:dead, dead_pct: val?Math.round(1000*dead/val)/10:0, dead_lines:by.DEAD||0,
+    critical_lines:by.CRITICAL||0, low_lines:by.LOW||0, healthy_lines:by.HEALTHY||0,
+    reorder_units:items.reduce((s,i)=>s+(i.reorder_qty||0),0),
+    reorder_value:items.reduce((s,i)=>s+(i.reorder_value||0),0), by_status:by};
+}
+function computeAging(items){ const g={}; items.forEach(i=>{const b=g[i.aging]||(g[i.aging]={bucket:i.aging,lines:0,pieces:0,value:0}); b.lines++; b.pieces+=i.on_hand; b.value+=i.cost_value;}); return Object.values(g).sort((a,b)=>a.bucket.localeCompare(b.bucket)); }
+function computePriceBands(items){ const g={}; let tv=0,td=0;
+  items.forEach(i=>{const b=g[i.price_band]||(g[i.price_band]={band:i.price_band,value:0,demand:0,atc:0}); b.value+=i.cost_value; b.demand+=(i.demand_score||0); b.atc+=(i.add_to_cart||0); tv+=i.cost_value; td+=(i.demand_score||0);});
+  return PB_ORDER.filter(l=>g[l]).map(l=>{const b=g[l]; return {band:l,value:Math.round(b.value),atc:b.atc,value_share:tv?Math.round(1000*b.value/tv)/10:0,demand_share:td?Math.round(1000*b.demand/td)/10:0};}); }
+
+/* ── drawer UI ── */
+function openFilters(){ renderFilterPanel(); $('#fdrawer').classList.add('on'); $('#fbackdrop').classList.add('on'); }
+function closeFilters(){ $('#fdrawer').classList.remove('on'); $('#fbackdrop').classList.remove('on'); }
+function renderFilterPanel(){
+  const dims=tabDims(); $('#fctx').textContent=curTab;
+  if(!dims.length){ $('#fbody').innerHTML='<p class="empty">This section has its own inline controls.</p>'; return; }
+  $('#fbody').innerHTML=dims.map(dim=>{
+    const d=DIMS[dim]; const act=dimActive(dim)?'act':'';
+    if(d.kind==='multi'){ const sel=FS[dim]||new Set();
+      return `<div class="fgrp ${act}" data-dim="${dim}"><div class="ft">${esc(d.label)}<span class="n">${sel.size}</span></div>
+        <div class="ms" data-ms="${dim}"><button class="msbtn" data-msbtn="${dim}"><span>${sel.size?sel.size+' selected':'All'}</span><span class="cv">▾</span></button>
+        <div class="mspop">
+          <div class="mssearch"><input type="text" placeholder="Search…" data-mssearch="${dim}"></div>
+          <div class="msquick"><button data-msall="${dim}">Select all</button><button data-msclear="${dim}">Clear</button></div>
+          <div class="mslist" data-mslist="${dim}"></div>
+        </div></div></div>`;
+    }
+    if(d.kind==='range'){ const dr=domainRange(dim); const v=FS[dim]||{lo:dr.min,hi:dr.max};
+      return `<div class="fgrp ${act}" data-dim="${dim}"><div class="ft">${esc(d.label)}<span class="n">●</span></div>
+        <div class="rng" data-rng="${dim}">
+          <div class="rngval"><span data-rnglo>${fmtRange(dim,v.lo)}</span><span data-rnghi>${fmtRange(dim,v.hi)}</span></div>
+          <div class="rngwrap"><div class="rngtrack"></div><div class="rngfill"></div>
+            <input type="range" min="${dr.min}" max="${dr.max}" step="${d.step}" value="${v.lo}" data-rlo="${dim}">
+            <input type="range" min="${dr.min}" max="${dr.max}" step="${d.step}" value="${v.hi}" data-rhi="${dim}">
+          </div></div></div>`;
+    }
+    return `<div class="fgrp ${act}" data-dim="${dim}"><div class="ft">${esc(d.label)}</div>
+      <div class="fsearchbox"><input type="text" placeholder="Type to filter…" data-search="${dim}" value="${esc(FS[dim]||'')}"></div></div>`;
+  }).join('');
+  wireFilterPanel();
+}
+function fmtRange(dim,v){ const d=DIMS[dim]; if(v==null) return '—'; return (d.unit==='₹')?inr(v):numf(v); }
+function paintMsList(dim,q){ const list=$(`[data-mslist="${dim}"]`); if(!list) return; const sel=FS[dim]||new Set();
+  const vals=domainVals(dim).filter(([v])=>!q||String(v).toLowerCase().includes(q.toLowerCase()));
+  list.innerHTML=vals.map(([v,c])=>`<label class="msopt"><input type="checkbox" data-msv="${esc(v)}" ${sel.has(v)?'checked':''}><span>${esc(v)}</span><span class="c">${numf(c)}</span></label>`).join('')||'<p class="mini" style="padding:8px">No matches</p>';
+  list.querySelectorAll('input[data-msv]').forEach(cb=>cb.onchange=()=>{ const s=FS[dim]||(FS[dim]=new Set()); const val=cb.getAttribute('data-msv'); if(cb.checked)s.add(val);else s.delete(val); if(!s.size)delete FS[dim]; onFilterChange(dim); });
+}
+function paintRngFill(dim){ const w=$(`[data-rng="${dim}"]`); if(!w) return; const d=DIMS[dim], dr=domainRange(dim); const v=FS[dim]||{lo:dr.min,hi:dr.max};
+  const span=dr.max-dr.min||1; const l=100*(v.lo-dr.min)/span, r=100*(v.hi-dr.min)/span; const fill=w.querySelector('.rngfill'); if(fill){fill.style.left=l+'%';fill.style.width=Math.max(0,r-l)+'%';}
+  const lo=w.querySelector('[data-rnglo]'), hi=w.querySelector('[data-rnghi]'); if(lo)lo.textContent=fmtRange(dim,v.lo); if(hi)hi.textContent=fmtRange(dim,v.hi); }
+function wireFilterPanel(){
+  $$('[data-msbtn]').forEach(b=>b.onclick=()=>{ const ms=b.closest('.ms'); const dim=b.getAttribute('data-msbtn'); const open=ms.classList.contains('open'); $$('.ms').forEach(x=>x.classList.remove('open')); if(!open){ms.classList.add('open'); paintMsList(dim,'');} });
+  $$('[data-mssearch]').forEach(inp=>inp.oninput=()=>paintMsList(inp.getAttribute('data-mssearch'),inp.value));
+  $$('[data-msall]').forEach(b=>b.onclick=()=>{ const dim=b.getAttribute('data-msall'); const s=FS[dim]||(FS[dim]=new Set()); domainVals(dim).forEach(([v])=>s.add(v)); paintMsList(dim,''); onFilterChange(dim); });
+  $$('[data-msclear]').forEach(b=>b.onclick=()=>{ const dim=b.getAttribute('data-msclear'); delete FS[dim]; paintMsList(dim,''); onFilterChange(dim); });
+  $$('[data-rng]').forEach(w=>{ const dim=w.getAttribute('data-rng'); paintRngFill(dim);
+    const lo=w.querySelector('[data-rlo]'), hi=w.querySelector('[data-rhi]'); const dr=domainRange(dim);
+    const upd=()=>{ let a=+lo.value,b=+hi.value; if(a>b){const t=a;a=b;b=t;} FS[dim]={lo:a,hi:b}; if(a<=dr.min&&b>=dr.max)delete FS[dim]; paintRngFill(dim); onFilterChange(dim); };
+    lo.oninput=upd; hi.oninput=upd; });
+  $$('[data-search]').forEach(inp=>inp.oninput=()=>{ const dim=inp.getAttribute('data-search'); if(inp.value)FS[dim]=inp.value; else delete FS[dim]; onFilterChange(dim); });
+}
+function onFilterChange(dim){
+  // reflect active state on the group + counts, refresh visuals live
+  const grp=$(`.fgrp[data-dim="${dim}"]`); if(grp){ grp.classList.toggle('act',dimActive(dim)); const n=grp.querySelector('.ft .n'); const v=FS[dim]; if(n&&DIMS[dim].kind==='multi')n.textContent=v?v.size:0; const btn=grp.querySelector('.msbtn span'); if(btn&&DIMS[dim].kind==='multi')btn.textContent=(v&&v.size)?v.size+' selected':'All'; }
+  refreshActive();
+}
+function clearAllFilters(){ tabDims().forEach(d=>delete FS[d]); renderFilterPanel(); refreshActive(); }
+function refreshActive(){
+  const t=curTab;
+  if(t==='overview') renderOverview();
+  else if(t==='alerts') renderAlerts();
+  else if(t==='reorder'){ renderReorderKpis(); renderReorderTable(); }
+  else if(t==='rolling') renderRolling();
+  else if(t==='stores') renderStores();
+  else if(t==='visibility') renderVisibility();
+  updateFilterUI();
+}
+function updateFilterUI(){
+  const n=activeCount(), has=tabDims().length>0;
+  const btn=$('#filterBtn'), c=$('#filterCount');
+  btn.style.display=has?'inline-flex':'none';
+  btn.classList.toggle('hasfilters',n>0); c.style.display=n>0?'inline-block':'none'; c.textContent=n;
+  // per-section chip summary
+  const chips=$('#chips_'+curTab);
+  if(chips){ const parts=tabDims().filter(dimActive).map(d=>{ const v=FS[d]; const lbl=DIMS[d].label;
+      if(DIMS[d].kind==='multi') return `${lbl}: ${v.size}`; if(DIMS[d].kind==='range') return `${lbl}: ${fmtRange(d,v.lo)}–${fmtRange(d,v.hi)}`; return `${lbl}: “${v}”`; });
+    chips.innerHTML = parts.length? parts.map(p=>`<span class="chip">${esc(p)}</span>`).join(' ')+` <a style="cursor:pointer" id="chipsClear">clear</a>` : '<span style="color:var(--muted)">No filters — showing all</span>';
+    const cc=$('#chipsClear'); if(cc)cc.onclick=clearAllFilters;
+  }
+}
+
+/* ---------- Reorder ---------- */
+function renderReorderKpis(){
+  const items=viewItems().filter(i=>i.reorder_qty>0);
+  const stores=new Set(items.map(i=>i.store)).size;
+  const reV=items.reduce((s,i)=>s+i.reorder_value,0), reU=items.reduce((s,i)=>s+i.reorder_qty,0);
+  $('#roKpis').innerHTML =
+    kpiCard('Total Reorder Value', inr(reV),'across '+items.length+' SKU-lines','gold')+
+    kpiCard('Units to Reorder', numf(reU),'to hit target cover','good')+
+    kpiCard('Stores Impacted', numf(stores),'need replenishment')+
+    kpiCard('Avg Days Cover (need)', DATA.params.lead_time_days+'+'+DATA.params.safety_days,'lead + safety target');
+}
+
+/* ---------- Rolling ---------- */
+function renderRolling(){
+  const VI=viewItems();
+  const dead=VI.filter(i=>i.status==='DEAD');
+  const over=VI.filter(i=>i.status==='OVERSTOCK');
+  const deadVal=dead.reduce((s,i)=>s+i.cost_value,0), overVal=over.reduce((s,i)=>s+i.cost_value,0);
+  const noVel=VI.filter(i=>i.status==='NO_VELOCITY');
+  const skuSet=new Set(VI.map(i=>i.sku));
+  const transfers=(DATA.transfers||[]).filter(t=>skuSet.has(t.sku));
+  $('#rlKpis').innerHTML =
+    kpiCard('Dead Capital', inr(deadVal), dead.length+' lines · '+DATA.params.dead_days+'d+ no sale','crit')+
+    kpiCard('Overstock Capital', inr(overVal), over.length+' lines · &gt;'+DATA.params.overstock_cover+'d cover','warn')+
+    kpiCard('Slow / No-velocity', numf(noVel.length), inr(noVel.reduce((s,i)=>s+i.cost_value,0))+' at watch')+
+    kpiCard('Transfer Ideas', numf(transfers.length), 'roll toward demand','good');
+  rowBars('#rlAging', computeAging(VI).map(a=>({nm:a.bucket, v:a.value, amt:inr(a.value)+' · '+a.lines+'ln'})), '#c98500');
+  const dc={}; dead.forEach(i=>dc[i.category]=(dc[i.category]||0)+i.cost_value);
+  const dcArr=Object.entries(dc).map(([nm,v])=>({nm,v,amt:inr(v)})).sort((a,b)=>b.v-a.v).slice(0,9);
+  rowBars('#rlDeadCat', dcArr, '#d03b3b');
+  sortableTable('#tblTransfer',
+    [['sku','SKU'],['name','Item'],['category','Category'],['from_store','From'],['suggest_to','Suggest → store(s)'],['on_hand','Qty',1],['value','Value',1],['status','',9],['reason','Why',9]],
+    transfers, r=>({sku:r.sku,name:trunc(r.name,30),category:r.category,from_store:trunc(r.from_store,18),
+      suggest_to:(r.suggest_to||[]).map(s=>trunc(s,16)).join(', '),on_hand:numf(r.on_hand),value:inr(r.value),status:pill(r.status),
+      reason:`<span class="info-i" title="${esc(r.reason)}">i</span>`}), 'value');
+  $('#rlDeadRt').textContent = dead.length+' lines · '+inr(deadVal);
+  sortableTable('#tblDead',
+    [['img','',9],['sku','SKU'],['name','Item'],['store','Store'],['category','Category'],['on_hand','Qty',1],['cost_value','Value',1],['days_in_stock','Age(d)',1],['last_sale','Last sale']],
+    dead.sort((a,b)=>b.cost_value-a.cost_value), r=>({img:thumb(r.image),sku:r.sku,name:trunc(r.name,32),store:trunc(r.store,18),category:r.category,on_hand:numf(r.on_hand),cost_value:inr(r.cost_value),days_in_stock:numf(r.days_in_stock),last_sale:r.last_sale||'never'}), 'cost_value', true);
+}
+
+/* ---------- Stores ---------- */
+function renderStores(){
+  const VI=viewItems(); const byStore={};
+  VI.forEach(i=>{ const s=byStore[i.store]||(byStore[i.store]={store:i.store,value:0,pieces:0,skus:new Set(),dead:0,critical:0,low:0,overstock:0,deadVal:0,reorder_value:0});
+    s.value+=i.cost_value; s.pieces+=i.on_hand; s.skus.add(i.sku); s.reorder_value+=i.reorder_value;
+    if(i.status==='DEAD'){s.dead++;s.deadVal+=i.cost_value;} else if(i.status==='CRITICAL')s.critical++; else if(i.status==='LOW')s.low++; else if(i.status==='OVERSTOCK')s.overstock++; });
+  const stores=Object.values(byStore).sort((a,b)=>b.value-a.value);
+  const el=$('#storeCards'); el.innerHTML='';
+  stores.forEach(s=>{
+    el.insertAdjacentHTML('beforeend', `<div class="card" style="cursor:pointer" data-store="${esc(s.store)}">
+      <h3 style="margin-bottom:8px">${esc(trunc(s.store,26))}</h3>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span class="mini">Stock value</span><b>${inr(s.value)}</b></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span class="mini">Pieces · SKUs</span><span>${numf(Math.round(s.pieces))} · ${numf(s.skus.size)}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span class="mini">Dead capital</span><span style="color:var(--crit)">${inr(s.deadVal)}</span></div>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        ${s.critical?`<span class="pill CRITICAL">${s.critical} crit</span>`:''}
+        ${s.low?`<span class="pill LOW">${s.low} low</span>`:''}
+        ${s.dead?`<span class="pill DEAD">${s.dead} dead</span>`:''}
+        ${s.overstock?`<span class="pill OVERSTOCK">${s.overstock} over</span>`:''}
+        <span class="mini" style="margin-left:auto">refill ${inr(s.reorder_value)}</span>
+      </div></div>`);
+  });
+  $$('#storeCards .card').forEach(c=>c.onclick=()=>drillStore(c.dataset.store));
+  renderAssort();
+  if(stores[0]) drillStore(stores[0].store);
+}
+function renderAssort(){
+  const a=DATA.assortment; if(!a){return;}
+  $('#assortRt').textContent = `core = ${a.core_count} demand-validated products (target ${a.target_n})`;
+  sortableTable('#tblAssort',
+    [['store','Store'],['coverage_pct','Coverage %',1],['held','Held',1],['gap','Gap',1],['transfer_fillable','Fill by transfer',1],['act','']],
+    a.by_store, r=>({store:trunc(r.store,26),coverage_pct:covBar(r.coverage_pct),held:numf(r.held),gap:numf(r.gap),transfer_fillable:numf(r.transfer_fillable),act:`<button class="btn" style="padding:3px 9px" data-gap="${esc(r.store)}">View gap ▸</button>`}), 'coverage_pct', false);
+  const at=$('#tblAssort'); if(!at._deleg){ at._deleg=true; at.addEventListener('click',e=>{const btn=e.target.closest('button[data-gap]'); if(btn){ renderGap(btn.dataset.gap); $('#gapTitle').scrollIntoView({behavior:'smooth',block:'start'}); }}); }
+  if(a.by_store[0]) renderGap(a.by_store[0].store);
+}
+function covBar(pct){ const c=pct>=60?'#0ca30c':pct>=35?'#fab219':'#d03b3b'; return `<span style="display:inline-flex;align-items:center;gap:7px"><span class="bar" style="width:80px"><span style="width:${pct}%;background:${c}"></span></span><b>${pct}%</b></span>`; }
+let curGapStore=null;
+function renderGap(store){
+  if(store) curGapStore=store; if(!curGapStore) return;
+  const a=DATA.assortment.by_store.find(s=>s.store===curGapStore); if(!a) return;
+  $('#gapTitle').innerHTML = `Stocking gap · ${esc(trunc(curGapStore,30))} <span class="rt" style="font-size:11.5px;color:var(--muted);margin-left:8px">${a.gap_items.length} priority products to bring in</span>`;
+  const src=$('#gapSource').value, band=$('#gapBand').value;
+  let rows=a.gap_items.filter(g=>(!src||g.source===src)&&(!band||g.price_band===band));
+  sortableTable('#tblGap',
+    [['sku','SKU'],['name','Product'],['category','Category'],['price_band','Price band'],['demand_score','GA4 demand',1],['source','Source',9],['from','Transfer from']],
+    rows, r=>({sku:r.sku,name:trunc(r.name,32),category:r.category,price_band:r.price_band,demand_score:numf(r.demand_score),source:`<span class="pill ${r.source}">${r.source}</span>`,from:r.from?trunc(r.from,20):'—'}), 'demand_score', true);
+}
+function drillStore(store){
+  $('#storeDrillTitle').innerHTML = esc(store)+' <span class="rt" style="margin-left:8px;font-size:11.5px;color:var(--muted)">line-level inventory</span>';
+  const rows=viewItems().filter(i=>i.store===store).sort((a,b)=>b.cost_value-a.cost_value);
+  sortableTable('#tblStoreDrill',
+    [['img','',9],['sku','SKU'],['name','Item'],['location','Location'],['category','Category'],['status','Status',9],['on_hand','Qty',1],['cover','Cover(d)',1],['cost_value','Value',1],['reorder_qty','Reorder',1]],
+    rows, r=>({img:thumb(r.image),sku:r.sku,name:trunc(r.name,30),location:trunc(r.location,16),category:r.category,status:pill(r.status),on_hand:numf(r.on_hand),cover:r.cover==null?'—':r.cover,cost_value:inr(r.cost_value),reorder_qty:r.reorder_qty||''}), 'cost_value', true);
+}
+
+/* ---------- Visibility ---------- */
+function renderVisibility(){
+  const VI=viewItems();
+  const hot=VI.filter(i=>i.add_to_cart>0 && (i.status==='CRITICAL'||i.status==='LOW')).sort((a,b)=>b.add_to_cart-a.add_to_cart).slice(0,60);
+  const silent=VI.filter(i=>i.pdp_views===0 && i.on_hand>0 && i.cost_value>0).sort((a,b)=>b.cost_value-a.cost_value).slice(0,60);
+  sortableTable('#tblHot',
+    [['img','',9],['sku','SKU'],['name','Item'],['store','Store'],['add_to_cart','ATC',1],['pdp_views','Views',1],['on_hand','Qty',1],['cover','Cover',1],['status','',9]],
+    hot, r=>({img:thumb(r.image),sku:r.sku,name:trunc(r.name,26),store:trunc(r.store,16),add_to_cart:numf(r.add_to_cart),pdp_views:numf(r.pdp_views),on_hand:numf(r.on_hand),cover:r.cover==null?'—':r.cover,status:pill(r.status)}), 'add_to_cart', true);
+  sortableTable('#tblSilent',
+    [['img','',9],['sku','SKU'],['name','Item'],['store','Store'],['category','Category'],['on_hand','Qty',1],['cost_value','Value',1],['days_in_stock','Age(d)',1]],
+    silent, r=>({img:thumb(r.image),sku:r.sku,name:trunc(r.name,26),store:trunc(r.store,16),category:r.category,on_hand:numf(r.on_hand),cost_value:inr(r.cost_value),days_in_stock:numf(r.days_in_stock)}), 'cost_value', true);
+}
+
+/* ---------- Product Performance ---------- */
+let PROD=null, prodInit=false;
+async function loadProduct(){
+  const days=$('#pDays').value, store=$('#pStore').value, cat=$('#pCat').value;
+  $('#pLoading').style.display='block'; $('#pContent').style.opacity=.4;
+  try{
+    PROD=await api(`/?action=product&days=${encodeURIComponent(days)}&store=${encodeURIComponent(store)}&category=${encodeURIComponent(cat)}`);
+    renderProduct();
+  }catch(e){ toast('Product load failed: '+e.message); }
+  $('#pLoading').style.display='none'; $('#pContent').style.opacity=1;
+}
+function ensureProductFilters(){
+  if(prodInit) return; prodInit=true;
+  // store list from API
+  api('/?action=stores').then(d=>{ $('#pStore').innerHTML='<option value="">All stores</option>'+(d.stores||[]).map(s=>`<option>${esc(s)}</option>`).join(''); }).catch(()=>{});
+  const cats=[...new Set(DATA.items.filter(JEWEL).map(i=>i.category))].sort();
+  $('#pCat').innerHTML='<option value="">All categories</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join('');
+  $('#pRange').innerHTML='<option value="">All ranges</option>'+['0 · no sale','1','2–5','6–10','11–25','26+'].map(r=>`<option>${esc(r)}</option>`).join('');
+  $('#pApply').onclick=loadProduct;
+  ['#pStore','#pCat'].forEach(s=>$(s).onchange=loadProduct);
+  ['#pRange','#pStock','#pBand','#pMetal','#pInsight','#pSearch'].forEach(s=>$(s).oninput=renderProdTable);
+  $('#pExp').onclick=()=>{ if(!PROD)return; exportGeneric(prodFiltered(),['sku','parent','name','category','subtype','metal','price_band','sold','sold_range','stock','cover','pdp','atc','chk','revenue','value','insight','action'],'product_performance'); };
+  // category breakdown toggle
+  $('#pCbCat').onclick=()=>{ pCbMode='cat'; segOn('#pCbCat','#pCbSub'); renderCatBreak(); };
+  $('#pCbSub').onclick=()=>{ pCbMode='sub'; segOn('#pCbSub','#pCbCat'); renderCatBreak(); };
+  // product view toggle
+  $('#pViewSku').onclick=()=>{ pView='sku'; segOn('#pViewSku','#pViewParent'); renderProdTable(); };
+  $('#pViewParent').onclick=()=>{ pView='parent'; segOn('#pViewParent','#pViewSku'); renderProdTable(); };
+}
+let pCbMode='cat', pView='sku';
+function segOn(on,off){ $(on).classList.add('on'); $(on).style.background='var(--gold)'; $(on).style.color='#1a1200'; $(off).classList.remove('on'); $(off).style.background='transparent'; $(off).style.color='var(--ink-2)'; }
+function renderProduct(){
+  const ins=PROD.insights;
+  $('#pKpis').innerHTML =
+    kpiCard('Products Sold', numf(ins.products_sold), numf(ins.units_sold)+' units · '+inr(ins.revenue),'good')+
+    kpiCard('Sold-out Winners', numf(ins.sold_out_winners), 'sold, now 0 stock','crit')+
+    kpiCard('Fast · Low Cover', numf(ins.fast_low_cover), '&lt;21d cover','warn')+
+    kpiCard('Web-wanted, Unsold', numf(ins.web_demand_no_sale), 'ATC but no sale')+
+    kpiCard('Idle in Stock', numf(ins.idle_in_stock), inr(ins.idle_value)+' locked','crit')+
+    kpiCard('Window', ins.window_days+'d', esc(ins.store)+' · '+esc(ins.category));
+  $('#pActionRt').textContent = ins.window_days+'d · '+esc(ins.store);
+  $('#pAction').innerHTML = (PROD.action_plan||[]).map(a=>{
+    const pc=a.priority==='High'?'CRITICAL':a.priority==='Medium'?'LOW':'HEALTHY';
+    return `<div style="display:flex;gap:11px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border)"><span class="pill ${pc}" style="margin-top:1px">${a.priority}</span><div><b>${esc(a.action)}</b><div class="mini" style="margin-top:2px">${esc(a.why)}</div></div></div>`;
+  }).join('')||'<p class="empty">No actions</p>';
+  // populate client-side filter options from the loaded data
+  const bands=[...new Set(PROD.products.map(p=>p.price_band))].filter(Boolean);
+  const metals=[...new Set(PROD.products.map(p=>p.metal))].filter(Boolean).sort();
+  const insights=[...new Set(PROD.products.map(p=>p.insight))].filter(Boolean).sort();
+  const keepOpt=(sel,arr,all)=>{ const cur=$(sel).value; $(sel).innerHTML=`<option value="">${all}</option>`+arr.map(v=>`<option ${v===cur?'selected':''}>${esc(v)}</option>`).join(''); };
+  keepOpt('#pBand',bands,'All'); keepOpt('#pMetal',metals,'All'); keepOpt('#pInsight',insights,'All');
+  sortableTable('#pRanges',
+    [['range','Sold range',9],['products','# Products',1],['units','Units sold',1],['units_per_product','Units/SKU',1],['revenue','Revenue',1],['views','GA4 Views',1],['atc','ATC',1],['checkout','Checkout',1],['atc_ratio','ATC ratio',1],['cart_conv','Cart→Chk',1],['sell_conv','View→Sold',1]],
+    PROD.sold_ranges, r=>({range:`<span class="pill ${r.range.startsWith('0')?'DEAD':'HEALTHY'}">${esc(r.range)}</span>`,products:numf(r.products),units:numf(r.units),units_per_product:r.units_per_product,revenue:inr(r.revenue),views:numf(r.views),atc:numf(r.atc),checkout:numf(r.checkout),atc_ratio:r.atc_ratio+'%',cart_conv:r.cart_conv+'%',sell_conv:r.sell_conv+'%'}), null, false);
+  renderCatBreak();
+  // city demand
+  sortableTable('#pCity',
+    [['city','City'],['state','State'],['sales_units','Sold',1],['sales_revenue','Revenue',1],['add_to_cart','ATC',1],['add_to_wishlist','Wish',1],['purchase','GA4 buy',1],['target_store','→ Store']],
+    PROD.city_demand, r=>({city:r.city,state:trunc(r.state,14),sales_units:numf(r.sales_units),sales_revenue:inr(r.sales_revenue),add_to_cart:numf(r.add_to_cart),add_to_wishlist:numf(r.add_to_wishlist),purchase:numf(r.purchase),target_store:trunc(r.target_store||'',20)}), 'sales_revenue', true);
+  // to-stock (only when a store is selected)
+  const ts=PROD.to_stock||[];
+  if(PROD.store_name && ts.length){
+    $('#pToStockCard').style.display='block';
+    $('#pToStockRt').textContent = `${ts.length} SKUs · ${esc(PROD.store_name)}`;
+    sortableTable('#pToStock',
+      [['img','',9],['sku','SKU'],['name','Item'],['category','Category'],['price_band','Price band'],['pdp','Views',1],['atc','ATC',1],['chk','Chk',1],['demand_score','GA4 demand',1]],
+      ts, r=>({img:thumb(r.image),sku:r.sku,name:trunc(r.name,30),category:r.category,price_band:r.price_band,pdp:numf(r.pdp),atc:numf(r.atc),chk:numf(r.chk),demand_score:numf(r.demand_score)}), 'demand_score', true);
+  } else { $('#pToStockCard').style.display='none'; }
+  renderProdTable();
+}
+function renderCatBreak(){
+  if(!PROD)return;
+  const data = pCbMode==='sub' ? PROD.subtype_breakdown : PROD.category_breakdown;
+  sortableTable('#pCatBreak',
+    [['key',pCbMode==='sub'?'Category › Sub-type':'Category',9],['products','# Products',1],['units','Units',1],['revenue','Revenue',1],['stock','Stock',1],['views','Views',1],['atc','ATC',1],['checkout','Chk',1],['atc_ratio','ATC ratio',1],['cart_conv','Cart→Chk',1],['sell_conv','View→Sold',1]],
+    data||[], r=>({key:esc(r.key),products:numf(r.products),units:numf(r.units),revenue:inr(r.revenue),stock:numf(r.stock),views:numf(r.views),atc:numf(r.atc),checkout:numf(r.checkout),atc_ratio:r.atc_ratio+'%',cart_conv:r.cart_conv+'%',sell_conv:r.sell_conv+'%'}), 'revenue', true);
+}
+function prodFiltered(){
+  const rng=$('#pRange').value, stk=$('#pStock').value, band=$('#pBand').value, metal=$('#pMetal').value, ins=$('#pInsight').value, q=$('#pSearch').value.toLowerCase();
+  return (PROD.products||[]).filter(p=>(!rng||p.sold_range===rng)&&
+    (!stk||(stk==='in'?p.stock>0:p.stock<=0))&&
+    (!band||p.price_band===band)&&(!metal||p.metal===metal)&&(!ins||p.insight===ins)&&
+    (!q||(p.sku+' '+p.parent+' '+p.name).toLowerCase().includes(q)));
+}
+function renderProdTable(){
+  if(!PROD)return;
+  const rows=prodFiltered();
+  if(pView==='parent'){ renderParentTable(rows); return; }
+  $('#pProdRt').textContent = rows.length+' SKUs';
+  sortableTable('#pProd',
+    [['img','',9],['sku','SKU'],['parent','Parent'],['name','Item'],['category','Category'],['sold','Sold',1],['sold_range','Range',9],['stock','Stock',1],['cover','Cover(d)',1],['pdp','Views',1],['atc','ATC',1],['chk','Chk',1],['revenue','Revenue',1],['insight','Insight'],['action','Action']],
+    rows, r=>({img:thumb(r.image),sku:r.sku,parent:trunc(r.parent,14),name:trunc(r.name,24),category:r.category,sold:numf(r.sold),sold_range:`<span class="pill ${r.sold>0?'HEALTHY':'DEAD'}">${esc(r.sold_range)}</span>`,stock:numf(r.stock),cover:r.cover==null?'—':r.cover,pdp:numf(r.pdp),atc:numf(r.atc),chk:numf(r.chk),revenue:inr(r.revenue),insight:`<span class="mini">${esc(r.insight)}</span>`,action:`<span style="color:var(--s2);font-weight:600;font-size:11.5px">${esc(r.action)}</span>`}), 'sold', true);
+}
+function renderParentTable(rows){
+  // group filtered SKUs by parent (style)
+  const g={};
+  rows.forEach(p=>{ const k=p.parent||'—'; const b=g[k]||(g[k]={parent:k,name:p.name,category:p.category,skus:0,sold:0,stock:0,pdp:0,atc:0,chk:0,revenue:0,value:0,image:p.image});
+    b.skus++; b.sold+=p.sold; b.stock+=p.stock; b.pdp+=p.pdp; b.atc+=p.atc; b.chk+=p.chk; b.revenue+=p.revenue; b.value+=p.value; if(!b.image&&p.image)b.image=p.image; });
+  const arr=Object.values(g);
+  $('#pProdRt').textContent = arr.length+' parents · '+rows.length+' SKUs';
+  sortableTable('#pProd',
+    [['img','',9],['parent','Parent (style)'],['name','Item'],['category','Category'],['skus','# SKUs',1],['sold','Sold',1],['stock','Stock',1],['pdp','Views',1],['atc','ATC',1],['chk','Chk',1],['revenue','Revenue',1],['act','']],
+    arr, r=>({img:thumb(r.image),parent:esc(r.parent),name:trunc(r.name,26),category:r.category,skus:numf(r.skus),sold:numf(r.sold),stock:numf(r.stock),pdp:numf(r.pdp),atc:numf(r.atc),chk:numf(r.chk),revenue:inr(r.revenue),act:`<button class="btn" style="padding:3px 9px" data-parent="${esc(r.parent)}">SKUs ▸</button>`}), 'sold', true);
+  const pt=$('#pProd'); if(!pt._deleg){ pt._deleg=true; pt.addEventListener('click',e=>{const b=e.target.closest('button[data-parent]'); if(b) showParentSkus(b.dataset.parent);}); }
+}
+function showParentSkus(parent){
+  const skus=prodFiltered().filter(p=>(p.parent||'—')===parent);
+  const tot=(k)=>skus.reduce((s,i)=>s+(i[k]||0),0);
+  $('#modalBody').innerHTML=`<h2>${esc(parent)} <span style="font-size:12px;color:var(--muted);font-weight:600">· ${skus.length} SKUs under this parent</span></h2>
+    <div class="mkpis">
+      <div class="mk"><div class="l">Units sold</div><div class="v">${numf(tot('sold'))}</div></div>
+      <div class="mk"><div class="l">Stock</div><div class="v">${numf(tot('stock'))}</div></div>
+      <div class="mk"><div class="l">Revenue</div><div class="v" style="color:var(--gold)">${inr(tot('revenue'))}</div></div>
+      <div class="mk"><div class="l">GA4 ATC</div><div class="v">${numf(tot('atc'))}</div></div>
+    </div>
+    <div class="card" style="padding:0"><div class="tbl-wrap" style="max-height:440px;border:0"><table id="mParentTbl"></table></div></div>`;
+  sortableTable('#mParentTbl',
+    [['img','',9],['sku','SKU'],['name','Item'],['sold','Sold',1],['sold_range','Range',9],['stock','Stock',1],['cover','Cover',1],['pdp','Views',1],['atc','ATC',1],['chk','Chk',1],['revenue','Revenue',1],['insight','Insight']],
+    skus, r=>({img:thumb(r.image),sku:r.sku,name:trunc(r.name,26),sold:numf(r.sold),sold_range:`<span class="pill ${r.sold>0?'HEALTHY':'DEAD'}">${esc(r.sold_range)}</span>`,stock:numf(r.stock),cover:r.cover==null?'—':r.cover,pdp:numf(r.pdp),atc:numf(r.atc),chk:numf(r.chk),revenue:inr(r.revenue),insight:`<span class="mini">${esc(r.insight)}</span>`}), 'sold', true);
+  openModal();
+}
+
+/* ---------- Geo ---------- */
+function renderGeo(){
+  const gt=DATA.geo_targeting||[];
+  sortableTable('#tblGeoTarget',
+    [['target_store','Store catchment'],['cities','Cities',1],['demand_index','Demand idx',1],['demand_share','Demand %',1],['stock_share','Stock %',1],['ratio','Ratio',1],['verdict','Verdict',9]],
+    gt, r=>({target_store:trunc(r.target_store,24),cities:numf(r.cities),demand_index:numf(r.demand_index),demand_share:r.demand_share+'%',stock_share:r.physical?r.stock_share+'%':'—',
+      ratio:r.ratio==null?'—':`<b class="${r.ratio>1.2?'ratio-hi':r.ratio<0.8?'ratio-lo':''}">${r.ratio}×</b>`,
+      verdict:`<span class="pill ${r.verdict.includes('Under')?'CRITICAL':r.verdict.includes('Over')?'OVERSTOCK':r.verdict.includes('Balanced')?'HEALTHY':'NO_VELOCITY'}">${esc(r.verdict)}</span>`}), 'demand_index', true);
+  const g=DATA.geo||[];
+  sortableTable('#tblGeo',
+    [['city','City'],['region','State'],['view_item','Views',1],['add_to_cart','ATC',1],['add_to_wishlist','Wishlist',1],['begin_checkout','Checkout',1],['purchase','Purchase',1],['target_store','→ Target store']],
+    g, r=>({city:r.city,region:r.region,view_item:numf(r.view_item),add_to_cart:numf(r.add_to_cart),add_to_wishlist:numf(r.add_to_wishlist),begin_checkout:numf(r.begin_checkout),purchase:numf(r.purchase),target_store:trunc(r.target_store,26)}), 'view_item', true);
+}
+
+/* ---------- Alerts + Reorder (filtered via drawer engine) ---------- */
+function renderAlerts(){
+  let rows=viewItems();
+  const rank={CRITICAL:0,LOW:1,HEALTHY:2,OVERSTOCK:3,NO_VELOCITY:4,DEAD:5};
+  rows=[...rows].sort((a,b)=>(rank[a.status]-rank[b.status])||(a.cover??1e9)-(b.cover??1e9));
+  sortableTable('#tblAlerts',
+    [['img','',9],['sku','SKU'],['name','Item'],['store','Store'],['category','Category'],['status','Status',9],['on_hand','Qty',1],['vpd','Rate/d',1],['cover','Cover(d)',1],['sold_win','Sold',1],['reorder_qty','Reorder',1],['add_to_cart','ATC',1]],
+    rows, r=>({img:thumb(r.image),sku:r.sku,name:trunc(r.name,30),store:trunc(r.store,18),category:r.category,status:pill(r.status),on_hand:numf(r.on_hand),vpd:r.vpd?r.vpd.toFixed(2):'0',cover:r.cover==null?'—':r.cover,sold_win:numf(r.sold_win),reorder_qty:r.reorder_qty||'',add_to_cart:numf(r.add_to_cart)}), null, false);
+  $('#tblAlerts').dataset.count=rows.length;
+}
+function renderReorderTable(){
+  let rows=viewItems().filter(i=>i.reorder_qty>0).sort((a,b)=>b.reorder_value-a.reorder_value);
+  sortableTable('#tblReorder',
+    [['img','',9],['sku','SKU'],['name','Item'],['store','Store'],['category','Category'],['on_hand','On-hand',1],['vpd','Rate/d',1],['cover','Cover(d)',1],['reorder_qty','Reorder Qty',1],['reorder_value','Reorder Value',1]],
+    rows, r=>({img:thumb(r.image),sku:r.sku,name:trunc(r.name,30),store:trunc(r.store,18),category:r.category,on_hand:numf(r.on_hand),vpd:r.vpd?r.vpd.toFixed(2):'0',cover:r.cover==null?'—':r.cover,reorder_qty:numf(r.reorder_qty),reorder_value:inr(r.reorder_value)}), null, false);
+}
+
+/* ─────────────────────────── UI helpers ─────────────────────────── */
+function trunc(s,n){ s=String(s==null?'':s); return s.length>n? s.slice(0,n-1)+'…':s; }
+function pill(s){ return `<span class="pill ${s}">${s.replace('_',' ')}</span>`; }
+function thumb(u){ return u? `<img class="thumb" src="${esc(u)}" loading="lazy" onerror="this.style.visibility='hidden'">`:''; }
+function rowBars(sel,arr,color){
+  const el=$(sel); if(!el) return; if(!arr||!arr.length){el.innerHTML='<p class="empty">No data</p>';return;}
+  const mx=Math.max(...arr.map(a=>a.v))||1;
+  el.innerHTML=arr.map(a=>`<div class="rb"><span class="nm" title="${esc(a.nm)}">${esc(a.nm)}</span><span class="bar"><span style="width:${Math.max(2,100*a.v/mx)}%;background:${color}"></span></span><span class="amt">${a.amt}</span></div>`).join('');
+}
+function donut(segs,size){
+  const r=size/2, cx=r, cy=r, rad=r-8, inner=rad*0.6; let a0=-Math.PI/2;
+  const tot=segs.reduce((s,x)=>s+x.v,0)||1;
+  let paths='';
+  segs.forEach(s=>{ const a1=a0+2*Math.PI*s.v/tot;
+    const x0=cx+rad*Math.cos(a0),y0=cy+rad*Math.sin(a0),x1=cx+rad*Math.cos(a1),y1=cy+rad*Math.sin(a1);
+    const xi1=cx+inner*Math.cos(a1),yi1=cy+inner*Math.sin(a1),xi0=cx+inner*Math.cos(a0),yi0=cy+inner*Math.sin(a0);
+    const large=(a1-a0)>Math.PI?1:0;
+    paths+=`<path d="M${x0},${y0} A${rad},${rad} 0 ${large} 1 ${x1},${y1} L${xi1},${yi1} A${inner},${inner} 0 ${large} 0 ${xi0},${yi0} Z" fill="${s.c}"/>`;
+    a0=a1; });
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${paths}<text x="${cx}" y="${cy-2}" text-anchor="middle" font-size="20" font-weight="800" fill="currentColor">${tot}</text><text x="${cx}" y="${cy+15}" text-anchor="middle" font-size="10" fill="var(--muted)">lines</text></svg>`;
+}
+function sortableTable(sel,cols,rows,mapfn,sortKey,sortDesc){
+  const t=$(sel); if(!t) return; t._cols=cols; t._rows=rows||[]; t._map=mapfn; t._sk=sortKey; t._sd=sortDesc!==false;
+  paintTable(t);
+}
+function paintTable(t){
+  const {_cols:cols,_rows:rows,_map:mapfn}=t;
+  let rws=[...rows];
+  if(t._sk){ const raw=t._sk; rws.sort((a,b)=>{ let x=a[raw],y=b[raw]; if(typeof x==='string'){x=x||'';y=y||'';return t._sd? y.localeCompare(x):x.localeCompare(y);} x=x??-Infinity;y=y??-Infinity; return t._sd? y-x:x-y; }); }
+  const head='<thead><tr>'+cols.map(c=>`<th data-k="${c[0]}">${c[1]}${t._sk===c[0]?(t._sd?' ▾':' ▴'):''}</th>`).join('')+'</tr></thead>';
+  const body='<tbody>'+(rws.length?rws.map(r=>{const m=mapfn(r);return '<tr>'+cols.map(c=>`<td>${m[c[0]]==null?'':m[c[0]]}</td>`).join('')+'</tr>';}).join(''):`<tr><td colspan="${cols.length}"><p class="empty">No rows</p></td></tr>`)+'</tbody>';
+  t.innerHTML=head+body;
+  t.querySelectorAll('th').forEach(th=>th.onclick=()=>{ const k=th.dataset.k; if(!k) return; if(t._sk===k) t._sd=!t._sd; else {t._sk=k;t._sd=true;} paintTable(t); });
+}
+
+/* ─────────────────────────── chat ─────────────────────────── */
+const CHAT_SUGGEST=[
+  'Which SKUs have under 14 days of cover right now?',
+  'Top 10 dead-stock items by value and their store',
+  'Which categories sell fastest in the last 90 days?',
+  'How many pieces should I reorder for the Pune store?',
+  'Which cities drive the most add-to-cart but we have low stock?'
+];
+function renderChatSuggest(){ $('#chatSuggest').innerHTML=CHAT_SUGGEST.map(s=>`<span class="s">${esc(s)}</span>`).join(''); $$('#chatSuggest .s').forEach(el=>el.onclick=()=>{ $('#chatInput').value=el.textContent; sendChat(); }); }
+function addMsg(cls,html){ const l=$('#chatLog'); l.insertAdjacentHTML('beforeend',`<div class="msg ${cls}">${html}</div>`); l.scrollTop=l.scrollHeight; }
+async function sendChat(){
+  if(chatBusy) return; const q=$('#chatInput').value.trim(); if(!q) return;
+  chatBusy=true; $('#chatInput').value=''; addMsg('u',esc(q));
+  addMsg('a','<span class="spin" style="width:18px;height:18px;margin:2px 0;border-width:2px"></span>');
+  const log=$('#chatLog'); const busyEl=log.lastElementChild;
+  try{
+    const r=await api('/?action=chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})});
+    let html;
+    if(r.error){ html=`<b style="color:var(--warn)">${esc(r.error)}</b>`+(r.sql?`<div class="sql">${esc(r.sql)}</div>`:''); }
+    else{
+      html=esc(r.answer).replace(/\n/g,'<br>');
+      if(r.rows&&r.rows.length){ html+=miniTable(r.rows); }
+      html+=`<div class="sql">${esc(r.sql)}</div><div class="mt">${r.row_count} rows · scanned ${r.scanned_gb} GB</div>`;
+    }
+    busyEl.innerHTML=html; log.scrollTop=log.scrollHeight;
+  }catch(e){ busyEl.innerHTML=`<b style="color:var(--crit)">Error:</b> ${esc(e.message)}`; }
+  chatBusy=false;
+}
+function miniTable(rows){
+  const cols=Object.keys(rows[0]).slice(0,6);
+  let h='<div style="overflow:auto;margin-top:10px;max-height:230px"><table style="font-size:11.5px"><thead><tr>'+cols.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr></thead><tbody>';
+  rows.slice(0,20).forEach(r=>{ h+='<tr>'+cols.map(c=>{let v=r[c]; if(typeof v==='number'&&Math.abs(v)>=1000) v=v.toLocaleString('en-IN'); return `<td>${esc(v)}</td>`;}).join('')+'</tr>'; });
+  return h+'</tbody></table></div>';
+}
+
+/* ─────────────────────────── strategy ─────────────────────────── */
+async function genStrategy(){
+  const out=$('#strategyOut'); out.innerHTML='<div class="spin"></div><p class="empty">Gemini is analysing the live position…</p>';
+  try{ const r=await api('/?action=ai'); out.innerHTML=mdToHtml(r.strategy_markdown); }
+  catch(e){ out.innerHTML=`<p class="empty" style="color:var(--crit)">Failed: ${esc(e.message)}</p>`; }
+}
+function mdToHtml(md){
+  const lines=String(md).split('\n'); let html='', inList=false;
+  const inline=s=>esc(s).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/`([^`]+)`/g,'<code>$1</code>');
+  for(let ln of lines){
+    if(/^\s*[-*]\s+/.test(ln)){ if(!inList){html+='<ul>';inList=true;} html+='<li>'+inline(ln.replace(/^\s*[-*]\s+/,''))+'</li>'; continue; }
+    if(inList){html+='</ul>';inList=false;}
+    if(/^###\s/.test(ln)) html+='<h3>'+inline(ln.slice(4))+'</h3>';
+    else if(/^##\s/.test(ln)) html+='<h2>'+inline(ln.slice(3))+'</h2>';
+    else if(/^#\s/.test(ln)) html+='<h1>'+inline(ln.slice(2))+'</h1>';
+    else if(/^\s*---\s*$/.test(ln)) html+='<hr>';
+    else if(ln.trim()==='') html+='';
+    else html+='<p>'+inline(ln)+'</p>';
+  }
+  if(inList)html+='</ul>';
+  return html;
+}
+
+/* ─────────────────────────── Knowledge Base ─────────────────────────── */
+function renderKB(){
+  const p=DATA.params;
+  const kb=[
+    ['🎯 What this dashboard is', `A single command center for Lucira's <b>inventory strategy</b>: refresh, running stock alerts, rolling & capital release, refilling, and store-level working — with GA4 demand and a Gemini AI layer (chat + strategy). Primary goal is <b>inventory</b>; GA4 is used only as a demand signal.`],
+    ['📦 Data sources', `<ul>
+      <li><b>Live_inventory</b> (<code>ds_imputed_reporting</code>) — current stock at item grain (Store × location × SKU), with pre-joined GA4 signals (PDP views, ATC, checkout) and Shopify price.</li>
+      <li><b>Sales_overview_table</b> (<code>ornaverse_erp_administration</code>) — sales line items → velocity/run-rate.</li>
+      <li><b>GA4 export</b> (<code>analytics_478308692.events_*</code>) — web funnel: view_item, add_to_cart, add_to_wishlist, begin_checkout, purchase + geo.</li></ul>`],
+    ['⚡ Days-of-cover (the core metric)', `<b>Cover = on-hand ÷ daily run-rate</b>, where run-rate = units sold in the last ${p.velocity_days} days ÷ ${p.velocity_days}. It answers “at today's pace, how many days until this SKU is gone?”. Low cover = restock; very high cover = capital stuck.`],
+    ['🚦 Stock alert statuses', `<ul>
+      <li><span class="pill CRITICAL">CRITICAL</span> cover &lt; ${p.critical_cover} days — reorder now.</li>
+      <li><span class="pill LOW">LOW</span> cover &lt; ${p.low_cover} days — plan a refill.</li>
+      <li><span class="pill HEALTHY">HEALTHY</span> ${p.critical_cover}–${p.overstock_cover} days — fine.</li>
+      <li><span class="pill OVERSTOCK">OVERSTOCK</span> cover &gt; ${p.overstock_cover} days — too much vs demand.</li>
+      <li><span class="pill NO_VELOCITY">NO VELOCITY</span> no sale in ${p.velocity_days}d but not yet aged out — watch.</li>
+      <li><span class="pill DEAD">DEAD</span> no sale in window AND aged ${p.dead_days}d+ — liquidation candidate.</li></ul>`],
+    ['🔄 Refill / reorder logic', `<b>Reorder qty = run-rate × (lead-time ${p.lead_time_days}d + safety ${p.safety_days}d) − on-hand</b>, floored at 0 and only for SKUs with real velocity. Reorder value uses unit cost (item_rate). Ranked by capital-at-work so buying focuses where money moves.`],
+    ['♻️ Inventory rolling & transfers', `Rolling ages every line into buckets (Fresh → Dead) to expose locked capital. <b>Transfer suggestions</b>: a piece that is DEAD/OVERSTOCK where it sits, but whose <b>category still sells across the network</b>, is proposed to move to stores that hold demand for that category but little/no stock of it.`],
+    ['🏬 Store bridge caveat', `Inventory <code>Store_name</code> and sales <code>company_code</code> do <b>not</b> map 1:1 (e.g. CS1/FCS have no store name; "Divinecarat" spans many locations). So <b>days-of-cover & reorder use network-wide SKU velocity</b> (robust), while <b>on-hand is shown per store × location</b>. Edit <code>CITY_STORE</code>/store maps in the API to refine.`],
+    ['◎ AI Visibility (GA4)', `<b>High demand, low stock</b> = SKUs with web add-to-cart but CRITICAL/LOW cover → prioritise restock/push. <b>Silent stock</b> = inventory with 0 web views → needs merchandising/exposure. <b>Geo targeting</b> maps city-level GA4 demand to the nearest physical store.`],
+    ['🚫 Scope: jewelry only', `This dashboard is <b>gold & diamond jewelry only</b>. Removed entirely from every view, KPI, alert and stocking plan: <b>all Silver-metal products</b> (incl. silver pendants) and <b>all coins</b> (Gold Coin + Silver Coin — bullion, not merchandised jewelry). Controlled by <code>EXCLUDE_METALS</code> (Silver) and <code>EXCLUDE_TYPES</code> (Silver Coin, Gold Coin) on the API — adjust either to change scope.`],
+    ['💰 Price-band strategy', `Every item is bucketed by retail price (&lt;₹25K, ₹25K–50K, ₹50K–1L, ₹1L–2L, ₹2L–5L, ₹5L+). We compare <b>capital held</b> vs <b>GA4 demand share</b> per band. A band where demand ≫ capital is <b>under-stocked</b> (buy more of that price point); capital ≫ demand is <b>over-invested</b>. Filter alerts & the stocking gap by band.`],
+    ['🎯 Store stocking plan (GA4-driven)', `The <b>core assortment</b> is the top-${DATA.params.stock_target_n} products ranked by a <b>GA4 ecommerce-event demand score</b> = 0.02·views + 1·add-to-cart + 2.5·checkout + 4·units-sold. Only products with a real event/sale signal qualify. Per store we show <b>coverage %</b> of that core and the <b>gap</b> to bring in — flagged <span class="pill Transfer">Transfer</span> when a store holds it as dead/overstock, else <span class="pill Reorder">Reorder</span>. This is “what 500 to stock, and how”.`],
+    ['⚖ Geo demand-vs-stock ratio', `For each store catchment we compute <b>demand share</b> (GA4 events from its cities, weighted to purchase) vs <b>stock share</b> (its inventory value). <b>Ratio = demand share ÷ stock share</b>: &gt;1.2 = <b>under-served</b> (add stock), &lt;0.8 = <b>over-served</b> (trim/roll out). Online demand with no store is shown separately.`],
+    ['📈 Product Performance page', `A demand-window view of <b>where products sell</b>. Pick a <b>GA4/sales window</b> (30/60/90/180/365d), <b>store</b> (where sold) and <b>category</b> — these re-query BigQuery. Products are grouped into <b>units-sold ranges</b> (0 · no sale, 1, 2–5, 6–10, 11–25, 26+). <b>City demand</b> merges actual purchases (units/revenue) with GA4 web funnel per city → nearest store. Each product carries a <b>stock insight + action</b> (Sold-out winner → reorder; Fast/low-cover → replenish; Web-wanted unsold → promote; Idle → roll/markdown). The <b>Action plan</b> summarises the priority moves for the chosen window. Sold-range, stock and search filter instantly; window/store/category refetch.`],
+    ['💬 Ask AI & ✦ Strategy', `<b>Ask AI</b> turns a plain-English question into a guarded, read-only BigQuery <code>SELECT</code> (only these 3 tables, forced LIMIT, ${''}scan-cost capped), runs it, and explains the result. <b>AI Strategy</b> feeds the live summary to Gemini for a CEO-ready brief. Both use Vertex AI Gemini.`],
+    ['🔐 Guardrails', `Chat SQL is validated: must start with SELECT/WITH, no DML/DDL keywords, only whitelisted tables, forced LIMIT, and a dry-run cost cap before execution. Nothing can mutate data.`],
+  ];
+  $('#kbBody').innerHTML=kb.map((k,i)=>`<details ${i<2?'open':''}><summary><span class="ic">▸</span>${k[0]}</summary><div class="body">${k[1]}</div></details>`).join('');
+}
+
+/* ─────────────────────────── tabs / events ─────────────────────────── */
+function showTab(t){ curTab=t; $$('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.tab===t)); $$('.page').forEach(p=>p.classList.toggle('on',p.dataset.page===t));
+  if(t==='product' && DATA){ ensureProductFilters(); if(!PROD) loadProduct(); }
+  if(DATA){ refreshActive(); if($('#fdrawer').classList.contains('on')){ if(tabDims().length) renderFilterPanel(); else closeFilters(); } }
+}
+function exportGeneric(rows,cols,name){
+  if(!rows||!rows.length){toast('Nothing to export');return;}
+  const csv=[cols.join(',')].concat(rows.map(r=>cols.map(c=>`"${String(r[c]==null?'':r[c]).replace(/"/g,'""')}"`).join(','))).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=name+'.csv'; a.click(); toast('Exported '+rows.length+' rows');
+}
+$$('#nav a').forEach(a=>a.onclick=()=>showTab(a.dataset.tab));
+$('#themeBtn').onclick=()=>{ document.body.classList.toggle('light'); localStorage.setItem('inv_theme',document.body.classList.contains('light')?'light':'dark'); if(DATA)refreshActive(); };
+if(localStorage.getItem('inv_theme')==='light') document.body.classList.add('light');
+$('#reloadBtn').onclick=boot;
+$('#aiBtn').onclick=()=>{ showTab('strategy'); if($('#strategyOut').querySelector('.empty')) genStrategy(); };
+$('#genStrategy').onclick=genStrategy;
+$('#cfgBtn').onclick=()=>{ const v=prompt('API base URL:',API); if(v){ API=v.trim(); localStorage.setItem('inv_api',API); boot(); } };
+$('#apiSave').onclick=()=>{ API=$('#apiInput').value.trim(); localStorage.setItem('inv_api',API); boot(); };
+$('#chatSend').onclick=sendChat;
+$('#chatInput').addEventListener('keydown',e=>{ if(e.key==='Enter') sendChat(); });
+$('#modalX').onclick=closeModal;
+$('#modalBg').addEventListener('click',e=>{ if(e.target===$('#modalBg')) closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+$('#expAlerts').onclick=()=>exportCSV(viewItems(),'stock_alerts');
+$('#expReorder').onclick=()=>exportCSV(viewItems().filter(i=>i.reorder_qty>0),'reorder_plan');
+// filter drawer wiring
+$('#filterBtn').onclick=openFilters;
+$('#fdrawerX').onclick=closeFilters;
+$('#fbackdrop').onclick=closeFilters;
+$('#fApply').onclick=()=>{ refreshActive(); closeFilters(); };
+$('#fClearAll').onclick=clearAllFilters;
+$('#openFiltersAlerts')&&($('#openFiltersAlerts').onclick=openFilters);
+$('#openFiltersReorder')&&($('#openFiltersReorder').onclick=openFilters);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeFilters(); });
+$('#expGap').onclick=()=>{ const a=DATA.assortment.by_store.find(s=>s.store===curGapStore); if(!a){toast('Pick a store');return;}
+  const cols=['sku','name','category','price_band','demand_score','source','from']; const rows=a.gap_items;
+  const csv=[['store',...cols].join(',')].concat(rows.map(r=>[`"${curGapStore}"`,...cols.map(c=>`"${String(r[c]==null?'':r[c]).replace(/"/g,'""')}"`)].join(','))).join('\n');
+  const el=document.createElement('a'); el.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); el.download='stocking_gap_'+curGapStore.replace(/\W+/g,'_')+'.csv'; el.click(); toast('Exported '+rows.length+' gap rows'); };
+function exportCSV(rows,name){
+  if(!rows.length){toast('Nothing to export');return;}
+  const cols=['store','location','sku','name','category','status','on_hand','vpd','cover','sold_win','reorder_qty','reorder_value','cost_value','days_in_stock','last_sale'];
+  const csv=[cols.join(',')].concat(rows.map(r=>cols.map(c=>`"${String(r[c]==null?'':r[c]).replace(/"/g,'""')}"`).join(','))).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=name+'.csv'; a.click(); toast('Exported '+rows.length+' rows');
+}
+
+boot();
+</script>
+</body>
+</html>

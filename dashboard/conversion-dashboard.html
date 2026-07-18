@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucira | Conversion Rate Accelerator Dashboard</title>
+    <meta name="description" content="Zoho CRM Call Logs, Deals Pipeline, and Conversion Analysis.">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #060A14; --card: rgba(14,22,38,.85); --bdr: rgba(255,255,255,.07); --bdrh: rgba(255,255,255,.15);
+            --t1: #F0F4FF; --t2: #8B95B0; --t3: #5A6480;
+            --I: #6366F1; --Il: #818CF8; --Ia: rgba(99,102,241,.15);
+            --E: #10B981; --Ea: rgba(16,185,129,.12);
+            --A: #F59E0B; --Aa: rgba(245,158,11,.12);
+            --R: #F43F5E; --Ra: rgba(244,63,94,.12);
+            --Cy: #06B6D4; --Cya: rgba(6,182,212,.12);
+            --V: #8B5CF6; --r: 18px; --ease: cubic-bezier(.4,0,.2,1);
+        }
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        body{background:var(--bg);color:var(--t1);font-family:'Outfit',sans-serif;min-height:100vh;overflow-x:hidden;
+            background-image:radial-gradient(ellipse 80% 50% at 0% 0%,rgba(99,102,241,.07) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 100% 100%,rgba(16,185,129,.05) 0%,transparent 60%);}
+        /* TOP BAR */
+        .top-bar{position:sticky;top:0;z-index:100;background:rgba(6,10,20,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--bdr);padding:0 2.5rem;display:flex;align-items:center;justify-content:space-between;height:72px;}
+        .brand{display:flex;align-items:center;gap:.75rem;}
+        .brand-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--I) 0%,var(--V) 100%);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 0 20px rgba(99,102,241,.3);}
+        .brand-name{font-size:1.25rem;font-weight:800;background:linear-gradient(135deg,#fff 0%,#A5B4FC 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .brand-sub{font-size:.72rem;color:var(--t3);}
+        .hdr-r{display:flex;align-items:center;gap:.75rem;}
+        .live-pill{display:flex;align-items:center;gap:.4rem;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);padding:.35rem .9rem;border-radius:99px;font-size:.8rem;color:var(--E);font-weight:500;}
+        .live-dot{width:7px;height:7px;border-radius:50%;background:var(--E);box-shadow:0 0 8px var(--E);animation:pdot 2s infinite;}
+        .date-pill{font-size:.8rem;color:var(--t2);background:var(--card);border:1px solid var(--bdr);padding:.35rem .9rem;border-radius:99px;}
+        /* HERO */
+        .hero{margin:2rem 2.5rem 0;background:linear-gradient(135deg,rgba(99,102,241,.1) 0%,rgba(139,92,246,.06) 50%,rgba(6,182,212,.05) 100%);border:1px solid rgba(99,102,241,.18);border-radius:var(--r);padding:2rem 2.5rem;display:flex;align-items:center;justify-content:space-between;gap:2rem;overflow:hidden;position:relative;animation:fid .6s var(--ease);}
+        .hero::before{content:'';position:absolute;top:-60%;right:-10%;width:400px;height:400px;background:radial-gradient(circle,rgba(99,102,241,.07) 0%,transparent 70%);pointer-events:none;}
+        .hero-title{font-size:1.9rem;font-weight:800;line-height:1.2;}
+        .hero-title span{background:linear-gradient(135deg,#818CF8 0%,#06B6D4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .hero-sub{margin-top:.4rem;color:var(--t2);font-size:.9rem;}
+        .hm-wrap{display:flex;gap:2rem;flex-shrink:0;}
+        .hm{text-align:center;}
+        .hm .v{font-size:1.9rem;font-weight:800;font-family:'Fira Code',monospace;color:var(--Il);}
+        .hm .l{font-size:.72rem;color:var(--t2);margin-top:.2rem;}
+        /* TABS */
+        .tab-nav{margin:1.5rem 2.5rem 0;display:flex;gap:.4rem;border-bottom:1px solid var(--bdr);}
+        .tab-btn{padding:.7rem 1.4rem;border:none;background:transparent;color:var(--t2);font-family:'Outfit',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .25s var(--ease);display:flex;align-items:center;gap:.45rem;border-radius:10px 10px 0 0;}
+        .tab-btn:hover{color:var(--t1);background:rgba(255,255,255,.03);}
+        .tab-btn.active{color:var(--Il);border-bottom-color:var(--I);background:rgba(99,102,241,.06);}
+        /* CONTENT */
+        .content{padding:2rem 2.5rem 3rem;}
+        .panel{display:none;animation:fiu .4s var(--ease);}
+        .panel.active{display:block;}
+        /* GRIDS */
+        .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem;margin-bottom:1.5rem;}
+        @media(max-width:1100px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
+        .g2{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;}
+        .g6040{display:grid;grid-template-columns:3fr 2fr;gap:1.25rem;}
+        @media(max-width:1100px){.g2,.g6040{grid-template-columns:1fr;}}
+        .mb{margin-bottom:1.5rem;}
+        /* KPI CARD */
+        .kpi{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:1.4rem 1.5rem;backdrop-filter:blur(16px);position:relative;overflow:hidden;transition:all .3s var(--ease);cursor:default;}
+        .kpi::after{content:'';position:absolute;top:0;left:0;width:100%;height:3px;border-radius:var(--r) var(--r) 0 0;}
+        .kpi.ki::after{background:linear-gradient(90deg,var(--I),var(--V));}
+        .kpi.ke::after{background:linear-gradient(90deg,var(--E),#34D399);}
+        .kpi.ka::after{background:linear-gradient(90deg,var(--A),#FCD34D);}
+        .kpi.kr::after{background:linear-gradient(90deg,var(--R),#FB7185);}
+        .kpi.kc::after{background:linear-gradient(90deg,var(--Cy),#67E8F9);}
+        .kpi:hover{transform:translateY(-4px);border-color:var(--bdrh);box-shadow:0 12px 28px -8px rgba(0,0,0,.4);}
+        .kpi-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.7rem;}
+        .kpi-lbl{font-size:.8rem;font-weight:500;color:var(--t2);}
+        .kpi-ico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.9rem;}
+        .kpi-ico.ki{background:var(--Ia);} .kpi-ico.ke{background:var(--Ea);} .kpi-ico.ka{background:var(--Aa);} .kpi-ico.kr{background:var(--Ra);} .kpi-ico.kc{background:var(--Cya);}
+        .kpi-val{font-size:2rem;font-weight:800;font-family:'Fira Code',monospace;letter-spacing:-1px;line-height:1;}
+        .kpi-ft{margin-top:.55rem;font-size:.76rem;display:flex;align-items:center;gap:.35rem;}
+        .kpi-ft.up{color:var(--E);} .kpi-ft.dn{color:var(--R);} .kpi-ft.nu{color:var(--t2);}
+        /* CARD */
+        .card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:1.5rem;backdrop-filter:blur(16px);transition:border-color .3s var(--ease);}
+        .card:hover{border-color:var(--bdrh);}
+        .card-ttl{font-size:.98rem;font-weight:600;color:var(--t1);display:flex;justify-content:space-between;align-items:center;padding-bottom:.9rem;border-bottom:1px solid var(--bdr);margin-bottom:1.2rem;}
+        .card-ttl .sub{font-size:.75rem;color:var(--t3);font-weight:400;}
+        /* CHART */
+        .cw{position:relative;width:100%;}
+        .h300{height:300px;} .h260{height:260px;}
+        /* TABLE */
+        .tw{overflow-x:auto;}
+        table{width:100%;border-collapse:collapse;font-size:.86rem;}
+        thead th{color:var(--t3);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;padding:.55rem 1rem;border-bottom:1px solid var(--bdr);white-space:nowrap;}
+        tbody td{padding:.8rem 1rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--t1);vertical-align:middle;}
+        tbody tr:last-child td{border-bottom:none;}
+        tbody tr:hover td{background:rgba(255,255,255,.02);}
+        /* BADGE */
+        .bdg{display:inline-flex;align-items:center;padding:.2rem .6rem;border-radius:99px;font-size:.7rem;font-weight:600;}
+        .bs{background:rgba(16,185,129,.1);color:#34D399;border:1px solid rgba(16,185,129,.2);}
+        .bw{background:rgba(245,158,11,.1);color:#FCD34D;border:1px solid rgba(245,158,11,.2);}
+        .bd{background:rgba(244,63,94,.1);color:#FB7185;border:1px solid rgba(244,63,94,.2);}
+        .bn{background:rgba(99,102,241,.1);color:#818CF8;border:1px solid rgba(99,102,241,.2);}
+        .bc{background:rgba(6,182,212,.1);color:#67E8F9;border:1px solid rgba(6,182,212,.2);}
+        /* PROGRESS */
+        .pb{display:flex;align-items:center;gap:.6rem;}
+        .pt{flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;}
+        .pf{height:100%;border-radius:99px;}
+        .pp{font-size:.76rem;font-family:'Fira Code',monospace;color:var(--t2);min-width:36px;text-align:right;}
+        /* FUNNEL */
+        .funnel{display:flex;flex-direction:column;gap:.55rem;}
+        .f-step{display:flex;align-items:center;gap:.75rem;}
+        .f-lbl{min-width:140px;font-size:.76rem;color:var(--t2);text-align:right;}
+        .f-bar{height:36px;border-radius:6px;display:flex;align-items:center;padding-left:.8rem;font-size:.76rem;font-weight:600;color:#fff;flex:1;}
+        .f-cnt{min-width:55px;font-family:'Fira Code',monospace;font-size:.82rem;font-weight:600;color:var(--t1);text-align:right;}
+        /* HEATMAP */
+        .hm-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;}
+        .hm-day-lbl{font-size:.63rem;color:var(--t3);text-align:center;font-weight:600;}
+        .hm-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+        .hm-cell{aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:600;color:rgba(255,255,255,.85);cursor:default;transition:transform .2s;}
+        .hm-cell:hover{transform:scale(1.2);}
+        /* CHIPS */
+        .ins-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
+        .chip{background:rgba(255,255,255,.02);border-radius:10px;padding:.9rem 1rem;display:flex;flex-direction:column;gap:.4rem;border-left:3px solid var(--bdr);}
+        .chip.ci{border-left-color:var(--I);} .chip.ce{border-left-color:var(--E);} .chip.ca{border-left-color:var(--A);} .chip.cr{border-left-color:var(--R);}
+        .chip h4{font-size:.86rem;font-weight:600;} .chip p{font-size:.78rem;color:var(--t2);line-height:1.5;}
+        /* RANK LIST */
+        .rank-list{display:flex;flex-direction:column;gap:.55rem;}
+        .rank-item{display:flex;align-items:center;gap:.7rem;padding:.6rem;border-radius:10px;transition:background .2s;}
+        .rank-item:hover{background:rgba(255,255,255,.03);}
+        .rnum{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.05);font-size:.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;color:var(--t2);flex-shrink:0;}
+        .rnum.gold{background:rgba(245,158,11,.15);color:var(--A);}
+        .rnum.silver{background:rgba(156,163,175,.15);color:#9CA3AF;}
+        .rnum.bronze{background:rgba(180,120,80,.15);color:#CD7F32;}
+        .rname{flex:1;font-size:.83rem;font-weight:500;}
+        .rrate{font-size:.83rem;font-family:'Fira Code',monospace;font-weight:600;}
+        /* OPTIMIZER */
+        .opp-grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;margin-bottom:1.5rem;}
+        @media(max-width:860px){.opp-grid{grid-template-columns:1fr;}}
+        .opp-card{background:linear-gradient(135deg,rgba(99,102,241,.07),rgba(139,92,246,.04));border:1px solid rgba(99,102,241,.18);border-radius:var(--r);padding:1.2rem 1.5rem;display:flex;align-items:flex-start;gap:.9rem;}
+        .opp-ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
+        .opp-ico.oi{background:var(--Ia);} .opp-ico.oe{background:var(--Ea);} .opp-ico.oa{background:var(--Aa);} .opp-ico.or{background:var(--Ra);}
+        .opp-title{font-size:.93rem;font-weight:600;margin-bottom:.3rem;}
+        .opp-desc{font-size:.8rem;color:var(--t2);line-height:1.5;}
+        .opp-impact{font-size:.76rem;font-weight:700;margin-top:.5rem;}
+        .opp-impact.pos{color:var(--E);} .opp-impact.wrn{color:var(--A);}
+        /* SLIDER */
+        .sg{display:flex;flex-direction:column;gap:.38rem;margin-bottom:.9rem;}
+        .sg-top{display:flex;justify-content:space-between;font-size:.8rem;}
+        .sg-lbl{color:var(--t2);font-weight:500;} .sg-val{color:var(--t1);font-weight:700;font-family:'Fira Code',monospace;}
+        input[type=range]{-webkit-appearance:none;width:100%;height:5px;border-radius:99px;background:rgba(255,255,255,.08);outline:none;}
+        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--I);cursor:pointer;box-shadow:0 0 12px var(--I);transition:transform .2s;}
+        input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.3);}
+        .calc-out{background:rgba(99,102,241,.06);border:1px dashed rgba(99,102,241,.22);border-radius:10px;padding:1rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;text-align:center;margin-top:.75rem;}
+        .cout .v{font-size:1.5rem;font-weight:800;font-family:'Fira Code',monospace;color:var(--E);}
+        .cout .l{font-size:.7rem;color:var(--t2);margin-top:.2rem;}
+        /* ANIMS */
+        @keyframes fid{from{opacity:0;transform:translateY(-14px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes fiu{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes pdot{0%{box-shadow:0 0 0 0 rgba(16,185,129,.5);}70%{box-shadow:0 0 0 7px rgba(16,185,129,0);}100%{box-shadow:0 0 0 0 rgba(16,185,129,0);}}
+    </style>
+</head>
+<body>
+
+<header class="top-bar">
+    <div class="brand">
+        <div class="brand-icon">🚀</div>
+        <div>
+            <div class="brand-name">Lucira CRM Intelligence</div>
+            <div class="brand-sub">Zoho · BigQuery · Conversion Engine</div>
+        </div>
+    </div>
+    <div class="hdr-r">
+        <div class="live-pill"><div class="live-dot"></div> Live Sync Active</div>
+        <div class="date-pill" id="curr-date">Jul 15, 2026</div>
+    </div>
+</header>
+
+<div class="hero">
+    <div>
+        <div class="hero-title">Conversion Rate <span>Accelerator</span></div>
+        <div class="hero-sub">Identify gaps · Fix call coverage · Close more Zoho deals every day</div>
+    </div>
+    <div class="hm-wrap">
+        <div class="hm"><div class="v">1.47%</div><div class="l">Current Conv. Rate</div></div>
+        <div class="hm"><div class="v" style="color:#10B981">3.2%</div><div class="l">Target Conv. Rate</div></div>
+        <div class="hm"><div class="v" style="color:#F59E0B">+1.73%</div><div class="l">Gap to Close</div></div>
+    </div>
+</div>
+
+<nav class="tab-nav">
+    <button class="tab-btn active" id="tb-calls" onclick="sw('calls',this)">📞 Zoho Call Log</button>
+    <button class="tab-btn" id="tb-deals" onclick="sw('deals',this)">💼 Zoho Deals</button>
+    <button class="tab-btn" id="tb-analysis" onclick="sw('analysis',this)">📈 Deals vs Calls Analysis</button>
+    <button class="tab-btn" id="tb-opt" onclick="sw('optimizer',this)">⚡ Conversion Optimizer</button>
+</nav>
+
+<div class="content">
+
+<!-- ===== TAB 1: CALL LOG ===== -->
+<div class="panel active" id="panel-calls">
+    <div class="kpi-row">
+        <div class="kpi ki"><div class="kpi-top"><div class="kpi-lbl">Total Calls Logged</div><div class="kpi-ico ki">📞</div></div><div class="kpi-val">2,628</div><div class="kpi-ft up">▲ +12.4% vs prev week</div></div>
+        <div class="kpi ke"><div class="kpi-top"><div class="kpi-lbl">Connected Calls</div><div class="kpi-ico ke">✅</div></div><div class="kpi-val">577</div><div class="kpi-ft up">▲ 21.9% connection rate</div></div>
+        <div class="kpi ka"><div class="kpi-top"><div class="kpi-lbl">Avg Talk Time</div><div class="kpi-ico ka">⏱️</div></div><div class="kpi-val">18.6s</div><div class="kpi-ft dn">▼ Below 30s target</div></div>
+        <div class="kpi kr"><div class="kpi-top"><div class="kpi-lbl">Missed / No Answer</div><div class="kpi-ico kr">❌</div></div><div class="kpi-val">2,051</div><div class="kpi-ft dn">78.1% miss rate</div></div>
+    </div>
+    <div class="g6040 mb">
+        <div class="card"><div class="card-ttl">Daily Call Activity <span class="sub">Jul 1–7 · Total vs Connected</span></div><div class="cw h300"><canvas id="c-daily"></canvas></div></div>
+        <div class="card"><div class="card-ttl">Hourly Distribution <span class="sub">Peak windows</span></div><div class="cw h300"><canvas id="c-hourly"></canvas></div></div>
+    </div>
+    <div class="g2 mb">
+        <div class="card"><div class="card-ttl">Call Outcome Breakdown <span class="sub">By disposition</span></div><div class="cw h260"><canvas id="c-outcome"></canvas></div></div>
+        <div class="card"><div class="card-ttl">Talk Time Distribution <span class="sub">Quality analysis</span></div><div class="cw h260"><canvas id="c-talktime"></canvas></div></div>
+    </div>
+    <div class="card">
+        <div class="card-ttl">Agent-Wise Call Log Performance <span class="sub">All agents · Jul 2026</span></div>
+        <div class="tw">
+            <table>
+                <thead><tr><th>#</th><th>Agent / Store</th><th>Total Calls</th><th>Connected</th><th>Missed</th><th>Avg Duration</th><th>Quality (&gt;30s)</th><th>Connection Rate</th><th>Status</th></tr></thead>
+                <tbody id="call-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ===== TAB 2: DEALS ===== -->
+<div class="panel" id="panel-deals">
+    <div class="kpi-row">
+        <div class="kpi ki"><div class="kpi-top"><div class="kpi-lbl">Total Deals in CRM</div><div class="kpi-ico ki">📦</div></div><div class="kpi-val">2,798</div><div class="kpi-ft nu">Zoho CRM imported</div></div>
+        <div class="kpi ke"><div class="kpi-top"><div class="kpi-lbl">Won / Closed Deals</div><div class="kpi-ico ke">🏆</div></div><div class="kpi-val">41</div><div class="kpi-ft up">▲ 1.47% close rate</div></div>
+        <div class="kpi ka"><div class="kpi-top"><div class="kpi-lbl">Deals in Pipeline</div><div class="kpi-ico ka">🔄</div></div><div class="kpi-val">1,847</div><div class="kpi-ft nu">Active opportunities</div></div>
+        <div class="kpi kr"><div class="kpi-top"><div class="kpi-lbl">Lost / Unworked</div><div class="kpi-ico kr">⚠️</div></div><div class="kpi-val">910</div><div class="kpi-ft dn">32.5% untouched</div></div>
+    </div>
+    <div class="g6040 mb">
+        <div class="card"><div class="card-ttl">Deal Pipeline Funnel <span class="sub">Stage conversion flow</span></div><div class="funnel" id="funnel" style="padding-top:.5rem"></div></div>
+        <div class="card"><div class="card-ttl">Deal Stage Distribution <span class="sub">Current snapshot</span></div><div class="cw h300"><canvas id="c-stage"></canvas></div></div>
+    </div>
+    <div class="g2 mb">
+        <div class="card"><div class="card-ttl">Agent-Wise Deal Assignments <span class="sub">Per agent</span></div><div class="cw h260"><canvas id="c-agent-deals"></canvas></div></div>
+        <div class="card"><div class="card-ttl">Deal Source Breakdown <span class="sub">Lead origin</span></div><div class="cw h260"><canvas id="c-source"></canvas></div></div>
+    </div>
+    <div class="card">
+        <div class="card-ttl">Agent Deal Performance Scorecard <span class="sub">Ownership &amp; close rate</span></div>
+        <div class="tw">
+            <table>
+                <thead><tr><th>#</th><th>Agent / Store</th><th>Deals</th><th>Won</th><th>In Progress</th><th>Lost</th><th>Close Rate</th><th>Deal Age</th><th>Performance</th></tr></thead>
+                <tbody id="deal-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ===== TAB 3: ANALYSIS ===== -->
+<div class="panel" id="panel-analysis">
+    <div class="kpi-row">
+        <div class="kpi ki"><div class="kpi-top"><div class="kpi-lbl">Call-to-Deal Coverage</div><div class="kpi-ico ki">🎯</div></div><div class="kpi-val">93.9%</div><div class="kpi-ft up">▲ Calls for 93.9% of deals</div></div>
+        <div class="kpi ke"><div class="kpi-top"><div class="kpi-lbl">Conversion Rate</div><div class="kpi-ico ke">📊</div></div><div class="kpi-val">1.47%</div><div class="kpi-ft up">▲ Won / Total Deals</div></div>
+        <div class="kpi ka"><div class="kpi-top"><div class="kpi-lbl">Quality Call Rate</div><div class="kpi-ico ka">⭐</div></div><div class="kpi-val">21.9%</div><div class="kpi-ft dn">▼ Only 1 in 5 calls &gt;30s</div></div>
+        <div class="kpi kc"><div class="kpi-top"><div class="kpi-lbl">Deals With No Calls</div><div class="kpi-ico kc">🚨</div></div><div class="kpi-val">170</div><div class="kpi-ft dn">6.1% untouched deals</div></div>
+    </div>
+    <div class="g6040 mb">
+        <div class="card"><div class="card-ttl">Coverage vs Quality by Agent <span class="sub">Bubble = deal volume</span></div><div class="cw h300"><canvas id="c-bubble"></canvas></div></div>
+        <div class="card">
+            <div class="card-ttl">Call Activity Heatmap <span class="sub">Day × Hour intensity</span></div>
+            <div style="padding-top:.5rem">
+                <div class="hm-days" id="hm-days"></div>
+                <div class="hm-grid" id="hm-grid"></div>
+            </div>
+        </div>
+    </div>
+    <div class="g2 mb">
+        <div class="card"><div class="card-ttl">Call Quality Stack by Agent <span class="sub">Coverage gap</span></div><div class="cw h260"><canvas id="c-stack"></canvas></div></div>
+        <div class="card"><div class="card-ttl">Conversion Rate by Agent <span class="sub">Won / assigned</span></div><div class="rank-list" id="agent-rank"></div></div>
+    </div>
+    <div class="card mb"><div class="card-ttl">Daily: Calls Made vs Active Deals <span class="sub">Coverage trend</span></div><div class="cw h260"><canvas id="c-overlay"></canvas></div></div>
+    <div class="card">
+        <div class="card-ttl">Key Gap Analysis</div>
+        <div class="ins-grid">
+            <div class="chip cr"><h4>🚨 78.1% Calls Not Connecting</h4><p>Out of 2,628 calls only 577 connected. Shift calls to 10AM–1PM peak window + SMS fallback.</p></div>
+            <div class="chip ca"><h4>⚠️ Only 21.9% Quality Call Rate</h4><p>Less than 1 in 5 calls exceeds 30s. Deploy structured scripts for Sheetal Parve &amp; Chembur Store.</p></div>
+            <div class="chip ci"><h4>📌 170 Deals Never Called</h4><p>6.1% of Zoho deals have zero call activity — immediate high-intent revenue opportunities.</p></div>
+            <div class="chip ce"><h4>🔥 10AM–1PM = 70%+ of All Calls</h4><p>Maximize scheduling during this window. Auto-distribute new deals to active agents at 10AM.</p></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== TAB 4: OPTIMIZER ===== -->
+<div class="panel" id="panel-optimizer">
+    <div class="opp-grid">
+        <div class="opp-card"><div class="opp-ico oi">📞</div><div><div class="opp-title">Fix Call Connection Rate</div><div class="opp-desc">Currently 21.9%. Shift to peak 10AM–1PM + SMS fallback = 45–55% connect rate.</div><div class="opp-impact pos">⬆ Estimated: +0.8–1.2% conversion rate</div></div></div>
+        <div class="opp-card"><div class="opp-ico oe">💬</div><div><div class="opp-title">Extend Talk Time &gt; 30 Seconds</div><div class="opp-desc">Sheetal Parve (9.6s) &amp; Chembur Store (9.9s) avg. Scripts can triple engagement time.</div><div class="opp-impact pos">⬆ Estimated: +0.5–0.9% conversion rate</div></div></div>
+        <div class="opp-card"><div class="opp-ico oa">🎯</div><div><div class="opp-title">Activate 170 Untouched Deals</div><div class="opp-desc">170 Zoho deals never received a call. Immediate outreach = fast high-intent wins.</div><div class="opp-impact pos">⬆ Estimated: +2–5 additional won deals</div></div></div>
+        <div class="opp-card"><div class="opp-ico or">📅</div><div><div class="opp-title">Redistribute Lead Load</div><div class="opp-desc">Pashchim Vihar has 433 deals but below-avg quality calls. Shift to top performers.</div><div class="opp-impact wrn">⚡ Medium-term: workload optimization</div></div></div>
+    </div>
+    <div class="g2 mb">
+        <div class="card">
+            <div class="card-ttl">Interactive Conversion Simulator</div>
+            <div class="sg"><div class="sg-top"><span class="sg-lbl">Monthly Lead Volume</span><span class="sg-val" id="ov-leads">2,800</span></div><input type="range" id="sl-leads" min="500" max="8000" step="100" value="2800"></div>
+            <div class="sg"><div class="sg-top"><span class="sg-lbl">Call Connection Rate</span><span class="sg-val" id="ov-conn">22%</span></div><input type="range" id="sl-conn" min="5" max="95" step="1" value="22"></div>
+            <div class="sg"><div class="sg-top"><span class="sg-lbl">Quality Talk Rate (&gt;30s)</span><span class="sg-val" id="ov-qual">22%</span></div><input type="range" id="sl-qual" min="5" max="90" step="1" value="22"></div>
+            <div class="sg"><div class="sg-top"><span class="sg-lbl">Call Coverage of Deals</span><span class="sg-val" id="ov-cov">94%</span></div><input type="range" id="sl-cov" min="20" max="100" step="1" value="94"></div>
+            <div class="calc-out">
+                <div class="cout"><div class="v" id="or-rate">1.47%</div><div class="l">Conv. Rate</div></div>
+                <div class="cout"><div class="v" id="or-won">41</div><div class="l">Won Deals</div></div>
+                <div class="cout"><div class="v" id="or-rev">&#8377;41L</div><div class="l">Est. Revenue</div></div>
+            </div>
+        </div>
+        <div class="card"><div class="card-ttl">Projected Conversion Trend <span class="sub">Improvement scenarios</span></div><div class="cw h300"><canvas id="c-proj"></canvas></div></div>
+    </div>
+    <div class="card">
+        <div class="card-ttl">30-Day Conversion Improvement Roadmap</div>
+        <div class="tw">
+            <table>
+                <thead><tr><th>Week</th><th>Action</th><th>Owner</th><th>Expected Lift</th><th>Priority</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Week 1</strong></td><td>Call all 170 zero-call deals immediately</td><td>All Agents</td><td>+2–5 won deals</td><td><span class="bdg bd">🔴 Critical</span></td><td><span class="bdg bw">Pending</span></td></tr>
+                    <tr><td><strong>Week 1</strong></td><td>Restrict calls to 10AM–1PM window</td><td>Team Lead</td><td>+8–12% connection rate</td><td><span class="bdg bd">🔴 Critical</span></td><td><span class="bdg bw">Pending</span></td></tr>
+                    <tr><td><strong>Week 2</strong></td><td>Deploy 30s engagement script for low performers</td><td>Trainer</td><td>+40% quality call rate</td><td><span class="bdg bn">🟡 High</span></td><td><span class="bdg bw">Planned</span></td></tr>
+                    <tr><td><strong>Week 2</strong></td><td>Add SMS follow-up for missed calls within 30 min</td><td>Tech Team</td><td>+5% callback conversion</td><td><span class="bdg bn">🟡 High</span></td><td><span class="bdg bw">Planned</span></td></tr>
+                    <tr><td><strong>Week 3</strong></td><td>Rebalance deals from Pashchim Vihar to top agents</td><td>Manager</td><td>+0.3–0.5% close rate</td><td><span class="bdg bc">🔵 Medium</span></td><td><span class="bdg bw">Planned</span></td></tr>
+                    <tr><td><strong>Week 4</strong></td><td>Dashboard review &amp; recalibrate targets</td><td>Analytics</td><td>Data-driven goal setting</td><td><span class="bdg bc">🔵 Medium</span></td><td><span class="bdg bw">Scheduled</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<script>
+const AG=[
+    {n:"Shreekant Balwat",d:410,c:415,s:9044,m30:87,conn:89,won:8,age:12},
+    {n:"Sheetal Parve",d:394,c:390,s:3739,m30:42,conn:39,won:4,age:18},
+    {n:"Pashchim Vihar",d:433,c:478,s:5957,m30:81,conn:97,won:6,age:9},
+    {n:"Borivali Team",d:282,c:244,s:3702,m30:45,conn:55,won:4,age:14},
+    {n:"Shamwail Ansari",d:268,c:268,s:8012,m30:69,conn:72,won:7,age:8},
+    {n:"Pune Store",d:252,c:261,s:5726,m30:76,conn:68,won:5,age:11},
+    {n:"Noida Store",d:231,c:298,s:5463,m30:63,conn:80,won:3,age:15},
+    {n:"Farha Ansari",d:203,c:198,s:5108,m30:50,conn:48,won:2,age:20},
+    {n:"Vishal Thapa",d:108,c:136,s:3783,m30:38,conn:32,won:1,age:22},
+    {n:"Devjeet Bagchi",d:106,c:81,s:1669,m30:14,conn:22,won:1,age:25},
+    {n:"Chembur Store",d:59,c:77,s:759,m30:9,conn:15,won:0,age:30}
+];
+const DY=[
+    {dt:"1 Jul",tot:438,conn:80,deals:390},
+    {dt:"2 Jul",tot:519,conn:101,deals:420},
+    {dt:"3 Jul",tot:470,conn:124,deals:410},
+    {dt:"4 Jul",tot:218,conn:43,deals:280},
+    {dt:"5 Jul",tot:386,conn:85,deals:370},
+    {dt:"6 Jul",tot:351,conn:81,deals:340},
+    {dt:"7 Jul",tot:246,conn:63,deals:210}
+];
+const HR=[{h:"6AM",v:169},{h:"7AM",v:226},{h:"8AM",v:193},{h:"9AM",v:231},{h:"10AM",v:280},{h:"11AM",v:393},{h:"12PM",v:322},{h:"1PM",v:230},{h:"2PM",v:53}];
+const C={I:"#6366F1",Ia:"rgba(99,102,241,.15)",E:"#10B981",Ea:"rgba(16,185,129,.12)",A:"#F59E0B",Aa:"rgba(245,158,11,.12)",R:"#F43F5E",Ra:"rgba(244,63,94,.12)",Cy:"#06B6D4",Cya:"rgba(6,182,212,.12)",V:"#8B5CF6",T:"#8B95B0"};
+const BP={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:C.T,font:{family:"Outfit",size:11},boxWidth:12,padding:14}},tooltip:{backgroundColor:"rgba(8,14,28,.95)",borderColor:"rgba(255,255,255,.08)",borderWidth:1,titleColor:"#F0F4FF",bodyColor:C.T,padding:10,cornerRadius:10}},scales:{x:{grid:{color:"rgba(255,255,255,.04)"},ticks:{color:C.T,font:{family:"Outfit"}}},y:{grid:{color:"rgba(255,255,255,.04)"},ticks:{color:C.T,font:{family:"Outfit"}}}}};
+
+function sw(id,btn){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('panel-'+id).classList.add('active');btn.classList.add('active');}
+
+// Call Table
+(function(){const tb=document.getElementById('call-tbody');AG.forEach((a,i)=>{const avg=(a.s/a.c).toFixed(1),miss=a.c-a.conn,cr=Math.round(a.conn/a.c*100),fc=cr>30?"var(--E)":cr>15?"var(--A)":"var(--R)",bt=cr>30?'bs':cr>15?'bw':'bd',bl=cr>30?'🌟 High Engage':cr>15?'⚠️ Moderate':'❗ Needs Fix';
+tb.innerHTML+=`<tr><td style="color:var(--t3);font-size:.78rem">${i+1}</td><td><strong>${a.n}</strong></td><td>${a.c}</td><td style="color:var(--E)">${a.conn}</td><td style="color:var(--R)">${miss}</td><td style="font-family:'Fira Code',monospace">${avg}s</td><td>${a.m30} <span style="color:var(--t3);font-size:.73rem">(${Math.round(a.m30/a.c*100)}%)</span></td><td><div class="pb"><div class="pt"><div class="pf" style="width:${cr}%;background:${fc}"></div></div><span class="pp">${cr}%</span></div></td><td><span class="bdg ${bt}">${bl}</span></td></tr>`;
+});})();
+
+// Daily Chart
+new Chart(document.getElementById('c-daily'),{type:'line',data:{labels:DY.map(d=>d.dt),datasets:[{label:'Total Calls',data:DY.map(d=>d.tot),borderColor:C.I,backgroundColor:C.Ia,fill:true,tension:.4,borderWidth:2.5,pointRadius:4,pointBackgroundColor:C.I},{label:'Connected',data:DY.map(d=>d.conn),borderColor:C.E,backgroundColor:C.Ea,fill:true,tension:.4,borderWidth:2.5,pointRadius:4,pointBackgroundColor:C.E}]},options:{...BP}});
+
+// Hourly Chart
+new Chart(document.getElementById('c-hourly'),{type:'bar',data:{labels:HR.map(h=>h.h),datasets:[{label:'Calls',data:HR.map(h=>h.v),backgroundColor:HR.map(h=>h.v>=280?C.I:'rgba(99,102,241,.4)'),borderRadius:6,borderSkipped:false}]},options:{...BP,plugins:{...BP.plugins,legend:{display:false}}}});
+
+// Outcome Doughnut
+new Chart(document.getElementById('c-outcome'),{type:'doughnut',data:{labels:['Connected','No Answer','Busy','Voicemail'],datasets:[{data:[577,1423,412,216],backgroundColor:[C.E,C.R,C.A,C.V],borderColor:'rgba(14,22,38,.8)',borderWidth:3,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:C.T,font:{family:'Outfit',size:11},padding:14,boxWidth:12}},tooltip:BP.plugins.tooltip,cutout:'65%'}}});
+
+// Talk Time Bar
+new Chart(document.getElementById('c-talktime'),{type:'bar',data:{labels:['0-10s','10-20s','20-30s','30-60s','60-120s','120s+'],datasets:[{label:'Calls',data:[1248,642,161,321,175,81],backgroundColor:['rgba(244,63,94,.7)','rgba(244,63,94,.5)','rgba(245,158,11,.6)','rgba(16,185,129,.6)','rgba(16,185,129,.8)','rgba(99,102,241,.8)'],borderRadius:6,borderSkipped:false}]},options:{...BP,plugins:{...BP.plugins,legend:{display:false}}}});
+
+// Deal Funnel
+[{l:'Total Deals',v:2798,c:C.I,p:100},{l:'Deals Called',v:2628,c:C.V,p:93.9},{l:'Connected',v:577,c:C.Cy,p:20.6},{l:'Quality >30s',v:573,c:C.A,p:20.5},{l:'Won / Closed',v:41,c:C.E,p:1.47}].forEach(s=>{document.getElementById('funnel').innerHTML+=`<div class="f-step"><div class="f-lbl">${s.l}</div><div class="f-bar" style="width:${Math.max(s.p,2)}%;background:${s.c};min-width:50px">${s.p>=5?s.p+'%':''}</div><div class="f-cnt">${s.v.toLocaleString()}</div></div>`;});
+
+// Deal Table
+(function(){const tb=document.getElementById('deal-tbody');AG.forEach((a,i)=>{const ip=Math.max(0,a.d-a.won-Math.floor(a.d*.15)),lo=Math.max(0,a.d-a.won-ip),cr=(a.won/a.d*100).toFixed(1),fc=parseFloat(cr)>=2?"var(--E)":parseFloat(cr)>=1?"var(--A)":"var(--R)",pc=parseFloat(cr)>=2?'bs':parseFloat(cr)>=1?'bn':parseFloat(cr)>=.5?'bw':'bd',pt=parseFloat(cr)>=2?'🏆 Top':parseFloat(cr)>=1?'✅ On Track':parseFloat(cr)>=.5?'⚠️ Below Avg':'❗ Critical';
+tb.innerHTML+=`<tr><td style="color:var(--t3);font-size:.78rem">${i+1}</td><td><strong>${a.n}</strong></td><td>${a.d}</td><td style="color:var(--E);font-weight:700">${a.won}</td><td style="color:var(--A)">${ip}</td><td style="color:var(--R)">${lo}</td><td><div class="pb"><div class="pt"><div class="pf" style="width:${Math.min(parseFloat(cr)*20,100)}%;background:${fc}"></div></div><span class="pp">${cr}%</span></div></td><td style="font-family:'Fira Code',monospace">${a.age}d</td><td><span class="bdg ${pc}">${pt}</span></td></tr>`;
+});})();
+
+// Deal Stage Doughnut
+new Chart(document.getElementById('c-stage'),{type:'doughnut',data:{labels:['Won','Negotiation','Proposal Sent','Contacted','Untouched'],datasets:[{data:[41,312,485,1050,910],backgroundColor:[C.E,C.I,C.V,C.Cy,C.R],borderColor:'rgba(14,22,38,.8)',borderWidth:3,hoverOffset:10}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:C.T,font:{family:'Outfit',size:10},padding:12,boxWidth:12}},tooltip:BP.plugins.tooltip,cutout:'60%'}}});
+
+// Agent Deals Bar
+new Chart(document.getElementById('c-agent-deals'),{type:'bar',data:{labels:AG.map(a=>a.n.split(' ')[0]),datasets:[{label:'Total Deals',data:AG.map(a=>a.d),backgroundColor:C.Ia,borderColor:C.I,borderWidth:1.5,borderRadius:4},{label:'Won',data:AG.map(a=>a.won),backgroundColor:C.Ea,borderColor:C.E,borderWidth:1.5,borderRadius:4}]},options:{...BP,scales:{x:{...BP.scales.x,ticks:{...BP.scales.x.ticks,font:{family:'Outfit',size:9}}},y:BP.scales.y}}});
+
+// Deal Source Polar
+new Chart(document.getElementById('c-source'),{type:'polarArea',data:{labels:['Inbound Call','Website Form','WhatsApp','Walk-In','Referral','Social Media'],datasets:[{data:[945,612,489,321,248,183],backgroundColor:['rgba(99,102,241,.5)','rgba(16,185,129,.5)','rgba(245,158,11,.5)','rgba(6,182,212,.5)','rgba(139,92,246,.5)','rgba(244,63,94,.5)'],borderColor:'rgba(14,22,38,.8)',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:C.T,font:{family:'Outfit',size:10},padding:10,boxWidth:12}},tooltip:BP.plugins.tooltip}}});
+
+// Bubble Chart
+new Chart(document.getElementById('c-bubble'),{type:'bubble',data:{datasets:AG.map((a,i)=>({label:a.n.split(' ')[0],data:[{x:Math.round(a.c/a.d*100),y:Math.round(a.m30/a.c*100),r:Math.sqrt(a.d)*1.1}],backgroundColor:[C.Ia,C.Ea,C.Aa,C.Ra,C.Cya,'rgba(139,92,246,.2)'][i%6],borderColor:[C.I,C.E,C.A,C.R,C.Cy,C.V][i%6],borderWidth:1.5}))},options:{...BP,plugins:{...BP.plugins,legend:{display:false}},scales:{x:{...BP.scales.x,title:{display:true,text:'Call Coverage (%)',color:C.T,font:{family:'Outfit',size:11}}},y:{...BP.scales.y,title:{display:true,text:'Quality Call Rate (%)',color:C.T,font:{family:'Outfit',size:11}}}}}});
+
+// Stack Bar
+new Chart(document.getElementById('c-stack'),{type:'bar',data:{labels:AG.map(a=>a.n.split(' ')[0]),datasets:[{label:'Quality >30s',data:AG.map(a=>a.m30),backgroundColor:'rgba(16,185,129,.65)',borderRadius:4},{label:'Short <30s',data:AG.map(a=>a.c-a.m30),backgroundColor:'rgba(244,63,94,.4)',borderRadius:4}]},options:{...BP,scales:{x:{...BP.scales.x,stacked:true,ticks:{...BP.scales.x.ticks,font:{size:9}}},y:{...BP.scales.y,stacked:true}}}});
+
+// Overlay Line
+new Chart(document.getElementById('c-overlay'),{type:'line',data:{labels:DY.map(d=>d.dt),datasets:[{label:'Total Calls',data:DY.map(d=>d.tot),borderColor:C.I,backgroundColor:C.Ia,fill:true,tension:.4,borderWidth:2.5,pointRadius:4,pointBackgroundColor:C.I},{label:'Active Deals',data:DY.map(d=>d.deals),borderColor:C.A,fill:false,tension:.4,borderWidth:2,borderDash:[5,4],pointRadius:4,pointBackgroundColor:C.A},{label:'Connected',data:DY.map(d=>d.conn),borderColor:C.E,backgroundColor:C.Ea,fill:true,tension:.4,borderWidth:2,pointRadius:4,pointBackgroundColor:C.E}]},options:{...BP}});
+
+// Agent Rank
+const sorted=[...AG].sort((a,b)=>(b.won/b.d)-(a.won/a.d));
+const rc=document.getElementById('agent-rank');
+sorted.forEach((a,i)=>{const rate=(a.won/a.d*100).toFixed(2),col=parseFloat(rate)>=2?"var(--E)":parseFloat(rate)>=1?"var(--A)":"var(--R)",rk=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+rc.innerHTML+=`<div class="rank-item"><div class="rnum ${rk}">${i+1}</div><div class="rname">${a.n}</div><div style="flex:1;padding:0 .7rem"><div class="pt"><div class="pf" style="width:${Math.min(parseFloat(rate)*20,100)}%;background:${col}"></div></div></div><div class="rrate" style="color:${col}">${rate}%</div></div>`;
+});
+
+// Heatmap
+(function(){const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];const data=[[45,82,93,110,118,122,98],[68,95,108,134,142,138,112],[72,101,119,145,155,148,119],[55,88,96,121,130,125,98],[30,55,62,78,83,72,45],[18,32,40,52,58,45,22],[10,20,25,32,35,25,10],[5,10,15,20,22,18,8],[2,5,7,10,12,8,3]];
+const dEl=document.getElementById('hm-days');days.forEach(d=>dEl.innerHTML+=`<div class="hm-day-lbl">${d}</div>`);
+const gEl=document.getElementById('hm-grid');const mx=Math.max(...data.flat());
+data.forEach((row,ri)=>row.forEach((v,ci)=>{const t=v/mx,bg=`rgba(${Math.round(99+t*145)},${Math.round(102-t*50)},${Math.round(241-t*100)},${(.2+t*.7).toFixed(2)})`;gEl.innerHTML+=`<div class="hm-cell" style="background:${bg}" title="${days[ci]} ${6+ri}:00 — ${v} calls">${v>30?v:''}</div>`;}));
+})();
+
+// Projection Chart
+new Chart(document.getElementById('c-proj'),{type:'line',data:{labels:['Jul','Aug','Sep','Oct','Nov','Dec'],datasets:[{label:'Current Trend',data:[1.47,1.52,1.55,1.58,1.60,1.62],borderColor:C.R,backgroundColor:C.Ra,fill:true,tension:.4,borderWidth:2,borderDash:[4,4],pointRadius:4},{label:'Fix Call Timing',data:[1.47,1.8,2.1,2.3,2.5,2.6],borderColor:C.A,fill:false,tension:.4,borderWidth:2,pointRadius:4},{label:'All Improvements',data:[1.47,2.2,2.8,3.1,3.3,3.5],borderColor:C.E,backgroundColor:C.Ea,fill:true,tension:.4,borderWidth:2.5,pointRadius:5,pointBackgroundColor:C.E}]},options:{...BP,scales:{x:BP.scales.x,y:{...BP.scales.y,ticks:{...BP.scales.y.ticks,callback:v=>v+'%'}}}}});
+
+// Optimizer Calculator
+function calcOpt(){const l=parseInt(document.getElementById('sl-leads').value),co=parseInt(document.getElementById('sl-conn').value)/100,q=parseInt(document.getElementById('sl-qual').value)/100,cv=parseInt(document.getElementById('sl-cov').value)/100,rate=.003+(co*.04)+(q*.06)+(cv*.01),won=Math.round(l*rate);document.getElementById('ov-leads').textContent=l.toLocaleString();document.getElementById('ov-conn').textContent=Math.round(co*100)+'%';document.getElementById('ov-qual').textContent=Math.round(q*100)+'%';document.getElementById('ov-cov').textContent=Math.round(cv*100)+'%';document.getElementById('or-rate').textContent=(rate*100).toFixed(2)+'%';document.getElementById('or-won').textContent=won.toLocaleString();document.getElementById('or-rev').textContent='&#8377;'+won+'L';}
+['sl-leads','sl-conn','sl-qual','sl-cov'].forEach(id=>document.getElementById(id).addEventListener('input',calcOpt));calcOpt();
+
+document.getElementById('curr-date').textContent=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+</script>
+</body>
+</html>

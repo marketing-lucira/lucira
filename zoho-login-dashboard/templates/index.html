@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zoho Login &amp; Status · Lucira</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+         background:#0f1115; color:#e7e9ee; display:grid; place-items:center; min-height:100vh; }
+  .card { background:#171a21; border:1px solid #262b36; border-radius:16px;
+          padding:40px; max-width:520px; width:92%; box-shadow:0 10px 40px rgba(0,0,0,.4); }
+  h1 { margin:0 0 4px; font-size:22px; }
+  .sub { color:#9aa3b2; margin:0 0 24px; font-size:14px; }
+  .row { display:flex; align-items:center; gap:10px; margin:14px 0; font-size:14px; }
+  .dot { width:10px; height:10px; border-radius:50%; }
+  .ok { background:#31c48d; } .bad { background:#f05252; } .warn { background:#e3a008; }
+  a.btn, button.btn { display:inline-block; text-decoration:none; border:0; cursor:pointer;
+      font-size:15px; font-weight:600; padding:12px 20px; border-radius:10px; margin-top:8px; }
+  .primary { background:#e0b64a; color:#1a1a1a; }
+  .ghost { background:#232833; color:#e7e9ee; border:1px solid #333a48; }
+  code { background:#232833; padding:2px 7px; border-radius:6px; font-size:12.5px; color:#e0b64a; }
+  .hint { font-size:12.5px; color:#7c8493; margin-top:22px; line-height:1.6; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Zoho Login &amp; Status</h1>
+    <p class="sub">Lucira Jewelry · data center <code>{{ dc }}</code></p>
+
+    <div class="row">
+      <span class="dot {{ 'ok' if configured else 'warn' }}"></span>
+      OAuth client {{ 'configured' if configured else 'not configured yet' }}
+    </div>
+    <div class="row">
+      <span class="dot {{ 'ok' if connected else 'bad' }}"></span>
+      Zoho {{ 'connected' if connected else 'not connected' }}
+    </div>
+
+    {% if connected %}
+      <a class="btn primary" href="/dashboard">Open dashboard →</a>
+      <a class="btn ghost" href="/ui/sync">Sync now</a>
+    {% elif configured %}
+      <a class="btn primary" href="/oauth/login">Connect Zoho</a>
+    {% else %}
+      <p class="hint">Waiting on the OAuth client id / redirect uri to be set.
+      Redirect URI to register in the Zoho API console:<br>
+      <code>{{ redirect_uri or '(will be shown after first deploy)' }}</code></p>
+    {% endif %}
+
+    <p class="hint">
+      Connect authorizes read-only access to your Zoho CRM users.
+      Sync pulls the user roster + live online status into BigQuery
+      (<code>zoho_crm.crm_users</code>) and appends a status snapshot for the activity timeline.
+    </p>
+  </div>
+</body>
+</html>
