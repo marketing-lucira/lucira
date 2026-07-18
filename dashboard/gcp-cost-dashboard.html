@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucira Jewelry — GCP Cost Command Center</title>
+<style>
+/* ─────────────────────────────────────────────────────────────
+   Palette: validated dataviz reference instance (dark executive)
+   Shared design system with crm-dashboard.html
+   ───────────────────────────────────────────────────────────── */
+:root{
+  color-scheme: dark;
+  --plane:#0d0d0d; --surface:#1a1a19; --surface-2:#222220; --surface-3:#2a2a28;
+  --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+  --s1:#3987e5; --s2:#199e70; --s3:#d55181; --s4:#c98500;
+  --s5:#26c281; --s6:#d95926; --s7:#9085e9; --s8:#e66767;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --gold:#d9a441;
+  --radius:14px; --radius-sm:9px;
+  --font:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--plane); color:var(--ink); font-family:var(--font);
+  font-size:14px; line-height:1.45; -webkit-font-smoothing:antialiased;
+}
+a{color:var(--s1)}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* Header ------------------------------------------------------ */
+header.app{
+  position:sticky; top:0; z-index:40; background:rgba(13,13,13,.92);
+  backdrop-filter:blur(10px); border-bottom:1px solid var(--border);
+  padding:12px 22px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+}
+.brand{display:flex; align-items:center; gap:11px; margin-right:auto}
+.brand .mark{
+  width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#4285F4,#34A853);color:#fff;
+  font-weight:800;font-size:15px;box-shadow:0 2px 10px rgba(66,133,244,.3)
+}
+.brand h1{font-size:15px;margin:0;font-weight:700;letter-spacing:.2px}
+.brand small{display:block;color:var(--muted);font-size:11px;font-weight:500;letter-spacing:.3px}
+.hdr-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px rgba(12,163,12,.18)}
+.dot.demo{background:var(--warn);box-shadow:0 0 0 3px rgba(250,178,25,.18)}
+.btn{
+  background:var(--surface-2);color:var(--ink);border:1px solid var(--border);
+  border-radius:9px;padding:7px 13px;font-size:12.5px;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;font-family:var(--font)
+}
+.btn:hover{background:var(--surface-3)}
+.btn.primary{background:var(--s1);border-color:transparent;color:#fff}
+.btn.ghost{background:transparent}
+
+/* Currency toggle -------------------------------------------- */
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:3px}
+.seg button{background:transparent;border:0;color:var(--ink-2);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)}
+.seg button.on{background:var(--gold);color:#1a1200}
+
+/* Layout ----------------------------------------------------- */
+.wrap{display:flex;min-height:calc(100vh - 60px)}
+nav.tabs{
+  width:216px;flex:0 0 216px;border-right:1px solid var(--border);padding:16px 12px;
+  position:sticky;top:60px;height:calc(100vh - 60px);overflow:auto
+}
+nav.tabs .grp{color:var(--muted);font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin:14px 10px 6px}
+nav.tabs a{
+  display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;
+  color:var(--ink-2);text-decoration:none;font-size:13.5px;font-weight:600;cursor:pointer;margin-bottom:2px
+}
+nav.tabs a:hover{background:var(--surface-2);color:var(--ink)}
+nav.tabs a.on{background:var(--surface-2);color:var(--ink)}
+nav.tabs a.on .ic{color:var(--gold)}
+nav.tabs a .ic{width:17px;text-align:center;opacity:.9}
+nav.tabs a .badge{margin-left:auto;font-size:10px;font-weight:800;padding:1px 7px;border-radius:20px;background:rgba(208,59,59,.2);color:#f87171}
+main{flex:1;min-width:0;padding:20px 24px 60px}
+
+/* Filter bar ------------------------------------------------- */
+.filters{
+  display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-bottom:18px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px
+}
+.filters .fl{display:flex;flex-direction:column;gap:3px}
+.filters label{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding-left:2px}
+.filters select{
+  background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:8px;
+  padding:6px 8px;font-size:12.5px;font-family:var(--font);min-width:120px;max-width:190px
+}
+.filters .spacer{flex:1}
+
+/* KPI cards -------------------------------------------------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:13px;margin-bottom:20px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px;position:relative;overflow:hidden}
+.kpi .lab{font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.3px;display:flex;align-items:center;gap:6px}
+.kpi .val{font-size:27px;font-weight:750;margin-top:7px;letter-spacing:-.5px;line-height:1}
+.kpi .sub{font-size:11.5px;color:var(--ink-2);margin-top:7px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.kpi .accent{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold)}
+.delta{font-weight:700;font-size:12px}
+.delta.up{color:var(--crit)} .delta.down{color:var(--good)} .delta.flat{color:var(--muted)}
+/* NOTE: for COST, up = bad (red), down = good (green) — inverted vs revenue dashboards */
+
+/* Cards / charts --------------------------------------------- */
+.grid{display:grid;gap:15px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px 12px;min-width:0}
+.card.wide{grid-column:1/-1}
+.card h3{margin:0 0 2px;font-size:13.5px;font-weight:700}
+.card .hint{color:var(--muted);font-size:11px;margin-bottom:10px}
+.card .head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.card .head .tools{display:flex;gap:5px;flex-wrap:wrap}
+.mini{background:var(--surface-2);border:1px solid var(--border);color:var(--ink-2);border-radius:7px;font-size:11px;font-weight:600;padding:4px 8px;cursor:pointer;font-family:var(--font)}
+.mini.on{background:var(--s1);color:#fff;border-color:transparent}
+.chart-wrap{width:100%;overflow-x:auto}
+svg.chart{display:block;width:100%;height:auto;font-family:var(--font)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:10px}
+.legend .li{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);cursor:default}
+.legend .sw{width:11px;height:11px;border-radius:3px;flex:0 0 auto}
+.empty{color:var(--muted);font-size:12.5px;padding:26px 8px;text-align:center}
+
+/* mini stat tiles */
+.mstat{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:11px 13px}
+.mstat .l{font-size:10.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.mstat .v{font-size:19px;font-weight:750;margin-top:4px}
+.mstat .d{font-size:11px;margin-top:2px}
+
+/* Tables ----------------------------------------------------- */
+table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+table.tbl th,table.tbl td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--grid)}
+table.tbl th{color:var(--muted);font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;white-space:nowrap}
+table.tbl td.num,table.tbl th.num{text-align:right;font-variant-numeric:tabular-nums}
+table.tbl tbody tr:hover{background:var(--surface-2)}
+table.tbl td.name{font-weight:600}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.pill.g{background:rgba(12,163,12,.16);color:#4ade80}
+.pill.w{background:rgba(250,178,25,.16);color:var(--warn)}
+.pill.r{background:rgba(208,59,59,.18);color:#f87171}
+.pill.b{background:rgba(57,135,229,.16);color:#7cb3f2}
+.rankcell{display:inline-flex;width:22px;height:22px;border-radius:6px;background:var(--surface-3);align-items:center;justify-content:center;font-weight:800;font-size:11px}
+.rankcell.top{background:var(--gold);color:#1a1200}
+.bar-inline{height:6px;border-radius:4px;background:var(--surface-3);overflow:hidden;margin-top:4px}
+.bar-inline > i{display:block;height:100%;border-radius:4px}
+.chip{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--surface-3);color:var(--ink-2)}
+
+/* traffic light */
+.tl{display:inline-flex;align-items:center;gap:6px;font-weight:700}
+.tl::before{content:"";width:10px;height:10px;border-radius:50%}
+.tl.g::before{background:var(--good);box-shadow:0 0 0 3px rgba(12,163,12,.18)}
+.tl.w::before{background:var(--warn);box-shadow:0 0 0 3px rgba(250,178,25,.18)}
+.tl.r::before{background:var(--crit);box-shadow:0 0 0 3px rgba(208,59,59,.18)}
+
+/* Insights / recommendations -------------------------------- */
+.insights{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:13px}
+.insight{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--muted);border-radius:11px;padding:13px 15px}
+.insight.crit{border-left-color:var(--crit)}
+.insight.warn{border-left-color:var(--warn)}
+.insight.good{border-left-color:var(--good)}
+.insight.info{border-left-color:var(--s1)}
+.insight .t{font-weight:700;font-size:13px;display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.insight .b{color:var(--ink-2);font-size:12.5px}
+.insight .b b{color:var(--ink)}
+.insight .save{margin-top:8px;font-size:12px;font-weight:700;color:#4ade80}
+.insight .action{margin-top:6px;font-size:11.5px;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 9px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:5px;margin-left:auto}
+.tag.crit{background:rgba(208,59,59,.18);color:#f87171}
+.tag.warn{background:rgba(250,178,25,.16);color:var(--warn)}
+.tag.good{background:rgba(12,163,12,.16);color:#4ade80}
+.tag.info{background:rgba(57,135,229,.16);color:#7cb3f2}
+.tag.high{background:rgba(208,59,59,.18);color:#f87171}
+.tag.med{background:rgba(250,178,25,.16);color:var(--warn)}
+.tag.low{background:rgba(137,135,129,.2);color:var(--ink-2)}
+
+/* Drill modal ------------------------------------------------ */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(3px);z-index:80;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+.modal-bg.on{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:940px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal .mh{display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-bottom:1px solid var(--border)}
+.modal .mh h3{margin:0;font-size:15px}
+.modal .mh .x{cursor:pointer;color:var(--muted);font-size:22px;line-height:1;background:none;border:0}
+.modal .mb{padding:12px 16px;max-height:70vh;overflow:auto}
+.breadcrumb{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:12px;flex-wrap:wrap}
+.breadcrumb a{cursor:pointer}
+
+/* Tooltip ---------------------------------------------------- */
+#tip{position:fixed;z-index:99;pointer-events:none;background:#000;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--ink);display:none;box-shadow:0 6px 20px rgba(0,0,0,.5);max-width:280px}
+#tip .tk{color:var(--muted)}
+.section-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin:22px 2px 10px;display:flex;align-items:center;gap:10px}
+.section-title .rule{flex:1;height:1px;background:var(--grid)}
+.hidden{display:none!important}
+.loading{display:grid;place-items:center;height:60vh;color:var(--muted);gap:14px}
+.spin{width:34px;height:34px;border:3px solid var(--surface-3);border-top-color:var(--gold);border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.note{font-size:11.5px;color:var(--muted);background:var(--surface);border:1px dashed var(--border);border-radius:10px;padding:9px 12px;margin-bottom:14px}
+.note b{color:var(--ink-2)}
+/* sample-data call-to-action banner */
+.samplebanner{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:linear-gradient(90deg,rgba(250,178,25,.14),rgba(250,178,25,.04));border:1px solid rgba(250,178,25,.35);border-radius:var(--radius);padding:13px 16px;margin-bottom:16px}
+.samplebanner .ttl{font-weight:800;font-size:13.5px;color:#fbbf3d;display:flex;align-items:center;gap:8px}
+.samplebanner .steps{font-size:12px;color:var(--ink-2);margin-top:3px}
+.samplebanner .steps b{color:var(--ink)}
+.samplebanner .cta{margin-left:auto;display:flex;gap:8px;align-items:center}
+.samplebanner .big{background:var(--gold);color:#1a1200;border:0;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font)}
+.samplebanner .big:hover{filter:brightness(1.07)}
+.dropveil{position:fixed;inset:0;z-index:120;background:rgba(13,13,13,.86);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;color:var(--ink);font-size:18px;font-weight:700;border:3px dashed var(--gold)}
+.dropveil.on{display:flex}
+.dropveil .em{font-size:44px}
+@media(max-width:900px){nav.tabs{display:none}.g2,.g3,.g4{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="brand">
+    <div class="mark">GCP</div>
+    <div><h1>Lucira Jewelry</h1><small>GCP COST COMMAND CENTER</small></div>
+  </div>
+  <div class="seg" id="curSeg" title="Display currency (billing export currency is fixed; USD uses a fixed FX for display only)">
+    <button data-cur="INR" class="on">₹ INR</button>
+    <button data-cur="USD">$ USD</button>
+  </div>
+  <div class="hdr-status"><span class="dot demo" id="srcDot"></span><span id="srcLabel">…</span></div>
+  <input type="file" id="csvInput" accept=".csv,text/csv" style="display:none">
+  <button class="btn primary" id="loadCsvBtn" title="Load a GCP Billing 'Download CSV' export — no BigQuery or API access needed">⤒ Load billing CSV</button>
+  <button class="btn" id="refreshBtn">↻ Refresh</button>
+  <button class="btn ghost" id="exportBtn" title="Export current view as CSV">⇩ CSV</button>
+</header>
+
+<div class="wrap">
+  <nav class="tabs" id="tabs">
+    <div class="grp">Executive</div>
+    <a data-tab="overview" class="on"><span class="ic">◎</span> Summary</a>
+    <div class="grp">Cost Explorer</div>
+    <a data-tab="services"><span class="ic">▦</span> Services</a>
+    <a data-tab="projects"><span class="ic">◫</span> Projects</a>
+    <a data-tab="regions"><span class="ic">◍</span> Regions</a>
+    <a data-tab="resources"><span class="ic">▤</span> Resources</a>
+    <div class="grp">Deep Dives</div>
+    <a data-tab="bigquery"><span class="ic">⬡</span> BigQuery</a>
+    <a data-tab="cloudrun"><span class="ic">▷</span> Cloud Run</a>
+    <a data-tab="storage"><span class="ic">▣</span> Storage</a>
+    <a data-tab="compute"><span class="ic">▥</span> Compute</a>
+    <div class="grp">Planning</div>
+    <a data-tab="budget"><span class="ic">◑</span> Budget &amp; Forecast</a>
+    <div class="grp">Optimize</div>
+    <a data-tab="savings"><span class="ic">✦</span> Savings</a>
+    <a data-tab="optimize"><span class="ic">⚙</span> Recommendations</a>
+    <a data-tab="alerts"><span class="ic">⚠</span> Alerts</a>
+  </nav>
+
+  <main id="main">
+    <div class="loading" id="loader"><div class="spin"></div><div>Loading GCP billing data…</div></div>
+    <div id="app" class="hidden">
+      <div id="sampleBanner" class="samplebanner hidden">
+        <div>
+          <div class="ttl">⚠ You're viewing sample data — not your real GCP costs</div>
+          <div class="steps">To load YOUR actual numbers (no BigQuery/API access needed):
+            <b>1.</b> In GCP → Billing → Reports, click <b>Download CSV</b> &nbsp;·&nbsp;
+            <b>2.</b> Click the button here → &nbsp;·&nbsp;
+            <b>3.</b> Pick that file. &nbsp;(Or drag the CSV anywhere onto this page.)</div>
+        </div>
+        <div class="cta"><button class="big" id="bannerLoadBtn">⤒ Load my billing CSV</button></div>
+      </div>
+      <div class="filters" id="filters"></div>
+      <div class="kpis" id="kpis"></div>
+      <div id="panel"></div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-bg" id="modalBg"><div class="modal"><div class="mh"><h3 id="modalTitle"></h3><button class="x" id="modalX">×</button></div><div class="mb" id="modalBody"></div></div></div>
+<div class="dropveil" id="dropveil"><div class="em">⤒</div><div>Drop your GCP billing CSV to load it</div></div>
+<div id="tip"></div>
+
+<!-- GCP_COST_CONFIG_INJECT · CI (GitHub Actions) replaces THIS line with an inline <script> that sets window.__GCP_COST_CONFIG__ from GitHub Variables. Left as a plain comment locally, so file:// use is unaffected (no external fetch, no parser-blocking) and the CONFIG defaults below apply. -->
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   CONFIG  — edit these to match your GCP account, then (optionally)
+   wire the live BigQuery billing-export API by setting API_BASE.
+   You can also override any key at deploy time via GitHub Variables
+   (see deploy/gcp-cost-dashboard/README.md) without touching this file.
+   ═══════════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  // ↓↓↓ After deploying gcp-cost-api, paste the Cloud Function/Run URL here for LIVE data.
+  //     Leave "" to run on the built-in deterministic sample dataset.
+  API_BASE: "",                 // e.g. "https://asia-south1-lucira-prod.cloudfunctions.net/gcp-cost-data"
+  WINDOW_DAYS: 95,              // history window requested/generated
+  REFRESH_MS: 30 * 60 * 1000,  // auto-refresh cadence (30 min) when API is live (billing export updates a few×/day)
+  BILLING_CURRENCY: "INR",     // the currency your billing account bills in (INR/USD/EUR/…)
+  USD_FX: 83,                  // INR per 1 USD — used ONLY to render the $ toggle from INR data
+  // ↓ Scaled to Lucira's real run-rate (MTD ≈ ₹8.7k on ~day 15 → ~₹18k/mo). Adjust as spend grows.
+  MONTHLY_BUDGET: 20000,       // total monthly budget in BILLING_CURRENCY
+  PROJECT_BUDGETS: {},         // fill in once you see your real project IDs in the Projects tab, e.g. {"my-prod":15000}
+  ALERTS: {
+    DAILY_COST_THRESHOLD: 1500, // ~2.5× a normal day (~₹580); a real spike will exceed it
+    SPIKE_PCT: 40,              // alert if day-over-day jumps by more than this %
+    SERVICE_INCREASE_PCT: 50,   // alert if a service's 7d cost rose more than this % vs prior 7d (your Cloud Run is +211%)
+    BUDGET_WARN: 80, BUDGET_HIGH: 90 // budget utilisation thresholds (%)
+  }
+};
+
+/* Deploy-time overrides: CI (GitHub Actions) injects an inline <script> at the
+   config marker above that sets window.__GCP_COST_CONFIG__ from
+   GitHub repo Variables. Merge it over the defaults so you can point the
+   dashboard at a live billing-export API or change the budget/currency WITHOUT
+   editing this file. No-op locally, where the marker stays a plain comment. */
+try { if (window.__GCP_COST_CONFIG__) Object.assign(CONFIG, window.__GCP_COST_CONFIG__); } catch (e) {}
+
+/* Validated categorical palette (dark) + status */
+const PAL = ['#3987e5','#199e70','#d55181','#c98500','#26c281','#d95926','#9085e9','#e66767','#4db6ac','#ba68c8'];
+const STATUS = {good:'#0ca30c',warn:'#fab219',serious:'#ec835a',crit:'#d03b3b'};
+const GOLD = '#d9a441';
+/* Concrete hex for SVG (CSS var() does NOT resolve in SVG presentation attributes) */
+const C_INK='#ffffff', C_INK2='#c3c2b7', C_MUTED='#898781', C_GRID='#2c2c2a',
+      C_TRACK='#2a2a28', C_SURF='#1a1a19', C_GOOD='#0ca30c', C_WARN='#fab219', C_CRIT='#d03b3b';
+
+/* Stable colour per GCP service (aligned to Lucira's real service mix) */
+const SVC_COLOR = {
+  'BigQuery':'#3987e5','Cloud Run':'#199e70','Artifact Registry':'#c98500','Vertex AI':'#26c281',
+  'Cloud Scheduler':'#9085e9','BigQuery Reservation API':'#6b8e9e','Cloud Storage':'#d55181',
+  'Cloud Build':'#d95926','Pub/Sub':'#4db6ac',
+  /* still coloured if they ever appear */
+  'Cloud Functions':'#8d9440','Compute Engine':'#e66767','Cloud SQL':'#ba68c8','Networking':'#a56a4a',
+  'Cloud Logging':'#7aa1b8','Cloud Monitoring':'#c77dbb','Secret Manager':'#8d9440','Other':'#6b6b66'
+};
+function svcColor(s){ return SVC_COLOR[s]||SVC_COLOR['Other']; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════════════ */
+const STATE = {
+  items:[],                    // billing line items (the raw fact table)
+  resources:[],                // resource catalogue w/ metadata for optimisation
+  days:[],                     // sorted list of YYYY-MM-DD present in data
+  budgets:CONFIG.PROJECT_BUDGETS,
+  monthlyBudget:CONFIG.MONTHLY_BUDGET,
+  now:new Date(),
+  asOf:null,                   // last complete billing day
+  live:false,
+  source:'sample',             // 'sample' | 'live' | 'csv'
+  cur:'INR',
+  filters:{ range:'mtd', project:'', service:'', sku:'', region:'', resource:'', label:'', category:'' },
+  tab:'overview',
+  trendGran:'daily',
+  recs:[],
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   MONEY + DATE HELPERS
+   ═══════════════════════════════════════════════════════════════════ */
+const NA='—';
+function ymd(d){ return d? d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0') : null; }
+function parseYmd(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function daysInMonth(d){ return new Date(d.getFullYear(),d.getMonth()+1,0).getDate(); }
+function fmt(n){ if(n==null||isNaN(n)) return NA; return Number(n).toLocaleString('en-IN'); }
+function pct(a,b){ return b>0? (a/b*100):0; }
+function fmtPct(a,b){ return b>0? (a/b*100).toFixed(1)+'%':'0%'; }
+function pctStr(x,dp){ return (x==null||isNaN(x))?NA:x.toFixed(dp==null?1:dp)+'%'; }
+
+/* convert a stored (billing-currency=INR-scale) value to the active display currency */
+function cv(n){ return STATE.cur==='USD' ? n/CONFIG.USD_FX : n; }
+function curSym(){ return STATE.cur==='USD' ? '$' : '₹'; }
+/* compact money in the ACTIVE display currency */
+function money(nRaw, opts){
+  opts=opts||{};
+  if(nRaw==null||isNaN(nRaw)) return NA;
+  let n=cv(nRaw); const sym=curSym(); const neg=n<0; n=Math.abs(n);
+  let s;
+  if(STATE.cur==='USD'){
+    if(n>=1e6) s=(n/1e6).toFixed(2)+'M'; else if(n>=1e3) s=(n/1e3).toFixed(opts.k?1:2)+'K';
+    else s=n.toFixed(opts.dp!=null?opts.dp:2);
+  }else{
+    if(n>=1e7) s=(n/1e7).toFixed(2)+' Cr'; else if(n>=1e5) s=(n/1e5).toFixed(2)+' L';
+    else if(n>=1e3) s=(n/1e3).toFixed(1)+'k'; else s=n.toFixed(opts.dp!=null?opts.dp:0);
+  }
+  return (neg?'-':'')+sym+s;
+}
+/* exact money (for tables/tooltips) */
+function money2(nRaw){ if(nRaw==null||isNaN(nRaw)) return NA;
+  const n=cv(nRaw); return curSym()+n.toLocaleString(STATE.cur==='USD'?'en-US':'en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   DETERMINISTIC SAMPLE DATA
+   Mirrors the GCP Billing Export → BigQuery detailed schema:
+   each line item ≈ one (day, project, service, sku, region, resource) row.
+   ═══════════════════════════════════════════════════════════════════ */
+function mulberry32(a){ return function(){ a|=0;a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const RNG = mulberry32(20260715);
+function rnd(){ return RNG(); }
+function jitter(base,pct){ return base*(1+(rnd()*2-1)*pct); }
+
+/* Resource catalogue — each entry expands into daily SKU-level line items.
+   base = mean cost/day in billing currency (INR). skus weights ~sum to 1.
+   meta drives the optimisation engine. */
+// Catalogue reflects Lucira's REAL service mix from the GCP billing screenshot
+// (MTD: BigQuery ₹4,457 · Cloud Run ₹4,041 · Artifact Registry ₹110 · Vertex AI
+//  ₹65 · Scheduler ₹39 · BQ Reservation ₹14 · Storage ₹0.84 · Build/PubSub ~₹0).
+// `base` = mean cost/day so recent-day total ≈ ₹580 and MTD ≈ your ₹8.7k.
+// This is still SAMPLE data (flagged in the header) until you load your CSV.
+const CATALOG = [
+  /* ---------- BigQuery (~₹297/day, gently declining → matches your ↓33%) ---------- */
+  {id:'bq:crm_analytics', name:'crm_analytics', svc:'BigQuery', project:'lucira-analytics', region:'asia-south1', base:245, trend:-0.002, weekend:0.6,
+    skus:[['Analysis (on-demand queries)',0.72,'TiB'],['Active Storage',0.20,'GiB-mo'],['Long-term Storage',0.08,'GiB-mo']],
+    meta:{kind:'bq_dataset', bytesProcessedTB:3.1, storageGB:420, longTermPct:0.18, partitioned:false, clustered:false, selectStarPct:0.40}},
+  {id:'bq:events_raw', name:'events_raw', svc:'BigQuery', project:'lucira-analytics', region:'asia-south1', base:66, trend:-0.001, weekend:0.9,
+    skus:[['Analysis (on-demand queries)',0.30,'TiB'],['Active Storage',0.30,'GiB-mo'],['Long-term Storage',0.40,'GiB-mo']],
+    meta:{kind:'bq_dataset', bytesProcessedTB:0.8, storageGB:900, longTermPct:0.55, partitioned:true, clustered:true, selectStarPct:0.06}},
+  {id:'bq:marketing', name:'marketing', svc:'BigQuery', project:'lucira-analytics', region:'asia-south1', base:30, trend:0.001, weekend:0.7,
+    skus:[['Analysis (on-demand queries)',0.6,'TiB'],['Active Storage',0.4,'GiB-mo']],
+    meta:{kind:'bq_dataset', bytesProcessedTB:0.5, storageGB:120, longTermPct:0.1, partitioned:true, clustered:false, selectStarPct:0.15}},
+
+  /* ---------- Cloud Run (~₹300/day gross, RISING with a recent step-up → your ↑211%) ---------- */
+  {id:'run:crm-api', name:'crm-api', svc:'Cloud Run', project:'lucira-prod', region:'asia-south1', base:86, trend:0.006, weekend:0.75, runRamp:true,
+    skus:[['CPU Allocation Time',0.5,'vCPU-s'],['Memory Allocation Time',0.34,'GiB-s'],['Requests',0.16,'req']],
+    meta:{kind:'run_service', reqPerDay:210000, cpu:1, memMiB:512, memUsedMiB:360, minInst:0, maxInst:8, healthy:true}},
+  {id:'run:zoho-crm-data', name:'zoho-crm-data', svc:'Cloud Run', project:'lucira-prod', region:'asia-south1', base:57, trend:0.005, weekend:0.8, runRamp:true,
+    skus:[['CPU Allocation Time',0.48,'vCPU-s'],['Memory Allocation Time',0.36,'GiB-s'],['Requests',0.16,'req']],
+    meta:{kind:'run_service', reqPerDay:36000, cpu:1, memMiB:512, memUsedMiB:300, minInst:0, maxInst:4, healthy:true}},
+  {id:'run:image-resizer', name:'image-resizer', svc:'Cloud Run', project:'lucira-prod', region:'asia-south1', base:43, trend:0.004, weekend:0.7, runRamp:true,
+    skus:[['CPU Allocation Time',0.4,'vCPU-s'],['Memory Allocation Time',0.5,'GiB-s'],['Requests',0.1,'req']],
+    meta:{kind:'run_service', reqPerDay:24000, cpu:2, memMiB:2048, memUsedMiB:410, minInst:0, maxInst:10, healthy:true, overMem:true}},
+
+  /* ---------- Artifact Registry (~₹7.3/day) ---------- */
+  {id:'ar:images', name:'lucira-docker-repo', svc:'Artifact Registry', project:'lucira-prod', region:'asia-south1', base:6.6, trend:0.001, weekend:1.0,
+    skus:[['Artifact Registry Storage',1.0,'GiB-mo']], meta:{kind:'artifact', sizeGB:58}},
+
+  /* ---------- Vertex AI (NEW ~3 weeks ago, ~₹4.3/day) ---------- */
+  {id:'vai:predictions', name:'vertex-endpoints', svc:'Vertex AI', project:'lucira-analytics', region:'asia-south1', base:3.0, trend:0.004, weekend:0.85, startDaysAgo:24,
+    skus:[['Online Prediction',0.7,'node-h'],['Vertex AI Notebooks',0.3,'h']], meta:{kind:'vertex'}},
+
+  /* ---------- Cloud Scheduler (~₹2.6/day) ---------- */
+  {id:'sch:jobs', name:'scheduler jobs', svc:'Cloud Scheduler', project:'lucira-prod', region:'asia-south1', base:2.5, trend:0.0005, weekend:1.0,
+    skus:[['Scheduler Jobs',1.0,'job-mo']], meta:{kind:'scheduler', jobs:11}},
+
+  /* ---------- BigQuery Reservation API (~₹0.9/day) ---------- */
+  {id:'bqr:reservation', name:'bq-reservation', svc:'BigQuery Reservation API', project:'lucira-analytics', region:'asia-south1', base:0.9, trend:0.0, weekend:1.0,
+    skus:[['BI Engine Capacity',1.0,'GiB-h']], meta:{kind:'reservation'}},
+
+  /* ---------- Cloud Storage (tiny ~₹0.06/day) ---------- */
+  {id:'gcs:lucira-assets', name:'lucira-assets', svc:'Cloud Storage', project:'lucira-prod', region:'asia-south1', base:0.055, trend:0.002, weekend:1.0,
+    skus:[['Standard Storage',0.7,'GiB-mo'],['Class A Operations',0.2,'ops'],['Class B Operations',0.1,'ops']],
+    meta:{kind:'bucket', class:'Standard', sizeGB:9, objects:4200, lastAccessDays:2, growthPctMo:3, hot:true}},
+
+  /* ---------- Cloud Build + Pub/Sub (near-zero) ---------- */
+  {id:'cb:builds', name:'cloud-build', svc:'Cloud Build', project:'lucira-prod', region:'asia-south1', base:0.007, trend:0.0, weekend:0.5,
+    skus:[['Build Minutes',1.0,'min']], meta:{kind:'build'}},
+  {id:'ps:events', name:'events / topics', svc:'Pub/Sub', project:'lucira-prod', region:'asia-south1', base:0.0013, trend:0.001, weekend:0.9,
+    skus:[['Message Delivery Basic',1.0,'GiB']], meta:{kind:'pubsub'}},
+];
+const LABELS = { 'lucira-prod':{env:'prod',team:'platform'}, 'lucira-analytics':{env:'prod',team:'data'} };
+
+function generateSample(){
+  const items=[]; const N=CONFIG.WINDOW_DAYS;
+  const today=new Date(); today.setHours(0,0,0,0);
+  // billing export lags — treat "yesterday" as the last complete day
+  const lastDay=addDays(today,-1);
+  for(let k=N-1;k>=0;k--){
+    const d=addDays(lastDay,-k); const dk=ymd(d); const dow=d.getDay();
+    const isWknd=(dow===0||dow===6);
+    const tIdx=(N-1-k);  // 0..N-1 ascending in time
+    for(const r of CATALOG){
+      // service that started billing recently (e.g. Vertex AI) → no cost before then
+      if(r.startDaysAgo!=null && k>r.startDaysAgo) continue;
+      const growth=Math.pow(1+r.trend,tIdx);
+      let wk=isWknd? r.weekend : 1;
+      let dayCost=jitter(r.base,0.14)*growth*wk;
+      // Cloud Run step-up over the last 8 days → reproduces the +211% WoW jump you saw
+      if(r.runRamp && k<=8) dayCost*=1.9;
+      const lab=LABELS[r.project]||{env:'prod',team:'other'};
+      for(const [sku,w,unit] of r.skus){
+        let c=dayCost*w;
+        // usage amount roughly proportional to cost, unit-specific scale
+        const usage = c * ({'TiB':0.28,'GiB':1.9,'GiB-mo':1.3,'GiB-h':2.1,'vCPU-h':0.5,'vCPU-s':320,'GiB-s':280,'req':4200,'calls':5200,'node-h':0.4,'min':30,'ops':900,'h':1,'job-mo':1}[unit]||1);
+        // Cloud Run sustained/committed-use discount ≈ 11% (your ₹492.78 "Other savings")
+        let credit=0;
+        if(r.svc==='Cloud Run') credit=-c*0.11;
+        if(r.svc==='Cloud Storage' && /Class B/.test(sku)) credit=-c*0.3;
+        items.push({
+          date:dk, project:r.project, service:r.svc, sku, region:r.region,
+          resource:r.name, resourceId:r.id, cost:+c.toFixed(4), credit:+credit.toFixed(4),
+          usage:+usage.toFixed(2), usageUnit:unit,
+          category:svcCategory(r.svc), env:lab.env, team:lab.team
+        });
+      }
+    }
+  }
+  // ── Calibrate month-to-date NET cost per service to Lucira's real GCP billing
+  //    screenshot, so the dashboard's headline numbers MATCH GCP out of the box.
+  //    (Edit these if your bill changes, or just use "Load billing CSV" for live.)
+  const MONTH_TARGET = {
+    'BigQuery':4457.42, 'Cloud Run':4040.95, 'Artifact Registry':110.00, 'Vertex AI':64.83,
+    'Cloud Scheduler':38.67, 'BigQuery Reservation API':13.95, 'Cloud Storage':0.84,
+    'Cloud Build':0.10, 'Pub/Sub':0.02
+  };
+  const monStart=ymd(new Date(lastDay.getFullYear(),lastDay.getMonth(),1)), monEnd=ymd(lastDay);
+  const svcNet={};
+  for(const it of items){ if(it.date>=monStart && it.date<=monEnd) svcNet[it.service]=(svcNet[it.service]||0)+it.cost+(it.credit||0); }
+  const scale={}; for(const s in MONTH_TARGET) scale[s]= (svcNet[s]>0)? MONTH_TARGET[s]/svcNet[s] : 0;
+  for(const it of items){ const f=scale[it.service]; if(f!=null){ it.cost=+(it.cost*f).toFixed(4); it.credit=+((it.credit||0)*f).toFixed(4); it.usage=+(it.usage*f).toFixed(2); } }
+
+  return { items, resources:CATALOG.map(r=>({id:r.id,name:r.name,service:r.svc,project:r.project,region:r.region,meta:r.meta})),
+           asOf:ymd(lastDay), monthlyBudget:CONFIG.MONTHLY_BUDGET, budgets:CONFIG.PROJECT_BUDGETS };
+}
+function svcCategory(s){
+  if(['BigQuery','Cloud SQL','Vertex AI','BigQuery Reservation API'].includes(s)) return 'Databases & Analytics';
+  if(['Cloud Run','Cloud Functions','Compute Engine','Cloud Build'].includes(s)) return 'Compute';
+  if(['Cloud Storage','Artifact Registry'].includes(s)) return 'Storage';
+  if(['Networking'].includes(s)) return 'Networking';
+  if(['Pub/Sub','Cloud Scheduler'].includes(s)) return 'Integration';
+  return 'Operations & Security';
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DATA LOAD  (live API · uploaded CSV · or built-in sample)
+   ═══════════════════════════════════════════════════════════════════ */
+async function loadData(){
+  if(STATE.source==='csv') return;   // once a CSV is loaded, keep it (Refresh won't wipe it)
+  if(CONFIG.API_BASE){
+    try{
+      const u=new URL(CONFIG.API_BASE);
+      u.searchParams.set('days',CONFIG.WINDOW_DAYS);
+      const res=await fetch(u,{cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const j=await res.json();
+      ingest(j,'live'); return;
+    }catch(e){
+      console.warn('Live API failed, falling back to sample:',e);
+    }
+  }
+  ingest(generateSample(),'sample');
+}
+function ingest(data,source){
+  STATE.source=source; STATE.live=(source==='live');
+  STATE.items=data.items||[];
+  STATE.resources=data.resources||[];
+  STATE.asOf=data.asOf|| (STATE.items.length? STATE.items.map(i=>i.date).sort().slice(-1)[0]:ymd(new Date()));
+  STATE.monthlyBudget=data.monthlyBudget||CONFIG.MONTHLY_BUDGET;
+  STATE.budgets=data.budgets||CONFIG.PROJECT_BUDGETS;
+  STATE.now=parseYmd(STATE.asOf);  // anchor "today" to last complete billing day
+  STATE.days=[...new Set(STATE.items.map(i=>i.date))].sort();
+  STATE.recs=buildRecommendations();
+  const dot=document.getElementById('srcDot'), lab=document.getElementById('srcLabel');
+  if(source==='live'){ dot.className='dot'; lab.textContent='Live · billing export · as of '+STATE.asOf; }
+  else if(source==='csv'){ dot.className='dot'; lab.textContent='Your data (CSV) · as of '+STATE.asOf + (data._note? ' · '+data._note : ''); }
+  else{ dot.className='dot demo'; lab.textContent='Sample data · as of '+STATE.asOf; }
+  const banner=document.getElementById('sampleBanner');
+  if(banner) banner.classList.toggle('hidden', source!=='sample');
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CSV IMPORT — parse a GCP Billing "Download CSV" export.
+   Handles the Reports cost-breakdown CSV (Service / Usage cost / savings /
+   Subtotal) AND the detailed Cost-table CSV (date / project / service / SKU /
+   cost / credits). No BigQuery or API access needed — just Billing viewer.
+   ───────────────────────────────────────────────────────────── */
+function parseCsvText(text){
+  const rows=[]; let field='', row=[], inQ=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inQ){
+      if(ch==='"'){ if(text[i+1]==='"'){field+='"';i++;} else inQ=false; }
+      else field+=ch;
+    }else{
+      if(ch==='"') inQ=true;
+      else if(ch===',') { row.push(field); field=''; }
+      else if(ch==='\r'){}
+      else if(ch==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else field+=ch;
+    }
+  }
+  if(field.length||row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r=>r.length && !(r.length===1 && r[0].trim()===''));
+}
+function csvNum(s){
+  if(s==null) return 0; let t=String(s).trim();
+  if(t===''||t==='—'||t==='-'||t==='–'||t==='N/A') return 0;
+  let neg=false; if(/^\(.*\)$/.test(t)){ neg=true; t=t.slice(1,-1); }
+  t=t.replace(/[₹$€£,]/g,'').replace(/\s+/g,'');
+  const v=parseFloat(t); if(isNaN(v)) return 0; return neg?-v:v;
+}
+function csvDate(s){
+  if(s==null) return null; let t=String(s).trim(); if(!t) return null;
+  if(/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0,10);
+  if(/^\d{4}-\d{2}$/.test(t)) return t+'-01';
+  if(/^\d{8}$/.test(t)) return t.slice(0,4)+'-'+t.slice(4,6)+'-'+t.slice(6,8);
+  if(/^\d{6}$/.test(t)) return t.slice(0,4)+'-'+t.slice(4,6)+'-01';   // invoice.month YYYYMM
+  let m=t.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);        // DD/MM/YYYY (India default)
+  if(m){ let dd=+m[1],mm=+m[2],yy=+m[3]; if(yy<100)yy+=2000; if(mm>12){const x=dd;dd=mm;mm=x;}
+    return `${yy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`; }
+  const d=new Date(t); if(!isNaN(d)) return ymd(d);                    // "Jul 14, 2026"
+  return null;
+}
+function shortServiceJs(desc){
+  if(!desc) return 'Other'; const d=desc.toLowerCase();
+  if(d.includes('reservation')) return 'BigQuery Reservation API';
+  if(d.includes('bigquery')) return 'BigQuery';
+  if(d.includes('cloud run')) return 'Cloud Run';
+  if(d.includes('vertex')) return 'Vertex AI';
+  if(d.includes('cloud functions')) return 'Cloud Functions';
+  if(d.includes('cloud storage')) return 'Cloud Storage';
+  if(d.includes('compute engine')) return 'Compute Engine';
+  if(d.includes('cloud sql')) return 'Cloud SQL';
+  if(d.includes('artifact registry')) return 'Artifact Registry';
+  if(d.includes('cloud build')) return 'Cloud Build';
+  if(d.includes('scheduler')) return 'Cloud Scheduler';
+  if(d.includes('pub/sub')||d.includes('pubsub')) return 'Pub/Sub';
+  if(d.includes('logging')) return 'Cloud Logging';
+  if(d.includes('monitoring')) return 'Cloud Monitoring';
+  if(d.includes('secret manager')) return 'Secret Manager';
+  if(d.includes('network')||d.includes('load balanc')) return 'Networking';
+  return desc.trim();
+}
+function findCol(headers, patterns){
+  for(let i=0;i<headers.length;i++){ const h=headers[i].toLowerCase().trim();
+    for(const p of patterns){ if(p.test(h)) return i; } }
+  return -1;
+}
+function parseBillingCsv(text){
+  const rows=parseCsvText(text);
+  if(rows.length<2) throw new Error('CSV has no data rows.');
+  const headers=rows[0].map(h=>h.trim());
+  const svcCol   = findCol(headers,[/service description/,/^service$/,/service/]);
+  const dateCol  = findCol(headers,[/usage.?start/,/^date$/,/^day$/,/^usage date$/,/invoice.?month/,/^month$/]);
+  const projCol  = findCol(headers,[/project.?id/,/project.?name/,/^project$/]);
+  const skuCol   = findCol(headers,[/sku description/,/^sku$/,/sku/]);
+  const regCol   = findCol(headers,[/region/,/^location$/,/location.?region/]);
+  const usageCostCol = findCol(headers,[/usage cost/,/^cost \(/,/^cost$/,/^unrounded cost$/]);
+  const subtotalCol  = findCol(headers,[/subtotal/,/^cost$/,/^total$/,/^amount$/,/net cost/]);
+  const creditCols = headers.map((h,i)=>({h:h.toLowerCase(),i})).filter(x=>/saving|credit|discount|promotion/.test(x.h)).map(x=>x.i);
+
+  const items=[]; let maxDate=null; let note='';
+  if(svcCol<0){
+    // wide/pivot fallback: first col is date, remaining numeric columns are services
+    if(dateCol<0 && headers.length>=2){
+      // assume col0 is date-like
+    }
+    const dc = dateCol>=0?dateCol:0;
+    for(let r=1;r<rows.length;r++){
+      const dk=csvDate(rows[r][dc]); if(!dk) continue;
+      for(let c=0;c<headers.length;c++){ if(c===dc) continue;
+        const cost=csvNum(rows[r][c]); if(!cost) continue;
+        const svc=shortServiceJs(headers[c]);
+        items.push({date:dk,project:'(all)',service:svc,sku:svc,region:'all',resource:svc,resourceId:svc,
+          cost:+cost.toFixed(4),credit:0,usage:0,usageUnit:'',category:svcCategory(svc),env:'',team:''});
+        if(!maxDate||dk>maxDate) maxDate=dk;
+      }
+    }
+    if(!items.length) throw new Error('Could not find a Service column or a date×service pivot in this CSV.');
+    note='pivot format';
+  }else{
+    const costCol = usageCostCol>=0?usageCostCol:(subtotalCol>=0?subtotalCol:findCol(headers,[/./]));
+    const useCredits = usageCostCol>=0 && creditCols.length>0;   // else cost already = net subtotal
+    for(let r=1;r<rows.length;r++){
+      const row=rows[r]; if(!row[svcCol]||/^total/i.test(row[svcCol].trim())) continue;
+      const svc=shortServiceJs(row[svcCol]);
+      const cost=csvNum(row[costCol]);
+      let credit=0; if(useCredits) creditCols.forEach(ci=>{ credit+=csvNum(row[ci]); });
+      if(credit>0) credit=-credit;   // savings should reduce net
+      const dk = dateCol>=0? csvDate(row[dateCol]) : null;
+      if(!cost && !credit) continue;
+      const date=dk|| ymd(addDays(new Date(new Date().setHours(0,0,0,0)),-1)); // no date → assign to yesterday
+      const proj=projCol>=0? (row[projCol]||'(unknown)') : '(unknown)';
+      const sku =skuCol>=0? (row[skuCol]||svc) : svc;
+      const reg =regCol>=0? (row[regCol]||'all') : 'all';
+      items.push({date,project:proj,service:svc,sku,region:reg,resource:(skuCol>=0?svc:svc),
+        resourceId:svc+':'+(skuCol>=0?sku:svc),cost:+cost.toFixed(4),credit:+credit.toFixed(4),
+        usage:0,usageUnit:'',category:svcCategory(svc),env:'',team:''});
+      if(dk && (!maxDate||dk>maxDate)) maxDate=dk;
+    }
+    if(!items.length) throw new Error('No cost rows parsed. Check the CSV has a Service and a cost/subtotal column.');
+    if(dateCol<0) note='no date column — trend needs a daily export';
+  }
+  const asOf = maxDate || ymd(addDays(new Date(new Date().setHours(0,0,0,0)),-1));
+  return { items, resources:[], asOf, monthlyBudget:CONFIG.MONTHLY_BUDGET, budgets:CONFIG.PROJECT_BUDGETS, _note:note };
+}
+function handleCsvFile(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=parseBillingCsv(String(reader.result));
+      const totalRows=data.items.length;
+      const dated=new Set(data.items.map(i=>i.date)).size;
+      ingest(data,'csv');
+      buildFilters(); render();
+      alert(`Loaded ${totalRows} rows across ${dated} day(s).\nTotal net: ${money2(sumCost(data.items))}.` +
+        (data._note?`\n\nNote: ${data._note}.`:''));
+    }catch(e){
+      alert('Could not read that CSV.\n\n'+e.message+'\n\nTip: in GCP Billing → Reports, set Group by = Service (and Day for trends), then click Download CSV. Or Billing → Cost table → Download CSV.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FILTERING + AGGREGATION
+   ═══════════════════════════════════════════════════════════════════ */
+function rangeBounds(){
+  const n=STATE.now, r=STATE.filters.range;
+  if(r==='all') return [null,null];
+  if(r==='today') return [ymd(n),ymd(n)];
+  if(r==='yesterday'){ const y=ymd(addDays(n,-1)); return [y,y]; }
+  if(r==='7') return [ymd(addDays(n,-6)),ymd(n)];
+  if(r==='30') return [ymd(addDays(n,-29)),ymd(n)];
+  if(r==='90') return [ymd(addDays(n,-89)),ymd(n)];
+  if(r==='mtd') return [ymd(new Date(n.getFullYear(),n.getMonth(),1)),ymd(n)];
+  if(r==='prevm'){ const s=new Date(n.getFullYear(),n.getMonth()-1,1), e=new Date(n.getFullYear(),n.getMonth(),0); return [ymd(s),ymd(e)]; }
+  return [null,null];
+}
+function passes(it,ignore){
+  ignore=ignore||{};
+  const f=STATE.filters;
+  if(!ignore.date){ const [s,e]=rangeBounds(); if(s && it.date<s) return false; if(e && it.date>e) return false; }
+  if(!ignore.project && f.project && it.project!==f.project) return false;
+  if(!ignore.service && f.service && it.service!==f.service) return false;
+  if(!ignore.sku && f.sku && it.sku!==f.sku) return false;
+  if(!ignore.region && f.region && it.region!==f.region) return false;
+  if(!ignore.resource && f.resource && it.resource!==f.resource) return false;
+  if(!ignore.category && f.category && it.category!==f.category) return false;
+  if(!ignore.label && f.label){ const [k,v]=f.label.split('='); if((it[k]||'')!==v) return false; }
+  return true;
+}
+/* net cost of a line item = cost + credit (credit is negative) */
+function net(it){ return it.cost + (it.credit||0); }
+function fItems(ignore){ return STATE.items.filter(i=>passes(i,ignore)); }
+
+function sumCost(items){ let s=0; for(const it of items) s+=net(it); return s; }
+function grossCost(items){ let s=0; for(const it of items) s+=it.cost; return s; }
+function creditTotal(items){ let s=0; for(const it of items) s+=(it.credit||0); return s; }
+
+function groupSum(items, keyFn, topN){
+  const m=new Map();
+  for(const it of items){ const k=keyFn(it)||'Other'; m.set(k,(m.get(k)||0)+net(it)); }
+  let rows=[...m.entries()].map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value);
+  if(topN && rows.length>topN){
+    const head=rows.slice(0,topN-1);
+    const other=rows.slice(topN-1).reduce((s,r)=>s+r.value,0);
+    if(other>0) head.push({label:'Other',value:other,_other:true});
+    rows=head;
+  }
+  return rows;
+}
+/* daily net-cost series over a [s,e] window (fills gaps with 0) */
+function dailySeries(items, s, e){
+  const m=new Map();
+  for(const it of items) m.set(it.date,(m.get(it.date)||0)+net(it));
+  const out=[]; let cur=parseYmd(s), end=parseYmd(e);
+  while(cur<=end){ const k=ymd(cur); out.push({label:k, value:m.get(k)||0}); cur=addDays(cur,1); }
+  return out;
+}
+function movingAvg(rows, win){
+  return rows.map((r,i)=>{ const a=Math.max(0,i-win+1); const slice=rows.slice(a,i+1); const v=slice.reduce((s,x)=>s+x.value,0)/slice.length; return {label:r.label,value:v}; });
+}
+/* linear regression forecast on a value series → slope/intercept */
+function linReg(vals){
+  const n=vals.length; if(n<2) return {m:0,b:vals[0]||0};
+  let sx=0,sy=0,sxx=0,sxy=0;
+  vals.forEach((y,x)=>{ sx+=x; sy+=y; sxx+=x*x; sxy+=x*y; });
+  const denom=(n*sxx-sx*sx)||1; const m=(n*sxy-sx*sy)/denom; const b=(sy-m*sx)/n;
+  return {m,b};
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MONTH / FORECAST MATH  (uses full item set, not filtered range)
+   ═══════════════════════════════════════════════════════════════════ */
+function monthWindow(){ const n=STATE.now; return [ymd(new Date(n.getFullYear(),n.getMonth(),1)), ymd(n)]; }
+function costForDay(dk, extra){ let s=0; for(const it of STATE.items){ if(it.date!==dk) continue; if(extra && !extra(it)) continue; s+=net(it); } return s; }
+function costForRange(s,e,extra){ let sum=0; for(const it of STATE.items){ if(it.date<s||it.date>e) continue; if(extra&&!extra(it)) continue; sum+=net(it); } return sum; }
+function mtd(extra){ const [s,e]=monthWindow(); return costForRange(s,e,extra); }
+function forecastMonth(extra){
+  const n=STATE.now; const dim=daysInMonth(n); const dayOfMonth=n.getDate();
+  const [s,e]=monthWindow(); const mtdCost=costForRange(s,e,extra);
+  // run-rate forecast: MTD average × days-in-month
+  const runRate = (mtdCost/dayOfMonth)*dim;
+  // regression forecast on last 21 days projected to remaining days
+  const hist=[]; for(let k=20;k>=0;k--){ const dk=ymd(addDays(n,-k)); hist.push(costForDay(dk,extra)); }
+  const {m,b}=linReg(hist); const lastX=hist.length-1;
+  let projRemainder=0; for(let dd=dayOfMonth+1; dd<=dim; dd++){ const x=lastX+(dd-dayOfMonth); projRemainder+=Math.max(0,m*x+b); }
+  const regForecast=mtdCost+projRemainder;
+  return { mtd:mtdCost, runRate, regForecast, blended:(runRate+regForecast)/2, dim, dayOfMonth, slope:m };
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SVG CHART PRIMITIVES
+   ═══════════════════════════════════════════════════════════════════ */
+const tip=document.getElementById('tip');
+function showTip(html,x,y){ tip.innerHTML=html; tip.style.display='block';
+  const r=tip.getBoundingClientRect(); let nx=x+14, ny=y+14;
+  if(nx+r.width>innerWidth) nx=x-r.width-14; if(ny+r.height>innerHeight) ny=y-r.height-14;
+  tip.style.left=nx+'px'; tip.style.top=ny+'px'; }
+function hideTip(){ tip.style.display='none'; }
+const SVGNS='http://www.w3.org/2000/svg';
+function svgEl(t,a){ const e=document.createElementNS(SVGNS,t); for(const k in a) e.setAttribute(k,a[k]); return e; }
+function svgText(x,y,s,attrs){ const t=svgEl('text',Object.assign({x,y},attrs||{})); t.textContent=s; return t; }
+function niceMax(v){ if(v<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(v))); const n=v/p; const step=n<=1?1:n<=2?2:n<=5?5:10; return step*p; }
+
+/* horizontal bar — categorical cost breakdowns */
+function hbar(container, rows, opts={}){
+  container.innerHTML='';
+  if(!rows.length){ container.innerHTML='<div class="empty">No data for current filters</div>'; return; }
+  const total=opts.total!=null?opts.total:rows.reduce((s,r)=>s+r.value,0);
+  const max=Math.max(...rows.map(r=>Math.abs(r.value)),1);
+  const rowH=30, padL=8, padR=92, labelW=opts.labelW||140, w=container.clientWidth||620;
+  const barX=labelW+padL, barW=Math.max(60,w-barX-padR), h=rows.length*rowH+6;
+  const svg=svgEl('svg',{class:'chart',viewBox:`0 0 ${w} ${h}`,height:h});
+  rows.forEach((r,i)=>{
+    const y=i*rowH+3, bw=Math.max(2,(Math.abs(r.value)/max)*barW);
+    const color=opts.color? opts.color(r,i): (opts.mono||PAL[0]);
+    const lab=svgText(labelW,y+rowH/2+4, r.label.length>20? r.label.slice(0,19)+'…':r.label, {'text-anchor':'end',fill:C_INK2,'font-size':12});
+    svg.appendChild(lab);
+    svg.appendChild(svgEl('rect',{x:barX,y:y+6,width:barW,height:rowH-14,rx:5,fill:C_TRACK}));
+    const bar=svgEl('rect',{x:barX,y:y+6,width:bw,height:rowH-14,rx:5,fill:color,style:'cursor:pointer'});
+    bar.addEventListener('mousemove',ev=>showTip(`<b>${r.label}</b><br><span class="tk">${opts.unit||'Cost'}:</span> ${money2(r.value)}${total?` <span class="tk">(${fmtPct(r.value,total)})</span>`:''}`,ev.clientX,ev.clientY));
+    bar.addEventListener('mouseleave',hideTip);
+    if(opts.onClick){ bar.addEventListener('click',()=>{hideTip();opts.onClick(r);}); }
+    svg.appendChild(bar);
+    const vt=svgText(barX+bw+7,y+rowH/2+4, (opts.valFmt?opts.valFmt(r.value):money(r.value)), {fill:C_INK,'font-size':11.5,'font-weight':700}); vt.classList.add('tnum');
+    svg.appendChild(vt);
+  });
+  container.appendChild(svg);
+}
+
+/* multi-series line/area (actual + moving avg + forecast) with crosshair */
+function multiLine(container, series, opts={}){
+  container.innerHTML='';
+  const base=series[0]?series[0].rows:[];
+  if(base.length<2){ container.innerHTML='<div class="empty">Not enough data for a trend</div>'; return; }
+  const w=container.clientWidth||640, h=opts.h||230, padB=26, padT=14, padL=48, padR=12;
+  const allVals=series.flatMap(s=>s.rows.map(r=>r.value));
+  const max=niceMax(Math.max(...allVals,1));
+  const X=i=>padL+(i/(base.length-1))*(w-padL-padR);
+  const Y=v=>padT+(1-v/max)*(h-padB-padT);
+  const svg=svgEl('svg',{class:'chart',viewBox:`0 0 ${w} ${h}`,height:h});
+  [0,.25,.5,.75,1].forEach(g=>{ const y=padT+(1-g)*(h-padB-padT);
+    svg.appendChild(svgEl('line',{x1:padL,y1:y,x2:w-padR,y2:y,stroke:C_GRID,'stroke-width':1}));
+    const t=svgText(2,y+4,money(max*g,{k:1}),{fill:C_MUTED,'font-size':9.5}); t.classList.add('tnum'); svg.appendChild(t);
+  });
+  // forecast band shading if provided
+  if(opts.forecastFrom!=null){
+    const fx=X(opts.forecastFrom);
+    svg.appendChild(svgEl('rect',{x:fx,y:padT,width:(w-padR)-fx,height:h-padB-padT,fill:'#ffffff','fill-opacity':0.03}));
+    svg.appendChild(svgText(fx+4,padT+11,'forecast',{fill:C_MUTED,'font-size':9.5}));
+  }
+  series.forEach(s=>{
+    let d='';
+    s.rows.forEach((r,i)=>{ d+=(i?'L':'M')+X(i)+' '+Y(r.value)+' '; });
+    if(s.area){ const a=d+`L${X(s.rows.length-1)} ${h-padB} L${X(0)} ${h-padB} Z`; svg.appendChild(svgEl('path',{d:a,fill:s.color,'fill-opacity':.10})); }
+    svg.appendChild(svgEl('path',{d,fill:'none',stroke:s.color,'stroke-width':s.width||2,'stroke-dasharray':s.dash||'','stroke-linejoin':'round'}));
+  });
+  const step=Math.ceil(base.length/8);
+  base.forEach((r,i)=>{ if(i%step===0||i===base.length-1){ svg.appendChild(svgText(X(i),h-8,r.label.slice(5),{'text-anchor':'middle',fill:C_MUTED,'font-size':9.5})); } });
+  const cross=svgEl('line',{y1:padT,y2:h-padB,stroke:C_MUTED,'stroke-width':1,'stroke-dasharray':'3 3',opacity:0});
+  svg.appendChild(cross);
+  const marks=series.map(s=>{ const m=svgEl('circle',{r:3.5,fill:s.color,stroke:C_SURF,'stroke-width':2,opacity:0}); svg.appendChild(m); return m; });
+  const hit=svgEl('rect',{x:padL,y:padT,width:w-padL-padR,height:h-padB-padT,fill:'transparent',style:'cursor:crosshair'});
+  hit.addEventListener('mousemove',ev=>{
+    const rect=svg.getBoundingClientRect(); const rel=(ev.clientX-rect.left)/rect.width*w;
+    let i=Math.round((rel-padL)/(w-padL-padR)*(base.length-1)); i=Math.max(0,Math.min(base.length-1,i));
+    const x=X(i); cross.setAttribute('x1',x);cross.setAttribute('x2',x);cross.setAttribute('opacity',1);
+    let html=`<b>${base[i].label}</b>`;
+    series.forEach((s,si)=>{ const v=s.rows[i]?s.rows[i].value:null; if(v==null){marks[si].setAttribute('opacity',0);return;}
+      marks[si].setAttribute('cx',x);marks[si].setAttribute('cy',Y(v));marks[si].setAttribute('opacity',1);
+      html+=`<br><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${s.color}"></span> <span class="tk">${s.label}:</span> ${money2(v)}`; });
+    showTip(html,ev.clientX,ev.clientY);
+  });
+  hit.addEventListener('mouseleave',()=>{hideTip();cross.setAttribute('opacity',0);marks.forEach(m=>m.setAttribute('opacity',0));});
+  svg.appendChild(hit);
+  container.appendChild(svg);
+  if(opts.legend!==false && series.length>1){
+    const leg=el('div','legend');
+    series.forEach(s=>{ const li=el('div','li'); li.innerHTML=`<span class="sw" style="background:${s.color};${s.dash?'opacity:.7':''}"></span>${s.label}`; leg.appendChild(li); });
+    container.appendChild(leg);
+  }
+}
+
+/* stacked area — daily cost split by category series */
+function stackedArea(container, dates, seriesList, opts={}){
+  container.innerHTML='';
+  if(dates.length<2){ container.innerHTML='<div class="empty">Not enough data</div>'; return; }
+  const w=container.clientWidth||640, h=opts.h||250, padB=26, padT=14, padL=48, padR=12;
+  const totals=dates.map((_,i)=> seriesList.reduce((s,ser)=>s+(ser.vals[i]||0),0));
+  const max=niceMax(Math.max(...totals,1));
+  const X=i=>padL+(i/(dates.length-1))*(w-padL-padR);
+  const Y=v=>padT+(1-v/max)*(h-padB-padT);
+  const svg=svgEl('svg',{class:'chart',viewBox:`0 0 ${w} ${h}`,height:h});
+  [0,.25,.5,.75,1].forEach(g=>{ const y=padT+(1-g)*(h-padB-padT);
+    svg.appendChild(svgEl('line',{x1:padL,y1:y,x2:w-padR,y2:y,stroke:C_GRID,'stroke-width':1}));
+    const t=svgText(2,y+4,money(max*g,{k:1}),{fill:C_MUTED,'font-size':9.5}); t.classList.add('tnum'); svg.appendChild(t);
+  });
+  const cum=dates.map(()=>0);
+  seriesList.forEach(ser=>{
+    let top='', bot='';
+    dates.forEach((_,i)=>{ const y0=cum[i]; const y1=y0+(ser.vals[i]||0); top+=(i?'L':'M')+X(i)+' '+Y(y1)+' '; });
+    for(let i=dates.length-1;i>=0;i--){ bot+='L'+X(i)+' '+Y(cum[i])+' '; }
+    const path=svgEl('path',{d:top+bot+'Z',fill:ser.color,'fill-opacity':.82,stroke:ser.color,'stroke-width':.5,style:'cursor:pointer'});
+    path.addEventListener('mousemove',ev=>{
+      const rect=svg.getBoundingClientRect(); const rel=(ev.clientX-rect.left)/rect.width*w;
+      let i=Math.round((rel-padL)/(w-padL-padR)*(dates.length-1)); i=Math.max(0,Math.min(dates.length-1,i));
+      showTip(`<b>${dates[i]}</b><br><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${ser.color}"></span> <span class="tk">${ser.label}:</span> ${money2(ser.vals[i]||0)}<br><span class="tk">Day total:</span> ${money2(totals[i])}`,ev.clientX,ev.clientY);
+    });
+    path.addEventListener('mouseleave',hideTip);
+    svg.appendChild(path);
+    dates.forEach((_,i)=>{ cum[i]+=(ser.vals[i]||0); });
+  });
+  const step=Math.ceil(dates.length/8);
+  dates.forEach((dt,i)=>{ if(i%step===0||i===dates.length-1){ svg.appendChild(svgText(X(i),h-8,dt.slice(5),{'text-anchor':'middle',fill:C_MUTED,'font-size':9.5})); } });
+  container.appendChild(svg);
+  const leg=el('div','legend');
+  seriesList.forEach(s=>{ const li=el('div','li'); li.innerHTML=`<span class="sw" style="background:${s.color}"></span>${s.label}`; leg.appendChild(li); });
+  container.appendChild(leg);
+}
+
+/* donut with legend + center total (money) */
+function donut(container, rows, opts={}){
+  container.innerHTML='';
+  const total=rows.reduce((s,r)=>s+Math.max(0,r.value),0);
+  if(!total){ container.innerHTML='<div class="empty">No data</div>'; return; }
+  const size=opts.size||196, cx=size/2, cy=size/2, R=size/2-6, r=R*0.62;
+  const wrap=document.createElement('div'); wrap.style.display='flex'; wrap.style.gap='18px'; wrap.style.alignItems='center'; wrap.style.flexWrap='wrap';
+  const svg=svgEl('svg',{class:'chart',viewBox:`0 0 ${size} ${size}`,width:size,height:size,style:'flex:0 0 auto'});
+  let a0=-Math.PI/2;
+  rows.forEach((row,i)=>{
+    const val=Math.max(0,row.value); const frac=val/total, a1=a0+frac*2*Math.PI; const large=frac>0.5?1:0;
+    const p=(ang,rad)=>[cx+rad*Math.cos(ang),cy+rad*Math.sin(ang)];
+    const [x0,y0]=p(a0,R),[x1,y1]=p(a1,R),[x2,y2]=p(a1,r),[x3,y3]=p(a0,r);
+    const col=opts.color? opts.color(row,i):PAL[i%PAL.length];
+    const path=svgEl('path',{d:`M${x0} ${y0} A${R} ${R} 0 ${large} 1 ${x1} ${y1} L${x2} ${y2} A${r} ${r} 0 ${large} 0 ${x3} ${y3} Z`,fill:col,stroke:C_SURF,'stroke-width':2,style:'cursor:pointer'});
+    path.addEventListener('mousemove',ev=>showTip(`<b>${row.label}</b><br><span class="tk">Cost:</span> ${money2(row.value)} <span class="tk">(${(frac*100).toFixed(1)}%)</span>`,ev.clientX,ev.clientY));
+    path.addEventListener('mouseleave',hideTip);
+    if(opts.onClick) path.addEventListener('click',()=>{hideTip();opts.onClick(row);});
+    svg.appendChild(path); a0=a1;
+  });
+  svg.appendChild(svgText(cx,cy-2,money(opts.centerVal!=null?opts.centerVal:total,{k:1}),{'text-anchor':'middle',fill:C_INK,'font-size':19,'font-weight':750}));
+  svg.appendChild(svgText(cx,cy+15,opts.centerLabel||'Total',{'text-anchor':'middle',fill:C_MUTED,'font-size':10.5}));
+  wrap.appendChild(svg);
+  const leg=el('div','legend'); leg.style.flexDirection='column'; leg.style.gap='7px';
+  rows.forEach((row,i)=>{ const col=opts.color?opts.color(row,i):PAL[i%PAL.length];
+    const li=el('div','li');
+    li.innerHTML=`<span class="sw" style="background:${col}"></span><span>${row.label}</span> <b class="tnum" style="color:var(--ink);margin-left:4px">${money(row.value)}</b> <span class="tk" style="color:var(--muted)">${(Math.max(0,row.value)/total*100).toFixed(0)}%</span>`;
+    if(opts.onClick){ li.style.cursor='pointer'; li.onclick=()=>opts.onClick(row); }
+    leg.appendChild(li);
+  });
+  wrap.appendChild(leg); container.appendChild(wrap);
+}
+
+/* treemap (slice-and-dice) — cost by service→sku */
+function treemap(container, rows, opts={}){
+  container.innerHTML='';
+  const total=rows.reduce((s,r)=>s+Math.max(0,r.value),0);
+  if(!total){ container.innerHTML='<div class="empty">No data</div>'; return; }
+  const w=container.clientWidth||640, h=opts.h||300;
+  const svg=svgEl('svg',{class:'chart',viewBox:`0 0 ${w} ${h}`,height:h});
+  // simple squarify by rows into shelves
+  const sorted=[...rows].sort((a,b)=>b.value-a.value);
+  let x=0,y=0,rowH=0, remaining=[...sorted]; const area=w*h;
+  // shelf layout: fill rows left→right, wrap when width exceeded proportionally
+  let idx=0;
+  while(idx<sorted.length){
+    // take a shelf whose combined area ~ a horizontal band
+    const bandFrac=Math.min(1, Math.max(0.16, Math.sqrt((sorted[idx].value/total))));
+    const bandH=Math.max(28, bandFrac*h*0.5);
+    let shelf=[], shelfVal=0; const targetVal=(bandH/h)*total;
+    while(idx<sorted.length && shelfVal< targetVal*0.9){ shelf.push(sorted[idx]); shelfVal+=sorted[idx].value; idx++; }
+    if(!shelf.length){ shelf.push(sorted[idx]); shelfVal+=sorted[idx].value; idx++; }
+    let sx=0; const useH=Math.min(bandH, h-y);
+    shelf.forEach((r)=>{ const rw=(r.value/shelfVal)*w; drawCell(svg,sx,y,Math.max(1,rw-2),Math.max(1,useH-2),r,total,opts.color); sx+=rw; });
+    y+=useH; if(y>=h-4) break;
+  }
+  container.appendChild(svg);
+}
+function drawCell(svg,x,y,w,h,r,total,colorFn){
+  const col=colorFn? colorFn(r): svcColor(r.label);
+  const g=svgEl('g',{style:'cursor:pointer'});
+  g.appendChild(svgEl('rect',{x,y,width:w,height:h,rx:4,fill:col,'fill-opacity':.85,stroke:C_SURF,'stroke-width':2}));
+  if(w>54 && h>26){
+    g.appendChild(svgText(x+7,y+17,r.label.length>Math.floor(w/8)?r.label.slice(0,Math.floor(w/8))+'…':r.label,{fill:'#fff','font-size':11.5,'font-weight':700}));
+    g.appendChild(svgText(x+7,y+31,money(r.value),{fill:'rgba(255,255,255,.85)','font-size':10.5}));
+  }
+  g.addEventListener('mousemove',ev=>showTip(`<b>${r.label}</b><br><span class="tk">Cost:</span> ${money2(r.value)} <span class="tk">(${fmtPct(r.value,total)})</span>`,ev.clientX,ev.clientY));
+  g.addEventListener('mouseleave',hideTip);
+  if(r._onClick) g.addEventListener('click',()=>{hideTip();r._onClick(r);});
+  svg.appendChild(g);
+}
+
+/* heatmap — services (rows) × recent days (cols), intensity = daily cost */
+function heatmap(container, rowLabels, dates, matrix, opts={}){
+  container.innerHTML='';
+  if(!rowLabels.length){ container.innerHTML='<div class="empty">No data</div>'; return; }
+  const w=container.clientWidth||680, labW=132, cell=Math.max(9, Math.min(22,(w-labW-8)/dates.length));
+  const h=rowLabels.length*(cell+4)+30;
+  const svg=svgEl('svg',{class:'chart',viewBox:`0 0 ${w} ${h}`,height:h});
+  let max=0; matrix.forEach(r=>r.forEach(v=>{ if(v>max)max=v; }));
+  max=max||1;
+  rowLabels.forEach((rl,ri)=>{
+    const y=ri*(cell+4)+6;
+    svg.appendChild(svgText(labW-6,y+cell/2+4, rl.length>18?rl.slice(0,17)+'…':rl, {'text-anchor':'end',fill:C_INK2,'font-size':11}));
+    dates.forEach((dt,ci)=>{
+      const v=matrix[ri][ci]||0; const t=v/max;
+      const col=heatColor(t);
+      const x=labW+ci*cell;
+      const rect=svgEl('rect',{x,y,width:cell-2,height:cell,rx:2,fill:col,style:'cursor:pointer'});
+      rect.addEventListener('mousemove',ev=>showTip(`<b>${rl}</b><br><span class="tk">${dt}:</span> ${money2(v)}`,ev.clientX,ev.clientY));
+      rect.addEventListener('mouseleave',hideTip);
+      svg.appendChild(rect);
+    });
+  });
+  // sparse date axis
+  const step=Math.ceil(dates.length/8);
+  dates.forEach((dt,ci)=>{ if(ci%step===0||ci===dates.length-1){ svg.appendChild(svgText(labW+ci*cell,h-10,dt.slice(5),{fill:C_MUTED,'font-size':9})); } });
+  container.appendChild(svg);
+}
+function heatColor(t){ // dark→gold→red ramp
+  t=Math.max(0,Math.min(1,t));
+  if(t<0.5){ const u=t/0.5; return lerpHex('#20201d','#d9a441',u); }
+  const u=(t-0.5)/0.5; return lerpHex('#d9a441','#d03b3b',u);
+}
+function lerpHex(a,b,t){ const pa=hx(a),pb=hx(b); const r=Math.round(pa[0]+(pb[0]-pa[0])*t),g=Math.round(pa[1]+(pb[1]-pa[1])*t),bl=Math.round(pa[2]+(pb[2]-pa[2])*t); return `rgb(${r},${g},${bl})`; }
+function hx(h){ h=h.replace('#',''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
+
+/* waterfall — bridge from a start total to an end total via contributions */
+function waterfall(container, startVal, steps, endVal, opts={}){
+  container.innerHTML='';
+  const w=container.clientWidth||640, h=opts.h||260, padB=52, padT=14, padL=48, padR=12;
+  const bars=[{label:opts.startLabel||'Prev',value:startVal,type:'total'}]
+    .concat(steps.map(s=>({label:s.label,value:s.value,type:'delta'})))
+    .concat([{label:opts.endLabel||'Current',value:endVal,type:'total'}]);
+  // running cumulative for delta placement
+  const maxCum=Math.max(startVal,endVal, ...steps.reduce((acc,s)=>{ const last=acc.length?acc[acc.length-1]:startVal; acc.push(last+s.value); return acc; },[]).map(Math.abs), 1);
+  const max=niceMax(maxCum*1.1);
+  const bw=(w-padL-padR)/bars.length, iw=Math.min(46,bw*0.66);
+  const Y=v=>padT+(1-v/max)*(h-padB-padT);
+  const svg=svgEl('svg',{class:'chart',viewBox:`0 0 ${w} ${h}`,height:h});
+  [0,.5,1].forEach(g=>{ const y=padT+(1-g)*(h-padB-padT); svg.appendChild(svgEl('line',{x1:padL,y1:y,x2:w-padR,y2:y,stroke:C_GRID,'stroke-width':1}));
+    svg.appendChild(svgText(2,y+4,money(max*g,{k:1}),{fill:C_MUTED,'font-size':9.5})); });
+  let cum=0;
+  bars.forEach((bar,i)=>{
+    const x=padL+i*bw+(bw-iw)/2; let y0,y1,col;
+    if(bar.type==='total'){ y0=Y(0); y1=Y(bar.value); col=GOLD; cum=bar.value; }
+    else{ const from=cum, to=cum+bar.value; y0=Y(Math.max(from,to)); y1=Y(Math.min(from,to)); col=bar.value>=0?C_CRIT:C_GOOD; cum=to; }
+    const top=Math.min(y0,y1), hh=Math.max(2,Math.abs(y0-y1));
+    const rect=svgEl('rect',{x,y:top,width:iw,height:hh,rx:3,fill:col,style:'cursor:pointer'});
+    rect.addEventListener('mousemove',ev=>showTip(`<b>${bar.label}</b><br><span class="tk">${bar.type==='total'?'Total':'Change'}:</span> ${bar.type==='total'?money2(bar.value):(bar.value>=0?'+':'')+money2(bar.value)}`,ev.clientX,ev.clientY));
+    rect.addEventListener('mouseleave',hideTip);
+    svg.appendChild(rect);
+    svg.appendChild(svgText(x+iw/2,top-4,(bar.type==='delta'&&bar.value>=0?'+':'')+money(bar.value,{k:1}),{'text-anchor':'middle',fill:bar.type==='total'?C_INK:(bar.value>=0?'#f87171':'#4ade80'),'font-size':9.5,'font-weight':700}));
+    // label (rotated-ish, wrapped)
+    const lbl=svgText(x+iw/2,h-padB+14, bar.label.length>10?bar.label.slice(0,9)+'…':bar.label, {'text-anchor':'middle',fill:C_MUTED,'font-size':9.5}); svg.appendChild(lbl);
+  });
+  container.appendChild(svg);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DOM BUILDERS
+   ═══════════════════════════════════════════════════════════════════ */
+function el(tag,cls,html){ const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; }
+function card(title,hint,tools,wide){
+  const c=el('div','card'+(wide?' wide':'')); const head=el('div','head');
+  head.appendChild(el('div',null,`<h3>${title}</h3>${hint?`<div class="hint">${hint}</div>`:''}`));
+  if(tools){ const t=el('div','tools'); tools.forEach(x=>t.appendChild(x)); head.appendChild(t); }
+  c.appendChild(head); const body=el('div'); c.appendChild(body); c._body=body; return c;
+}
+function kpi(lab,val,sub,accent){
+  const k=el('div','kpi');
+  k.innerHTML=`<div class="accent" style="background:${accent||GOLD}"></div><div class="lab">${lab}</div><div class="val tnum">${val}</div>${sub?`<div class="sub">${sub}</div>`:''}`;
+  return k;
+}
+/* cost delta: rising cost is BAD (red up), falling cost is GOOD (green down) */
+function costDelta(cur,prev){
+  if(prev==null||prev===0) return `<span class="delta flat">—</span>`;
+  const d=(cur-prev)/prev*100; const cls=d>0.5?'up':d<-0.5?'down':'flat'; const ar=d>0.5?'▲':d<-0.5?'▼':'▬';
+  return `<span class="delta ${cls}">${ar} ${Math.abs(d).toFixed(1)}%</span>`;
+}
+function miniStat(l,v,d){ return `<div class="mstat"><div class="l">${l}</div><div class="v tnum">${v}</div>${d?`<div class="d">${d}</div>`:''}</div>`; }
+function sectionTitle(t){ const s=el('div','section-title'); s.innerHTML=`${t} <span class="rule"></span>`; return s; }
+function raf(fn){ requestAnimationFrame(()=>requestAnimationFrame(fn)); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   DRILL-DOWN  (Cost → Service → Resource → Daily → billing lines)
+   ═══════════════════════════════════════════════════════════════════ */
+const modalBg=document.getElementById('modalBg');
+document.getElementById('modalX').onclick=()=>modalBg.classList.remove('on');
+modalBg.addEventListener('click',e=>{ if(e.target===modalBg) modalBg.classList.remove('on'); });
+function openModal(title){ document.getElementById('modalTitle').textContent=title; modalBg.classList.add('on'); return document.getElementById('modalBody'); }
+
+/* generic drill: given a predicate + crumb path, show breakdown one level down + billing lines */
+function drill(crumbs, predicate){
+  const items=fItems({}).filter(predicate);
+  const total=sumCost(items);
+  const body=openModal('Cost drill-down');
+  // determine next dimension by what's already pinned
+  const pinned=crumbs.map(c=>c.dim);
+  const order=['service','resource','sku','date'];
+  const next=order.find(d=>!pinned.includes(d));
+  let html=`<div class="breadcrumb">`+crumbs.map((c,i)=>`<span>${c.label}</span>${i<crumbs.length-1?'<span>›</span>':''}`).join('')+`</div>`;
+  html+=`<div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px">
+    ${miniStat('Net cost',money(total))}${miniStat('Gross',money(grossCost(items)))}${miniStat('Credits',money(creditTotal(items)))}${miniStat('Line items',fmt(items.length))}</div>`;
+  if(next){
+    const rows=groupSum(items, it=>next==='date'?it.date:it[next], 14);
+    html+=`<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin:6px 0 8px">By ${next}</div>`;
+    html+=`<table class="tbl"><thead><tr><th>${next}</th><th class="num">Net cost</th><th class="num">Share</th></tr></thead><tbody>`;
+    html+=rows.map(r=>`<tr data-next="${encodeURIComponent(r.label)}"><td class="name">${r.label}</td><td class="num">${money2(r.value)}</td><td class="num">${fmtPct(r.value,total)}</td></tr>`).join('');
+    html+=`</tbody></table>`;
+  }
+  body.innerHTML=html;
+  if(next){
+    body.querySelectorAll('tr[data-next]').forEach(tr=>{
+      tr.style.cursor='pointer';
+      tr.onclick=()=>{ const v=decodeURIComponent(tr.dataset.next);
+        drill(crumbs.concat([{dim:next,label:v}]), it=>predicate(it) && (next==='date'?it.date:it[next])===v); };
+    });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FILTER BAR
+   ═══════════════════════════════════════════════════════════════════ */
+function uniqVals(fn){ return [...new Set(STATE.items.map(fn).filter(Boolean))].sort(); }
+function buildFilters(){
+  const host=document.getElementById('filters'); host.innerHTML='';
+  const labelOpts=[]; ['env','team'].forEach(k=>{ [...new Set(STATE.items.map(i=>i[k]).filter(Boolean))].forEach(v=>labelOpts.push([k+'='+v, k+': '+v])); });
+  const defs=[
+    ['range','Date Range',[['today','Today'],['yesterday','Yesterday'],['7','Last 7 days'],['30','Last 30 days'],['90','Last 90 days'],['mtd','Month to date'],['prevm','Previous month'],['all','All ('+CONFIG.WINDOW_DAYS+'d)']]],
+    ['project','Project',uniqVals(i=>i.project)],
+    ['service','Service',uniqVals(i=>i.service)],
+    ['category','Cost Category',uniqVals(i=>i.category)],
+    ['region','Region',uniqVals(i=>i.region)],
+    ['sku','SKU',uniqVals(i=>i.sku)],
+    ['resource','Resource',uniqVals(i=>i.resource)],
+    ['label','Label',labelOpts],
+  ];
+  defs.forEach(([key,label,opts])=>{
+    const fl=el('div','fl'); fl.appendChild(el('label',null,label));
+    const sel=el('select'); sel.dataset.key=key;
+    if(key!=='range') sel.appendChild(new Option('All',''));
+    opts.forEach(o=>{ if(Array.isArray(o)) sel.appendChild(new Option(o[1],o[0])); else sel.appendChild(new Option(o.length>26?o.slice(0,25)+'…':o,o)); });
+    sel.value=STATE.filters[key];
+    sel.onchange=()=>{ STATE.filters[key]=sel.value; render(); };
+    fl.appendChild(sel); host.appendChild(fl);
+  });
+  host.appendChild(el('div','spacer'));
+  const reset=el('button','btn ghost','↺ Reset'); reset.onclick=()=>{ for(const k in STATE.filters) STATE.filters[k]=(k==='range'?'mtd':''); buildFilters(); render(); };
+  host.appendChild(reset);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RECOMMENDATION ENGINE  — reads resource metadata + cost aggregates
+   Each rec: {title, sev(crit|warn|info), category, priority(high|med|low),
+              monthlySave, detail, action, resourceId}
+   ═══════════════════════════════════════════════════════════════════ */
+function resMonthlyCost(resId){
+  const [s,e]=monthWindow(); const days=Math.max(1,STATE.now.getDate());
+  const c=STATE.items.filter(i=>i.resourceId===resId && i.date>=s && i.date<=e).reduce((a,b)=>a+net(b),0);
+  return (c/days)*daysInMonth(STATE.now); // project MTD to full month
+}
+function buildRecommendations(){
+  const recs=[]; const R=STATE.resources;
+  const add=(o)=>recs.push(o);
+  for(const r of R){
+    const m=r.meta||{}; const mc=resMonthlyCost(r.id);
+    if(m.kind==='run_service'){
+      if(m.idle){ add({title:`Idle Cloud Run: ${r.name}`, sev:'crit', category:'Cloud Run', priority:'high', monthlySave:mc*0.9,
+        detail:`Only ~${fmt(m.reqPerDay)} requests/day but <b>min-instances=${m.minInst}</b> keeps a warm instance billing 24×7.`,
+        action:`gcloud run services update ${r.name} --region ${r.region} --min-instances=0`, resourceId:r.id}); }
+      if(m.overMem){ const save=mc*0.45; add({title:`Over-provisioned memory: ${r.name}`, sev:'warn', category:'Cloud Run', priority:'med', monthlySave:save,
+        detail:`Allocated <b>${m.memMiB}Mi</b> but peak usage ≈ ${m.memUsedMiB}Mi (${Math.round(m.memUsedMiB/m.memMiB*100)}%). Halving memory is safe.`,
+        action:`gcloud run services update ${r.name} --region ${r.region} --memory=512Mi`, resourceId:r.id}); }
+      if(m.overCpu){ const save=mc*0.4; add({title:`Over-provisioned CPU: ${r.name}`, sev:'warn', category:'Cloud Run', priority:'med', monthlySave:save,
+        detail:`${m.cpu} vCPU allocated for a low-traffic service (~${fmt(m.reqPerDay)} req/day). Reduce to 1 vCPU.`,
+        action:`gcloud run services update ${r.name} --region ${r.region} --cpu=1`, resourceId:r.id}); }
+    }
+    if(m.kind==='bucket'){
+      if(m.coldCandidate){ const save=mc*0.55; add({title:`Move cold data to Coldline: ${r.name}`, sev:'warn', category:'Storage', priority:'high', monthlySave:save,
+        detail:`${fmt(m.sizeGB)} GB in <b>Standard</b> class, last accessed ${m.lastAccessDays} days ago. Coldline is ~1/5 the storage price.`,
+        action:`gsutil lifecycle set lifecycle-coldline.json gs://${r.name}   # SetStorageClass→COLDLINE after 30d`, resourceId:r.id}); }
+      if(m.unused){ add({title:`Unused bucket: ${r.name}`, sev:'warn', category:'Storage', priority:'med', monthlySave:mc,
+        detail:`${fmt(m.sizeGB)} GB, no access in ${m.lastAccessDays} days. Verify then delete or archive.`,
+        action:`gsutil -m rm -r gs://${r.name}   # after confirming it is truly unused`, resourceId:r.id}); }
+      if(m.hot && m.class==='Standard' && m.growthPctMo>=5){ add({title:`Lifecycle policy: ${r.name}`, sev:'info', category:'Storage', priority:'low', monthlySave:mc*0.12,
+        detail:`Hot bucket growing ${m.growthPctMo}%/mo. Add a lifecycle rule to auto-tier objects older than 90 days to Nearline.`,
+        action:`gsutil lifecycle set lifecycle-nearline.json gs://${r.name}`, resourceId:r.id}); }
+    }
+    if(m.kind==='vm' && m.idle){ add({title:`Idle VM: ${r.name}`, sev:'crit', category:'Compute', priority:'high', monthlySave:mc*0.85,
+      detail:`${m.machine} at <b>${m.cpuUtil}% CPU</b>. Stop when not batching, or rightsize to n2-standard-2.`,
+      action:`gcloud compute instances stop ${r.name} --zone ${r.region}-a   # or resize machine type`, resourceId:r.id}); }
+    if(m.kind==='disk' && m.orphan){ add({title:`Orphaned disk: ${r.name}`, sev:'warn', category:'Compute', priority:'med', monthlySave:mc,
+      detail:`${fmt(m.sizeGB)} GB SSD persistent disk not attached to any VM. Snapshot then delete.`,
+      action:`gcloud compute disks delete pd-old-batch --zone ${r.region}-a`, resourceId:r.id}); }
+    if(m.kind==='snapshot' && m.staleSnaps){ add({title:`Old snapshots: ${r.name}`, sev:'info', category:'Compute', priority:'low', monthlySave:mc*0.6,
+      detail:`${m.count} snapshots, ${m.staleSnaps} older than 90 days. Apply a snapshot retention schedule.`,
+      action:`gcloud compute resource-policies create snapshot-schedule keep-14d --max-retention-days=14 …`, resourceId:r.id}); }
+    if(m.kind==='sql' && m.idle){ add({title:`Under-utilised Cloud SQL: ${r.name}`, sev:'warn', category:'Databases', priority:'high', monthlySave:mc*0.4,
+      detail:`${m.tier} at <b>${m.cpuUtil}% CPU</b>. Downsize a tier, or schedule stop/start for non-prod.`,
+      action:`gcloud sql instances patch ${r.name} --tier=db-custom-1-4`, resourceId:r.id}); }
+    if(m.kind==='logging' && m.excessive){ add({title:`Excessive log ingestion`, sev:'warn', category:'Logging', priority:'med', monthlySave:mc*0.35,
+      detail:`Ingesting ~${m.ingestGBPerDay} GiB/day with ${m.retentionDays}-day retention. Add exclusion filters for noisy logs and drop retention to 30–90 days.`,
+      action:`gcloud logging sinks … ; gcloud logging buckets update _Default --retention-days=90`, resourceId:r.id}); }
+    if(m.kind==='network' && m.crossRegion){ add({title:`High cross-region / internet egress`, sev:'warn', category:'Networking', priority:'high', monthlySave:mc*0.3,
+      detail:`~${fmt(m.crossRegionGB)} GB/mo inter-region + ${fmt(m.internetEgressGB)} GB internet egress. Co-locate services in asia-south1 and put Cloud CDN in front of static assets.`,
+      action:`Review VPC topology; enable Cloud CDN on the external LB backend`, resourceId:r.id}); }
+    if(m.kind==='secret' && m.staleVersions){ add({title:`Stale secret versions`, sev:'info', category:'Security', priority:'low', monthlySave:mc*0.5,
+      detail:`${m.versions} secret versions, ${m.staleVersions} disabled/old still stored. Destroy old versions.`,
+      action:`gcloud secrets versions destroy <VERSION> --secret=<NAME>`, resourceId:r.id}); }
+    if(m.kind==='bq_dataset'){
+      if(m.partitioned===false){ add({title:`Partition & cluster BigQuery: ${r.name}`, sev:'crit', category:'BigQuery', priority:'high', monthlySave:mc*0.5,
+        detail:`Dataset scans <b>${m.bytesProcessedTB} TiB/day</b> on-demand and is <b>not partitioned</b>. Partition on date + cluster on top filter columns to cut bytes scanned.`,
+        action:`CREATE TABLE … PARTITION BY DATE(event_ts) CLUSTER BY customer_id AS SELECT …`, resourceId:r.id}); }
+      if(m.selectStarPct>0.3){ add({title:`Reduce SELECT * in queries: ${r.name}`, sev:'warn', category:'BigQuery', priority:'high', monthlySave:mc*0.28,
+        detail:`~${Math.round(m.selectStarPct*100)}% of query cost comes from <b>SELECT *</b> scans. Select only needed columns and add partition filters.`,
+        action:`Enforce require_partition_filter; educate on column pruning; consider materialized views`, resourceId:r.id}); }
+    }
+  }
+  // add cost-pattern recommendations (these work on ANY data incl. your CSV,
+  // since they read cost aggregates rather than resource metadata)
+  buildCostPatternRecs().forEach(r=>recs.push(r));
+  // sort by monthly saving desc
+  recs.sort((a,b)=>b.monthlySave-a.monthlySave);
+  return recs;
+}
+function monthlyOf(pred){ const [s,e]=monthWindow(); const days=Math.max(1,STATE.now.getDate());
+  return costForRange(s,e,pred)/days*daysInMonth(STATE.now); }
+function buildCostPatternRecs(){
+  const recs=[]; const n=STATE.now; if(!STATE.items.length) return recs;
+  const totalM=monthlyOf(()=>true)||1;
+  const svcs=[...new Set(STATE.items.map(i=>i.service))];
+  // 1) BigQuery query-cost optimisation (fires whenever BQ is a big share)
+  const bqM=monthlyOf(it=>it.service==='BigQuery');
+  const bqQueryM=monthlyOf(it=>it.service==='BigQuery' && /analys|query|on-demand/i.test(it.sku));
+  if(bqM>0 && bqM/totalM>=0.2){
+    recs.push({title:'Optimise BigQuery query spend', sev:'warn', category:'BigQuery', priority: bqM/totalM>=0.4?'high':'med',
+      monthlySave:(bqQueryM>0?bqQueryM:bqM)*0.25,
+      detail:`BigQuery is <b>${fmtPct(bqM,totalM)}</b> of monthly spend (~${money(bqM)}). Most of it is on-demand query cost. Partition + cluster large tables, avoid <b>SELECT *</b>, add partition filters, and use BI Engine / materialised views for repeated queries.`,
+      action:'Partition BY DATE(...) + CLUSTER BY key cols; SET require_partition_filter=true; check INFORMATION_SCHEMA.JOBS for top scanners'});
+  }
+  // 2) Week-over-week spike on any service (catches your Cloud Run +211%)
+  const w1s=ymd(addDays(n,-6)), w1e=STATE.asOf, w2s=ymd(addDays(n,-13)), w2e=ymd(addDays(n,-7));
+  svcs.forEach(sv=>{
+    const c1=costForRange(w1s,w1e,it=>it.service===sv), c2=costForRange(w2s,w2e,it=>it.service===sv);
+    if(c2>20 && (c1-c2)/c2>=0.4){
+      const extraMonthly=((c1-c2)/7)*daysInMonth(n);
+      recs.push({title:`Investigate ${sv} spike (+${Math.round((c1-c2)/c2*100)}% WoW)`, sev:'crit',
+        category: sv, priority:'high', monthlySave: extraMonthly*0.6,
+        detail:`<b>${sv}</b> rose from ${money2(c2)} to ${money2(c1)} in the last 7 days. If unintended, reverting to the prior run-rate saves ~${money(extraMonthly)}/mo. Common Cloud Run causes: min-instances raised, memory/CPU bumped, a traffic surge, or a retry loop.`,
+        action: sv==='Cloud Run'? 'gcloud run services list — check min-instances, --memory, --cpu and request volume per service' : 'Open the service in Console → review recent config or traffic changes'});
+    }
+  });
+  // 3) Committed-use discount opportunity for steady Cloud Run / Compute
+  ['Cloud Run','Compute Engine','Cloud SQL'].forEach(sv=>{
+    const m=monthlyOf(it=>it.service===sv); if(m<1500) return;
+    const cred=-monthlyOf(it=>it.service===sv && (it.credit||0)<0);
+    if(cred/Math.max(m,1) < 0.12){
+      recs.push({title:`Consider a committed-use discount: ${sv}`, sev:'info', category:sv, priority:'med',
+        monthlySave:m*0.12,
+        detail:`Steady <b>${sv}</b> spend ~${money(m)}/mo with little committed-use discount applied. A 1-year CUD on always-on baseline capacity typically saves ~10–20%.`,
+        action:'Console → Billing → Committed use discounts → purchase a 1-yr CUD for baseline vCPU/memory'});
+    }
+  });
+  // de-dupe by title (meta recs + pattern recs can overlap)
+  const seen=new Set(); return recs.filter(r=>{ if(seen.has(r.title))return false; seen.add(r.title); return true; });
+}
+function totalMonthlySavings(){ return STATE.recs.reduce((s,r)=>s+r.monthlySave,0); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ALERT ENGINE
+   ═══════════════════════════════════════════════════════════════════ */
+function buildAlerts(){
+  const a=[]; const A=CONFIG.ALERTS; const n=STATE.now;
+  // daily threshold + spike on last 30 days
+  for(let k=29;k>=0;k--){ const dk=ymd(addDays(n,-k)); const c=costForDay(dk); const prev=costForDay(ymd(addDays(n,-k-1)));
+    if(c>A.DAILY_COST_THRESHOLD) a.push({sev:'crit',day:dk,type:'Daily cost over threshold',msg:`${money2(c)} on ${dk} exceeds the ${money(A.DAILY_COST_THRESHOLD)} daily threshold.`});
+    if(prev>0 && (c-prev)/prev*100>A.SPIKE_PCT) a.push({sev:'crit',day:dk,type:'Cost spike',msg:`Cost jumped <b>${((c-prev)/prev*100).toFixed(0)}%</b> day-over-day on ${dk} (${money2(prev)} → ${money2(c)}).`});
+  }
+  // per-service 7d vs prior 7d
+  const svcs=[...new Set(STATE.items.map(i=>i.service))];
+  const w1s=ymd(addDays(n,-6)), w1e=ymd(n), w2s=ymd(addDays(n,-13)), w2e=ymd(addDays(n,-7));
+  for(const s of svcs){ const c1=costForRange(w1s,w1e,it=>it.service===s); const c2=costForRange(w2s,w2e,it=>it.service===s);
+    if(c2>50 && (c1-c2)/c2*100>A.SERVICE_INCREASE_PCT) a.push({sev:'warn',day:w1e,type:'Service cost increase',msg:`<b>${s}</b> cost rose ${((c1-c2)/c2*100).toFixed(0)}% vs prior 7 days (${money2(c2)} → ${money2(c1)}).`}); }
+  // budget
+  const fc=forecastMonth(); const util=fc.mtd/STATE.monthlyBudget*100; const putil=fc.blended/STATE.monthlyBudget*100;
+  if(util>=100) a.push({sev:'crit',day:STATE.asOf,type:'Budget exceeded',msg:`Month-to-date spend ${money2(fc.mtd)} has <b>exceeded</b> the ${money(STATE.monthlyBudget)} budget.`});
+  else if(util>=A.BUDGET_HIGH) a.push({sev:'crit',day:STATE.asOf,type:'Budget ≥90%',msg:`MTD spend is at <b>${util.toFixed(0)}%</b> of budget.`});
+  else if(util>=A.BUDGET_WARN) a.push({sev:'warn',day:STATE.asOf,type:'Budget ≥80%',msg:`MTD spend is at <b>${util.toFixed(0)}%</b> of budget.`});
+  if(putil>=100 && util<100) a.push({sev:'warn',day:STATE.asOf,type:'Forecast over budget',msg:`Projected end-of-month ${money2(fc.blended)} is <b>${putil.toFixed(0)}%</b> of budget — trending to overspend.`});
+  // dedupe-ish sort recent first
+  a.sort((x,y)=> x.day<y.day?1:-1);
+  return a;
+}
+function alertCount(){ return buildAlerts().length; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   KPI ROW  (context-aware)
+   ═══════════════════════════════════════════════════════════════════ */
+function renderKpis(){
+  const host=document.getElementById('kpis'); host.innerHTML='';
+  const n=STATE.now;
+  const today=ymd(n), yday=ymd(addDays(n,-1));
+  const todayCost=costForDayF(today), ydayCost=costForDayF(yday);
+  const last7=costForRangeF(ymd(addDays(n,-6)),today), prev7=costForRangeF(ymd(addDays(n,-13)),ymd(addDays(n,-7)));
+  const fc=forecastMonthF();
+  const avgDaily = last7/7;
+  const util=fc.mtd/currentBudget()*100;
+  const save=totalMonthlySavings();
+
+  if(STATE.tab==='overview'){
+    host.appendChild(kpi('Today’s Cost',money(todayCost),`${costDelta(todayCost,ydayCost)} vs yesterday`, svcColor('BigQuery')));
+    host.appendChild(kpi('Yesterday',money(ydayCost),`billing day ${yday}`, PAL[6]));
+    host.appendChild(kpi('Last 7 Days',money(last7),`${costDelta(last7,prev7)} vs prior 7d`, PAL[0]));
+    host.appendChild(kpi('Month-to-Date',money(fc.mtd),`day ${fc.dayOfMonth}/${fc.dim}`, GOLD));
+    host.appendChild(kpi('Forecast EOM',money(fc.blended),`run-rate ${money(fc.runRate)}`, fc.blended>currentBudget()?STATUS.crit:STATUS.good));
+    host.appendChild(kpi('Budget Used',pctStr(util,0),`<span class="tl ${util>=90?'r':util>=80?'w':'g'}">${money(fc.mtd)} / ${money(currentBudget())}</span>`, util>=90?STATUS.crit:util>=80?STATUS.warn:STATUS.good));
+    host.appendChild(kpi('Avg Daily Spend',money(avgDaily),`trailing 7-day mean`, PAL[4]));
+    host.appendChild(kpi('Savings Opportunity',money(save),`${STATE.recs.length} recommendations`, STATUS.good));
+    return;
+  }
+  // other tabs: scope KPIs to filtered set
+  const items=fItems(); const netc=sumCost(items); const gross=grossCost(items); const cred=creditTotal(items);
+  const [rs,re]=rangeBounds(); const s=rs||STATE.days[0], e=re||STATE.asOf;
+  const ds=dailySeries(items,s,e); const avg=ds.length?netc/ds.length:0;
+  const peak=ds.reduce((mx,r)=>r.value>mx.value?r:mx,{value:-1,label:NA});
+  host.appendChild(kpi('Net Cost (view)',money(netc),`${STATE.filters.range==='all'?'all days':ds.length+' days'}`, GOLD));
+  host.appendChild(kpi('Gross',money(gross),`before credits`, PAL[6]));
+  host.appendChild(kpi('Credits',money(cred),`${gross?fmtPct(-cred,gross):'0%'} of gross`, STATUS.good));
+  host.appendChild(kpi('Avg / Day',money(avg),`over ${ds.length} days`, PAL[0]));
+  host.appendChild(kpi('Peak Day',money(peak.value),`${peak.label}`, STATUS.warn));
+  host.appendChild(kpi('Line Items',fmt(items.length),`${new Set(items.map(i=>i.resource)).size} resources`, PAL[4]));
+}
+/* filtered-by-everything-except-date helpers so KPIs honour project/service/etc. */
+function extraFilter(){ const f=STATE.filters; return it=>{
+  if(f.project&&it.project!==f.project)return false; if(f.service&&it.service!==f.service)return false;
+  if(f.sku&&it.sku!==f.sku)return false; if(f.region&&it.region!==f.region)return false;
+  if(f.resource&&it.resource!==f.resource)return false; if(f.category&&it.category!==f.category)return false;
+  if(f.label){ const [k,v]=f.label.split('='); if((it[k]||'')!==v)return false; } return true; }; }
+function costForDayF(dk){ return costForDay(dk,extraFilter()); }
+function costForRangeF(s,e){ return costForRange(s,e,extraFilter()); }
+function forecastMonthF(){ return forecastMonth(extraFilter()); }
+function currentBudget(){ const f=STATE.filters; if(f.project && STATE.budgets[f.project]) return STATE.budgets[f.project]; return STATE.monthlyBudget; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PANELS
+   ═══════════════════════════════════════════════════════════════════ */
+function renderChart(fn){ const c=el('div'); fn(c); raf(()=>fn(c)); return c; }
+
+function panelOverview(){
+  const p=el('div'); const n=STATE.now;
+  const [rs,re]=rangeBounds(); const s=rs||STATE.days[0], e=re||STATE.asOf;
+  const items=fItems();
+  // Daily trend + 7d MA + forecast
+  const trendCard=card('Daily Cost Trend','Net daily spend with 7-day moving average'+(STATE.filters.range==='all'||STATE.filters.range==='90'||STATE.filters.range==='30'?' + forecast to month end':''),
+    ['daily','weekly'].map(g=>{ const b=el('button','mini'+(STATE.trendGran===g?' on':''),g[0].toUpperCase()+g.slice(1)); b.onclick=()=>{STATE.trendGran=g;render();}; return b; }));
+  let ds=dailySeries(items,s,e);
+  if(STATE.trendGran==='weekly'){
+    const wk=new Map(); ds.forEach(r=>{ const d=parseYmd(r.label); const wd=addDays(d,-((d.getDay()+6)%7)); const k=ymd(wd); wk.set(k,(wk.get(k)||0)+r.value); });
+    ds=[...wk.entries()].map(([label,value])=>({label,value}));
+  }
+  const ma=movingAvg(ds, STATE.trendGran==='weekly'?4:7);
+  const series=[{label:'Daily net cost',color:GOLD,rows:ds,area:true},{label:'7-day moving avg',color:'#3987e5',rows:ma,dash:'5 4',width:1.6}];
+  drawTrendWithForecast(trendCard._body, series, ds);
+
+  // day-over-day + growth strip
+  const today=ymd(n),yday=ymd(addDays(n,-1));
+  const tC=costForDayF(today), yC=costForDayF(yday);
+  const dod=tC-yC; const growth = yC>0? dod/yC*100 : 0;
+  const strip=card('Momentum','Latest complete billing day vs prior');
+  strip._body.innerHTML=`<div class="grid g2" style="gap:10px">
+    ${miniStat('Latest day ('+today+')',money(tC))}
+    ${miniStat('Day-over-day Δ',(dod>=0?'+':'')+money(dod), (dod>=0?'<span class="delta up">':'<span class="delta down">')+(growth>=0?'▲':'▼')+' '+Math.abs(growth).toFixed(1)+'%</span>')}
+    ${miniStat('7-day avg',money(costForRangeF(ymd(addDays(n,-6)),today)/7))}
+    ${miniStat('30-day avg',money(costForRangeF(ymd(addDays(n,-29)),today)/30))}
+  </div>`;
+  const top=el('div','grid'); top.style.gridTemplateColumns='1.7fr 1fr'; top.appendChild(trendCard); top.appendChild(strip); p.appendChild(top);
+
+  // Stacked area by service + service donut
+  p.appendChild(sectionTitle('Where the money goes'));
+  const g=el('div','grid'); g.style.gridTemplateColumns='1.55fr 1fr';
+  const svcRows=groupSum(items,it=>it.service,8);
+  const topSvcs=svcRows.filter(r=>!r._other).map(r=>r.label);
+  const stackCard=card('Daily Cost by Service','Stacked — top services');
+  const dates=dailySeries(items,s,e).map(r=>r.label);   // always daily (independent of trend granularity)
+  const dailyItems=items;
+  const seriesList=topSvcs.map(sv=>({ label:sv, color:svcColor(sv),
+    vals: dates.map(dk=> dailyItems.filter(i=>i.date===dk && i.service===sv).reduce((a,b)=>a+net(b),0)) }));
+  // "Other"
+  const otherVals=dates.map(dk=> dailyItems.filter(i=>i.date===dk && !topSvcs.includes(i.service)).reduce((a,b)=>a+net(b),0));
+  if(otherVals.some(v=>v>0)) seriesList.push({label:'Other',color:'#6b6b66',vals:otherVals});
+  stackCard._body.appendChild(renderChart(c=>stackedArea(c,dates,seriesList,{h:250})));
+  const donutCard=card('Service Share','Click a slice to drill down');
+  donutCard._body.appendChild(renderChart(c=>donut(c,svcRows,{color:r=>svcColor(r.label), centerLabel:'Total',
+    onClick:r=>{ if(r._other) return; drill([{dim:'service',label:r.label}], it=>it.service===r.label); }})));
+  g.appendChild(stackCard); g.appendChild(donutCard); p.appendChild(g);
+
+  // Treemap + top resources
+  p.appendChild(sectionTitle('Cost concentration'));
+  const g2=el('div','grid'); g2.style.gridTemplateColumns='1.4fr 1fr';
+  const tmCard=card('Service Treemap','Area ∝ cost · click to drill');
+  const tmRows=svcRows.filter(r=>!r._other).map(r=>Object.assign({},r,{_onClick:rr=>drill([{dim:'service',label:rr.label}],it=>it.service===rr.label)}));
+  tmCard._body.appendChild(renderChart(c=>treemap(c,tmRows,{h:300,color:r=>svcColor(r.label)})));
+  const resRows=groupSum(items,it=>it.resource,10);
+  const totRes=sumCost(items);
+  const topResCard=card('Top 10 Resources','Highest-cost individual resources');
+  topResCard._body.appendChild(renderChart(c=>hbar(c,resRows,{total:totRes,labelW:150,color:(r,i)=>PAL[i%PAL.length],
+    onClick:r=>{ if(r._other)return; drill([{dim:'resource',label:r.label}], it=>it.resource===r.label); }})));
+  g2.appendChild(tmCard); g2.appendChild(topResCard); p.appendChild(g2);
+
+  // Waterfall (what changed) + Heatmap (intensity) — range-independent (last 7/30 days)
+  p.appendChild(sectionTitle('Cost movement & intensity'));
+  const g3=el('div','grid'); g3.style.gridTemplateColumns='1fr 1.15fr';
+  const w1s=ymd(addDays(n,-6)), w1e=STATE.asOf, w2s=ymd(addDays(n,-13)), w2e=ymd(addDays(n,-7));
+  const prev7=costForRangeF(w2s,w2e), last7=costForRangeF(w1s,w1e);
+  const svcSet=[...new Set(STATE.items.map(i=>i.service))];
+  let steps=svcSet.map(sv=>({label:sv, value:costForRange(w1s,w1e,it=>it.service===sv && extraFilter()(it))-costForRange(w2s,w2e,it=>it.service===sv && extraFilter()(it))}))
+    .filter(x=>Math.abs(x.value)>1).sort((a,b)=>Math.abs(b.value)-Math.abs(a.value));
+  const shown=steps.slice(0,7); const rem=(last7-prev7)-shown.reduce((s,x)=>s+x.value,0);
+  if(Math.abs(rem)>1) shown.push({label:'Other',value:rem});
+  const wfCard=card('What Changed — 7d vs prior 7d','Waterfall of cost change by service');
+  wfCard._body.appendChild(renderChart(c=>waterfall(c,prev7,shown,last7,{startLabel:'Prior 7d',endLabel:'Last 7d',h:260})));
+  const hmCard=card('Cost Intensity Heatmap','Service × day (last 30 days) · net cost');
+  const hmDays=[]; for(let k=29;k>=0;k--) hmDays.push(ymd(addDays(n,-k)));
+  const hmItems=STATE.items.filter(i=>extraFilter()(i));
+  const hmSvcs=groupSum(hmItems,it=>it.service,10).filter(r=>!r._other).map(r=>r.label);
+  const matrix=hmSvcs.map(sv=>hmDays.map(dk=>hmItems.filter(i=>i.date===dk && i.service===sv).reduce((a,b)=>a+net(b),0)));
+  hmCard._body.appendChild(renderChart(c=>heatmap(c,hmSvcs,hmDays,matrix,{})));
+  g3.appendChild(wfCard); g3.appendChild(hmCard); p.appendChild(g3);
+
+  return p;
+}
+function drawTrendWithForecast(container, series, ds){
+  // append forecast tail to the daily series if range covers current month reasonably
+  const showFc=['30','90','all','mtd'].includes(STATE.filters.range) && STATE.trendGran==='daily';
+  if(showFc && ds.length>=8){
+    const n=STATE.now; const fc=forecastMonthF(); const {slope}=fc;
+    const lastDate=parseYmd(ds[ds.length-1].label);
+    const remain=fc.dim-fc.dayOfMonth;
+    if(remain>0){
+      const hist=ds.slice(-14).map(r=>r.value); const {m,b}=linReg(hist); const lastX=hist.length-1;
+      const fcRows=ds.map(r=>({label:r.label,value:null}));
+      let acc=ds[ds.length-1].value;
+      const fcSeries={label:'Forecast',color:'#ec835a',rows:[...fcRows],dash:'4 4',width:1.6};
+      fcSeries.rows[fcSeries.rows.length-1].value=ds[ds.length-1].value;
+      for(let k=1;k<=remain;k++){ const x=lastX+k; const v=Math.max(0,m*x+b); const dk=ymd(addDays(lastDate,k));
+        series.forEach(s=>s.rows.push({label:dk,value:null})); fcSeries.rows.push({label:dk,value:v}); }
+      const forecastFrom=ds.length-1;
+      multiLine(container,[...series,fcSeries],{h:250,forecastFrom});
+      return;
+    }
+  }
+  multiLine(container,series,{h:250});
+}
+
+/* ---- generic breakdown panel used by Services/Projects/Regions ---- */
+function breakdownPanel(dim, title, colorFn, extraCols){
+  const p=el('div'); const items=fItems();
+  const [rs,re]=rangeBounds(); const s=rs||STATE.days[0], e=re||STATE.asOf;
+  const total=sumCost(items);
+  const rows=groupSum(items,it=>it[dim]);
+  // KPI-ish: stacked daily by this dim (top 8)
+  const top=rows.slice(0,8).map(r=>r.label);
+  const dates=dailySeries(items,s,e).map(r=>r.label);
+  const seriesList=top.map((lab,i)=>({label:lab,color:colorFn?colorFn(lab,i):PAL[i%PAL.length],
+    vals:dates.map(dk=>items.filter(x=>x.date===dk && x[dim]===lab).reduce((a,b)=>a+net(b),0))}));
+  const g=el('div','grid'); g.style.gridTemplateColumns='1.5fr 1fr';
+  const stackCard=card('Daily Cost by '+title,'Stacked · top 8');
+  stackCard._body.appendChild(renderChart(c=>stackedArea(c,dates,seriesList,{h:250})));
+  const donutCard=card(title+' Share','Share of net cost · click to drill');
+  donutCard._body.appendChild(renderChart(c=>donut(c,rows.slice(0,9),{color:(r,i)=>colorFn?colorFn(r.label,i):PAL[i%PAL.length],
+    onClick:r=>drill([{dim:dim,label:r.label}], it=>it[dim]===r.label)})));
+  g.appendChild(stackCard); g.appendChild(donutCard); p.appendChild(g);
+
+  // full table with MTD + trend spark
+  p.appendChild(sectionTitle(title+' detail'));
+  const tbl=card(title+' — cost table','Net cost in view · month-to-date · 7d vs prior-7d trend',null,true);
+  const [ms,me]=monthWindow();
+  const trs=rows.map((r,i)=>{
+    const mtdV=costForRange(ms,me,it=>it[dim]===r.label && extraFilter()(it));
+    const c1=costForRange(ymd(addDays(STATE.now,-6)),STATE.asOf,it=>it[dim]===r.label && extraFilter()(it));
+    const c2=costForRange(ymd(addDays(STATE.now,-13)),ymd(addDays(STATE.now,-7)),it=>it[dim]===r.label && extraFilter()(it));
+    const col=colorFn?colorFn(r.label,i):PAL[i%PAL.length];
+    const extra = extraCols? extraCols(r.label):'';
+    return `<tr data-v="${encodeURIComponent(r.label)}" style="cursor:pointer">
+      <td><span class="rankcell ${i===0?'top':''}">${i+1}</span></td>
+      <td class="name"><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${col};margin-right:7px"></span>${r.label}</td>
+      ${extra}
+      <td class="num">${money2(r.value)}</td>
+      <td class="num">${fmtPct(r.value,total)}<div class="bar-inline"><i style="width:${Math.min(100,pct(r.value,total)).toFixed(0)}%;background:${col}"></i></div></td>
+      <td class="num">${money2(mtdV)}</td>
+      <td class="num">${costDelta(c1,c2)}</td></tr>`;
+  }).join('');
+  tbl._body.innerHTML=`<table class="tbl"><thead><tr><th></th><th>${title}</th>${extraCols?'<th>'+extraColsHead(dim)+'</th>':''}<th class="num">Net Cost</th><th class="num">Share</th><th class="num">MTD</th><th class="num">7d Trend</th></tr></thead><tbody>${trs}</tbody></table>`;
+  tbl._body.querySelectorAll('tr[data-v]').forEach(tr=>{ tr.onclick=()=>{ const v=decodeURIComponent(tr.dataset.v); drill([{dim,label:v}],it=>it[dim]===v); }; });
+  p.appendChild(tbl);
+  return p;
+}
+function extraColsHead(dim){ return dim==='project'?'Budget':'Region'; }
+
+function panelServices(){ return breakdownPanel('service','Service', (l)=>svcColor(l)); }
+function panelProjects(){
+  return breakdownPanel('project','Project', (l,i)=>PAL[i%PAL.length], (proj)=>{
+    const b=STATE.budgets[proj]; if(!b) return '<td class="num">—</td>';
+    const mtdV=costForRange(...monthWindow(),it=>it.project===proj);
+    const u=mtdV/b*100; const cls=u>=90?'r':u>=80?'w':'g';
+    return `<td class="num"><span class="tl ${cls}">${u.toFixed(0)}%</span> <span class="tk" style="color:var(--muted)">of ${money(b)}</span></td>`;
+  });
+}
+function panelRegions(){
+  return breakdownPanel('region','Region', (l,i)=>['#3987e5','#199e70','#c98500','#d55181','#9085e9'][i%5], (reg)=>{
+    return `<td><span class="chip">${reg==='global'?'multi-region':reg}</span></td>`;
+  });
+}
+
+function panelResources(){
+  const p=el('div'); const items=fItems(); const total=sumCost(items);
+  const rows=groupSum(items,it=>it.resource);
+  const byId=new Map(); STATE.resources.forEach(r=>byId.set(r.name,r));
+  p.appendChild(sectionTitle('All resources — '+rows.length+' in view'));
+  const note=el('div','note'); note.innerHTML='Resource-level cost is derived from the billing export <b>resource.name</b> field. Click any row to drill into its SKUs and daily billing lines.';
+  p.appendChild(note);
+  const tbl=card('Resource cost table','Sorted by net cost · service · region · project',null,true);
+  const [ms,me]=monthWindow();
+  const trs=rows.map((r,i)=>{
+    const meta=byId.get(r.label); const svc=meta?meta.service:'—', reg=meta?meta.region:'—', proj=meta?meta.project:'—';
+    const mtdV=costForRange(ms,me,it=>it.resource===r.label && extraFilter()(it));
+    return `<tr data-v="${encodeURIComponent(r.label)}" style="cursor:pointer">
+      <td><span class="rankcell ${i<3?'top':''}">${i+1}</span></td>
+      <td class="name">${r.label}</td>
+      <td><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${svcColor(svc)};margin-right:6px"></span>${svc}</td>
+      <td><span class="chip">${reg}</span></td>
+      <td>${proj}</td>
+      <td class="num">${money2(r.value)}</td>
+      <td class="num">${fmtPct(r.value,total)}</td>
+      <td class="num">${money2(mtdV)}</td></tr>`;
+  }).join('');
+  tbl._body.innerHTML=`<table class="tbl"><thead><tr><th></th><th>Resource</th><th>Service</th><th>Region</th><th>Project</th><th class="num">Net Cost</th><th class="num">Share</th><th class="num">MTD</th></tr></thead><tbody>${trs}</tbody></table>`;
+  tbl._body.querySelectorAll('tr[data-v]').forEach(tr=>{ tr.onclick=()=>{ const v=decodeURIComponent(tr.dataset.v); drill([{dim:'resource',label:v}],it=>it.resource===v); }; });
+  p.appendChild(tbl);
+  return p;
+}
+
+/* ---------------- BigQuery deep dive ---------------- */
+function panelBigQuery(){
+  const p=el('div');
+  const bqItems=fItems().filter(i=>i.service==='BigQuery');
+  if(!bqItems.length){ p.appendChild(emptyCard('No BigQuery cost in the current view.')); return p; }
+  const total=sumCost(bqItems);
+  const analysis=bqItems.filter(i=>/Analysis/.test(i.sku)); const active=bqItems.filter(i=>/Active/.test(i.sku)); const lt=bqItems.filter(i=>/Long-term/.test(i.sku));
+  const bytesTB=STATE.resources.filter(r=>r.service==='BigQuery').reduce((a,r)=>a+(r.meta.bytesProcessedTB||0),0);
+  const row=el('div','kpis');
+  row.appendChild(kpi('BigQuery Cost',money(total),'net, in view',svcColor('BigQuery')));
+  row.appendChild(kpi('Query / Analysis',money(sumCost(analysis)),fmtPct(sumCost(analysis),total)+' of BQ',PAL[0]));
+  row.appendChild(kpi('Active Storage',money(sumCost(active)),fmtPct(sumCost(active),total)+' of BQ',PAL[3]));
+  row.appendChild(kpi('Long-term Storage',money(sumCost(lt)),fmtPct(sumCost(lt),total)+' of BQ',PAL[4]));
+  row.appendChild(kpi('Bytes Processed',bytesTB.toFixed(1)+' TiB/d','across datasets',PAL[6]));
+  p.appendChild(row);
+
+  const g=el('div','grid'); g.style.gridTemplateColumns='1.3fr 1fr';
+  const [rs,re]=rangeBounds(); const s=rs||STATE.days[0], e=re||STATE.asOf;
+  const ds=dailySeries(bqItems,s,e);
+  const splitCard=card('BigQuery Daily Cost','Query vs storage — watch for query spikes');
+  const dates=ds.map(r=>r.label);
+  const seriesList=[
+    {label:'Query (Analysis)',color:'#3987e5',vals:dates.map(dk=>analysis.filter(i=>i.date===dk).reduce((a,b)=>a+net(b),0))},
+    {label:'Active storage',color:'#c98500',vals:dates.map(dk=>active.filter(i=>i.date===dk).reduce((a,b)=>a+net(b),0))},
+    {label:'Long-term storage',color:'#26c281',vals:dates.map(dk=>lt.filter(i=>i.date===dk).reduce((a,b)=>a+net(b),0))},
+  ];
+  splitCard._body.appendChild(renderChart(c=>stackedArea(c,dates,seriesList,{h:240})));
+  const dsCard=card('Cost by Dataset','Click to drill into SKUs');
+  const dsRows=groupSum(bqItems,it=>it.resource);
+  dsCard._body.appendChild(renderChart(c=>donut(c,dsRows,{color:(r,i)=>PAL[i%PAL.length],onClick:r=>drill([{dim:'resource',label:r.label}],it=>it.resource===r.label && it.service==='BigQuery')})));
+  g.appendChild(splitCard); g.appendChild(dsCard); p.appendChild(g);
+
+  // Top expensive queries + top users (synthetic but representative)
+  p.appendChild(sectionTitle('Expensive queries & top users'));
+  const g2=el('div','grid'); g2.style.gridTemplateColumns='1.4fr 1fr';
+  const qCard=card('Top Expensive Queries','Estimated from bytes scanned · optimise the worst offenders',null,false);
+  const queries=sampleBqQueries();
+  qCard._body.innerHTML=`<table class="tbl"><thead><tr><th>Query</th><th>Dataset</th><th class="num">Bytes</th><th class="num">Runs</th><th class="num">Est. Cost</th><th>Flag</th></tr></thead><tbody>`+
+    queries.map(q=>`<tr><td class="name" style="font-family:ui-monospace,monospace;font-size:11.5px">${q.sql}</td><td>${q.dataset}</td><td class="num">${q.tb} TiB</td><td class="num">${fmt(q.runs)}</td><td class="num">${money2(q.cost)}</td><td>${q.flag?'<span class="pill r">'+q.flag+'</span>':'<span class="pill g">ok</span>'}</td></tr>`).join('')+
+    `</tbody></table><div class="note" style="margin-top:10px">In live mode these come from <b>INFORMATION_SCHEMA.JOBS</b> (total_bytes_billed × on-demand rate). See <code>queries.sql → top_queries</code>.</div>`;
+  const uCard=card('Top Cost Users','By query bytes billed');
+  uCard._body.appendChild(renderChart(c=>hbar(c,sampleBqUsers(),{labelW:150,mono:'#3987e5',valFmt:v=>money(v)})));
+  g2.appendChild(qCard); g2.appendChild(uCard); p.appendChild(g2);
+
+  // recommendations for BQ
+  const bqRecs=STATE.recs.filter(r=>r.category==='BigQuery');
+  if(bqRecs.length){ p.appendChild(sectionTitle('BigQuery optimisation')); p.appendChild(recGrid(bqRecs)); }
+  return p;
+}
+/* Illustrative query/user breakdown — costs are apportioned from the ACTUAL
+   Analysis (query) net cost in view so totals stay coherent with the panel.
+   In live mode these come verbatim from INFORMATION_SCHEMA.JOBS. */
+function bqAnalysisCost(){ return sumCost(fItems().filter(i=>i.service==='BigQuery' && /Analysis/.test(i.sku))); }
+function sampleBqQueries(){
+  const tot=bqAnalysisCost();
+  const defs=[
+    {sql:'SELECT * FROM crm_analytics.deals WHERE …', dataset:'crm_analytics', tb:2.1, runs:340, share:0.30, flag:'SELECT *'},
+    {sql:'SELECT * FROM crm_analytics.events e JOIN …', dataset:'crm_analytics', tb:1.6, runs:120, share:0.22, flag:'no partition filter'},
+    {sql:'SELECT customer_id, SUM(amount) … GROUP BY 1', dataset:'marketing', tb:0.4, runs:900, share:0.14, flag:null},
+    {sql:'SELECT * FROM events_raw WHERE dt >= …', dataset:'events_raw', tb:0.3, runs:210, share:0.10, flag:null},
+    {sql:'CREATE MODEL … OPTIONS(model_type=…)', dataset:'crm_analytics', tb:0.9, runs:12, share:0.08, flag:'ML training'},
+  ];
+  return defs.map(d=>Object.assign(d,{cost:tot*d.share})).sort((a,b)=>b.cost-a.cost);
+}
+function sampleBqUsers(){
+  const tot=bqAnalysisCost();
+  return [
+    {label:'analytics-sa@…',share:0.34},{label:'looker@…',share:0.24},
+    {label:'marketing@lucira…',share:0.16},{label:'data-pipeline-sa@…',share:0.14},{label:'adhoc (console)',share:0.12},
+  ].map(u=>({label:u.label,value:tot*u.share})).sort((a,b)=>b.value-a.value);
+}
+
+/* ---------------- Cloud Run deep dive ---------------- */
+function panelCloudRun(){
+  const p=el('div');
+  const runRes=STATE.resources.filter(r=>r.service==='Cloud Run');
+  const items=fItems().filter(i=>i.service==='Cloud Run'); const total=sumCost(items);
+  if(!items.length){ p.appendChild(emptyCard('No Cloud Run cost in the current view.')); return p; }
+  const [ms,me]=monthWindow();
+  p.appendChild(sectionTitle('Cloud Run services — utilisation vs cost'));
+  const note=el('div','note'); note.innerHTML='Requests / CPU / memory come from Cloud Monitoring in live mode (billing export has cost only). Flags below identify <b>idle</b>, <b>over-provisioned</b>, and <b>low-traffic</b> services.';
+  p.appendChild(note);
+  const tbl=card('Service analysis','Cost = net MTD · util = configured vs used',null,true);
+  const trs=runRes.map(r=>{
+    const m=r.meta; const mtdV=costForRange(ms,me,it=>it.resource===r.name);
+    const memPct=m.memMiB?Math.round(m.memUsedMiB/m.memMiB*100):null;
+    const flags=[];
+    if(m.idle) flags.push('<span class="pill r">idle</span>');
+    if(m.overMem) flags.push('<span class="pill w">over-mem</span>');
+    if(m.overCpu) flags.push('<span class="pill w">over-cpu</span>');
+    if(m.reqPerDay<2000 && !m.idle) flags.push('<span class="pill w">low traffic</span>');
+    if(!flags.length) flags.push('<span class="pill g">healthy</span>');
+    return `<tr data-v="${encodeURIComponent(r.name)}" style="cursor:pointer">
+      <td class="name">${r.name}</td><td><span class="chip">${r.region}</span></td>
+      <td class="num">${fmt(m.reqPerDay)}</td>
+      <td class="num">${m.cpu} vCPU</td>
+      <td class="num">${m.memMiB}Mi${memPct!=null?` <span class="tk" style="color:var(--muted)">(${memPct}% used)</span>`:''}</td>
+      <td class="num">${m.minInst}–${m.maxInst}</td>
+      <td class="num">${money2(mtdV)}</td>
+      <td>${flags.join(' ')}</td></tr>`;
+  }).join('');
+  tbl._body.innerHTML=`<table class="tbl"><thead><tr><th>Service</th><th>Region</th><th class="num">Req/day</th><th class="num">CPU</th><th class="num">Memory</th><th class="num">Instances</th><th class="num">MTD Cost</th><th>Status</th></tr></thead><tbody>${trs}</tbody></table>`;
+  tbl._body.querySelectorAll('tr[data-v]').forEach(tr=>{ tr.onclick=()=>{ const v=decodeURIComponent(tr.dataset.v); drill([{dim:'resource',label:v}],it=>it.resource===v); }; });
+  p.appendChild(tbl);
+
+  const g=el('div','grid'); g.style.gridTemplateColumns='1fr 1fr';
+  const costCard=card('Cost by Service','Net cost in view');
+  costCard._body.appendChild(renderChart(c=>hbar(c,groupSum(items,it=>it.resource),{total,labelW:150,mono:svcColor('Cloud Run'),valFmt:v=>money(v)})));
+  const skuCard=card('Cost by SKU','CPU vs memory vs requests');
+  skuCard._body.appendChild(renderChart(c=>donut(c,groupSum(items,it=>it.sku),{color:(r,i)=>PAL[i%PAL.length]})));
+  g.appendChild(costCard); g.appendChild(skuCard); p.appendChild(g);
+
+  const runRecs=STATE.recs.filter(r=>r.category==='Cloud Run');
+  if(runRecs.length){ p.appendChild(sectionTitle('Cloud Run optimisation')); p.appendChild(recGrid(runRecs)); }
+  return p;
+}
+
+/* ---------------- Storage deep dive ---------------- */
+function panelStorage(){
+  const p=el('div');
+  const buckets=STATE.resources.filter(r=>r.meta.kind==='bucket');
+  const items=fItems().filter(i=>i.service==='Cloud Storage'); const total=sumCost(items);
+  if(!items.length){ p.appendChild(emptyCard('No Cloud Storage cost in the current view.')); return p; }
+  const [ms,me]=monthWindow();
+  p.appendChild(sectionTitle('Buckets'));
+  const tbl=card('Bucket analysis','Storage class · size · objects · growth · last access',null,true);
+  const trs=buckets.map(r=>{
+    const m=r.meta; const mtdV=costForRange(ms,me,it=>it.resource===r.name);
+    const cls=m.class; const clsPill=cls==='Standard'?'b':cls==='Nearline'?'w':'g';
+    const flag = m.unused?'<span class="pill r">unused</span>': m.coldCandidate?'<span class="pill w">cold in Standard</span>': (m.hot?'<span class="pill g">hot</span>':'<span class="pill g">ok</span>');
+    return `<tr data-v="${encodeURIComponent(r.name)}" style="cursor:pointer">
+      <td class="name">${r.name}</td><td><span class="chip">${r.region}</span></td>
+      <td><span class="pill ${clsPill}">${cls}</span></td>
+      <td class="num">${fmt(m.sizeGB)} GB</td>
+      <td class="num">${fmt(m.objects)}</td>
+      <td class="num">+${m.growthPctMo}%/mo</td>
+      <td class="num">${m.lastAccessDays}d ago</td>
+      <td class="num">${money2(mtdV)}</td>
+      <td>${flag}</td></tr>`;
+  }).join('');
+  tbl._body.innerHTML=`<table class="tbl"><thead><tr><th>Bucket</th><th>Region</th><th>Class</th><th class="num">Size</th><th class="num">Objects</th><th class="num">Growth</th><th class="num">Last Access</th><th class="num">MTD</th><th>Flag</th></tr></thead><tbody>${trs}</tbody></table>`;
+  tbl._body.querySelectorAll('tr[data-v]').forEach(tr=>{ tr.onclick=()=>{ const v=decodeURIComponent(tr.dataset.v); drill([{dim:'resource',label:v}],it=>it.resource===v); }; });
+  p.appendChild(tbl);
+
+  const g=el('div','grid'); g.style.gridTemplateColumns='1fr 1fr';
+  const classCard=card('Cost by Storage Class','Standard / Nearline / Coldline + ops + egress');
+  classCard._body.appendChild(renderChart(c=>donut(c,groupSum(items,it=>it.sku.replace(/ Storage$/,'')),{color:(r,i)=>PAL[i%PAL.length]})));
+  const [rs,re]=rangeBounds(); const s=rs||STATE.days[0], e=re||STATE.asOf;
+  const trendCard=card('Storage Cost Trend','Net daily — watch growth');
+  const ds=dailySeries(items,s,e);
+  trendCard._body.appendChild(renderChart(c=>multiLine(c,[{label:'Storage',color:svcColor('Cloud Storage'),rows:ds,area:true},{label:'7d avg',color:'#3987e5',rows:movingAvg(ds,7),dash:'5 4',width:1.5}],{h:220})));
+  g.appendChild(classCard); g.appendChild(trendCard); p.appendChild(g);
+
+  const stRecs=STATE.recs.filter(r=>r.category==='Storage');
+  if(stRecs.length){ p.appendChild(sectionTitle('Storage optimisation')); p.appendChild(recGrid(stRecs)); }
+  return p;
+}
+
+/* ---------------- Compute deep dive ---------------- */
+function panelCompute(){
+  const p=el('div');
+  const vms=STATE.resources.filter(r=>['vm','disk','snapshot'].includes(r.meta.kind));
+  const items=fItems().filter(i=>i.service==='Compute Engine'); const total=sumCost(items);
+  if(!items.length){ p.appendChild(emptyCard('No Compute Engine cost in the current view.')); return p; }
+  const [ms,me]=monthWindow();
+  p.appendChild(sectionTitle('Compute Engine resources'));
+  const note=el('div','note'); note.innerHTML='CPU utilisation comes from Cloud Monitoring in live mode. Idle VMs, orphaned disks and stale snapshots are flagged for rightsizing/cleanup.';
+  p.appendChild(note);
+  const tbl=card('VM / disk / snapshot analysis','',null,true);
+  const trs=vms.map(r=>{
+    const m=r.meta; const mtdV=costForRange(ms,me,it=>it.resource===r.name);
+    let detail='', util='—', flag='<span class="pill g">ok</span>';
+    if(m.kind==='vm'){ detail=`${m.machine} · ${m.vcpu} vCPU / ${m.ramGB} GB`; util=m.cpuUtil+'% CPU'; if(m.idle) flag='<span class="pill r">idle</span>'; }
+    if(m.kind==='disk'){ detail=`${fmt(m.sizeGB)} GB SSD PD`; util=m.attached?'attached':'unattached'; if(m.orphan) flag='<span class="pill r">orphaned</span>'; }
+    if(m.kind==='snapshot'){ detail=`${m.count} snapshots`; util=`oldest ${m.oldestDays}d`; if(m.staleSnaps) flag='<span class="pill w">'+m.staleSnaps+' stale</span>'; }
+    return `<tr data-v="${encodeURIComponent(r.name)}" style="cursor:pointer">
+      <td class="name">${r.name}</td><td><span class="chip">${m.kind}</span></td>
+      <td>${detail}</td><td class="num">${util}</td>
+      <td class="num">${money2(mtdV)}</td><td>${flag}</td></tr>`;
+  }).join('');
+  tbl._body.innerHTML=`<table class="tbl"><thead><tr><th>Resource</th><th>Type</th><th>Detail</th><th class="num">Utilisation</th><th class="num">MTD</th><th>Flag</th></tr></thead><tbody>${trs}</tbody></table>`;
+  tbl._body.querySelectorAll('tr[data-v]').forEach(tr=>{ tr.onclick=()=>{ const v=decodeURIComponent(tr.dataset.v); drill([{dim:'resource',label:v}],it=>it.resource===v); }; });
+  p.appendChild(tbl);
+  const cmpRecs=STATE.recs.filter(r=>r.category==='Compute');
+  if(cmpRecs.length){ p.appendChild(sectionTitle('Compute optimisation')); p.appendChild(recGrid(cmpRecs)); }
+  return p;
+}
+
+/* ---------------- Budget & Forecast ---------------- */
+function panelBudget(){
+  const p=el('div'); const n=STATE.now;
+  const fc=forecastMonth(); const budget=STATE.monthlyBudget;
+  const util=fc.mtd/budget*100; const projUtil=fc.blended/budget*100;
+  const remaining=budget-fc.mtd;
+  const row=el('div','kpis');
+  row.appendChild(kpi('Monthly Budget',money(budget),`day ${fc.dayOfMonth}/${fc.dim}`,GOLD));
+  row.appendChild(kpi('MTD Actual',money(fc.mtd),`<span class="tl ${util>=90?'r':util>=80?'w':'g'}">${util.toFixed(0)}% used</span>`,util>=90?STATUS.crit:util>=80?STATUS.warn:STATUS.good));
+  row.appendChild(kpi('Remaining',money(remaining),remaining<0?'<span class="delta up">over budget</span>':`${(100-util).toFixed(0)}% left`,remaining<0?STATUS.crit:STATUS.good));
+  row.appendChild(kpi('Forecast EOM',money(fc.blended),`run-rate ${money(fc.runRate)} · regr ${money(fc.regForecast)}`,fc.blended>budget?STATUS.crit:STATUS.good));
+  row.appendChild(kpi('Overspend Risk',projUtil>=100?'HIGH':projUtil>=90?'MEDIUM':'LOW',`projected ${projUtil.toFixed(0)}% of budget`,projUtil>=100?STATUS.crit:projUtil>=90?STATUS.warn:STATUS.good));
+  p.appendChild(row);
+
+  // budget burndown: cumulative actual vs linear budget line vs forecast
+  const g=el('div','grid'); g.style.gridTemplateColumns='1.5fr 1fr';
+  const burnCard=card('Budget Burndown','Cumulative MTD spend vs linear budget vs forecast');
+  const dim=fc.dim, dayN=fc.dayOfMonth;
+  const dates=[]; for(let d=1;d<=dim;d++) dates.push(String(d).padStart(2,'0'));
+  let cum=0; const actual=[]; const budgetLine=[]; const forecast=[];
+  const {m,b}=linReg((()=>{ const h=[]; for(let k=Math.min(dayN,21)-1;k>=0;k--) h.push(costForDay(ymd(addDays(n,-k)))); return h; })());
+  const lastX=Math.min(dayN,21)-1;
+  for(let d=1;d<=dim;d++){
+    budgetLine.push({label:dates[d-1],value:budget/dim*d});
+    if(d<=dayN){ cum+=costForDay(ymd(new Date(n.getFullYear(),n.getMonth(),d))); actual.push({label:dates[d-1],value:cum}); forecast.push({label:dates[d-1],value:null}); }
+    else { const proj=Math.max(0,m*(lastX+(d-dayN))+b); cum+=proj; actual.push({label:dates[d-1],value:null}); forecast.push({label:dates[d-1],value:cum}); }
+  }
+  forecast[dayN-1]&&(forecast[dayN-1].value=actual[dayN-1].value);
+  burnCard._body.appendChild(renderChart(c=>multiLine(c,[
+    {label:'Actual (cumulative)',color:GOLD,rows:actual,area:true},
+    {label:'Budget (linear)',color:'#3987e5',rows:budgetLine,dash:'6 4',width:1.5},
+    {label:'Forecast',color:'#ec835a',rows:forecast,dash:'4 4',width:1.6},
+  ],{h:250,forecastFrom:dayN-1})));
+  // per-project budget bars
+  const projCard=card('Per-Project Budget','MTD vs budget · traffic-light');
+  const projRows=Object.keys(STATE.budgets).map(pj=>{ const mtdV=costForRange(...monthWindow(),it=>it.project===pj); return {project:pj,mtd:mtdV,budget:STATE.budgets[pj]}; }).sort((a,b)=>b.mtd/b.budget-a.mtd/a.budget);
+  projCard._body.innerHTML=projRows.map(r=>{ const u=r.mtd/r.budget*100; const cls=u>=90?'r':u>=80?'w':'g';
+    return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px"><span class="tl ${cls}">${r.project}</span><span class="tnum">${money(r.mtd)} / ${money(r.budget)} · <b>${u.toFixed(0)}%</b></span></div><div class="bar-inline" style="height:9px"><i style="width:${Math.min(100,u).toFixed(0)}%;background:${cls==='r'?C_CRIT:cls==='w'?C_WARN:C_GOOD}"></i></div></div>`;
+  }).join('');
+  g.appendChild(burnCard); g.appendChild(projCard); p.appendChild(g);
+
+  // Forecast detail
+  p.appendChild(sectionTitle('Cost forecasting'));
+  const g2=el('div','grid'); g2.style.gridTemplateColumns='1fr 1fr';
+  const methodCard=card('Forecast methods','Two independent projections + blend');
+  methodCard._body.innerHTML=`<div class="grid g2" style="gap:10px">
+    ${miniStat('Run-rate EOM',money(fc.runRate),'MTD avg × '+fc.dim+' days')}
+    ${miniStat('Regression EOM',money(fc.regForecast),'linear fit on last 21d')}
+    ${miniStat('Blended EOM',money(fc.blended),'average of both')}
+    ${miniStat('Next-month est.',money(fc.blended*(1+Math.max(0,fc.slope>0?0.03:0))),'blend + trend')}
+    ${miniStat('Daily expected',money(fc.blended/fc.dim),'forecast ÷ days')}
+    ${miniStat('Trend',(fc.slope>=0?'▲ rising':'▼ falling'),money(Math.abs(fc.slope))+' / day slope')}
+  </div>`;
+  const nextCard=card('Next 30 Days Projection','Extrapolated daily cost');
+  const proj=[]; const lastReal=costForDay(STATE.asOf);
+  for(let k=1;k<=30;k++){ const x=lastX+k; proj.push({label:ymd(addDays(n,k)),value:Math.max(0,m*x+b)}); }
+  nextCard._body.appendChild(renderChart(c=>multiLine(c,[{label:'Projected daily',color:'#ec835a',rows:proj,area:true,dash:'4 4'}],{h:220,legend:false})));
+  g2.appendChild(methodCard); g2.appendChild(nextCard); p.appendChild(g2);
+  return p;
+}
+
+/* ---------------- Savings dashboard ---------------- */
+function panelSavings(){
+  const p=el('div');
+  const recs=STATE.recs; const monthly=totalMonthlySavings(); const annual=monthly*12;
+  const currentMonthly=forecastMonth().blended;
+  const row=el('div','kpis');
+  row.appendChild(kpi('Est. Monthly Savings',money(monthly),`${fmtPct(monthly,currentMonthly)} of forecast spend`,STATUS.good));
+  row.appendChild(kpi('Est. Annual Savings',money(annual),'if all applied',STATUS.good));
+  row.appendChild(kpi('Opportunities',fmt(recs.length),`${recs.filter(r=>r.priority==='high').length} high priority`,GOLD));
+  row.appendChild(kpi('Quick Wins',fmt(recs.filter(r=>r.priority==='high'&&/idle|orphan|unused/i.test(r.title)).length),'idle / orphaned / unused',PAL[0]));
+  row.appendChild(kpi('Optimised Spend',money(currentMonthly-monthly),'forecast after savings',PAL[4]));
+  p.appendChild(row);
+
+  const g=el('div','grid'); g.style.gridTemplateColumns='1.3fr 1fr';
+  const topCard=card('Top 10 Saving Opportunities','Ranked by estimated monthly saving');
+  topCard._body.appendChild(renderChart(c=>hbar(c,recs.slice(0,10).map(r=>({label:r.title.replace(/:.*/,''),value:r.monthlySave})),{labelW:170,color:(r,i)=>i<3?C_GOOD:'#26c281',valFmt:v=>money(v)})));
+  const byCatCard=card('Savings by Category','Where the opportunity concentrates');
+  const catRows=groupBySave(recs, r=>r.category);
+  byCatCard._body.appendChild(renderChart(c=>donut(c,catRows,{color:(r,i)=>PAL[i%PAL.length],centerLabel:'Monthly',centerVal:monthly})));
+  g.appendChild(topCard); g.appendChild(byCatCard); p.appendChild(g);
+
+  ['high','med','low'].forEach(pr=>{
+    const list=recs.filter(r=>r.priority===pr); if(!list.length) return;
+    p.appendChild(sectionTitle((pr==='high'?'High':pr==='med'?'Medium':'Low')+' priority — '+money(list.reduce((s,r)=>s+r.monthlySave,0))+'/mo'));
+    p.appendChild(recGrid(list));
+  });
+  return p;
+}
+function groupBySave(recs,fn){ const m=new Map(); recs.forEach(r=>m.set(fn(r),(m.get(fn(r))||0)+r.monthlySave)); return [...m.entries()].map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value); }
+
+/* ---------------- Recommendations (all) ---------------- */
+function panelOptimize(){
+  const p=el('div');
+  const note=el('div','note'); note.innerHTML='Every recommendation is derived from billing-export cost patterns + resource metadata. Cost-only signals (idle, storage class, egress, BigQuery bytes) are exact from billing export; utilisation fine-tuning (CPU%, memory%) uses Cloud Monitoring in live mode. Copy the <b>action</b> command to apply.';
+  p.appendChild(note);
+  // filter chips by category
+  const cats=[...new Set(STATE.recs.map(r=>r.category))];
+  const bar=el('div'); bar.style.cssText='display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px';
+  const allBtn=el('button','mini on','All ('+STATE.recs.length+')'); bar.appendChild(allBtn);
+  const state={cat:null};
+  const btns=[allBtn];
+  cats.forEach(cat=>{ const b=el('button','mini',cat+' ('+STATE.recs.filter(r=>r.category===cat).length+')'); btns.push(b);
+    b.onclick=()=>{ state.cat=cat; btns.forEach(x=>x.classList.remove('on')); b.classList.add('on'); redraw(); }; bar.appendChild(b); });
+  allBtn.onclick=()=>{ state.cat=null; btns.forEach(x=>x.classList.remove('on')); allBtn.classList.add('on'); redraw(); };
+  p.appendChild(bar);
+  const holder=el('div'); p.appendChild(holder);
+  function redraw(){ holder.innerHTML=''; const list=state.cat?STATE.recs.filter(r=>r.category===state.cat):STATE.recs; holder.appendChild(recGrid(list)); }
+  redraw();
+  return p;
+}
+function recGrid(list){
+  const g=el('div','insights');
+  list.forEach(r=>{
+    const sev=r.sev; const card=el('div','insight '+sev);
+    card.innerHTML=`<div class="t">${sevIcon(sev)} ${r.title}<span class="tag ${r.priority==='high'?'high':r.priority==='med'?'med':'low'}">${r.priority}</span></div>
+      <div class="b">${r.detail}</div>
+      <div class="save">▼ Save ~${money(r.monthlySave)}/mo · ${money(r.monthlySave*12)}/yr</div>
+      <div class="action">${r.action}</div>`;
+    g.appendChild(card);
+  });
+  return g;
+}
+function sevIcon(s){ return s==='crit'?'🔴':s==='warn'?'🟡':'🔵'; }
+
+/* ---------------- Alerts ---------------- */
+function panelAlerts(){
+  const p=el('div'); const alerts=buildAlerts();
+  const note=el('div','note'); note.innerHTML=`Thresholds (edit <b>CONFIG.ALERTS</b>): daily > ${money(CONFIG.ALERTS.DAILY_COST_THRESHOLD)} · spike > ${CONFIG.ALERTS.SPIKE_PCT}% DoD · service +${CONFIG.ALERTS.SERVICE_INCREASE_PCT}% WoW · budget ${CONFIG.ALERTS.BUDGET_WARN}/${CONFIG.ALERTS.BUDGET_HIGH}%. In live mode, mirror these as GCP Budget alerts + a Monitoring alert policy on the billing metric.`;
+  p.appendChild(note);
+  const row=el('div','kpis');
+  row.appendChild(kpi('Active Alerts',fmt(alerts.length),`${alerts.filter(a=>a.sev==='crit').length} critical`,alerts.length?STATUS.crit:STATUS.good));
+  row.appendChild(kpi('Critical',fmt(alerts.filter(a=>a.sev==='crit').length),'spikes / budget',STATUS.crit));
+  row.appendChild(kpi('Warnings',fmt(alerts.filter(a=>a.sev==='warn').length),'trends / increases',STATUS.warn));
+  p.appendChild(row);
+  if(!alerts.length){ p.appendChild(emptyCard('✅ No alerts — spend is within all thresholds.')); return p; }
+  p.appendChild(sectionTitle('Fired alerts (last 30 days)'));
+  const list=el('div','insights');
+  alerts.forEach(a=>{ const sev=a.sev; const c=el('div','insight '+sev);
+    c.innerHTML=`<div class="t">${sevIcon(sev)} ${a.type}<span class="tag ${sev}">${a.day}</span></div><div class="b">${a.msg}</div>`;
+    list.appendChild(c); });
+  p.appendChild(list);
+  return p;
+}
+
+function emptyCard(msg){ const c=card('',''); c._body.innerHTML=`<div class="empty">${msg}</div>`; return c; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   RENDER DISPATCH
+   ═══════════════════════════════════════════════════════════════════ */
+const PANELS={ overview:panelOverview, services:panelServices, projects:panelProjects, regions:panelRegions,
+  resources:panelResources, bigquery:panelBigQuery, cloudrun:panelCloudRun, storage:panelStorage,
+  compute:panelCompute, budget:panelBudget, savings:panelSavings, optimize:panelOptimize, alerts:panelAlerts };
+function render(){
+  renderKpis();
+  const panel=document.getElementById('panel'); panel.innerHTML='';
+  const fn=PANELS[STATE.tab]||panelOverview;
+  panel.appendChild(fn());
+  // alert badge on nav
+  const badgeN=alertCount();
+  document.querySelectorAll('nav.tabs a').forEach(a=>{ const ex=a.querySelector('.badge'); if(ex) ex.remove();
+    if(a.dataset.tab==='alerts' && badgeN){ a.appendChild(el('span','badge',String(badgeN))); } });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   WIRING
+   ═══════════════════════════════════════════════════════════════════ */
+function setTab(t){ STATE.tab=t; location.hash=t;
+  document.querySelectorAll('nav.tabs a').forEach(a=>a.classList.toggle('on',a.dataset.tab===t)); render(); }
+document.querySelectorAll('nav.tabs a').forEach(a=>{ a.onclick=()=>setTab(a.dataset.tab); });
+window.addEventListener('hashchange',()=>{ const t=location.hash.slice(1); if(PANELS[t]&&t!==STATE.tab){ STATE.tab=t;
+  document.querySelectorAll('nav.tabs a').forEach(a=>a.classList.toggle('on',a.dataset.tab===t)); render(); } });
+document.getElementById('curSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
+  STATE.cur=b.dataset.cur; document.querySelectorAll('#curSeg button').forEach(x=>x.classList.toggle('on',x===b)); render(); });
+document.getElementById('refreshBtn').onclick=async()=>{ document.getElementById('refreshBtn').textContent='↻ …'; await loadData(); buildFilters(); render(); document.getElementById('refreshBtn').textContent='↻ Refresh'; };
+document.getElementById('exportBtn').onclick=exportCsv;
+document.getElementById('loadCsvBtn').onclick=()=>document.getElementById('csvInput').click();
+document.getElementById('bannerLoadBtn').onclick=()=>document.getElementById('csvInput').click();
+document.getElementById('csvInput').addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(f) handleCsvFile(f); e.target.value=''; });
+/* drag-and-drop a CSV anywhere on the page */
+const dropveil=document.getElementById('dropveil'); let dragDepth=0;
+window.addEventListener('dragenter',e=>{ if(e.dataTransfer&&[...e.dataTransfer.types].includes('Files')){ e.preventDefault(); dragDepth++; dropveil.classList.add('on'); } });
+window.addEventListener('dragover',e=>{ if(dropveil.classList.contains('on')) e.preventDefault(); });
+window.addEventListener('dragleave',e=>{ dragDepth=Math.max(0,dragDepth-1); if(dragDepth===0) dropveil.classList.remove('on'); });
+window.addEventListener('drop',e=>{ e.preventDefault(); dragDepth=0; dropveil.classList.remove('on');
+  const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f && /\.csv$/i.test(f.name)) handleCsvFile(f); else if(f) alert('Please drop a .csv file exported from GCP Billing.'); });
+window.addEventListener('resize',()=>{ clearTimeout(window._rz); window._rz=setTimeout(render,180); });
+
+function exportCsv(){
+  const items=fItems();
+  const cols=['date','project','service','sku','region','resource','cost','credit','usage','usageUnit','category'];
+  const csv=[cols.join(',')].concat(items.map(it=>cols.map(c=>{ const v=it[c]; return typeof v==='string'&&/[",]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(','))).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='gcp-cost-'+STATE.filters.range+'-'+STATE.asOf+'.csv'; a.click();
+}
+
+async function init(){
+  await loadData();
+  const h=location.hash.slice(1); if(PANELS[h]) STATE.tab=h;
+  document.querySelectorAll('nav.tabs a').forEach(a=>a.classList.toggle('on',a.dataset.tab===STATE.tab));
+  buildFilters(); render();
+  document.getElementById('loader').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  if(CONFIG.API_BASE) setInterval(async()=>{ await loadData(); render(); }, CONFIG.REFRESH_MS);
+}
+init();
+</script>
+</body>
+</html>

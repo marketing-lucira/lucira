@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucira · GA4 Analytics Command Center</title>
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   THEME TOKENS  (validated data-viz palette — light + dark)
+   ══════════════════════════════════════════════════════════════════ */
+:root{
+  --surface:#fcfcfb; --plane:#f4f4f1; --panel:#ffffff;
+  --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --accent:#2a78d6; --accent-soft:rgba(42,120,214,.10);
+  --glass:rgba(255,255,255,.72); --glass-brd:rgba(11,11,11,.08);
+  --shadow:0 1px 2px rgba(11,11,11,.05),0 8px 24px rgba(11,11,11,.06);
+  --radius:18px; --radius-sm:12px;
+  --s1:#2a78d6;--s2:#008300;--s3:#e87ba4;--s4:#eda100;--s5:#1baf7a;--s6:#eb6834;--s7:#4a3aa7;--s8:#e34948;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --surface:#1a1a19; --plane:#0d0d0d; --panel:#161615;
+  --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+  --accent:#3987e5; --accent-soft:rgba(57,135,229,.14);
+  --glass:rgba(28,28,26,.62); --glass-brd:rgba(255,255,255,.09);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.5);
+  --s1:#3987e5;--s2:#008300;--s3:#d55181;--s4:#c98500;--s5:#199e70;--s6:#d95926;--s7:#9085e9;--s8:#e66767;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:
+    radial-gradient(1200px 600px at 100% -5%,var(--accent-soft),transparent 55%),
+    radial-gradient(900px 500px at -10% 110%,rgba(216,89,38,.06),transparent 55%),
+    var(--plane);
+  color:var(--ink); font-size:14px; line-height:1.45;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden;
+}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--axis);border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+a{color:var(--accent);text-decoration:none}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* ── Top bar ─────────────────────────────────────────────── */
+.topbar{
+  position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:14px;
+  padding:12px 22px; backdrop-filter:blur(18px) saturate(1.4);
+  background:var(--glass); border-bottom:1px solid var(--glass-brd);
+}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.brand .mark{
+  width:38px;height:38px;border-radius:11px;flex:none;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--s1),var(--s7)); color:#fff;font-weight:800;font-size:18px;
+  box-shadow:0 6px 18px rgba(42,120,214,.35);
+}
+.brand h1{font-size:15px;font-weight:700;letter-spacing:.2px;white-space:nowrap}
+.brand small{display:block;font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.3px}
+.spacer{flex:1}
+.livechip{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink2);
+  padding:6px 11px;border:1px solid var(--border);border-radius:20px;background:var(--glass)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 4px rgba(250,178,25,.18)}
+.dot.live{background:var(--good);box-shadow:0 0 0 4px rgba(12,163,12,.18)}
+.iconbtn{
+  width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+  border:1px solid var(--border);background:var(--glass);color:var(--ink2);
+  transition:.18s; font-size:16px;
+}
+.iconbtn:hover{color:var(--ink);border-color:var(--accent);transform:translateY(-1px)}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:11px;
+  border:1px solid var(--border);background:var(--glass);color:var(--ink);font-weight:600;font-size:13px;
+  transition:.18s;
+}
+.btn:hover{border-color:var(--accent);transform:translateY(-1px)}
+.btn.primary{background:linear-gradient(135deg,var(--s1),var(--s7));color:#fff;border:none;box-shadow:0 6px 18px rgba(42,120,214,.32)}
+.btn.primary:hover{filter:brightness(1.06)}
+.filtcount{background:var(--crit);color:#fff;font-size:10px;font-weight:800;border-radius:20px;
+  min-width:17px;height:17px;display:grid;place-items:center;padding:0 5px}
+
+/* ── Tab rail ────────────────────────────────────────────── */
+.tabrail{
+  position:sticky;top:63px;z-index:50;display:flex;gap:4px;padding:8px 18px;overflow-x:auto;
+  background:var(--glass);backdrop-filter:blur(18px);border-bottom:1px solid var(--glass-brd);scrollbar-width:none;
+}
+.tabrail::-webkit-scrollbar{display:none}
+.tab{
+  white-space:nowrap;padding:8px 15px;border-radius:10px;font-weight:600;font-size:13px;color:var(--ink2);
+  display:flex;align-items:center;gap:7px;transition:.16s;border:1px solid transparent;
+}
+.tab:hover{background:var(--accent-soft);color:var(--ink)}
+.tab.active{background:var(--accent);color:#fff;box-shadow:0 4px 14px rgba(42,120,214,.3)}
+.tab .ic{font-size:14px}
+
+/* ── Layout ──────────────────────────────────────────────── */
+.wrap{max-width:1560px;margin:0 auto;padding:20px 22px 60px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.span2{grid-column:span 2}
+.span3{grid-column:span 3}
+@media(max-width:1150px){.g4{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(2,1fr)}.span3{grid-column:span 2}}
+@media(max-width:720px){.g2,.g3,.g4{grid-template-columns:1fr}.span2,.span3{grid-column:span 1}}
+
+/* ── Cards ───────────────────────────────────────────────── */
+.card{
+  background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--glass-brd);
+  border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);position:relative;
+  animation:rise .5s cubic-bezier(.2,.7,.3,1) both;
+}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.card h3{font-size:13.5px;font-weight:700;letter-spacing:.2px;display:flex;align-items:center;gap:8px}
+.card .sub{font-size:11.5px;color:var(--muted);font-weight:500;margin-top:2px}
+.card .hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:10px}
+.card .tools{display:flex;gap:6px;flex:none}
+.minibtn{font-size:11px;color:var(--muted);padding:4px 8px;border-radius:8px;border:1px solid var(--border);transition:.15s}
+.minibtn:hover{color:var(--ink);border-color:var(--accent)}
+.minibtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.seg button{font-size:11px;padding:5px 9px;color:var(--muted);transition:.14s}
+.seg button.on{background:var(--accent);color:#fff}
+
+/* ── KPI cards ───────────────────────────────────────────── */
+.kpi{
+  background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--glass-brd);
+  border-radius:var(--radius-sm);padding:14px 15px;box-shadow:var(--shadow);position:relative;overflow:hidden;
+  animation:rise .5s cubic-bezier(.2,.7,.3,1) both; cursor:default;
+}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--kc,var(--accent))}
+.kpi .lbl{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.3px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.kpi .val{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-top:6px;line-height:1}
+.kpi .foot{display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-size:11.5px}
+.kpi .delta{font-weight:700;display:inline-flex;align-items:center;gap:3px}
+.up{color:var(--good)} .down{color:var(--crit)} .flat{color:var(--muted)}
+.kpi .spark{position:absolute;right:8px;bottom:6px;opacity:.5}
+
+/* ── Filter drawer ───────────────────────────────────────── */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);z-index:90;opacity:0;pointer-events:none;transition:.28s}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer{
+  position:fixed;top:0;right:0;height:100%;width:400px;max-width:92vw;z-index:100;
+  background:var(--panel);border-left:1px solid var(--border);box-shadow:-20px 0 60px rgba(0,0,0,.35);
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;
+}
+.drawer.open{transform:none}
+.drawer .dhd{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)}
+.drawer .dhd h2{font-size:15px;font-weight:700}
+.drawer .body{flex:1;overflow-y:auto;padding:14px 18px 20px}
+.drawer .dfoot{display:flex;gap:8px;padding:14px 18px;border-top:1px solid var(--border);background:var(--panel)}
+.fgroup{margin-bottom:16px}
+.fgroup>label{display:block;font-size:11px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px}
+.fgroup select,.fgroup input[type=text],.fgroup input[type=number],.fgroup input[type=date]{
+  width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:13px;font-family:inherit;
+}
+.fgroup select:focus,.fgroup input:focus{outline:none;border-color:var(--accent)}
+.presets{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.presets button{padding:8px 6px;border-radius:9px;border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--ink2);transition:.14s;text-align:center}
+.presets button:hover{border-color:var(--accent);color:var(--ink)}
+.presets button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.frow{display:flex;gap:8px}
+.frow>*{flex:1}
+.rangewrap{display:flex;align-items:center;gap:8px}
+.section-t{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin:20px 0 10px;text-transform:uppercase;border-top:1px dashed var(--border);padding-top:14px}
+.section-t:first-child{border:none;padding-top:0;margin-top:0}
+
+/* ── Tables ──────────────────────────────────────────────── */
+.tblbar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.tblbar input{padding:7px 11px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:12.5px;min-width:180px}
+.tblscroll{overflow:auto;border-radius:12px;border:1px solid var(--border);max-height:520px}
+table.dt{width:100%;border-collapse:collapse;font-size:12.5px}
+table.dt th{
+  position:sticky;top:0;z-index:2;background:var(--panel);text-align:left;padding:10px 12px;font-weight:700;
+  color:var(--ink2);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;
+}
+table.dt th:hover{color:var(--ink)}
+table.dt th.num,table.dt td.num{text-align:right;font-variant-numeric:tabular-nums}
+table.dt td{padding:9px 12px;border-bottom:1px solid var(--grid);white-space:nowrap}
+table.dt tbody tr:hover{background:var(--accent-soft)}
+.heatcell{border-radius:6px;padding:2px 7px;font-weight:600}
+.pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:10px;font-size:12px;color:var(--muted)}
+.pager button{padding:5px 10px;border:1px solid var(--border);border-radius:8px}
+.pager button:disabled{opacity:.4}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+.tag{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:700}
+
+/* ── Legend / misc ───────────────────────────────────────── */
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
+.legend .li{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink2);cursor:pointer}
+.legend .sw{width:11px;height:11px;border-radius:3px;flex:none}
+.legend .li.off{opacity:.4}
+svg{display:block;overflow:visible}
+.axis-lbl{fill:var(--muted);font-size:10px}
+.grid-line{stroke:var(--grid);stroke-width:1}
+.baseline{stroke:var(--axis);stroke-width:1}
+.clickable{cursor:pointer;transition:opacity .15s}
+.clickable:hover{opacity:.82}
+.emptybox{padding:40px;text-align:center;color:var(--muted);font-size:13px}
+
+/* ── Tooltip ─────────────────────────────────────────────── */
+#tip{
+  position:fixed;z-index:200;pointer-events:none;opacity:0;transition:opacity .1s;
+  background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:9px 12px;
+  box-shadow:var(--shadow);font-size:12px;max-width:280px;
+}
+#tip .tt{font-weight:700;margin-bottom:4px}
+#tip .tr{display:flex;justify-content:space-between;gap:16px;color:var(--ink2)}
+#tip .tr b{color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* ── Skeleton ────────────────────────────────────────────── */
+.skwrap{position:fixed;inset:0;z-index:150;background:var(--plane);display:grid;place-items:center;transition:.4s}
+.skwrap.hide{opacity:0;pointer-events:none}
+.loader{display:flex;flex-direction:column;align-items:center;gap:18px}
+.loader .ring{width:52px;height:52px;border-radius:50%;border:4px solid var(--border);border-top-color:var(--accent);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader .txt{font-size:13px;color:var(--muted);font-weight:600}
+.sk{background:linear-gradient(90deg,var(--grid) 25%,var(--border) 37%,var(--grid) 63%);background-size:400% 100%;animation:shim 1.4s infinite;border-radius:8px}
+@keyframes shim{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+.banner{display:flex;gap:10px;align-items:center;padding:11px 15px;border-radius:12px;font-size:12.5px;
+  background:rgba(250,178,25,.12);border:1px solid rgba(250,178,25,.3);color:var(--ink);margin-bottom:16px}
+.banner .bic{font-size:16px}
+.pill-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+.activef{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:20px;background:var(--accent-soft);color:var(--accent);border:1px solid rgba(42,120,214,.2)}
+.activef button{color:var(--accent);font-weight:800;font-size:13px;line-height:1}
+:fullscreen .wrap{max-width:100%;background:var(--plane)}
+:fullscreen{overflow:auto}
+@media print{.topbar,.tabrail,.drawer,.scrim,#tip,.tools,.tblbar{display:none!important}.wrap{max-width:100%}.card{break-inside:avoid;box-shadow:none;border:1px solid #ccc}}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="skwrap" id="skel"><div class="loader"><div class="ring"></div><div class="txt">Building analytics engine…</div></div></div>
+
+<!-- Top bar -->
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">L</div>
+    <div><h1>GA4 Analytics Command Center</h1><small>Lucira Jewelry · Google Analytics 4</small></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="livechip" id="livechip" title="Data source status">
+    <span class="dot" id="livedot"></span><span id="livetxt">Sample data</span>
+  </div>
+  <button class="btn primary" id="btnFilters">⛃ Filters<span class="filtcount" id="fcount" style="display:none">0</span></button>
+  <button class="iconbtn" id="btnExport" title="Export dashboard">⤓</button>
+  <button class="iconbtn" id="btnFull" title="Full screen">⛶</button>
+  <button class="iconbtn" id="btnTheme" title="Toggle theme">◐</button>
+  <button class="iconbtn" id="btnRefresh" title="Refresh">⟳</button>
+</header>
+
+<!-- Tabs -->
+<nav class="tabrail" id="tabrail"></nav>
+
+<!-- Active filters row + content -->
+<main class="wrap">
+  <div class="pill-row" id="activeFilters"></div>
+  <div id="view"></div>
+</main>
+
+<!-- Filter drawer -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <div class="dhd"><h2>⛃ Advanced Filters</h2><button class="iconbtn" id="btnCloseDrawer">✕</button></div>
+  <div class="body" id="drawerBody"></div>
+  <div class="dfoot">
+    <button class="btn primary" id="btnApply" style="flex:1">Apply</button>
+    <button class="btn" id="btnReset">Reset</button>
+    <button class="btn" id="btnExport2">Export</button>
+  </div>
+</aside>
+
+<div id="tip"></div>
+
+<!-- GA4_CONFIG_INJECT · CI (GitHub Actions) replaces THIS line with an inline <script> that sets window.__GA4_CONFIG__ from GitHub Variables. Left as a plain comment locally, so file:// use is unaffected (no external fetch, no parser-block) and the CONFIG defaults below apply. -->
+<script>
+"use strict";
+/* ══════════════════════════════════════════════════════════════════
+   LUCIRA GA4 DASHBOARD — self-contained, vanilla JS.
+   Data source: connected GA4 property (via ga4-api Cloud Function).
+   Until the API URL is set, a deterministic seeded GA4 sample renders
+   so the full experience is visible. Set CONFIG.API_BASE to go live.
+   ══════════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  API_BASE: "",                 // e.g. "https://asia-south1-xxx.cloudfunctions.net/ga4-data"
+  CURRENCY: "INR",
+  AUTO_REFRESH_MIN: 30,
+  TODAY: "2026-07-16",          // sample anchor; overwritten by live window.to
+};
+/* Deploy-time overrides: CI injects an inline <script> at the config marker
+   above that sets window.__GA4_CONFIG__ from GitHub repo Variables. Merge
+   it over the defaults so the live BigQuery backend URL / currency can be set at
+   deploy time WITHOUT editing this file. No-op locally (marker stays a comment). */
+try { if (window.__GA4_CONFIG__) Object.assign(CONFIG, window.__GA4_CONFIG__); } catch (e) {}
+
+/* ── Palette (validated) ─────────────────────────────────── */
+const PAL = {
+  light:{surface:'#fcfcfb',ink:'#0b0b0b',ink2:'#52514e',muted:'#898781',grid:'#e1e0d9',axis:'#c3c2b7',
+    series:['#2a78d6','#008300','#e87ba4','#eda100','#1baf7a','#eb6834','#4a3aa7','#e34948'],
+    seq:'#2a78d6',good:'#0ca30c',warn:'#fab219',serious:'#ec835a',crit:'#d03b3b'},
+  dark:{surface:'#1a1a19',ink:'#ffffff',ink2:'#c3c2b7',muted:'#898781',grid:'#2c2c2a',axis:'#383835',
+    series:['#3987e5','#008300','#d55181','#c98500','#199e70','#d95926','#9085e9','#e66767'],
+    seq:'#3987e5',good:'#0ca30c',warn:'#fab219',serious:'#ec835a',crit:'#d03b3b'},
+};
+const isDark=()=>document.documentElement.getAttribute('data-theme')!=='light';
+const C=()=>isDark()?PAL.dark:PAL.light;
+const SC=i=>C().series[i%8];
+
+/* ── Utilities ───────────────────────────────────────────── */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const pick=(rng,arr)=>arr[Math.floor(rng()*arr.length)];
+function wpick(rng,arr){const t=arr.reduce((s,x)=>s+x.w,0);let r=rng()*t;for(const x of arr){if((r-=x.w)<=0)return x;}return arr[arr.length-1];}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function fmtNum(n){n=+n||0;const a=Math.abs(n);if(a>=1e7)return(n/1e7).toFixed(2)+'Cr';if(a>=1e5)return(n/1e5).toFixed(2)+'L';if(a>=1e3)return(n/1e3).toFixed(1)+'K';return(Math.round(n*10)/10).toLocaleString('en-IN');}
+function fmtInt(n){return Math.round(+n||0).toLocaleString('en-IN');}
+function fmtMoney(n){n=+n||0;const s=n<0?'-':'';const a=Math.abs(n);if(a>=1e7)return s+'₹'+(a/1e7).toFixed(2)+'Cr';if(a>=1e5)return s+'₹'+(a/1e5).toFixed(2)+'L';if(a>=1e3)return s+'₹'+(a/1e3).toFixed(1)+'K';return s+'₹'+Math.round(a).toLocaleString('en-IN');}
+function fmtMoneyFull(n){return '₹'+Math.round(+n||0).toLocaleString('en-IN');}
+function fmtPct(n,d=1){return (+n||0).toFixed(d)+'%';}
+function fmtDur(s){s=Math.round(+s||0);const m=Math.floor(s/60),ss=s%60;if(m>=60){const h=Math.floor(m/60);return h+'h '+(m%60)+'m';}return m>0?m+'m '+ss+'s':ss+'s';}
+const daysBetween=(a,b)=>Math.round((new Date(b)-new Date(a))/864e5);
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x.toISOString().slice(0,10);}
+const iso=d=>d.toISOString().slice(0,10);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uniq=a=>[...new Set(a)];
+const sum=(a,f)=>a.reduce((s,x)=>s+(f?f(x):x),0);
+const byDesc=k=>(a,b)=>b[k]-a[k];
+
+/* ══════════════════════════════════════════════════════════════════
+   CATALOGS  (jewelry e-commerce, India-first)
+   ══════════════════════════════════════════════════════════════════ */
+const CH = [ // channel → {sources[], quality (conv propensity), share}
+  {name:'Organic Search', w:26, q:1.0, src:[['google','organic'],['bing','organic'],['duckduckgo','organic']]},
+  {name:'Direct',         w:18, q:1.15,src:[['(direct)','(none)']]},
+  {name:'Paid Search',    w:13, q:1.25,src:[['google','cpc'],['bing','cpc']]},
+  {name:'Organic Social', w:12, q:.6, src:[['instagram','referral'],['facebook','referral'],['pinterest','referral'],['youtube','referral']]},
+  {name:'Paid Social',    w:10, q:.95,src:[['facebook','cpc'],['instagram','paid'],['pinterest','cpc']]},
+  {name:'Email',          w:7,  q:1.5, src:[['newsletter','email'],['klaviyo','email']]},
+  {name:'Referral',       w:5,  q:.8, src:[['justdial.com','referral'],['whatsapp','referral'],['blog.partner.com','referral']]},
+  {name:'Organic Shopping',w:4, q:1.1, src:[['google','organic_shopping']]},
+  {name:'Paid Shopping',  w:3,  q:1.35,src:[['google','shopping'],['meta','shopping']]},
+  {name:'Display',        w:2,  q:.5, src:[['google','display'],['dv360','cpm']]},
+  {name:'Affiliates',     w:1.5,q:.9, src:[['cuelinks','affiliate'],['earnkaro','affiliate']]},
+  {name:'Cross-network',  w:1,  q:1.05,src:[['google','cross-network']]},
+];
+const CAMPAIGNS = ['Diwali Festive','Akshaya Tritiya','Valentine Edit','Bridal Collection','Everyday Gold','Retargeting DPA','Brand Search','Gold Coin Push','Diamond Solitaire','(organic)','(not set)'];
+const CATEGORIES = ['Gold Jewellery','Diamond Jewellery','Silver Jewellery','Platinum Jewellery','Gold Coin'];
+const BRANDS = ['Lucira Signature','Aurelia by Lucira','Everyday Edit','Bridal Atelier','Sacred Gold','Nova Diamonds'];
+const PRODUCTS = [
+  ['Kundan Polki Necklace Set','Gold Jewellery','Bridal Atelier',185000],
+  ['Solitaire Diamond Ring','Diamond Jewellery','Nova Diamonds',142000],
+  ['22K Gold Jhumka Earrings','Gold Jewellery','Lucira Signature',48000],
+  ['Diamond Tennis Bracelet','Diamond Jewellery','Nova Diamonds',96000],
+  ['Temple Gold Haaram','Gold Jewellery','Sacred Gold',312000],
+  ['Rose Gold Mangalsutra','Gold Jewellery','Aurelia by Lucira',54000],
+  ['Platinum Couple Bands','Platinum Jewellery','Bridal Atelier',88000],
+  ['Silver Anklet Pair','Silver Jewellery','Everyday Edit',4200],
+  ['10g Gold Coin 24K','Gold Coin','Sacred Gold',72000],
+  ['Diamond Stud Earrings','Diamond Jewellery','Nova Diamonds',38000],
+  ['Antique Gold Bangles','Gold Jewellery','Sacred Gold',168000],
+  ['Everyday Gold Chain','Gold Jewellery','Everyday Edit',26000],
+  ['Emerald Cocktail Ring','Diamond Jewellery','Lucira Signature',64000],
+  ['Silver Pooja Thali','Silver Jewellery','Sacred Gold',8600],
+  ['Platinum Solitaire Pendant','Platinum Jewellery','Nova Diamonds',110000],
+  ['5g Gold Coin 22K','Gold Coin','Sacred Gold',36000],
+  ['Pearl Choker Set','Gold Jewellery','Aurelia by Lucira',72000],
+  ['Diamond Nose Pin','Diamond Jewellery','Everyday Edit',12000],
+];
+const DEVICES=[{name:'mobile',w:64},{name:'desktop',w:28},{name:'tablet',w:8}];
+const BROWSERS={mobile:[['Chrome',52],['Safari',34],['Samsung Internet',9],['Edge',3],['Opera',2]],
+  desktop:[['Chrome',58],['Edge',18],['Safari',14],['Firefox',7],['Opera',3]],
+  tablet:[['Safari',48],['Chrome',44],['Samsung Internet',8]]};
+const OSMAP={mobile:[['Android',63],['iOS',37]],desktop:[['Windows',68],['Macintosh',26],['Linux',6]],tablet:[['iOS',55],['Android',45]]};
+const RES={mobile:['360x800','390x844','412x915','393x873','414x896'],desktop:['1920x1080','1536x864','1440x900','2560x1440','1366x768'],tablet:['768x1024','810x1080','820x1180']};
+const GEO=[
+  {country:'India',w:78,cur:1,regions:[
+    {region:'Maharashtra',cities:['Mumbai','Pune','Nagpur','Thane']},
+    {region:'Delhi',cities:['New Delhi','Delhi']},
+    {region:'Karnataka',cities:['Bengaluru','Mysuru']},
+    {region:'Tamil Nadu',cities:['Chennai','Coimbatore']},
+    {region:'Telangana',cities:['Hyderabad']},
+    {region:'Gujarat',cities:['Ahmedabad','Surat','Rajkot']},
+    {region:'West Bengal',cities:['Kolkata']},
+    {region:'Uttar Pradesh',cities:['Lucknow','Noida','Kanpur']},
+    {region:'Rajasthan',cities:['Jaipur']},
+    {region:'Kerala',cities:['Kochi','Thiruvananthapuram']},
+  ]},
+  {country:'United States',w:8,cur:1,regions:[{region:'New Jersey',cities:['Edison','Jersey City']},{region:'California',cities:['San Jose','Fremont']},{region:'Texas',cities:['Houston','Dallas']}]},
+  {country:'United Arab Emirates',w:6,cur:1,regions:[{region:'Dubai',cities:['Dubai']},{region:'Abu Dhabi',cities:['Abu Dhabi']}]},
+  {country:'United Kingdom',w:3,cur:1,regions:[{region:'England',cities:['London','Leicester']}]},
+  {country:'Canada',w:2,cur:1,regions:[{region:'Ontario',cities:['Toronto','Brampton']}]},
+  {country:'Australia',w:1.5,cur:1,regions:[{region:'Victoria',cities:['Melbourne']}]},
+  {country:'Singapore',w:1,cur:1,regions:[{region:'Singapore',cities:['Singapore']}]},
+  {country:'Saudi Arabia',w:.8,cur:1,regions:[{region:'Riyadh',cities:['Riyadh']}]},
+];
+const LANGS=[['en-in',44],['en-us',20],['hi-in',16],['en-gb',7],['mr-in',5],['ta-in',4],['te-in',2],['gu-in',2]];
+const PAGES=[
+  ['/', 'Lucira Jewelry | Fine Gold & Diamond Jewellery','Home'],
+  ['/collections/gold-jewellery','Gold Jewellery Collection','Collections'],
+  ['/collections/diamond-jewellery','Diamond Jewellery Collection','Collections'],
+  ['/collections/bridal','Bridal Collection','Collections'],
+  ['/collections/gold-coins','Gold Coins & Bars','Collections'],
+  ['/products/solitaire-diamond-ring','Solitaire Diamond Ring','Product'],
+  ['/products/kundan-polki-necklace','Kundan Polki Necklace Set','Product'],
+  ['/products/22k-gold-jhumka','22K Gold Jhumka Earrings','Product'],
+  ['/products/gold-coin-24k','10g Gold Coin 24K','Product'],
+  ['/pages/store-locator','Store Locator','Content'],
+  ['/blogs/journal/gold-rate-today','Gold Rate Today','Blog'],
+  ['/blogs/journal/bridal-guide','The Bridal Jewellery Guide','Blog'],
+  ['/cart','Your Cart','Cart/Checkout'],
+  ['/checkout','Checkout','Cart/Checkout'],
+  ['/account','My Account','Account'],
+  ['/search','Search Results','Content'],
+];
+const HOSTS=['www.lucirajewelry.com','lucirajewelry.com','checkout.lucirajewelry.com'];
+const EVENTS=['page_view','session_start','scroll','user_engagement','view_item_list','view_item','select_item','search','add_to_cart','begin_checkout','add_shipping_info','add_payment_info','purchase','refund','sign_up','login','view_promotion','select_promotion'];
+const COUPONS=['DIWALI10','FIRSTBUY','BRIDAL5','GOLDSAVE','NONE','NONE','NONE','NONE'];
+const PROMOS=['Diwali Festive Offer','Akshaya Tritiya Gold','Bridal Season','Everyday Gold Deal','(none)','(none)'];
+
+/* seasonality multiplier for a given date */
+function seasonal(dstr){
+  const d=new Date(dstr),m=d.getMonth(),day=d.getDay();
+  let s=1;
+  if(m===9||m===10)s*=1.7;                 // Oct-Nov Diwali/wedding
+  if(m===3||m===4)s*=1.45;                 // Apr-May Akshaya Tritiya
+  if(m===1)s*=1.3;                         // Feb Valentine
+  if(m===7)s*=.82;                         // Aug lull (shraddh)
+  if(day===0||day===6)s*=1.18;             // weekend uplift
+  return s;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SAMPLE GENERATION  (deterministic — seed 20260716)
+   Grain = SESSION.  Each row is one GA4 session with full dimensions.
+   ══════════════════════════════════════════════════════════════════ */
+function buildSample(){
+  const rng=mulberry32(20260716);
+  const SPAN=400, END=CONFIG.TODAY, START=addDays(END,-(SPAN-1));
+  // ---- users ----
+  const NUSERS=7200, users=[];
+  for(let i=0;i<NUSERS;i++){
+    // first-seen date skewed toward recent
+    const off=Math.floor(Math.pow(rng(),1.5)*SPAN);
+    users.push({id:i,first:addDays(END,-off),ltv:0,orders:0,sessions:0});
+  }
+  const rows=[];
+  let sid=0;
+  // Walk each day; volume scales with seasonality + slow growth
+  for(let dOff=SPAN-1;dOff>=0;dOff--){
+    const date=addDays(END,-dOff);
+    const growth=1+(SPAN-1-dOff)/SPAN*0.5;       // +50% over the window
+    const base=26*growth*seasonal(date);
+    const n=Math.max(6,Math.round(base+(rng()-.5)*8));
+    for(let k=0;k<n;k++){
+      // choose user: 55% returning (user whose first<=date), else new
+      let u;
+      if(rng()<0.5){
+        // returning: sample an existing user seen before
+        for(let tries=0;tries<6;tries++){const cand=users[Math.floor(rng()*NUSERS)];if(cand.first<=date && cand.sessions>0){u=cand;break;}}
+      }
+      if(!u){
+        // pick a user whose first == date (new) if possible else any seen
+        for(let tries=0;tries<8;tries++){const cand=users[Math.floor(rng()*NUSERS)];if(cand.first<=date){u=cand;break;}}
+        if(!u)u=users[0];
+      }
+      const isNew = u.sessions===0;              // first session for this user in dataset
+      u.sessions++;
+      const ch=wpick(rng,CH);
+      const s=pick(rng,ch.src);
+      const camp = ch.name.includes('Paid')||ch.name.includes('Shopping')||ch.name==='Display'
+        ? pick(rng,CAMPAIGNS.slice(0,9)) : (ch.name==='Email'?pick(rng,['Diwali Festive','Bridal Collection','Everyday Gold']):'(organic)');
+      const dev=wpick(rng,DEVICES.map(d=>({name:d.name,w:d.w}))).name;
+      const br=wpick(rng,BROWSERS[dev].map(x=>({name:x[0],w:x[1]}))).name;
+      const os=wpick(rng,OSMAP[dev].map(x=>({name:x[0],w:x[1]}))).name;
+      const res=pick(rng,RES[dev]);
+      const geo=wpick(rng,GEO.map(g=>({...g,w:g.w})));
+      const reg=pick(rng,geo.regions);
+      const city=pick(rng,reg.cities);
+      const lang=wpick(rng,LANGS.map(l=>({name:l[0],w:l[1]}))).name;
+      const platform = dev==='desktop'?'web':(os==='iOS'?'iOS':(os==='Android'?'Android':'web'));
+      const host=wpick(rng,[{name:HOSTS[0],w:80},{name:HOSTS[1],w:14},{name:HOSTS[2],w:6}]).name;
+      const land=pick(rng, ch.name.includes('Search')?PAGES.slice(0,9):(ch.name.includes('Social')?[PAGES[5],PAGES[6],PAGES[1],PAGES[2],PAGES[11]]:PAGES));
+      // engagement
+      const engaged = rng() < clamp(0.62*ch.q + (dev==='desktop'?.08:0),0.2,0.94);
+      const pv = engaged? 1+Math.floor(rng()*Math.pow(rng(),.4)*9) : (rng()<.5?1:0);
+      const engTime = engaged? Math.round((20+rng()*rng()*400)*(dev==='desktop'?1.25:1)) : Math.round(rng()*8);
+      // event counts
+      const ev={page_view:pv||1,session_start:1,user_engagement:engaged?1+Math.floor(rng()*4):0,scroll:engaged&&rng()<.7?1:0};
+      // ecommerce funnel — gated by engagement & channel quality
+      const shop = engaged && rng()<clamp(.55*ch.q,.1,.9);
+      let viewItem=0,cart=0,checkout=0,payment=0,purchased=0,items=0,rev=0,cat='',brand='',prodName='',coupon='NONE',promo='(none)',refund=0,refAmt=0;
+      if(shop){
+        viewItem=1+Math.floor(rng()*4); ev.view_item_list=1; ev.view_item=viewItem; ev.select_item=rng()<.6?1:0;
+        if(rng()<clamp(.45*ch.q,.1,.75)){
+          cart=1+Math.floor(rng()*2); ev.add_to_cart=cart;
+          if(rng()<clamp(.55*ch.q,.15,.8)){
+            checkout=1; ev.begin_checkout=1; ev.add_shipping_info=rng()<.85?1:0;
+            if(rng()<clamp(.62*ch.q,.2,.85)){
+              payment=1; ev.add_payment_info=1;
+              if(rng()<clamp(.72*ch.q,.3,.92)){
+                purchased=1; ev.purchase=1;
+                const p=wpick(rng,PRODUCTS.map(pr=>({pr,w: pr[3]>150000?1: pr[3]>60000?3:6})));
+                prodName=p.pr[0];cat=p.pr[1];brand=p.pr[2];
+                items=1+(rng()<.25?1:0)+(rng()<.08?1:0);
+                const seas=seasonal(date);
+                rev=Math.round(p.pr[3]*items*(0.88+rng()*0.3)*(seas>1.3?1.05:1));
+                coupon=pick(rng,COUPONS);
+                promo = camp.includes('Diwali')?'Diwali Festive Offer':camp.includes('Akshaya')?'Akshaya Tritiya Gold':camp.includes('Bridal')?'Bridal Season':pick(rng,PROMOS);
+                if(coupon!=='NONE')rev=Math.round(rev*0.92);
+                u.orders++; u.ltv+=rev;
+                if(rng()<0.035){refund=1;refAmt=Math.round(rev*(rng()<.5?1:0.5));ev.refund=1;}
+              }
+            }
+          }
+        }
+      }
+      if(rng()<.03)ev.search=1;
+      if(isNew&&rng()<.12){ev.sign_up=1;}
+      if(!isNew&&rng()<.18){ev.login=1;}
+      if(promo!=='(none)'){ev.view_promotion=1;ev.select_promotion=rng()<.4?1:0;}
+      const evCount=Object.values(ev).reduce((a,b)=>a+b,0);
+      // key events = purchase + sign_up + (begin_checkout as micro) — GA4 key events are configurable; use purchase+sign_up+add_to_cart-as-KE off
+      const keyEvents=(ev.purchase||0)+(ev.sign_up||0)+(ev.begin_checkout||0);
+      const converted = purchased===1;
+      rows.push({
+        id:sid++, date, uid:u.id, isNew,
+        channel:ch.name, source:s[0], medium:s[1], sourceMedium:s[0]+' / '+s[1], campaign:camp,
+        device:dev, browser:br, os, screenRes:res, platform,
+        country:geo.country, region:reg.region, city, language:lang,
+        landingPage:land[0], pageTitle:land[1], pagePath:land[0], contentGroup:land[2], hostname:host,
+        engaged:engaged?1:0, engTime, pv,
+        ev, evCount, keyEvents, converted:converted?1:0,
+        viewItem,cart,checkout,payment,purchased, items, revenue:rev, aov:purchased?rev/items:0,
+        category:cat,brand,product:prodName, coupon,promo, refund, refAmt,
+        userType: u.orders>0? 'Customer':'Prospect',
+        nr: isNew?'New':'Returning',
+      });
+    }
+  }
+  // user ref (first date within-dataset already = users[].first)
+  const userRef={};
+  users.forEach(u=>{userRef[u.id]={first:u.first,ltv:u.ltv,orders:u.orders,sessions:u.sessions};});
+  return {rows,userRef,meta:{from:START,to:END,generated:END}};
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   STATE + FILTER ENGINE
+   ══════════════════════════════════════════════════════════════════ */
+const STATE={
+  theme:'dark', tab:'overview', source:'sample',
+  rows:[], userRef:{}, meta:{},
+  gran:'day',
+  legendOff:{},
+  filters:{preset:'90d',from:null,to:null,
+    channel:'',source:'',medium:'',sourceMedium:'',campaign:'',landingPage:'',device:'',browser:'',os:'',
+    country:'',region:'',city:'',language:'',userType:'',nr:'',platform:'',eventName:'',pageTitle:'',pagePath:'',
+    contentGroup:'',hostname:'',screenRes:'',priceMin:null,priceMax:null,search:''},
+};
+const DIMLABELS={channel:'Channel',source:'Source',medium:'Medium',sourceMedium:'Source / Medium',campaign:'Campaign',
+  landingPage:'Landing Page',device:'Device',browser:'Browser',os:'Operating System',country:'Country',region:'Region',
+  city:'City',language:'Language',userType:'User Type',nr:'New / Returning',platform:'Platform',eventName:'Event',
+  pageTitle:'Page Title',pagePath:'Page Path',contentGroup:'Content Group',hostname:'Hostname',screenRes:'Screen Resolution'};
+
+function presetRange(p){
+  const T=STATE.meta.to||CONFIG.TODAY;
+  const d=new Date(T); const y=d.getFullYear(),m=d.getMonth();
+  const first=(yy,mm)=>iso(new Date(yy,mm,1));
+  switch(p){
+    case 'today':return[T,T];
+    case 'yesterday':{const yd=addDays(T,-1);return[yd,yd];}
+    case '7d':return[addDays(T,-6),T];
+    case '30d':return[addDays(T,-29),T];
+    case 'thisMonth':return[first(y,m),T];
+    case 'lastMonth':{const lm=new Date(y,m-1,1);return[iso(lm),iso(new Date(y,m,0))];}
+    case '3m':return[addDays(T,-89),T];
+    case '6m':return[addDays(T,-179),T];
+    case '90d':return[addDays(T,-89),T];
+    case 'thisYear':return[first(y,0),T];
+    case 'lastYear':return[iso(new Date(y-1,0,1)),iso(new Date(y-1,11,31))];
+    case 'custom':return[STATE.filters.from||addDays(T,-29),STATE.filters.to||T];
+    default:return[addDays(T,-89),T];
+  }
+}
+function activeRange(){const f=STATE.filters;return f.preset==='custom'?[f.from,f.to]:presetRange(f.preset);}
+
+function passRow(r,ignore){
+  const f=STATE.filters, ig=ignore||{};
+  const [from,to]=activeRange();
+  if(from&&r.date<from)return false;
+  if(to&&r.date>to)return false;
+  const eq=(k,v)=>ig[k]||!f[k]||r[v??k]===f[k];
+  if(!eq('channel'))return false;
+  if(!eq('source'))return false;
+  if(!eq('medium'))return false;
+  if(!eq('sourceMedium'))return false;
+  if(!eq('campaign'))return false;
+  if(!eq('landingPage'))return false;
+  if(!eq('device'))return false;
+  if(!eq('browser'))return false;
+  if(!eq('os'))return false;
+  if(!eq('country'))return false;
+  if(!eq('region'))return false;
+  if(!eq('city'))return false;
+  if(!eq('language'))return false;
+  if(!eq('platform'))return false;
+  if(!eq('nr'))return false;
+  if(!eq('pageTitle'))return false;
+  if(!eq('pagePath'))return false;
+  if(!eq('contentGroup'))return false;
+  if(!eq('hostname'))return false;
+  if(!eq('screenRes'))return false;
+  if(!ig.userType&&f.userType&&r.userType!==f.userType)return false;
+  if(!ig.eventName&&f.eventName&&!(r.ev&&r.ev[f.eventName]))return false;
+  if(!ig.search&&f.search){const q=f.search.toLowerCase();
+    const hay=(r.product+' '+r.channel+' '+r.campaign+' '+r.pageTitle+' '+r.city+' '+r.source+' '+r.category+' '+r.brand).toLowerCase();
+    if(!hay.includes(q))return false;}
+  // price filter: only constrains purchase revenue rows
+  if(!ig.price&&(f.priceMin!=null||f.priceMax!=null)){
+    if(r.purchased){
+      if(f.priceMin!=null&&r.revenue<f.priceMin)return false;
+      if(f.priceMax!=null&&r.revenue>f.priceMax)return false;
+    }
+  }
+  return true;
+}
+function filtered(ignore){return STATE.rows.filter(r=>passRow(r,ignore));}
+
+/* comparison window = equal-length preceding period */
+function prevRange(){const[from,to]=activeRange();const len=daysBetween(from,to)+1;return[addDays(from,-len),addDays(from,-1)];}
+function filteredPrev(){
+  const[pf,pt]=prevRange();
+  return STATE.rows.filter(r=>{
+    if(r.date<pf||r.date>pt)return false;
+    const save=STATE.filters.preset,sf=STATE.filters.from,st=STATE.filters.to;
+    return passRowNoDate(r);
+  });
+}
+function passRowNoDate(r){
+  const saved=STATE.filters.preset;const f=STATE.filters;
+  // reuse passRow logic w/o date by temporarily bypassing: replicate dimension checks
+  const ig={};
+  // Build a shallow check ignoring date only
+  const keys=['channel','source','medium','sourceMedium','campaign','landingPage','device','browser','os','country','region','city','language','platform','nr','pageTitle','pagePath','contentGroup','hostname','screenRes'];
+  for(const k of keys){if(f[k]&&r[k]!==f[k])return false;}
+  if(f.userType&&r.userType!==f.userType)return false;
+  if(f.eventName&&!(r.ev&&r.ev[f.eventName]))return false;
+  if(f.priceMin!=null&&r.purchased&&r.revenue<f.priceMin)return false;
+  if(f.priceMax!=null&&r.purchased&&r.revenue>f.priceMax)return false;
+  if(f.search){const q=f.search.toLowerCase();const hay=(r.product+' '+r.channel+' '+r.campaign+' '+r.pageTitle+' '+r.city+' '+r.source+' '+r.category+' '+r.brand).toLowerCase();if(!hay.includes(q))return false;}
+  return true;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   AGGREGATION
+   ══════════════════════════════════════════════════════════════════ */
+function kpis(rows){
+  const users=new Set(),activeUsers=new Set(),newUsers=new Set(),purUsers=new Set();
+  let sessions=0,engSessions=0,views=0,evCount=0,keyEvents=0,conversions=0,purchases=0,revenue=0,
+      engTime=0,cart=0,checkout=0,items=0,refAmt=0,refCnt=0,viewItem=0,payment=0;
+  for(const r of rows){
+    users.add(r.uid);
+    if(r.engaged)activeUsers.add(r.uid);
+    if(r.isNew)newUsers.add(r.uid);
+    sessions++; if(r.engaged)engSessions++;
+    views+=r.pv; evCount+=r.evCount; keyEvents+=r.keyEvents; conversions+=r.converted;
+    purchases+=r.purchased; revenue+=r.revenue; engTime+=r.engTime;
+    cart+=r.cart; checkout+=r.checkout; items+=r.items; viewItem+=r.viewItem; payment+=r.payment;
+    refAmt+=r.refAmt; refCnt+=r.refund;
+    if(r.purchased)purUsers.add(r.uid);
+  }
+  const U=users.size||1, S=sessions||1;
+  return {
+    users:users.size, activeUsers:activeUsers.size, newUsers:newUsers.size, returningUsers:users.size-newUsers.size,
+    sessions, engSessions, views, evCount, keyEvents, conversions, purchases, revenue,
+    aov: purchases?revenue/purchases:0,
+    bounceRate:(1-engSessions/S)*100, engagementRate:engSessions/S*100,
+    avgEngTime: engTime/(activeUsers.size||1),
+    viewsPerUser:views/U, sessionsPerUser:sessions/U, revenuePerUser:revenue/U,
+    cart, checkout, items, viewItem, payment,
+    refAmt, refCnt,
+    purchaseConvRate: purchases/S*100, userConvRate: purUsers.size/U*100,
+    purUsers:purUsers.size,
+  };
+}
+
+function groupBy(rows,keyFn){
+  const map=new Map();
+  for(const r of rows){
+    const k=keyFn(r); if(k==null||k==='')continue;
+    let g=map.get(k);
+    if(!g){g={name:k,users:new Set(),sessions:0,engSessions:0,views:0,evCount:0,keyEvents:0,conversions:0,purchases:0,revenue:0,engTime:0,cart:0,checkout:0,items:0,refAmt:0,refCnt:0,viewItem:0,newUsers:new Set()};map.set(k,g);}
+    g.users.add(r.uid); if(r.isNew)g.newUsers.add(r.uid);
+    g.sessions++; if(r.engaged)g.engSessions++;
+    g.views+=r.pv; g.evCount+=r.evCount; g.keyEvents+=r.keyEvents; g.conversions+=r.converted;
+    g.purchases+=r.purchased; g.revenue+=r.revenue; g.engTime+=r.engTime;
+    g.cart+=r.cart; g.checkout+=r.checkout; g.items+=r.items; g.viewItem+=r.viewItem;
+    g.refAmt+=r.refAmt; g.refCnt+=r.refund;
+  }
+  return [...map.values()].map(g=>({
+    name:g.name, users:g.users.size, newUsers:g.newUsers.size, sessions:g.sessions, engSessions:g.engSessions,
+    engagementRate:g.sessions?g.engSessions/g.sessions*100:0, views:g.views, evCount:g.evCount,
+    keyEvents:g.keyEvents, conversions:g.conversions, purchases:g.purchases, revenue:g.revenue,
+    aov:g.purchases?g.revenue/g.purchases:0, engTime:g.engTime, avgEng:g.users.size?g.engTime/g.users.size:0,
+    cart:g.cart, checkout:g.checkout, items:g.items, refAmt:g.refAmt, refCnt:g.refCnt, viewItem:g.viewItem,
+    convRate:g.sessions?g.purchases/g.sessions*100:0,
+  }));
+}
+
+function eventTotals(rows){
+  const m=new Map();
+  const users=new Map();
+  for(const r of rows){for(const k in r.ev){const c=r.ev[k];if(!c)continue;m.set(k,(m.get(k)||0)+c);
+    if(!users.has(k))users.set(k,new Set());users.get(k).add(r.uid);}}
+  return [...m.entries()].map(([name,count])=>({name,count,users:users.get(name).size})).sort(byDesc('count'));
+}
+
+/* time bucketing */
+function bucketKey(date,gran){
+  const d=new Date(date);
+  if(gran==='day')return date;
+  if(gran==='week'){const day=(d.getDay()+6)%7;const mon=addDays(date,-day);return mon;}
+  if(gran==='month')return date.slice(0,7);
+  if(gran==='quarter')return d.getFullYear()+'-Q'+(Math.floor(d.getMonth()/3)+1);
+  if(gran==='year')return date.slice(0,4);
+  return date;
+}
+function timeSeries(rows,gran,fields){
+  const map=new Map();
+  for(const r of rows){
+    const k=bucketKey(r.date,gran);
+    let g=map.get(k); if(!g){g={key:k,sessions:0,users:new Set(),newUsers:new Set(),views:0,revenue:0,purchases:0,keyEvents:0,engSessions:0,evCount:0};map.set(k,g);}
+    g.sessions++; g.users.add(r.uid); if(r.isNew)g.newUsers.add(r.uid);
+    g.views+=r.pv; g.revenue+=r.revenue; g.purchases+=r.purchased; g.keyEvents+=r.keyEvents; if(r.engaged)g.engSessions++; g.evCount+=r.evCount;
+  }
+  return [...map.values()].map(g=>({key:g.key,label:tsLabel(g.key,gran),sessions:g.sessions,users:g.users.size,newUsers:g.newUsers.size,
+    returningUsers:g.users.size-g.newUsers.size,views:g.views,revenue:g.revenue,purchases:g.purchases,keyEvents:g.keyEvents,
+    engagementRate:g.sessions?g.engSessions/g.sessions*100:0,evCount:g.evCount,
+    aov:g.purchases?g.revenue/g.purchases:0}))
+    .sort((a,b)=>a.key<b.key?-1:1);
+}
+function tsLabel(k,gran){
+  if(gran==='day'){const d=new Date(k);return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});}
+  if(gran==='week'){const d=new Date(k);return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});}
+  if(gran==='month'){const d=new Date(k+'-01');return d.toLocaleDateString('en-IN',{month:'short',year:'2-digit'});}
+  return k;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   CHART PRIMITIVES  (hand-rolled SVG, theme-aware, hover tooltips)
+   ══════════════════════════════════════════════════════════════════ */
+let CID=0;
+const tip=document.getElementById('tip');
+function showTip(html,x,y){tip.innerHTML=html;tip.style.opacity=1;const w=tip.offsetWidth,h=tip.offsetHeight;
+  let lx=x+14,ly=y-h-8;if(lx+w>innerWidth-8)lx=x-w-14;if(ly<8)ly=y+16;tip.style.left=lx+'px';tip.style.top=ly+'px';}
+function hideTip(){tip.style.opacity=0;}
+document.addEventListener('mousemove',e=>{
+  const el=e.target.closest&&e.target.closest('[data-tip]');
+  if(el){showTip(el.getAttribute('data-tip'),e.clientX,e.clientY);}else if(!e.target.closest('#tip'))hideTip();
+});
+
+function niceMax(v){if(v<=0)return 1;const p=Math.pow(10,Math.floor(Math.log10(v)));const n=v/p;const step=n<=1?1:n<=2?2:n<=5?5:10;return step*p;}
+
+/* LINE / AREA chart. series=[{name,color,data:[{label,v}]}] shared x */
+function lineChart(series,opts={}){
+  const W=opts.w||640,H=opts.h||240,PL=48,PR=14,PT=14,PB=28;
+  const cc=C();const id='c'+(++CID);
+  const labels=series[0].data.map(d=>d.label);
+  const n=labels.length;
+  let max=0,min=0;series.forEach(s=>s.data.forEach(d=>{if(d.v>max)max=d.v;if(d.v<min)min=d.v;}));
+  max=niceMax(max||1);const range=max-Math.min(0,min)||1;
+  const x=i=>PL+(n<=1?0:(i/(n-1))*(W-PL-PR));
+  const y=v=>H-PB-((v-Math.min(0,min))/range)*(H-PT-PB);
+  let g='';for(let t=0;t<=4;t++){const v=max*t/4;const yy=y(v);g+=`<line class="grid-line" x1="${PL}" y1="${yy}" x2="${W-PR}" y2="${yy}"/><text class="axis-lbl" x="${PL-8}" y="${yy+3}" text-anchor="end">${opts.money?fmtMoney(v):fmtNum(v)}</text>`;}
+  const step=Math.ceil(n/(opts.money?6:8));
+  let xl='';labels.forEach((l,i)=>{if(i%step===0||i===n-1)xl+=`<text class="axis-lbl" x="${x(i)}" y="${H-8}" text-anchor="middle">${esc(l)}</text>`;});
+  let paths='';
+  series.forEach((s)=>{
+    if(STATE.legendOff[s.name])return;
+    let d='',ar='';
+    s.data.forEach((pt,i)=>{d+=(i?'L':'M')+x(i).toFixed(1)+' '+y(pt.v).toFixed(1)+' ';});
+    if(opts.area){ar=`M${x(0)} ${y(0)} `+s.data.map((pt,i)=>'L'+x(i).toFixed(1)+' '+y(pt.v).toFixed(1)).join(' ')+` L${x(n-1)} ${y(0)} Z`;
+      paths+=`<path d="${ar}" fill="${s.color}" opacity="${opts.stack?.9:.13}"/>`;}
+    if(!opts.stack)paths+=`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  });
+  // hover columns
+  let hov='';for(let i=0;i<n;i++){const cx=x(i);const rows=series.filter(s=>!STATE.legendOff[s.name]).map(s=>`<div class="tr"><span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${s.color};margin-right:5px"></span>${esc(s.name)}</span><b>${opts.money?fmtMoneyFull(s.data[i].v):fmtInt(s.data[i].v)}</b></div>`).join('');
+    const tt=`<div class='tt'>${esc(labels[i])}</div>${rows}`;
+    hov+=`<rect x="${cx-(W-PL-PR)/n/2}" y="${PT}" width="${(W-PL-PR)/Math.max(1,n)}" height="${H-PT-PB}" fill="transparent" data-tip="${esc(tt)}"/>`;
+    series.forEach(s=>{if(!STATE.legendOff[s.name]&&!opts.stack)hov+=`<circle cx="${cx}" cy="${y(s.data[i].v)}" r="2.6" fill="${s.color}"/>`;});
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" style="max-height:${H}px">${g}${paths}${hov}${xl}<line class="baseline" x1="${PL}" y1="${y(Math.min(0,min))}" x2="${W-PR}" y2="${y(Math.min(0,min))}"/></svg>${legendHtml(series,id)}`;
+}
+
+function legendHtml(series,id){
+  if(series.length<2)return '';
+  return `<div class="legend" data-legend>${series.map(s=>`<div class="li ${STATE.legendOff[s.name]?'off':''}" data-leg="${esc(s.name)}"><span class="sw" style="background:${s.color}"></span>${esc(s.name)}</div>`).join('')}</div>`;
+}
+
+/* vertical bars: data=[{label,v,color?}] */
+function barChart(data,opts={}){
+  const W=opts.w||640,H=opts.h||240,PL=48,PR=14,PT=14,PB=34;
+  const n=data.length;let max=niceMax(Math.max(1,...data.map(d=>d.v)));
+  const bw=(W-PL-PR)/n; const pad=Math.min(14,bw*.28);
+  const y=v=>H-PB-(v/max)*(H-PT-PB);
+  const axf=v=>opts.money?fmtMoney(v):opts.pct?fmtPct(v,0):fmtNum(v);
+  const valf=v=>opts.money?fmtMoneyFull(v):opts.pct?fmtPct(v):fmtInt(v);
+  let g='';for(let t=0;t<=4;t++){const v=max*t/4,yy=y(v);g+=`<line class="grid-line" x1="${PL}" y1="${yy}" x2="${W-PR}" y2="${yy}"/><text class="axis-lbl" x="${PL-8}" y="${yy+3}" text-anchor="end">${axf(v)}</text>`;}
+  let bars='';const step=Math.ceil(n/12);
+  data.forEach((d,i)=>{const bx=PL+i*bw+pad/2,bh=Math.max(0,H-PB-y(d.v)),by=y(d.v);const col=d.color||cSeq(d.v/max);
+    const tt=`<div class='tt'>${esc(d.label)}</div><div class='tr'><span>${esc(opts.metric||'Value')}</span><b>${valf(d.v)}</b></div>`;
+    bars+=`<rect class="clickable" x="${bx}" y="${by}" width="${bw-pad}" height="${bh}" rx="4" fill="${col}" data-tip="${esc(tt)}" ${d.filter?`data-filter="${esc(d.filter)}"`:''}/>`;
+    if(i%step===0||n<=14)bars+=`<text class="axis-lbl" x="${bx+(bw-pad)/2}" y="${H-8}" text-anchor="middle">${esc(String(d.label).slice(0,10))}</text>`;});
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" style="max-height:${H}px">${g}${bars}<line class="baseline" x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}"/></svg>`;
+}
+const cSeq=t=>{const c=C();return c.series[0];}; // sequential fills use blue, opacity by caller if needed
+
+/* horizontal ranked bars: data=[{label,v}] */
+function hbar(data,opts={}){
+  data=data.slice(0,opts.top||10);
+  const max=Math.max(1,...data.map(d=>d.v));const rowH=opts.rowH||30;const W=opts.w||560;const labelW=opts.labelW||150;
+  const barMax=W-labelW-90;
+  let rows='';data.forEach((d,i)=>{const w=Math.max(2,(d.v/max)*barMax);const col=opts.color||SC(opts.ci||0);
+    const val=opts.money?fmtMoney(d.v):(opts.pct?fmtPct(d.v):fmtInt(d.v));
+    const tt=`<div class='tt'>${esc(d.label)}</div><div class='tr'><span>${esc(opts.metric||'Value')}</span><b>${opts.money?fmtMoneyFull(d.v):(opts.pct?fmtPct(d.v):fmtInt(d.v))}</b></div>${d.sub?`<div class='tr'><span>${esc(d.subL||'')}</span><b>${esc(d.sub)}</b></div>`:''}`;
+    rows+=`<g transform="translate(0 ${i*rowH})" class="clickable" data-tip="${esc(tt)}" ${d.filter?`data-filter="${esc(d.filter)}"`:''}>
+      <text x="0" y="${rowH/2+4}" fill="var(--ink2)" font-size="12" font-weight="600">${esc(String(d.label).slice(0,22))}</text>
+      <rect x="${labelW}" y="${rowH/2-8}" width="${w}" height="16" rx="4" fill="${col}"/>
+      <text x="${labelW+w+7}" y="${rowH/2+4}" fill="var(--ink)" font-size="11.5" font-weight="700" style="font-variant-numeric:tabular-nums">${val}</text>
+    </g>`;});
+  return `<svg viewBox="0 0 ${W} ${data.length*rowH+6}" width="100%" preserveAspectRatio="xMinYMin meet">${rows}</svg>`;
+}
+
+/* donut: data=[{label,v}] */
+function donut(data,opts={}){
+  data=data.filter(d=>d.v>0).sort(byDesc('v'));
+  const top=data.slice(0,opts.max||6);const rest=data.slice(opts.max||6);
+  if(rest.length)top.push({label:'Other',v:sum(rest,d=>d.v)});
+  const total=sum(top,d=>d.v)||1;const R=opts.r||78,r=R*.62,cx=R+8,cy=R+8;let a=-Math.PI/2;
+  let seg='';top.forEach((d,i)=>{const frac=d.v/total,a2=a+frac*Math.PI*2;const large=frac>.5?1:0;
+    const x1=cx+R*Math.cos(a),y1=cy+R*Math.sin(a),x2=cx+R*Math.cos(a2),y2=cy+R*Math.sin(a2);
+    const xi=cx+r*Math.cos(a2),yi=cy+r*Math.sin(a2),xi1=cx+r*Math.cos(a);
+    const tt=`<div class='tt'>${esc(d.label)}</div><div class='tr'><span>${opts.money?'Revenue':'Sessions'}</span><b>${opts.money?fmtMoneyFull(d.v):fmtInt(d.v)}</b></div><div class='tr'><span>Share</span><b>${fmtPct(frac*100)}</b></div>`;
+    seg+=`<path class="clickable" d="M${x1} ${y1} A${R} ${R} 0 ${large} 1 ${x2} ${y2} L${xi} ${yi} A${r} ${r} 0 ${large} 0 ${cx+r*Math.cos(a)} ${cy+r*Math.sin(a)} Z" fill="${SC(i)}" stroke="var(--surface)" stroke-width="2" data-tip="${esc(tt)}" ${d.filter?`data-filter="${esc(d.filter)}"`:''}/>`;a=a2;});
+  const center=opts.center||fmtInt(total);
+  return `<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+    <svg viewBox="0 0 ${(R+8)*2} ${(R+8)*2}" width="${(R+8)*2}" style="flex:none;max-width:190px">${seg}
+    <text x="${cx}" y="${cy-2}" text-anchor="middle" fill="var(--ink)" font-size="19" font-weight="800">${esc(center)}</text>
+    <text x="${cx}" y="${cy+15}" text-anchor="middle" fill="var(--muted)" font-size="10">${esc(opts.centerLbl||'Total')}</text></svg>
+    <div class="legend" style="flex-direction:column;gap:7px;margin:0">${top.map((d,i)=>`<div class="li"><span class="sw" style="background:${SC(i)}"></span>${esc(d.label)} <b style="margin-left:auto;color:var(--ink)">${fmtPct(d.v/total*100)}</b></div>`).join('')}</div></div>`;
+}
+
+/* funnel: steps=[{label,v}] */
+function funnel(steps,opts={}){
+  const W=opts.w||560,rowH=54,max=steps[0].v||1;
+  let out='';steps.forEach((s,i)=>{const w=Math.max(6,(s.v/max)*(W-140));const y=i*rowH;const col=SC(0);
+    const drop=i>0?((steps[i-1].v-s.v)/(steps[i-1].v||1)*100):0;
+    const pct=s.v/max*100;
+    out+=`<g transform="translate(0 ${y})" data-tip="${esc(`<div class='tt'>${esc(s.label)}</div><div class='tr'><span>Count</span><b>${fmtInt(s.v)}</b></div><div class='tr'><span>% of top</span><b>${fmtPct(pct)}</b></div>${i>0?`<div class='tr'><span>Drop-off</span><b>${fmtPct(drop)}</b></div>`:''}`)}">
+      <rect x="${(W-140-w)/2}" y="6" width="${w}" height="${rowH-16}" rx="7" fill="${col}" opacity="${1-i*0.12}"/>
+      <text x="0" y="${rowH/2+2}" fill="var(--ink2)" font-size="12" font-weight="600">${esc(s.label)}</text>
+      <text x="${W-6}" y="${rowH/2-4}" text-anchor="end" fill="var(--ink)" font-size="13" font-weight="800">${fmtInt(s.v)}</text>
+      <text x="${W-6}" y="${rowH/2+12}" text-anchor="end" fill="${i>0&&drop>60?'var(--crit)':'var(--muted)'}" font-size="10.5">${i===0?fmtPct(pct)+' entry':'▼ '+fmtPct(drop)+' drop'}</text></g>`;});
+  return `<svg viewBox="0 0 ${W} ${steps.length*rowH+6}" width="100%" preserveAspectRatio="xMinYMin meet">${out}</svg>`;
+}
+
+/* heatmap: rows[],cols[],val(r,c) */
+function heatmap(rowsL,colsL,valFn,opts={}){
+  const cw=opts.cw||30,ch=opts.ch||26,PL=opts.pl||64,PT=22;const W=PL+colsL.length*cw+8;const H=PT+rowsL.length*ch+8;
+  let max=0;const M=rowsL.map(r=>colsL.map(c=>{const v=valFn(r,c);if(v>max)max=v;return v;}));max=max||1;
+  let cells='';rowsL.forEach((r,ri)=>{cells+=`<text class="axis-lbl" x="${PL-6}" y="${PT+ri*ch+ch/2+3}" text-anchor="end">${esc(r)}</text>`;
+    colsL.forEach((c,ci)=>{const v=M[ri][ci];const op=0.12+0.88*(v/max);
+      const tt=`<div class='tt'>${esc(r)} · ${esc(c)}</div><div class='tr'><span>${esc(opts.metric||'Value')}</span><b>${opts.money?fmtMoneyFull(v):fmtInt(v)}</b></div>`;
+      cells+=`<rect x="${PL+ci*cw+1}" y="${PT+ri*ch+1}" width="${cw-2}" height="${ch-2}" rx="4" fill="${SC(0)}" fill-opacity="${op.toFixed(2)}" data-tip="${esc(tt)}"/>`;});});
+  colsL.forEach((c,ci)=>{cells+=`<text class="axis-lbl" x="${PL+ci*cw+cw/2}" y="${PT-7}" text-anchor="middle">${esc(String(c).slice(0,4))}</text>`;});
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMinYMin meet">${cells}</svg>`;
+}
+
+/* treemap (squarified-ish simple slice): data=[{label,v}] */
+function treemap(data,opts={}){
+  data=data.filter(d=>d.v>0).sort(byDesc('v')).slice(0,opts.max||10);
+  const W=opts.w||560,H=opts.h||260,total=sum(data,d=>d.v)||1;
+  // simple row-based layout
+  let x=0,y=0,rowH=0,out='';const cols=Math.ceil(Math.sqrt(data.length));
+  // slice-and-dice by area proportion in a horizontal strip layout
+  let acc=[];let i=0;
+  // Use simple treemap: split alternating
+  function layout(items,x,y,w,h,horiz){
+    if(!items.length)return;
+    if(items.length===1){out+=cell(items[0],x,y,w,h);return;}
+    const tot=sum(items,d=>d.v);let half=0,idx=0,acc=0;
+    for(;idx<items.length;idx++){acc+=items[idx].v;if(acc>=tot/2){idx++;break;}}
+    const a=items.slice(0,idx),b=items.slice(idx);const af=sum(a,d=>d.v)/tot;
+    if(horiz){layout(a,x,y,w*af,h,!horiz);layout(b,x+w*af,y,w*(1-af),h,!horiz);}
+    else{layout(a,x,y,w,h*af,!horiz);layout(b,x,y+h*af,w,h*(1-af),!horiz);}
+  }
+  function cell(d,x,y,w,h){const i=data.indexOf(d);const tt=`<div class='tt'>${esc(d.label)}</div><div class='tr'><span>${opts.money?'Revenue':'Value'}</span><b>${opts.money?fmtMoneyFull(d.v):fmtInt(d.v)}</b></div><div class='tr'><span>Share</span><b>${fmtPct(d.v/total*100)}</b></div>`;
+    const show=w>54&&h>26;
+    return `<g class="clickable" data-tip="${esc(tt)}" ${d.filter?`data-filter="${esc(d.filter)}"`:''}><rect x="${x+1}" y="${y+1}" width="${Math.max(0,w-2)}" height="${Math.max(0,h-2)}" rx="6" fill="${SC(i)}" opacity="0.9"/>${show?`<text x="${x+8}" y="${y+18}" fill="#fff" font-size="11.5" font-weight="700">${esc(String(d.label).slice(0,Math.floor(w/8)))}</text><text x="${x+8}" y="${y+33}" fill="#fff" font-size="11" opacity=".85">${opts.money?fmtMoney(d.v):fmtNum(d.v)}</text>`:''}</g>`;}
+  layout(data,0,0,W,H,true);
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet">${out}</svg>`;
+}
+
+/* scatter/bubble: pts=[{x,y,r,label,color}] */
+function scatter(pts,opts={}){
+  const W=opts.w||560,H=opts.h||300,PL=52,PR=16,PT=14,PB=36;
+  const xmax=niceMax(Math.max(1,...pts.map(p=>p.x))),ymax=niceMax(Math.max(1,...pts.map(p=>p.y)));
+  const rmax=Math.max(1,...pts.map(p=>p.r||1));
+  const X=v=>PL+(v/xmax)*(W-PL-PR),Y=v=>H-PB-(v/ymax)*(H-PT-PB);
+  let g='';for(let t=0;t<=4;t++){const yy=PT+(H-PT-PB)*t/4;const xx=PL+(W-PL-PR)*t/4;
+    g+=`<line class="grid-line" x1="${PL}" y1="${yy}" x2="${W-PR}" y2="${yy}"/><text class="axis-lbl" x="${PL-8}" y="${yy+3}" text-anchor="end">${opts.yfmt?opts.yfmt(ymax*(4-t)/4):fmtNum(ymax*(4-t)/4)}</text>`;
+    g+=`<text class="axis-lbl" x="${xx}" y="${H-10}" text-anchor="middle">${opts.xfmt?opts.xfmt(xmax*t/4):fmtNum(xmax*t/4)}</text>`;}
+  let dots='';pts.forEach((p,i)=>{const rr=6+18*Math.sqrt((p.r||1)/rmax);
+    const tt=`<div class='tt'>${esc(p.label)}</div><div class='tr'><span>${esc(opts.xl||'X')}</span><b>${opts.xfmt?opts.xfmt(p.x):fmtInt(p.x)}</b></div><div class='tr'><span>${esc(opts.yl||'Y')}</span><b>${opts.yfmt?opts.yfmt(p.y):fmtInt(p.y)}</b></div>${p.r?`<div class='tr'><span>${esc(opts.rl||'Size')}</span><b>${opts.rfmt?opts.rfmt(p.r):fmtInt(p.r)}</b></div>`:''}`;
+    dots+=`<circle class="clickable" cx="${X(p.x)}" cy="${Y(p.y)}" r="${rr}" fill="${p.color||SC(i)}" opacity=".62" stroke="${p.color||SC(i)}" stroke-width="1.5" data-tip="${esc(tt)}" ${p.filter?`data-filter="${esc(p.filter)}"`:''}/>`;
+    if(opts.labels&&rr>10)dots+=`<text x="${X(p.x)}" y="${Y(p.y)+3}" text-anchor="middle" fill="#fff" font-size="9.5" font-weight="700">${esc(String(p.label).slice(0,8))}</text>`;});
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet">${g}${dots}<line class="baseline" x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}"/><line class="baseline" x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}"/>${opts.xl?`<text class="axis-lbl" x="${(W)/2}" y="${H-1}" text-anchor="middle">${esc(opts.xl)}</text>`:''}</svg>`;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   REUSABLE UI PIECES
+   ══════════════════════════════════════════════════════════════════ */
+function kpiCard(k){
+  const arrow=k.delta>0.5?'▲':k.delta<-0.5?'▼':'▬';
+  const cls=k.delta>0.5?(k.invert?'down':'up'):k.delta<-0.5?(k.invert?'up':'down'):'flat';
+  return `<div class="kpi" style="--kc:${k.color||'var(--accent)'}">
+    <div class="lbl">${k.icon?k.icon+' ':''}${esc(k.label)}</div>
+    <div class="val tnum">${k.value}</div>
+    <div class="foot"><span class="delta ${cls}">${arrow} ${Math.abs(k.delta||0).toFixed(1)}%</span><span style="color:var(--muted)">vs prev</span></div>
+  </div>`;
+}
+function pctDelta(cur,prev){if(!prev)return 0;return (cur-prev)/prev*100;}
+
+function card(title,sub,bodyHtml,opts={}){
+  const id='card'+(++CID);
+  return `<div class="card ${opts.cls||''}" id="${id}">
+    <div class="hd"><div><h3>${opts.icon?opts.icon+' ':''}${esc(title)}</h3>${sub?`<div class="sub">${esc(sub)}</div>`:''}</div>
+    <div class="tools">${opts.tools||''}<button class="minibtn" data-full="${id}" title="Full screen">⛶</button></div></div>
+    <div class="cbody">${bodyHtml}</div></div>`;
+}
+function tabToggle(name,cur,vals){return `<div class="seg" data-toggle="${name}">${vals.map(v=>`<button data-val="${v[0]}" class="${cur===v[0]?'on':''}">${v[1]}</button>`).join('')}</div>`;}
+
+/* Data table component */
+const TBL={};
+function dataTable(id,cols,rows,opts={}){
+  TBL[id]={cols,rows,sort:opts.sort||0,dir:opts.dir||'desc',page:0,per:opts.per||12,q:'',all:rows};
+  return `<div id="dt-${id}">${renderTable(id)}</div>`;
+}
+function renderTable(id){
+  const t=TBL[id];let rows=t.all;
+  if(t.q){const q=t.q.toLowerCase();rows=rows.filter(r=>t.cols.some(c=>String(r[c.k]).toLowerCase().includes(q)));}
+  const sc=t.cols[t.sort];
+  rows=[...rows].sort((a,b)=>{let av=a[sc.k],bv=b[sc.k];if(typeof av==='number'&&typeof bv==='number')return t.dir==='desc'?bv-av:av-bv;av=String(av);bv=String(bv);return t.dir==='desc'?bv.localeCompare(av):av.localeCompare(bv);});
+  t.filtered=rows;
+  const pages=Math.max(1,Math.ceil(rows.length/t.per));t.page=clamp(t.page,0,pages-1);
+  const view=rows.slice(t.page*t.per,(t.page+1)*t.per);
+  const head=t.cols.map((c,i)=>`<th class="${c.num?'num':''}" data-sort="${id}|${i}">${esc(c.label)}${t.sort===i?(t.dir==='desc'?' ↓':' ↑'):''}</th>`).join('');
+  const body=view.map(r=>`<tr>${t.cols.map(c=>{let v=r[c.k];let disp=c.fmt?c.fmt(v,r):esc(v);
+    let style='';if(c.heat){const mx=Math.max(...rows.map(x=>x[c.k]))||1;const op=(v/mx);style=`background:rgba(57,135,229,${(0.08+op*0.5).toFixed(2)});border-radius:6px`;}
+    if(c.tag){disp=`<span class="tag" style="background:${c.tag(v,r).bg};color:${c.tag(v,r).fg}">${esc(c.tag(v,r).t)}</span>`;}
+    return `<td class="${c.num?'num':''}" style="${style}">${disp}</td>`;}).join('')}</tr>`).join('')||`<tr><td colspan="${t.cols.length}" class="emptybox">No rows</td></tr>`;
+  return `<div class="tblbar">
+      <input placeholder="🔍 Search…" value="${esc(t.q)}" oninput="tblSearch('${id}',this.value)">
+      <span class="chip">${fmtInt(rows.length)} rows</span>
+      <div class="spacer" style="flex:1"></div>
+      <button class="minibtn" onclick="tblExport('${id}','csv')">⤓ CSV</button>
+      <button class="minibtn" onclick="tblExport('${id}','xls')">⤓ Excel</button>
+    </div>
+    <div class="tblscroll"><table class="dt"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>
+    <div class="pager"><button onclick="tblPage('${id}',-1)" ${t.page===0?'disabled':''}>‹ Prev</button>
+      <span>Page ${t.page+1} / ${pages}</span>
+      <button onclick="tblPage('${id}',1)" ${t.page>=pages-1?'disabled':''}>Next ›</button></div>`;
+}
+window.tblSearch=(id,v)=>{TBL[id].q=v;TBL[id].page=0;document.getElementById('dt-'+id).innerHTML=renderTable(id);};
+window.tblPage=(id,d)=>{TBL[id].page+=d;document.getElementById('dt-'+id).innerHTML=renderTable(id);};
+window.tblSort=(id,i)=>{const t=TBL[id];if(t.sort===i)t.dir=t.dir==='desc'?'asc':'desc';else{t.sort=i;t.dir='desc';}document.getElementById('dt-'+id).innerHTML=renderTable(id);};
+window.tblExport=(id,fmt)=>{const t=TBL[id];const rows=t.filtered||t.all;const cols=t.cols;
+  const data=[cols.map(c=>c.label)].concat(rows.map(r=>cols.map(c=>{const v=r[c.k];return c.raw?c.raw(v,r):v;})));
+  if(fmt==='csv'){const csv=data.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');dl(new Blob([csv],{type:'text/csv'}),id+'.csv');}
+  else{let h='<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="'+id+'"><Table>';
+    data.forEach((r,ri)=>{h+='<Row>'+r.map(c=>{const num=ri>0&&typeof c==='number';return `<Cell><Data ss:Type="${num?'Number':'String'}">${String(c).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))}</Data></Cell>`;}).join('')+'</Row>';});
+    h+='</Table></Worksheet></Workbook>';dl(new Blob([h],{type:'application/vnd.ms-excel'}),id+'.xls');}};
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
+
+/* ══════════════════════════════════════════════════════════════════
+   TABS
+   ══════════════════════════════════════════════════════════════════ */
+const TABS=[
+  ['overview','Overview','◱'],['sales','Sales & Revenue','₹'],['traffic','Traffic','⇄'],
+  ['users','Users','☺'],['devices','Devices','▤'],['geo','Locations','⌖'],
+  ['pages','Pages','▦'],['events','Events','✦'],['ecom','E-commerce','⛢'],
+  ['marketing','Marketing','◎'],['data','Data Explorer','▤'],
+];
+function renderTabs(){document.getElementById('tabrail').innerHTML=TABS.map(t=>`<div class="tab ${STATE.tab===t[0]?'active':''}" data-tab="${t[0]}"><span class="ic">${t[2]}</span>${t[1]}</div>`).join('');}
+
+function render(){
+  renderTabs();renderActiveFilters();
+  const v=document.getElementById('view');
+  const R=filtered();
+  if(!R.length){v.innerHTML=`<div class="card"><div class="emptybox">No data matches the current filters.<br><button class="btn" style="margin-top:12px" onclick="resetFilters()">Reset filters</button></div></div>`;return;}
+  const fn={overview:tabOverview,sales:tabSales,traffic:tabTraffic,users:tabUsers,devices:tabDevices,
+    geo:tabGeo,pages:tabPages,events:tabEvents,ecom:tabEcom,marketing:tabMarketing,data:tabData}[STATE.tab];
+  v.innerHTML=fn(R);
+  wireDynamic();
+}
+
+function renderActiveFilters(){
+  const f=STATE.filters;const box=document.getElementById('activeFilters');const chips=[];
+  const [from,to]=activeRange();
+  chips.push(`<span class="activef">📅 ${presetLabel(f.preset)} · ${from} → ${to}</span>`);
+  for(const k in DIMLABELS){if(f[k])chips.push(`<span class="activef">${DIMLABELS[k]}: ${esc(f[k])} <button data-clear="${k}">✕</button></span>`);}
+  if(f.userType)chips.push(`<span class="activef">User Type: ${esc(f.userType)} <button data-clear="userType">✕</button></span>`);
+  if(f.eventName)chips.push(`<span class="activef">Event: ${esc(f.eventName)} <button data-clear="eventName">✕</button></span>`);
+  if(f.priceMin!=null||f.priceMax!=null)chips.push(`<span class="activef">Price: ${f.priceMin!=null?fmtMoney(f.priceMin):'0'}–${f.priceMax!=null?fmtMoney(f.priceMax):'∞'} <button data-clear="price">✕</button></span>`);
+  if(f.search)chips.push(`<span class="activef">Search: "${esc(f.search)}" <button data-clear="search">✕</button></span>`);
+  const n=chips.length-1;
+  document.getElementById('fcount').style.display=n>0?'grid':'none';
+  document.getElementById('fcount').textContent=n;
+  box.innerHTML=chips.join('')+(n>0?`<span class="activef" style="background:var(--crit);color:#fff;cursor:pointer" onclick="resetFilters()">Clear all ✕</span>`:'');
+}
+const presetLabels={today:'Today',yesterday:'Yesterday','7d':'Last 7 Days','30d':'Last 30 Days',thisMonth:'This Month',lastMonth:'Last Month','3m':'Last 3 Months','6m':'Last 6 Months','90d':'Last 90 Days',thisYear:'This Year',lastYear:'Last Year',custom:'Custom'};
+const presetLabel=p=>presetLabels[p]||p;
+
+/* ─── OVERVIEW ─────────────────────────────────────────────── */
+function tabOverview(R){
+  const k=kpis(R),p=kpis(filteredPrev());
+  const cards=[
+    {label:'Total Users',icon:'☺',value:fmtInt(k.users),delta:pctDelta(k.users,p.users),color:'var(--s1)'},
+    {label:'New Users',value:fmtInt(k.newUsers),delta:pctDelta(k.newUsers,p.newUsers),color:'var(--s5)'},
+    {label:'Active Users',value:fmtInt(k.activeUsers),delta:pctDelta(k.activeUsers,p.activeUsers),color:'var(--s1)'},
+    {label:'Sessions',value:fmtInt(k.sessions),delta:pctDelta(k.sessions,p.sessions),color:'var(--s7)'},
+    {label:'Engaged Sessions',value:fmtInt(k.engSessions),delta:pctDelta(k.engSessions,p.engSessions),color:'var(--s5)'},
+    {label:'Views',value:fmtInt(k.views),delta:pctDelta(k.views,p.views),color:'var(--s1)'},
+    {label:'Event Count',value:fmtInt(k.evCount),delta:pctDelta(k.evCount,p.evCount),color:'var(--s7)'},
+    {label:'Key Events',value:fmtInt(k.keyEvents),delta:pctDelta(k.keyEvents,p.keyEvents),color:'var(--s2)'},
+    {label:'Conversions',value:fmtInt(k.conversions),delta:pctDelta(k.conversions,p.conversions),color:'var(--s2)'},
+    {label:'Purchases',value:fmtInt(k.purchases),delta:pctDelta(k.purchases,p.purchases),color:'var(--s2)'},
+    {label:'Purchase Revenue',value:fmtMoney(k.revenue),delta:pctDelta(k.revenue,p.revenue),color:'var(--s4)'},
+    {label:'Avg Order Value',value:fmtMoney(k.aov),delta:pctDelta(k.aov,p.aov),color:'var(--s4)'},
+    {label:'Bounce Rate',value:fmtPct(k.bounceRate),delta:pctDelta(k.bounceRate,p.bounceRate),color:'var(--s6)',invert:true},
+    {label:'Engagement Rate',value:fmtPct(k.engagementRate),delta:pctDelta(k.engagementRate,p.engagementRate),color:'var(--s5)'},
+    {label:'Avg Engagement Time',value:fmtDur(k.avgEngTime),delta:pctDelta(k.avgEngTime,p.avgEngTime),color:'var(--s1)'},
+    {label:'Views / User',value:k.viewsPerUser.toFixed(1),delta:pctDelta(k.viewsPerUser,p.viewsPerUser),color:'var(--s1)'},
+    {label:'Sessions / User',value:k.sessionsPerUser.toFixed(2),delta:pctDelta(k.sessionsPerUser,p.sessionsPerUser),color:'var(--s7)'},
+    {label:'Revenue / User',value:fmtMoney(k.revenuePerUser),delta:pctDelta(k.revenuePerUser,p.revenuePerUser),color:'var(--s4)'},
+    {label:'Cart Additions',value:fmtInt(k.cart),delta:pctDelta(k.cart,p.cart),color:'var(--s3)'},
+    {label:'Checkouts Started',value:fmtInt(k.checkout),delta:pctDelta(k.checkout,p.checkout),color:'var(--s3)'},
+    {label:'Items Purchased',value:fmtInt(k.items),delta:pctDelta(k.items,p.items),color:'var(--s4)'},
+    {label:'Refund Amount',value:fmtMoney(k.refAmt),delta:pctDelta(k.refAmt,p.refAmt),color:'var(--s8)',invert:true},
+    {label:'Refund Count',value:fmtInt(k.refCnt),delta:pctDelta(k.refCnt,p.refCnt),color:'var(--s8)',invert:true},
+    {label:'Purchase Conv. Rate',value:fmtPct(k.purchaseConvRate,2),delta:pctDelta(k.purchaseConvRate,p.purchaseConvRate),color:'var(--s2)'},
+    {label:'User Conv. Rate',value:fmtPct(k.userConvRate,2),delta:pctDelta(k.userConvRate,p.userConvRate),color:'var(--s2)'},
+  ];
+  const ts=timeSeries(R,STATE.gran);
+  const trendCard=card('Performance Trend','Users, sessions & revenue over time',
+    lineChart([
+      {name:'Users',color:SC(0),data:ts.map(t=>({label:t.label,v:t.users}))},
+      {name:'Sessions',color:SC(6),data:ts.map(t=>({label:t.label,v:t.sessions}))},
+    ],{h:250,area:true}),{cls:'span2',icon:'📈',tools:granToggle()});
+  const revCard=card('Revenue Trend','Purchase revenue over time',
+    lineChart([{name:'Revenue',color:SC(3),data:ts.map(t=>({label:t.label,v:t.revenue}))}],{h:250,area:true,money:true}),
+    {cls:'span2',icon:'₹',tools:granToggle()});
+  const ch=groupBy(R,r=>r.channel).sort(byDesc('sessions'));
+  const dev=groupBy(R,r=>r.device).sort(byDesc('sessions'));
+  const geo=groupBy(R,r=>r.country).sort(byDesc('sessions'));
+  return `<div class="grid g4" style="margin-bottom:16px">${cards.map(kpiCard).join('')}</div>
+    <div class="grid g2" style="margin-bottom:16px">${trendCard}${revCard}</div>
+    <div class="grid g3">
+      ${card('Sessions by Channel','Default channel grouping',donut(ch.map(c=>({label:c.name,v:c.sessions,filter:'channel|'+c.name})),{centerLbl:'Sessions'}),{icon:'⇄'})}
+      ${card('Sessions by Device','',donut(dev.map(d=>({label:d.name,v:d.sessions,filter:'device|'+d.name})),{centerLbl:'Sessions',max:3}),{icon:'▤'})}
+      ${card('Top Countries','By sessions',hbar(geo.map(g=>({label:g.name,v:g.sessions,filter:'country|'+g.name})),{top:8,ci:4,metric:'Sessions'}),{icon:'⌖'})}
+    </div>`;
+}
+function granToggle(){return tabToggle('gran',STATE.gran,[['day','D'],['week','W'],['month','M'],['quarter','Q'],['year','Y']]);}
+
+/* ─── SALES & REVENUE ──────────────────────────────────────── */
+function tabSales(R){
+  const k=kpis(R),p=kpis(filteredPrev());
+  const PR=R.filter(r=>r.purchased);
+  const ts=timeSeries(R,STATE.gran);
+  const cat=groupBy(PR,r=>r.category).sort(byDesc('revenue'));
+  const prod=groupBy(PR,r=>r.product).sort(byDesc('revenue'));
+  const brand=groupBy(PR,r=>r.brand).sort(byDesc('revenue'));
+  const ctry=groupBy(PR,r=>r.country).sort(byDesc('revenue'));
+  const dev=groupBy(PR,r=>r.device).sort(byDesc('revenue'));
+  const chan=groupBy(PR,r=>r.channel).sort(byDesc('revenue'));
+  const camp=groupBy(PR,r=>r.campaign).filter(c=>c.name!=='(organic)'&&c.name!=='(not set)').sort(byDesc('revenue'));
+  const kc=[
+    {label:'Purchase Revenue',value:fmtMoney(k.revenue),delta:pctDelta(k.revenue,p.revenue),color:'var(--s4)'},
+    {label:'Purchases',value:fmtInt(k.purchases),delta:pctDelta(k.purchases,p.purchases),color:'var(--s2)'},
+    {label:'Avg Order Value',value:fmtMoney(k.aov),delta:pctDelta(k.aov,p.aov),color:'var(--s4)'},
+    {label:'Items Purchased',value:fmtInt(k.items),delta:pctDelta(k.items,p.items),color:'var(--s1)'},
+    {label:'Revenue / User',value:fmtMoney(k.revenuePerUser),delta:pctDelta(k.revenuePerUser,p.revenuePerUser),color:'var(--s7)'},
+    {label:'Purchase Conv. Rate',value:fmtPct(k.purchaseConvRate,2),delta:pctDelta(k.purchaseConvRate,p.purchaseConvRate),color:'var(--s2)'},
+    {label:'Refund Amount',value:fmtMoney(k.refAmt),delta:pctDelta(k.refAmt,p.refAmt),color:'var(--s8)',invert:true},
+    {label:'Refund Count',value:fmtInt(k.refCnt),delta:pctDelta(k.refCnt,p.refCnt),color:'var(--s8)',invert:true},
+  ];
+  const prodRows=prod.map(x=>({name:x.name,revenue:x.revenue,purchases:x.purchases,items:x.items,aov:x.aov,views:x.viewItem}));
+  return `${priceBanner()}<div class="grid g4" style="margin-bottom:16px">${kc.map(kpiCard).join('')}</div>
+    <div class="grid g2" style="margin-bottom:16px">
+      ${card('Revenue Trend','Purchase revenue · '+STATE.gran,lineChart([{name:'Revenue',color:SC(3),data:ts.map(t=>({label:t.label,v:t.revenue}))}],{h:250,area:true,money:true}),{cls:'span2',icon:'₹',tools:granToggle()})}
+      ${card('Avg Order Value Trend','',lineChart([{name:'AOV',color:SC(4),data:ts.map(t=>({label:t.label,v:t.aov}))}],{h:250,money:true}),{cls:'span2',icon:'◈',tools:granToggle()})}
+    </div>
+    <div class="grid g3" style="margin-bottom:16px">
+      ${card('Revenue by Category','',treemap(cat.map(c=>({label:c.name,v:c.revenue,filter:'category|'+c.name})),{money:true,h:260}),{icon:'▧'})}
+      ${card('Revenue by Brand','',donut(brand.map(b=>({label:b.name,v:b.revenue})),{money:true,centerLbl:'Revenue',center:fmtMoney(k.revenue)}),{icon:'◆'})}
+      ${card('Revenue by Channel','',hbar(chan.map(c=>({label:c.name,v:c.revenue,filter:'channel|'+c.name})),{top:8,money:true,ci:3,metric:'Revenue'}),{icon:'⇄'})}
+    </div>
+    <div class="grid g3" style="margin-bottom:16px">
+      ${card('Revenue by Country','',hbar(ctry.map(c=>({label:c.name,v:c.revenue,filter:'country|'+c.name})),{top:8,money:true,ci:4,metric:'Revenue'}),{icon:'⌖'})}
+      ${card('Revenue by Device','',donut(dev.map(d=>({label:d.name,v:d.revenue})),{money:true,max:3,centerLbl:'Revenue',center:fmtMoney(k.revenue)}),{icon:'▤'})}
+      ${card('Revenue by Campaign','Paid & CRM campaigns',hbar(camp.map(c=>({label:c.name,v:c.revenue,filter:'campaign|'+c.name})),{top:8,money:true,ci:6,metric:'Revenue'}),{icon:'◎'})}
+    </div>
+    ${card('Product Performance','Top products by revenue — sortable & exportable',
+      dataTable('salesProd',[
+        {k:'name',label:'Product'},
+        {k:'revenue',label:'Revenue',num:true,heat:true,fmt:v=>fmtMoney(v),raw:v=>Math.round(v)},
+        {k:'purchases',label:'Purchases',num:true,fmt:fmtInt},
+        {k:'items',label:'Items',num:true,fmt:fmtInt},
+        {k:'aov',label:'AOV',num:true,fmt:v=>fmtMoney(v),raw:v=>Math.round(v)},
+        {k:'views',label:'Item Views',num:true,fmt:fmtInt},
+      ],prodRows,{per:12}),{icon:'▤'})}`;
+}
+function priceBanner(){const f=STATE.filters;if(f.priceMin==null&&f.priceMax==null)return '';
+  return `<div class="banner"><span class="bic">₹</span>Price filter active — revenue metrics reflect orders between <b>&nbsp;${f.priceMin!=null?fmtMoneyFull(f.priceMin):'₹0'} and ${f.priceMax!=null?fmtMoneyFull(f.priceMax):'∞'}</b>&nbsp;. Traffic metrics are unaffected.</div>`;}
+
+/* ─── TRAFFIC ──────────────────────────────────────────────── */
+function tabTraffic(R){
+  const ts=timeSeries(R,STATE.gran);
+  const chan=groupBy(R,r=>r.channel).sort(byDesc('sessions'));
+  const sm=groupBy(R,r=>r.sourceMedium).sort(byDesc('sessions'));
+  const src=groupBy(R,r=>r.source).sort(byDesc('sessions'));
+  const k=kpis(R),p=kpis(filteredPrev());
+  const kc=[
+    {label:'Total Users',value:fmtInt(k.users),delta:pctDelta(k.users,p.users),color:'var(--s1)'},
+    {label:'New Users',value:fmtInt(k.newUsers),delta:pctDelta(k.newUsers,p.newUsers),color:'var(--s5)'},
+    {label:'Returning Users',value:fmtInt(k.returningUsers),delta:pctDelta(k.returningUsers,p.returningUsers),color:'var(--s7)'},
+    {label:'Sessions',value:fmtInt(k.sessions),delta:pctDelta(k.sessions,p.sessions),color:'var(--s1)'},
+    {label:'Engagement Rate',value:fmtPct(k.engagementRate),delta:pctDelta(k.engagementRate,p.engagementRate),color:'var(--s5)'},
+    {label:'Sessions / User',value:k.sessionsPerUser.toFixed(2),delta:pctDelta(k.sessionsPerUser,p.sessionsPerUser),color:'var(--s7)'},
+  ];
+  const chanRows=chan.map(c=>({name:c.name,users:c.users,sessions:c.sessions,engagementRate:c.engagementRate,keyEvents:c.keyEvents,revenue:c.revenue,convRate:c.convRate}));
+  const smRows=sm.map(c=>({name:c.name,sessions:c.sessions,users:c.users,engagementRate:c.engagementRate,revenue:c.revenue,convRate:c.convRate}));
+  return `<div class="grid g3" style="margin-bottom:16px">${kc.map(kpiCard).join('')}</div>
+    <div class="grid g2" style="margin-bottom:16px">
+      ${card('Users & Sessions Trend','',lineChart([
+        {name:'Users',color:SC(0),data:ts.map(t=>({label:t.label,v:t.users}))},
+        {name:'New Users',color:SC(4),data:ts.map(t=>({label:t.label,v:t.newUsers}))},
+        {name:'Sessions',color:SC(6),data:ts.map(t=>({label:t.label,v:t.sessions}))},
+      ],{h:260}),{cls:'span2',icon:'📈',tools:granToggle()})}
+      ${card('Traffic by Channel','Share of sessions',donut(chan.map(c=>({label:c.name,v:c.sessions,filter:'channel|'+c.name})),{centerLbl:'Sessions',max:7}),{icon:'⇄'})}
+    </div>
+    <div class="grid g2" style="margin-bottom:16px">
+      ${card('Channel Performance','Sessions, engagement & conversion',dataTable('trChan',[
+        {k:'name',label:'Channel'},{k:'users',label:'Users',num:true,fmt:fmtInt},
+        {k:'sessions',label:'Sessions',num:true,heat:true,fmt:fmtInt},
+        {k:'engagementRate',label:'Engagement',num:true,fmt:v=>fmtPct(v),raw:v=>v.toFixed(1)},
+        {k:'keyEvents',label:'Key Events',num:true,fmt:fmtInt},
+        {k:'convRate',label:'Conv %',num:true,fmt:v=>fmtPct(v,2),raw:v=>v.toFixed(2)},
+        {k:'revenue',label:'Revenue',num:true,fmt:v=>fmtMoney(v),raw:v=>Math.round(v)},
+      ],chanRows,{per:12}),{cls:'span2',icon:'⇄'})}
+      ${card('Channel Efficiency','Sessions vs conversion — bubble = revenue',scatter(chan.slice(0,10).map(c=>({x:c.sessions,y:c.convRate,r:c.revenue||1,label:c.name,filter:'channel|'+c.name})),
+        {h:300,xl:'Sessions',yl:'Conv %',rl:'Revenue',xfmt:fmtNum,yfmt:v=>v.toFixed(1)+'%',rfmt:fmtMoneyFull,labels:true}),{cls:'span2',icon:'◎'})}
+    </div>
+    ${card('Source / Medium','Top acquisition sources — sortable & exportable',dataTable('trSM',[
+      {k:'name',label:'Source / Medium'},{k:'sessions',label:'Sessions',num:true,heat:true,fmt:fmtInt},
+      {k:'users',label:'Users',num:true,fmt:fmtInt},
+      {k:'engagementRate',label:'Engagement',num:true,fmt:v=>fmtPct(v),raw:v=>v.toFixed(1)},
+      {k:'convRate',label:'Conv %',num:true,fmt:v=>fmtPct(v,2),raw:v=>v.toFixed(2)},
+      {k:'revenue',label:'Revenue',num:true,fmt:v=>fmtMoney(v),raw:v=>Math.round(v)},
+    ],smRows,{per:15}),{icon:'⇄'})}`;
+}
+
+/* ─── USERS ────────────────────────────────────────────────── */
+function tabUsers(R){
+  const ts=timeSeries(R,STATE.gran);
+  const k=kpis(R),p=kpis(filteredPrev());
+  const newPct=k.users?k.newUsers/k.users*100:0;
+  const kc=[
+    {label:'Total Users',value:fmtInt(k.users),delta:pctDelta(k.users,p.users),color:'var(--s1)'},
+    {label:'New Users',value:fmtInt(k.newUsers),delta:pctDelta(k.newUsers,p.newUsers),color:'var(--s5)'},
+    {label:'Returning Users',value:fmtInt(k.returningUsers),delta:pctDelta(k.returningUsers,p.returningUsers),color:'var(--s7)'},
+    {label:'New User %',value:fmtPct(newPct),delta:pctDelta(newPct,p.users?p.newUsers/p.users*100:0),color:'var(--s5)'},
+    {label:'Avg Engagement Time',value:fmtDur(k.avgEngTime),delta:pctDelta(k.avgEngTime,p.avgEngTime),color:'var(--s1)'},
+    {label:'Sessions / User',value:k.sessionsPerUser.toFixed(2),delta:pctDelta(k.sessionsPerUser,p.sessionsPerUser),color:'var(--s7)'},
+    {label:'Views / User',value:k.viewsPerUser.toFixed(1),delta:pctDelta(k.viewsPerUser,p.viewsPerUser),color:'var(--s1)'},
+    {label:'Revenue / User',value:fmtMoney(k.revenuePerUser),delta:pctDelta(k.revenuePerUser,p.revenuePerUser),color:'var(--s4)'},
+  ];
+  // cohort retention (weekly, using userRef.first)
+  const cohort=buildCohort(R);
+  // LTV distribution by decile from userRef among users in R
+  const uids=uniq(R.map(r=>r.uid));
+  const ltvs=uids.map(u=>STATE.userRef[u]?STATE.userRef[u].ltv:0).filter(x=>x>0).sort((a,b)=>b-a);
+  const ltvTot=sum(ltvs);
+  return `<div class="grid g4" style="margin-bottom:16px">${kc.map(kpiCard).join('')}</div>
+    <div class="grid g2" style="margin-bottom:16px">
+      ${card('User Growth','New vs returning users over time',lineChart([
+        {name:'New Users',color:SC(4),data:ts.map(t=>({label:t.label,v:t.newUsers}))},
+        {name:'Returning Users',color:SC(6),data:ts.map(t=>({label:t.label,v:t.returningUsers}))},
+      ],{h:260,area:true,stack:true}),{cls:'span2',icon:'📈',tools:granToggle()})}
+      ${card('New vs Returning','Share of users',donut([{label:'New',v:k.newUsers},{label:'Returning',v:k.returningUsers}],{centerLbl:'Users',center:fmtInt(k.users)}),{icon:'☺'})}
+    </div>
+    <div class="grid g2" style="margin-bottom:16px">
+      ${card('Weekly Retention Cohort','% of a week\'s new users returning in later weeks',cohortGrid(cohort),{cls:'span2',icon:'▦'})}
+      ${card('Customer Lifetime Value','Distribution of paying customers by LTV band',ltvChart(ltvs),{cls:'span2',icon:'◆',sub:'Total customer LTV in view: '+fmtMoney(ltvTot)})}
+    </div>`;
+}
+function buildCohort(R){
+  // group users by their first-week; track return weeks within the filtered window
+  const byUser=new Map();
+  for(const r of R){const u=r.uid;const first=STATE.userRef[u]?STATE.userRef[u].first:r.date;
+    const cohortWeek=bucketKey(first,'week');const actWeek=bucketKey(r.date,'week');
+    if(!byUser.has(u))byUser.set(u,{cohort:cohortWeek,weeks:new Set()});byUser.get(u).weeks.add(actWeek);}
+  const cohorts=new Map();
+  for(const[,v]of byUser){if(!cohorts.has(v.cohort))cohorts.set(v.cohort,[]);cohorts.get(v.cohort).push(v);}
+  const sorted=[...cohorts.keys()].sort().slice(-8);
+  return sorted.map(cw=>{const members=cohorts.get(cw);const size=members.length;
+    const ret=[];for(let w=0;w<8;w++){const wk=bucketKey(addDays(cw,w*7),'week');const c=members.filter(m=>m.weeks.has(wk)).length;ret.push(size?c/size*100:0);}
+    return {cohort:cw,size,ret};});
+}
+function cohortGrid(cohort){
+  if(!cohort.length)return `<div class="emptybox">Not enough data for cohorts</div>`;
+  const cw=44,ch=30,PL=110,PT=24;const W=PL+8*cw+8,H=PT+cohort.length*ch+8;
+  let out='';for(let w=0;w<8;w++)out+=`<text class="axis-lbl" x="${PL+w*cw+cw/2}" y="${PT-8}" text-anchor="middle">W${w}</text>`;
+  cohort.forEach((c,ri)=>{const d=new Date(c.cohort);out+=`<text class="axis-lbl" x="4" y="${PT+ri*ch+ch/2+3}">${d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${c.size}</text>`;
+    c.ret.forEach((v,ci)=>{const op=0.1+0.9*(v/100);const tt=`<div class='tt'>Cohort ${d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · Week ${ci}</div><div class='tr'><span>Retention</span><b>${fmtPct(v)}</b></div>`;
+      out+=`<rect x="${PL+ci*cw+1}" y="${PT+ri*ch+1}" width="${cw-2}" height="${ch-2}" rx="4" fill="${SC(0)}" fill-opacity="${op.toFixed(2)}" data-tip="${esc(tt)}"/><text x="${PL+ci*cw+cw/2}" y="${PT+ri*ch+ch/2+3}" text-anchor="middle" fill="${op>.55?'#fff':'var(--ink2)'}" font-size="9.5" font-weight="600">${v<1&&ci>0?'':Math.round(v)}</text>`;});});
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMinYMin meet">${out}</svg>`;
+}
+function ltvChart(ltvs){
+  if(!ltvs.length)return `<div class="emptybox">No paying customers in view</div>`;
+  const bands=[[0,25000,'<₹25K'],[25000,50000,'₹25K–50K'],[50000,100000,'₹50K–1L'],[100000,200000,'₹1L–2L'],[200000,1e9,'₹2L+']];
+  const data=bands.map(b=>({label:b[2],v:ltvs.filter(x=>x>=b[0]&&x<b[1]).length}));
+  return barChart(data,{h:240,metric:'Customers'});
+}
+
+/* ─── DEVICES ──────────────────────────────────────────────── */
+function tabDevices(R){
+  const dev=groupBy(R,r=>r.device).sort(byDesc('sessions'));
+  const os=groupBy(R,r=>r.os).sort(byDesc('sessions'));
+  const br=groupBy(R,r=>r.browser).sort(byDesc('sessions'));
+  const res=groupBy(R,r=>r.screenRes).sort(byDesc('sessions'));
+  const plat=groupBy(R,r=>r.platform).sort(byDesc('sessions'));
+  const devRows=dev.map(d=>({name:d.name,users:d.users,sessions:d.sessions,engagementRate:d.engagementRate,revenue:d.revenue,convRate:d.convRate,aov:d.aov}));
+  return `<div class="grid g3" style="margin-bottom:16px">
+      ${card('Device Category','Sessions share',donut(dev.map(d=>({label:d.name,v:d.sessions,filter:'device|'+d.name})),{centerLbl:'Sessions',max:3}),{icon:'▤'})}
+      ${card('Operating System','',donut(os.map(d=>({label:d.name,v:d.sessions,filter:'os|'+d.name})),{centerLbl:'Sessions'}),{icon:'⚙'})}
+      ${card('Platform','',donut(plat.map(d=>({label:d.name,v:d.sessions,filter:'platform|'+d.name})),{centerLbl:'Sessions',max:4}),{icon:'▣'})}
+    </div>
+    <div class="grid g2" style="margin-bottom:16px">
+      ${card('Browsers','By sessions',hbar(br.map(d=>({label:d.name,v:d.sessions,filter:'browser|'+d.name})),{top:8,ci:0,metric:'Sessions'}),{icon:'◉'})}
+      ${card('Screen Resolutions','By sessions',hbar(res.map(d=>({label:d.name,v:d.sessions,filter:'screenRes|'+d.name})),{top:8,ci:6,metric:'Sessions'}),{icon:'▭'})}
+    </div>
+    ${card('Device Performance','Engagement & conversion by device',dataTable('devTbl',[
+      {k:'name',label:'Device'},{k:'users',label:'Users',num:true,fmt:fmtInt},
+      {k:'sessions',label:'Sessions',num:true,heat:true,fmt:fmtInt},
+      {k:'engagementRate',label:'Engagement',num:true,fmt:v=>fmtPct(v),raw:v=>v.toFixed(1)},
+      {k:'convRate',label:'Conv %',num:true,fmt:v=>fmtPct(v,2),raw:v=>v.toFixed(2)},
+      {k:'aov',label:'AOV',num:true,fmt:v=>fmtMoney(v),raw:v=>Math.round(v)},
+      {k:'revenue',label:'Revenue',num:true,fmt:v=>fmtMoney(v),raw:v=>Math.round(v)},
+    ],devRows),{icon:'▤'})}`;
+}
+
+/* ─── LOCATIONS ────────────────────────────────────────────── */
+function tabGeo(R){
+  const ctry=groupBy(R,r=>r.country).sort(byDesc('sessions'));
+  const reg=groupBy(R.filter(r=>r.country==='India'),r=>r.region).sort(byDesc('sessions'));
+  const city=groupBy(R,r=>r.city).sort(byDesc('sessions'));
+  const lang=groupBy(R,r=>r.language).sort(byDesc('sessions'));
+  const ctryRows=ctry.map(c=>({name:c.name,users:c.users,sessions:c.sessions,engagementRate:c.engagementRate,revenue:c.revenue,convRate:c.convRate}));
+  const cityRows=city.map(c=>({name:c.name,users:c.users,sessions:c.sessions,revenue:c.revenue,convRate:c.convRate}));
+  return `<div class="grid g2" style="margin-bottom:16px">
+      ${card('Top Countries','By sessions — click to filter',hbar(ctry.map(c=>({label:c.name,v:c.sessions,filter:'country|'+c.name})),{top:10,ci:4,metric:'Sessions'}),{icon:'⌖'})}
+      ${card('India · Top States','Sessions by region',hbar(reg.map(c=>({label:c.name,v:c.sessions,filter:'region|'+c.name})),{top:10,ci:1,metric:'Sessions'}),{icon:'⌖'})}
+    </div>
+    <div class="grid g2" style="margin-bottom:16px">
+      ${card('Top Cities','By sessions',hbar(city.map(c=>({label:c.name,v:c.sessions,filter:'city|'+c.name})),{top:12,ci:0,metric:'Sessions'}),{icon:'⌖'})}
+      ${card('Languages','By sessions',donut(lang.map(c=>({label:c.name,v:c.sessions,filter:'language|'+c.name})),{centerLbl:'Sessions',max:7}),{icon:'⌘'})}
+    </div>
+    <div class="grid g2">
+      ${card('Country Performance','',dataTable('geoCtry',[
+        {k:'name',label:'Country'},{k:'users',label:'Users',num:true,fmt:fmtInt},
+        {k:'sessions',label:'Sessions',num:true,heat:true,fmt:fmtInt},
+        {k:'engagementRate',label:'Engagement',num:true,fmt:v=>fmtPct(v),raw:v=>v.toFixed(1)},
+        {k:'convRate',label:'Conv %',num:true,fmt:v=>fmtPct(v,2),raw:v=>v.toFixed(2)},
+        {k:'revenue',label:'Revenue',num:true,fmt:v=>fmtMoney(v),raw:v=>Math.round(v)},
+      ],ctryRows,{per:10}),{cls:'span1',icon:'⌖'})}
+      ${card('City Performance','',dataTable('geoCity',[
+        {k:'name',label:'City'},{k:'users',label:'Users',num:true,fmt:fmtInt},
+        {k:'sessions',label:'Sessions',num:true,heat:true,fmt:fmtInt},
+        {k:'convRate',label:'Conv %',num:true,fmt:v=>fmtPct(v,2),raw:v=>v.toFixed(2)},
+        {k:'revenue',label:'Revenue',num:true,fmt:v=>fmtMoney(v),raw:v=>Math.round(v)},
+      ],cityRows,{per:10}),{cls:'span1',icon:'⌖'})}
+    </div>`;
+}
+
+/* ─── PAGES ────────────────────────────────────────────────── */
+function tabPages(R){
+  const land=groupBy(R,r=>r.landingPage).sort(byDesc('sessions'));
+  const pages=groupBy(R.filter(r=>r.pv>0),r=>r.pagePath);
+  const cg=groupBy(R,r=>r.contentGroup).sort(byDesc('views'));
+  // views per page: approximate — pv attributed to landing page for sample
+  const pageRows=land.map(l=>{const meta=PAGES.find(p=>p[0]===l.name);return {name:l.name,title:meta?meta[1]:l.name,sessions:l.sessions,views:l.views,users:l.users,engagementRate:l.engagementRate,revenue:l.revenue};});
+  return `<div class="grid g2" style="margin-bottom:16px">
+      ${card('Top Landing Pages','Where sessions begin',hbar(land.map(l=>({label:l.name,v:l.sessions,filter:'landingPage|'+l.name})),{top:10,ci:0,metric:'Sessions'}),{icon:'▦'})}
+      ${card('Views by Content Group','',donut(cg.map(c=>({label:c.name,v:c.views,filter:'contentGroup|'+c.name})),{centerLbl:'Views',max:7}),{icon:'▧'})}
+    </div>
+    <div class="grid g2" style="margin-bottom:16px">
+      ${card('Top Pages by Views','',hbar(land.map(l=>({label:(PAGES.find(p=>p[0]===l.name)||[])[1]||l.name,v:l.views})).sort(byDesc('v')),{top:10,ci:6,metric:'Views'}),{icon:'▤'})}
+      ${card('Landing Page Engagement','Engagement rate by landing page',hbar(land.filter(l=>l.sessions>20).map(l=>({label:l.name,v:l.engagementRate})).sort(byDesc('v')),{top:10,ci:5,pct:true,metric:'Engagement'}),{icon:'◔'})}
+    </div>
+    ${card('Page Performance','Landing pages — views, engagement & revenue',dataTable('pgTbl',[
+      {k:'title',label:'Page'},{k:'name',label:'Path'},
+      {k:'sessions',label:'Sessions',num:true,heat:true,fmt:fmtInt},
+      {k:'views',label:'Views',num:true,fmt:fmtInt},
+      {k:'users',label:'Users',num:true,fmt:fmtInt},
+      {k:'engagementRate',label:'Engagement',num:true,fmt:v=>fmtPct(v),raw:v=>v.toFixed(1)},
+      {k:'revenue',label:'Revenue',num:true,fmt:v=>fmtMoney(v),raw:v=>Math.round(v)},
+    ],pageRows,{per:15}),{icon:'▦'})}`;
+}
+
+/* ─── EVENTS ───────────────────────────────────────────────── */
+function tabEvents(R){
+  const ev=eventTotals(R);
+  const k=kpis(R);
+  const totalEv=sum(ev,e=>e.count);
+  const users=k.users||1;
+  const ts=timeSeries(R,STATE.gran);
+  const sel=STATE.filters.eventName||ev[0]&&ev[0].name;
+  const evRows=ev.map(e=>({name:e.name,count:e.count,users:e.users,perUser:e.count/users,filter:'eventName|'+e.name}));
+  return `<div class="grid g4" style="margin-bottom:16px">
+      ${kpiCard({label:'Event Count',value:fmtInt(k.evCount),delta:0,color:'var(--s7)'})}
+      ${kpiCard({label:'Unique Events',value:fmtInt(ev.length),delta:0,color:'var(--s1)'})}
+      ${kpiCard({label:'Events / User',value:(k.evCount/users).toFixed(1),delta:0,color:'var(--s5)'})}
+      ${kpiCard({label:'Key Events',value:fmtInt(k.keyEvents),delta:0,color:'var(--s2)'})}
+    </div>
+    <div class="grid g2" style="margin-bottom:16px">
+      ${card('Top Events','By event count — click to filter',hbar(ev.map(e=>({label:e.name,v:e.count,filter:'eventName|'+e.name})),{top:12,ci:7,metric:'Count'}),{cls:'span1',icon:'✦'})}
+      ${card('Event Trend','"'+esc(sel)+'" over time',lineChart([{name:sel,color:SC(2),data:ts.map(t=>({label:t.label,v:0}))}].map(s=>({...s,data:eventSeries(R,sel,STATE.gran)})),{h:260,area:true}),{cls:'span1',icon:'📈',tools:granToggle()})}
+    </div>
+    ${card('All Events','Every event with count, users & events-per-user',dataTable('evTbl',[
+      {k:'name',label:'Event'},{k:'count',label:'Count',num:true,heat:true,fmt:fmtInt},
+      {k:'users',label:'Users',num:true,fmt:fmtInt},
+      {k:'perUser',label:'Per User',num:true,fmt:v=>v.toFixed(2),raw:v=>v.toFixed(2)},
+    ],evRows,{per:18}),{icon:'✦'})}`;
+}
+function eventSeries(R,name,gran){
+  const map=new Map();
+  for(const r of R){if(!r.ev[name])continue;const k=bucketKey(r.date,gran);map.set(k,(map.get(k)||0)+r.ev[name]);}
+  const ts=timeSeries(R,gran);
+  return ts.map(t=>({label:t.label,v:map.get(t.key)||0}));
+}
+
+/* ─── E-COMMERCE ───────────────────────────────────────────── */
+function tabEcom(R){
+  const k=kpis(R);
+  const ev=eventTotals(R);const get=n=>{const e=ev.find(x=>x.name===n);return e?e.count:0;};
+  const steps=[
+    {label:'View Item',v:get('view_item')},
+    {label:'Add to Cart',v:get('add_to_cart')},
+    {label:'Begin Checkout',v:get('begin_checkout')},
+    {label:'Add Payment Info',v:get('add_payment_info')},
+    {label:'Purchase',v:get('purchase')},
+  ];
+  const cat=groupBy(R.filter(r=>r.purchased),r=>r.category).sort(byDesc('revenue'));
+  const coup=groupBy(R.filter(r=>r.purchased&&r.coupon!=='NONE'),r=>r.coupon).sort(byDesc('revenue'));
+  const promo=groupBy(R.filter(r=>r.purchased&&r.promo!=='(none)'),r=>r.promo).sort(byDesc('revenue'));
+  const kc=[
+    {label:'Item Views',value:fmtInt(get('view_item')),delta:0,color:'var(--s1)'},
+    {label:'Add to Cart',value:fmtInt(get('add_to_cart')),delta:0,color:'var(--s3)'},
+    {label:'Checkouts',value:fmtInt(get('begin_checkout')),delta:0,color:'var(--s3)'},
+    {label:'Purchases',value:fmtInt(k.purchases),delta:0,color:'var(--s2)'},
+    {label:'Revenue',value:fmtMoney(k.revenue),delta:0,color:'var(--s4)'},
+    {label:'Items Sold',value:fmtInt(k.items),delta:0,color:'var(--s4)'},
+    {label:'Refund Amount',value:fmtMoney(k.refAmt),delta:0,color:'var(--s8)',invert:true},
+    {label:'Cart→Purchase',value:fmtPct(get('add_to_cart')?k.purchases/get('add_to_cart')*100:0),delta:0,color:'var(--s2)'},
+  ];
+  return `${priceBanner()}<div class="grid g4" style="margin-bottom:16px">${kc.map(kpiCard).join('')}</div>
+    <div class="grid g2" style="margin-bottom:16px">
+      ${card('Purchase Funnel','View → Cart → Checkout → Payment → Purchase',funnel(steps),{cls:'span1',icon:'⛢'})}
+      ${card('Funnel Drop-off','% lost at each step',dropoffChart(steps),{cls:'span1',icon:'▼'})}
+    </div>
+    <div class="grid g3" style="margin-bottom:16px">
+      ${card('Revenue by Category','',treemap(cat.map(c=>({label:c.name,v:c.revenue,filter:'category|'+c.name})),{money:true,h:240}),{icon:'▧'})}
+      ${card('Coupon Performance','Revenue on discounted orders',coup.length?hbar(coup.map(c=>({label:c.name,v:c.revenue})),{top:6,money:true,ci:5,metric:'Revenue'}):'<div class="emptybox">No coupon orders in view</div>',{icon:'🎟'})}
+      ${card('Promotion Performance','',promo.length?donut(promo.map(c=>({label:c.name,v:c.revenue})),{money:true,centerLbl:'Revenue',center:fmtMoney(sum(promo,c=>c.revenue))}):'<div class="emptybox">No promotions in view</div>',{icon:'◎'})}
+    </div>
+    ${card('Product Sales Detail','Purchased products',dataTable('ecomProd',[
+      {k:'name',label:'Product'},
+      {k:'purchases',label:'Orders',num:true,fmt:fmtInt},
+      {k:'items',label:'Items',num:true,heat:true,fmt:fmtInt},
+      {k:'revenue',label:'Revenue',num:true,heat:true,fmt:v=>fmtMoney(v),raw:v=>Math.round(v)},
+      {k:'aov',label:'AOV',num:true,fmt:v=>fmtMoney(v),raw:v=>Math.round(v)},
+      {k:'refCnt',label:'Refunds',num:true,fmt:fmtInt},
+    ],groupBy(R.filter(r=>r.purchased),r=>r.product).sort(byDesc('revenue')).map(x=>({name:x.name,purchases:x.purchases,items:x.items,revenue:x.revenue,aov:x.aov,refCnt:x.refCnt})),{per:12}),{icon:'⛢'})}`;
+}
+function dropoffChart(steps){
+  const data=[];for(let i=1;i<steps.length;i++){const d=(steps[i-1].v-steps[i].v)/(steps[i-1].v||1)*100;data.push({label:steps[i-1].label+'→'+steps[i].label,v:d,color:d>60?C().crit:d>35?C().serious:C().series[5]});}
+  return barChart(data,{h:240,metric:'Drop-off %',pct:true});
+}
+
+/* ─── MARKETING ────────────────────────────────────────────── */
+function tabMarketing(R){
+  const camp=groupBy(R,r=>r.campaign).filter(c=>c.name!=='(organic)'&&c.name!=='(not set)').sort(byDesc('revenue'));
+  const src=groupBy(R,r=>r.source).sort(byDesc('sessions'));
+  const med=groupBy(R,r=>r.medium).sort(byDesc('sessions'));
+  // synth ad spend for ROAS/CPA (paid channels only) — clearly labelled as modelled
+  const campRows=camp.map(c=>{const paid=/DPA|Search|Push|Solitaire|Coin|Festive|Tritiya|Valentine|Bridal|Everyday/.test(c.name);
+    const spend=paid?Math.round(c.sessions*(28+((c.name.length*7)%40))):0;
+    return {name:c.name,sessions:c.sessions,users:c.users,keyEvents:c.keyEvents,purchases:c.purchases,revenue:c.revenue,
+      spend,roas:spend?c.revenue/spend:0,cpa:c.purchases?spend/c.purchases:0,convRate:c.convRate};});
+  const utmRows=camp.map(c=>({name:c.name,sessions:c.sessions,conversions:c.purchases,revenue:c.revenue,convRate:c.convRate}));
+  return `<div class="banner"><span class="bic">ℹ</span>ROAS & CPA use a <b>&nbsp;modelled ad-spend&nbsp;</b> (GA4 has no cost data). Wire Google Ads / Meta cost for exact figures — revenue, sessions & conversions are real GA4.</div>
+    <div class="grid g2" style="margin-bottom:16px">
+      ${card('Campaign Revenue','Top campaigns',hbar(camp.map(c=>({label:c.name,v:c.revenue,filter:'campaign|'+c.name})),{top:9,money:true,ci:3,metric:'Revenue'}),{icon:'◎'})}
+      ${card('Campaign Efficiency','Sessions vs conv rate — bubble = revenue',scatter(camp.slice(0,10).map(c=>({x:c.sessions,y:c.convRate,r:c.revenue||1,label:c.name,filter:'campaign|'+c.name})),
+        {h:280,xl:'Sessions',yl:'Conv %',rl:'Revenue',xfmt:fmtNum,yfmt:v=>v.toFixed(1)+'%',rfmt:fmtMoneyFull,labels:true}),{icon:'◎'})}
+    </div>
+    <div class="grid g2" style="margin-bottom:16px">
+      ${card('Source Performance','By sessions',hbar(src.map(c=>({label:c.name,v:c.sessions,filter:'source|'+c.name})),{top:9,ci:0,metric:'Sessions'}),{icon:'⇱'})}
+      ${card('Medium Performance','By sessions',donut(med.map(c=>({label:c.name,v:c.sessions,filter:'medium|'+c.name})),{centerLbl:'Sessions',max:7}),{icon:'⇲'})}
+    </div>
+    <div class="grid g1" style="margin-bottom:16px">
+      ${card('Campaign Performance','ROAS & CPA (modelled spend) · revenue & conv are real GA4',dataTable('mkCamp',[
+        {k:'name',label:'Campaign'},{k:'sessions',label:'Sessions',num:true,fmt:fmtInt},
+        {k:'purchases',label:'Conversions',num:true,fmt:fmtInt},
+        {k:'convRate',label:'Conv %',num:true,fmt:v=>fmtPct(v,2),raw:v=>v.toFixed(2)},
+        {k:'revenue',label:'Revenue',num:true,heat:true,fmt:v=>fmtMoney(v),raw:v=>Math.round(v)},
+        {k:'spend',label:'Spend (model)',num:true,fmt:v=>v?fmtMoney(v):'—',raw:v=>v},
+        {k:'roas',label:'ROAS',num:true,fmt:v=>v?v.toFixed(1)+'×':'—',tag:(v)=>({t:v?v.toFixed(1)+'×':'—',bg:v>=4?'rgba(12,163,12,.16)':v>0?'rgba(250,178,25,.16)':'transparent',fg:v>=4?'var(--good)':v>0?'var(--warn)':'var(--muted)'}),raw:v=>v.toFixed(2)},
+        {k:'cpa',label:'CPA',num:true,fmt:v=>v?fmtMoney(v):'—',raw:v=>Math.round(v)},
+      ],campRows,{per:12}),{icon:'◎'})}
+    </div>
+    ${card('UTM / Campaign Analysis','Conversions & revenue by campaign',dataTable('mkUtm',[
+      {k:'name',label:'Campaign (utm_campaign)'},{k:'sessions',label:'Sessions',num:true,heat:true,fmt:fmtInt},
+      {k:'conversions',label:'Conversions',num:true,fmt:fmtInt},
+      {k:'convRate',label:'Conv %',num:true,fmt:v=>fmtPct(v,2),raw:v=>v.toFixed(2)},
+      {k:'revenue',label:'Revenue',num:true,fmt:v=>fmtMoney(v),raw:v=>Math.round(v)},
+    ],utmRows,{per:12}),{icon:'◎'})}`;
+}
+
+/* ─── DATA EXPLORER ────────────────────────────────────────── */
+function tabData(R){
+  // pivot-style explorer: choose a dimension
+  const dim=STATE._explDim||'channel';
+  const g=groupBy(R,r=>r[dim]).sort(byDesc('sessions'));
+  const rows=g.map(x=>({name:x.name,users:x.users,newUsers:x.newUsers,sessions:x.sessions,engagementRate:x.engagementRate,views:x.views,evCount:x.evCount,keyEvents:x.keyEvents,purchases:x.purchases,convRate:x.convRate,revenue:x.revenue,aov:x.aov}));
+  const dims=[['channel','Channel'],['sourceMedium','Source/Medium'],['campaign','Campaign'],['landingPage','Landing Page'],['device','Device'],['browser','Browser'],['os','OS'],['country','Country'],['region','Region'],['city','City'],['language','Language'],['contentGroup','Content Group'],['category','Category'],['brand','Brand'],['product','Product']];
+  return `<div class="card" style="margin-bottom:16px">
+      <div class="hd"><div><h3>▤ Data Explorer / Pivot</h3><div class="sub">Break down every GA4 metric by any dimension. Sort, search, and export.</div></div></div>
+      <div class="tblbar"><span style="font-size:12px;color:var(--muted);font-weight:600">Dimension:</span>
+        <select id="explDim" style="padding:7px 11px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:12.5px">
+        ${dims.map(d=>`<option value="${d[0]}" ${dim===d[0]?'selected':''}>${d[1]}</option>`).join('')}</select>
+        <span class="chip">${g.length} ${dim} values</span>
+      </div>
+      ${dataTable('explTbl',[
+        {k:'name',label:DIMLABELS[dim]||dim},
+        {k:'users',label:'Users',num:true,fmt:fmtInt},
+        {k:'newUsers',label:'New',num:true,fmt:fmtInt},
+        {k:'sessions',label:'Sessions',num:true,heat:true,fmt:fmtInt},
+        {k:'engagementRate',label:'Engagement',num:true,fmt:v=>fmtPct(v),raw:v=>v.toFixed(1)},
+        {k:'views',label:'Views',num:true,fmt:fmtInt},
+        {k:'evCount',label:'Events',num:true,fmt:fmtInt},
+        {k:'keyEvents',label:'Key Events',num:true,fmt:fmtInt},
+        {k:'purchases',label:'Purchases',num:true,fmt:fmtInt},
+        {k:'convRate',label:'Conv %',num:true,fmt:v=>fmtPct(v,2),raw:v=>v.toFixed(2)},
+        {k:'revenue',label:'Revenue',num:true,heat:true,fmt:v=>fmtMoney(v),raw:v=>Math.round(v)},
+        {k:'aov',label:'AOV',num:true,fmt:v=>fmtMoney(v),raw:v=>Math.round(v)},
+      ],rows,{per:20})}
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   WIRING (dynamic per-render handlers)
+   ══════════════════════════════════════════════════════════════════ */
+function wireDynamic(){
+  // fullscreen card buttons
+  document.querySelectorAll('[data-full]').forEach(b=>b.onclick=()=>{const el=document.getElementById(b.dataset.full);if(el)(el.requestFullscreen?el.requestFullscreen():null);});
+  // granularity toggles
+  document.querySelectorAll('[data-toggle="gran"] button').forEach(b=>b.onclick=()=>{STATE.gran=b.dataset.val;render();});
+  // legend toggles
+  document.querySelectorAll('[data-leg]').forEach(el=>el.onclick=()=>{const n=el.dataset.leg;STATE.legendOff[n]=!STATE.legendOff[n];render();});
+  // table header sort
+  document.querySelectorAll('th[data-sort]').forEach(th=>th.onclick=()=>{const[id,i]=th.dataset.sort.split('|');tblSort(id,+i);});
+  // cross-filter clicks
+  document.querySelectorAll('[data-filter]').forEach(el=>el.onclick=(e)=>{e.stopPropagation();const[dim,val]=el.dataset.filter.split('|');STATE.filters[dim]=STATE.filters[dim]===val?'':val;render();});
+  // explorer dim
+  const ed=document.getElementById('explDim');if(ed)ed.onchange=()=>{STATE._explDim=ed.value;render();};
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FILTER DRAWER
+   ══════════════════════════════════════════════════════════════════ */
+function opts(rows,key){return uniq(rows.map(r=>r[key])).filter(Boolean).sort();}
+function buildDrawer(){
+  const all=STATE.rows;const f=STATE.filters;
+  const sel=(k,label,list)=>`<div class="fgroup"><label>${label}</label><select data-f="${k}"><option value="">All</option>${list.map(v=>`<option value="${esc(v)}" ${f[k]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>`;
+  const presets=[['today','Today'],['yesterday','Yesterday'],['7d','Last 7 Days'],['30d','Last 30 Days'],['thisMonth','This Month'],['lastMonth','Last Month'],['3m','Last 3 Months'],['6m','Last 6 Months'],['thisYear','This Year'],['lastYear','Last Year'],['90d','Last 90 Days'],['custom','Custom Range']];
+  document.getElementById('drawerBody').innerHTML=`
+    <div class="section-t">Date Range</div>
+    <div class="presets" id="presetGrid">${presets.map(p=>`<button data-preset="${p[0]}" class="${f.preset===p[0]?'on':''}">${p[1]}</button>`).join('')}</div>
+    <div class="fgroup" style="margin-top:10px"><div class="frow"><div><label style="font-size:10px">From</label><input type="date" data-f="from" value="${f.from||activeRange()[0]}"></div><div><label style="font-size:10px">To</label><input type="date" data-f="to" value="${f.to||activeRange()[1]}"></div></div></div>
+
+    <div class="section-t">Acquisition</div>
+    ${sel('channel','Channel Group',opts(all,'channel'))}
+    ${sel('sourceMedium','Source / Medium',opts(all,'sourceMedium'))}
+    ${sel('source','Source',opts(all,'source'))}
+    ${sel('medium','Medium',opts(all,'medium'))}
+    ${sel('campaign','Campaign',opts(all,'campaign'))}
+    ${sel('landingPage','Landing Page',opts(all,'landingPage'))}
+
+    <div class="section-t">Audience</div>
+    ${sel('nr','New / Returning',['New','Returning'])}
+    ${sel('userType','User Type',opts(all,'userType'))}
+    ${sel('language','Language',opts(all,'language'))}
+    ${sel('platform','Platform',opts(all,'platform'))}
+
+    <div class="section-t">Technology</div>
+    ${sel('device','Device Category',opts(all,'device'))}
+    ${sel('browser','Browser',opts(all,'browser'))}
+    ${sel('os','Operating System',opts(all,'os'))}
+    ${sel('screenRes','Screen Resolution',opts(all,'screenRes'))}
+    ${sel('hostname','Hostname',opts(all,'hostname'))}
+
+    <div class="section-t">Geography</div>
+    ${sel('country','Country',opts(all,'country'))}
+    ${sel('region','Region / State',opts(all,'region'))}
+    ${sel('city','City',opts(all,'city'))}
+
+    <div class="section-t">Content & Events</div>
+    ${sel('pageTitle','Page Title',opts(all,'pageTitle'))}
+    ${sel('pagePath','Page Path',opts(all,'pagePath'))}
+    ${sel('contentGroup','Content Group',opts(all,'contentGroup'))}
+    ${sel('eventName','Event Name',uniq(all.flatMap(r=>Object.keys(r.ev))).sort())}
+
+    <div class="section-t">Order Value (₹)</div>
+    <div class="fgroup"><div class="rangewrap"><input type="number" placeholder="Min" data-f="priceMin" value="${f.priceMin??''}"><span style="color:var(--muted)">—</span><input type="number" placeholder="Max" data-f="priceMax" value="${f.priceMax??''}"></div>
+      <input type="range" min="0" max="350000" step="5000" value="${f.priceMax??350000}" id="priceSlider" style="width:100%;margin-top:10px;accent-color:var(--accent)">
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:3px"><span>₹0</span><span id="priceSliderVal">${f.priceMax!=null?fmtMoney(f.priceMax):'₹3.5L max'}</span></div>
+    </div>
+
+    <div class="section-t">Global Search</div>
+    <div class="fgroup"><input type="text" placeholder="Search products, campaigns, pages, cities…" data-f="search" value="${esc(f.search||'')}"></div>
+  `;
+  // wire drawer inputs (staged into a temp object, applied on Apply)
+  document.querySelectorAll('#presetGrid button').forEach(b=>b.onclick=()=>{STATE.filters.preset=b.dataset.preset;document.querySelectorAll('#presetGrid button').forEach(x=>x.classList.toggle('on',x===b));
+    if(b.dataset.preset!=='custom'){const[fr,to]=presetRange(b.dataset.preset);const fi=document.querySelector('[data-f="from"]'),ti=document.querySelector('[data-f="to"]');if(fi)fi.value=fr;if(ti)ti.value=to;}});
+  const ps=document.getElementById('priceSlider');if(ps)ps.oninput=()=>{document.getElementById('priceSliderVal').textContent=fmtMoney(+ps.value);const pm=document.querySelector('[data-f="priceMax"]');if(pm)pm.value=ps.value;};
+}
+function applyDrawer(){
+  document.querySelectorAll('#drawerBody [data-f]').forEach(el=>{
+    const k=el.dataset.f;let v=el.value;
+    if(k==='priceMin'||k==='priceMax'){STATE.filters[k]=v===''?null:+v;}
+    else if(k==='from'||k==='to'){STATE.filters[k]=v||null;if(v)STATE.filters.preset='custom';}
+    else STATE.filters[k]=v;
+  });
+  STATE.legendOff={};
+  closeDrawer();render();
+}
+function resetFilters(){
+  const p=STATE.filters.preset;
+  STATE.filters={preset:'90d',from:null,to:null,channel:'',source:'',medium:'',sourceMedium:'',campaign:'',landingPage:'',device:'',browser:'',os:'',country:'',region:'',city:'',language:'',userType:'',nr:'',platform:'',eventName:'',pageTitle:'',pagePath:'',contentGroup:'',hostname:'',screenRes:'',priceMin:null,priceMax:null,search:''};
+  STATE.legendOff={};render();buildDrawer();
+}
+window.resetFilters=resetFilters;
+function openDrawer(){buildDrawer();document.getElementById('drawer').classList.add('open');document.getElementById('scrim').classList.add('open');}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('scrim').classList.remove('open');}
+
+/* ══════════════════════════════════════════════════════════════════
+   EXPORT (dashboard-level)
+   ══════════════════════════════════════════════════════════════════ */
+function exportMenu(){
+  const R=filtered();const k=kpis(R);
+  const summary=[['Metric','Value'],
+    ['Range',activeRange().join(' to ')],['Total Users',k.users],['New Users',k.newUsers],['Sessions',k.sessions],
+    ['Engaged Sessions',k.engSessions],['Views',k.views],['Event Count',k.evCount],['Key Events',k.keyEvents],
+    ['Purchases',k.purchases],['Revenue',Math.round(k.revenue)],['AOV',Math.round(k.aov)],
+    ['Bounce Rate %',k.bounceRate.toFixed(2)],['Engagement Rate %',k.engagementRate.toFixed(2)],
+    ['Purchase Conv %',k.purchaseConvRate.toFixed(2)]];
+  const csv=summary.map(r=>r.join(',')).join('\n');
+  dl(new Blob([csv],{type:'text/csv'}),'ga4-summary.csv');
+}
+/* PNG export of current view via SVG serialization is per-chart; dashboard PDF = print */
+
+/* ══════════════════════════════════════════════════════════════════
+   LIVE DATA (GA4 API) — optional
+   ══════════════════════════════════════════════════════════════════ */
+async function tryLive(){
+  if(!CONFIG.API_BASE)return false;
+  try{
+    const[from,to]=activeRange();
+    const res=await fetch(`${CONFIG.API_BASE}?from=${from}&to=${to}`);
+    const j=await res.json();
+    if(j.error)throw new Error(j.detail||j.error);
+    ingestLive(j);
+    STATE.source='live';
+    setLiveChip(true,'Live · GA4 · '+(j.window?j.window.to:to));
+    return true;
+  }catch(e){
+    setLiveChip(false,'Sample data (API error)');
+    console.warn('GA4 live fetch failed, using sample:',e.message);
+    return false;
+  }
+}
+/* The live API returns pre-aggregated arrays. GA4 (unlike raw BigQuery export)
+   cannot hand us joined session-level rows, so we synthesise a session fact
+   table whose *marginal* distributions match each returned breakdown. Result:
+   totals, daily trends and every single-dimension chart/table are accurate;
+   multi-dimension cross-filters are modelled (independent draw per dimension).
+   For fully-joined live data, back this with the GA4→BigQuery export.
+   Any dimension the API doesn't return simply stays "(not set)". */
+function ingestLive(j){
+  CONFIG.TODAY=j.window?j.window.to:CONFIG.TODAY;
+  const rows=[];let id=0,uid=0;
+  const daily=j.daily||[];
+  const rng=mulberry32(7);
+  const shares=arr=>(arr||[]).filter(x=>x&&x.sessions>0).map(x=>({name:x.name,w:x.sessions,rev:x.revenue||0}));
+  const S={
+    channel:shares(j.channels), sourceMedium:shares(j.sourceMedium), source:shares(j.sources),
+    medium:shares(j.mediums), campaign:shares(j.campaigns), landingPage:shares(j.landingPages),
+    device:shares(j.devices), browser:shares(j.browsers), os:shares(j.operatingSystems),
+    screenRes:shares(j.screenResolutions), platform:shares(j.platforms), country:shares(j.countries),
+    region:shares(j.regions), city:shares(j.cities), language:shares(j.languages),
+    contentGroup:shares(j.contentGroups), hostname:shares(j.hostnames), nr:shares(j.newReturning),
+  };
+  const draw=k=>S[k]&&S[k].length?wpick(rng,S[k]).name:'(not set)';
+  const evAll=(j.events||[]);
+  for(const d of daily){
+    const n=Math.round(d.sessions);
+    const engN=Math.round(d.engagedSessions|| d.sessions*(d.engagementRate?d.engagementRate/100:0.6));
+    const newN=Math.round(d.newUsers||0);
+    const purN=Math.round(d.purchases||0);
+    for(let i=0;i<n;i++){
+      const isPur=i<purN;
+      const rev=isPur&&purN?d.revenue/purN:0;
+      const isNew=i<newN;
+      rows.push({id:id++,date:d.date,uid:uid++,isNew,
+        channel:draw('channel'),source:draw('source'),medium:draw('medium'),sourceMedium:draw('sourceMedium'),
+        campaign:draw('campaign'),device:draw('device'),browser:draw('browser'),os:draw('os'),
+        screenRes:draw('screenRes'),platform:draw('platform'),country:draw('country'),region:draw('region'),
+        city:draw('city'),language:draw('language'),landingPage:draw('landingPage'),
+        pageTitle:draw('landingPage'),pagePath:draw('landingPage'),contentGroup:draw('contentGroup'),hostname:draw('hostname'),
+        engaged:i<engN?1:0,engTime:60,pv:Math.round((d.pageViews||d.sessions)/Math.max(1,n)),
+        ev:{page_view:1,purchase:isPur?1:0},evCount:Math.max(1,Math.round((d.eventCount||d.sessions)/Math.max(1,n))),
+        keyEvents:Math.round((d.keyEvents||0)/Math.max(1,n)),converted:isPur?1:0,
+        viewItem:isPur?1:0,cart:0,checkout:0,payment:0,purchased:isPur?1:0,items:isPur?1:0,revenue:rev,aov:rev,
+        category:'(not set)',brand:'(not set)',product:'(not set)',coupon:'NONE',promo:'(none)',refund:0,refAmt:0,
+        userType:isNew?'Prospect':'Customer',nr:S.nr.length?draw('nr'):(isNew?'New':'Returning')});
+    }
+  }
+  STATE.rows=rows;STATE.userRef={};
+  const dates=daily.map(d=>d.date);
+  STATE.meta={from:dates[0],to:dates[dates.length-1],generated:j.generated_at};
+  STATE._liveEvents=evAll; STATE._liveItems=(j.items||[]); STATE._liveFunnel=(j.funnel||[]);
+}
+function setLiveChip(live,txt){document.getElementById('livedot').classList.toggle('live',live);document.getElementById('livetxt').textContent=txt;}
+
+/* ══════════════════════════════════════════════════════════════════
+   BOOT
+   ══════════════════════════════════════════════════════════════════ */
+function setTheme(t){document.documentElement.setAttribute('data-theme',t);STATE.theme=t;try{localStorage.setItem('ga4theme',t);}catch(e){}}
+function boot(){
+  try{const t=localStorage.getItem('ga4theme');if(t)setTheme(t);}catch(e){}
+  const s=buildSample();
+  STATE.rows=s.rows;STATE.userRef=s.userRef;STATE.meta=s.meta;
+  const hInit=(location.hash||'').replace('#','');if(TABS.some(t=>t[0]===hInit))STATE.tab=hInit;
+  render();
+  document.getElementById('skel').classList.add('hide');
+  // events
+  document.getElementById('tabrail').onclick=e=>{const t=e.target.closest('[data-tab]');if(t){location.hash=t.dataset.tab;}};
+  const goHash=()=>{const h=(location.hash||'').replace('#','');if(TABS.some(t=>t[0]===h)&&h!==STATE.tab){STATE.tab=h;STATE.legendOff={};render();window.scrollTo({top:0,behavior:'smooth'});}};
+  window.addEventListener('hashchange',goHash);
+  const h0=(location.hash||'').replace('#','');if(TABS.some(t=>t[0]===h0))STATE.tab=h0;
+  document.getElementById('btnFilters').onclick=openDrawer;
+  document.getElementById('btnCloseDrawer').onclick=closeDrawer;
+  document.getElementById('scrim').onclick=closeDrawer;
+  document.getElementById('btnApply').onclick=applyDrawer;
+  document.getElementById('btnReset').onclick=resetFilters;
+  document.getElementById('btnExport').onclick=exportMenu;
+  document.getElementById('btnExport2').onclick=exportMenu;
+  document.getElementById('btnTheme').onclick=()=>{setTheme(isDark()?'light':'dark');render();};
+  document.getElementById('btnFull').onclick=()=>{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();};
+  document.getElementById('btnRefresh').onclick=async()=>{document.getElementById('btnRefresh').style.transform='rotate(360deg)';
+    if(CONFIG.API_BASE){await tryLive();}render();setTimeout(()=>document.getElementById('btnRefresh').style.transform='',400);};
+  // active-filter chip clears
+  document.getElementById('activeFilters').onclick=e=>{const b=e.target.closest('[data-clear]');if(b){const k=b.dataset.clear;if(k==='price'){STATE.filters.priceMin=null;STATE.filters.priceMax=null;}else STATE.filters[k]='';render();}};
+  // try live if configured
+  if(CONFIG.API_BASE){tryLive().then(ok=>{if(ok)render();});
+    if(CONFIG.AUTO_REFRESH_MIN>0)setInterval(()=>tryLive().then(ok=>ok&&render()),CONFIG.AUTO_REFRESH_MIN*60000);}
+  else setLiveChip(false,'Sample data · set API to go live');
+  initAssistant();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ASK-AI ASSISTANT
+   Local rule-based Q&A grounded on the CURRENTLY FILTERED data (works on
+   the static page with no backend). When CONFIG.API_BASE points at the
+   ga4-bq-api Cloud Run backend, questions are sent to its Gemini-backed
+   /ai endpoint for generative answers, falling back to local on any error.
+   ══════════════════════════════════════════════════════════════════ */
+function _aiEsc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function _aiTotals(R){let rev=0,pur=0;const u=new Set(),b=new Set();
+  R.forEach(r=>{rev+=(+r.revenue||0);pur+=(+r.purchased||0);u.add(r.uid);if(r.purchased)b.add(r.uid);});
+  const s=R.length;return{sessions:s,users:u.size,buyers:b.size,revenue:rev,orders:pur,
+    aov:pur?rev/pur:0,conv:s?pur/s*100:0,rpu:u.size?rev/u.size:0};}
+function _aiTop(R,keyFn,metric){try{const g=groupBy(R,keyFn);g.sort(byDesc(metric));return g;}catch(e){return[];}}
+function _aiRow(label,val){return `<div class="ai-row"><span>${_aiEsc(label)}</span><b>${val}</b></div>`;}
+function localAnswer(q){
+  const R=(typeof filtered==='function')?filtered():(STATE.rows||[]);
+  if(!R.length)return 'No data in the current filter selection.';
+  const q0=q.toLowerCase(), t=_aiTotals(R);
+  const pct=n=>(n||0).toFixed(1)+'%';
+  const scope='<div class="ai-scope">Scope: current filters · '+fmtInt(t.sessions)+' sessions</div>';
+  const wrap=(h)=>scope+h;
+  const wants=(...w)=>w.some(x=>q0.includes(x));
+  // recommendations / actions
+  if(wants('recommend','action','do today','suggest','grow','opportunit','priorit')){
+    const ch=_aiTop(R,r=>r.channel,'revenue')[0];
+    const cities=_aiTop(R,r=>r.city,'sessions').filter(c=>c.sessions>=Math.max(20,t.sessions*0.02));
+    const worstCity=cities.slice().sort((a,b)=>(a.purchases/a.sessions)-(b.purchases/b.sessions))[0];
+    const prod=_aiTop(R,r=>r.product,'views').filter(p=>p.name&&p.name!=='(not set)');
+    const hiViewLoConv=prod.slice(0,15).sort((a,b)=>(a.purchases/(a.views||1))-(b.purchases/(b.views||1)))[0];
+    let h='<b>Priority actions (from current data):</b><ol class="ai-list">';
+    if(ch)h+=`<li><b>Scale ${_aiEsc(ch.name)}</b> — top channel at ${fmtMoney(ch.revenue)} (${pct(ch.revenue/(t.revenue||1)*100)} of revenue). Shift budget toward it.</li>`;
+    if(worstCity)h+=`<li><b>Fix conversion in ${_aiEsc(worstCity.name)}</b> — ${pct(worstCity.purchases/worstCity.sessions*100)} vs ${pct(t.conv)} overall on ${fmtInt(worstCity.sessions)} sessions.</li>`;
+    if(hiViewLoConv)h+=`<li><b>Promote / improve “${_aiEsc(hiViewLoConv.name)}”</b> — high views (${fmtInt(hiViewLoConv.views)}) but weak purchase rate. Better images/price/reviews.</li>`;
+    h+=`<li><b>Recover carts</b> — overall session→purchase is ${pct(t.conv)}; a checkout/WhatsApp recovery flow lifts it fastest.</li>`;
+    h+='</ol>';return wrap(h);
+  }
+  if(wants('funnel','checkout','cart','drop')){
+    return wrap(`Overall session→purchase conversion is <b>${pct(t.conv)}</b> (${fmtInt(t.orders)} orders / ${fmtInt(t.sessions)} sessions). Open the E-commerce tab for the full view→cart→checkout→purchase drop-off.`);
+  }
+  if(wants('revenue','sales','gmv','turnover')){
+    let h=_aiRow('Revenue',fmtMoneyFull(t.revenue))+_aiRow('Orders',fmtInt(t.orders))+_aiRow('AOV',fmtMoneyFull(t.aov))+_aiRow('Revenue / user',fmtMoneyFull(t.rpu));
+    const ch=_aiTop(R,r=>r.channel,'revenue').slice(0,3).map(c=>`${_aiEsc(c.name)} (${fmtMoney(c.revenue)})`).join(', ');
+    return wrap(h+`<div class="ai-note">Top revenue channels: ${ch}.</div>`);
+  }
+  if(wants('convert','conversion','cvr','purchaser')){
+    return wrap(_aiRow('Conversion rate',pct(t.conv))+_aiRow('Buyers',fmtInt(t.buyers))+_aiRow('Purchaser rate',pct(t.users?t.buyers/t.users*100:0)));
+  }
+  if(wants('channel','traffic source','acquisition')){
+    const g=_aiTop(R,r=>r.channel,'revenue').slice(0,6);
+    return wrap('<b>Channels by revenue</b>'+g.map(c=>_aiRow(c.name,fmtMoney(c.revenue)+' · '+fmtInt(c.sessions)+' sess')).join(''));
+  }
+  if(wants('campaign')){
+    const g=_aiTop(R,r=>r.campaign,'revenue').filter(c=>c.name&&c.name!=='(not set)'&&c.name!=='(organic)');
+    if(!g.length)return wrap('No named campaigns in the current selection.');
+    let h='<b>Best campaign:</b> '+_aiEsc(g[0].name)+' — '+fmtMoney(g[0].revenue)+'<br><b>Weakest (by conv):</b> ';
+    const w=g.filter(c=>c.sessions>=20).slice().sort((a,b)=>(a.purchases/a.sessions)-(b.purchases/b.sessions))[0];
+    h+=w?(_aiEsc(w.name)+' — '+pct(w.purchases/w.sessions*100)):'n/a';
+    return wrap(h);
+  }
+  if(wants('city','cities')){
+    const g=_aiTop(R,r=>r.city, wants('conver','lowest','worst')?'sessions':'revenue');
+    if(wants('lowest','worst','weak')){
+      const w=g.filter(c=>c.sessions>=Math.max(20,t.sessions*0.02)).sort((a,b)=>(a.purchases/a.sessions)-(b.purchases/b.sessions)).slice(0,5);
+      return wrap('<b>Lowest-conversion cities</b>'+w.map(c=>_aiRow(c.name,pct(c.purchases/c.sessions*100)+' · '+fmtInt(c.sessions)+' sess')).join(''));
+    }
+    return wrap('<b>Top cities by revenue</b>'+g.slice(0,6).map(c=>_aiRow(c.name,fmtMoney(c.revenue))).join(''));
+  }
+  if(wants('country','countries','geo')){
+    const g=_aiTop(R,r=>r.country,'revenue').slice(0,6);
+    return wrap('<b>Countries by revenue</b>'+g.map(c=>_aiRow(c.name,fmtMoney(c.revenue))).join(''));
+  }
+  if(wants('device','mobile','desktop')){
+    const g=_aiTop(R,r=>r.device,'sessions').slice(0,5);
+    return wrap('<b>Devices</b>'+g.map(c=>_aiRow(c.name,fmtInt(c.sessions)+' sess · '+fmtMoney(c.revenue))).join(''));
+  }
+  if(wants('source')){
+    const g=_aiTop(R,r=>r.source,'sessions').slice(0,6);
+    return wrap('<b>Top sources</b>'+g.map(c=>_aiRow(c.name,fmtInt(c.sessions)+' sess')).join(''));
+  }
+  if(wants('product','sku','item','best sell','top sell')){
+    const g=_aiTop(R,r=>r.product,'revenue').filter(p=>p.name&&p.name!=='(not set)').slice(0,6);
+    return wrap('<b>Top products by revenue</b>'+g.map(c=>_aiRow(c.name,fmtMoney(c.revenue))).join(''));
+  }
+  if(wants('new','returning','repeat','loyal')){
+    let nw=0;R.forEach(r=>{if(r.newUser||r.userType==='new')nw++;});
+    return wrap(_aiRow('Sessions',fmtInt(t.sessions))+_aiRow('Unique users',fmtInt(t.users))+_aiRow('Buyers',fmtInt(t.buyers))+'<div class="ai-note">Use the Users tab for the full new-vs-returning cohort + LTV view.</div>');
+  }
+  // default summary
+  const ch=_aiTop(R,r=>r.channel,'revenue')[0], city=_aiTop(R,r=>r.city,'revenue')[0];
+  return wrap(_aiRow('Revenue',fmtMoneyFull(t.revenue))+_aiRow('Orders',fmtInt(t.orders))+_aiRow('Conversion',pct(t.conv))+_aiRow('AOV',fmtMoneyFull(t.aov))
+    +`<div class="ai-note">Top channel: ${ch?_aiEsc(ch.name):'—'} · Top city: ${city?_aiEsc(city.name):'—'}. Ask about revenue, channels, campaigns, cities, products, conversion, or “top actions”.</div>`);
+}
+async function askAI(q){
+  if(CONFIG.API_BASE){
+    try{
+      const base=CONFIG.API_BASE.replace(/\/(data|ga4-data)\/?$/i,'').replace(/\/$/,'');
+      const res=await fetch(base+'/ai',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({question:q,days:90})});
+      if(res.ok){const j=await res.json();if(j&&j.answer)return{html:_aiEsc(j.answer).replace(/\n/g,'<br>'),src:'Gemini AI'};}
+    }catch(e){}
+  }
+  return{html:localAnswer(q),src:'local'};
+}
+function initAssistant(){
+  if(document.getElementById('askFab'))return;
+  const css=document.createElement('style');
+  css.textContent=`
+  #askFab{position:fixed;right:20px;bottom:20px;z-index:120;width:52px;height:52px;border-radius:50%;border:0;cursor:pointer;
+    background:linear-gradient(135deg,#4285F4,#a142f4);color:#fff;font-size:22px;box-shadow:0 6px 22px rgba(66,133,244,.4)}
+  #askPanel{position:fixed;right:20px;bottom:84px;z-index:120;width:min(380px,92vw);max-height:70vh;display:none;flex-direction:column;
+    background:var(--surface,#fff);color:var(--ink,#111);border:1px solid var(--grid,#ddd);border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  #askPanel.on{display:flex}
+  #askPanel .hd{padding:12px 14px;font-weight:700;background:linear-gradient(135deg,#4285F4,#a142f4);color:#fff;display:flex;align-items:center;gap:8px}
+  #askPanel .hd small{font-weight:500;opacity:.85}
+  #askLog{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px;font-size:13px}
+  #askLog .q{align-self:flex-end;background:var(--surface2,#eef);border-radius:12px 12px 2px 12px;padding:7px 10px;max-width:85%}
+  #askLog .a{align-self:flex-start;background:var(--surface3,#f4f4f2);border-radius:12px 12px 12px 2px;padding:9px 11px;max-width:92%}
+  #askLog .a .src{font-size:10px;text-transform:uppercase;letter-spacing:.5px;opacity:.6;margin-top:5px}
+  .ai-row{display:flex;justify-content:space-between;gap:12px;padding:2px 0;border-bottom:1px dashed var(--grid,#e5e5e5)}
+  .ai-note{margin-top:7px;opacity:.75;font-size:12px}.ai-scope{font-size:11px;opacity:.6;margin-bottom:6px}
+  .ai-list{margin:6px 0 0 16px;padding:0}.ai-list li{margin:5px 0}
+  #askChips{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;border-top:1px solid var(--grid,#eee)}
+  #askChips button{font-size:11px;border:1px solid var(--grid,#ddd);background:transparent;color:inherit;border-radius:20px;padding:4px 9px;cursor:pointer}
+  #askBar{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--grid,#eee)}
+  #askInput{flex:1;border:1px solid var(--grid,#ccc);border-radius:10px;padding:8px 10px;font:inherit;background:transparent;color:inherit}
+  #askSend{border:0;background:#4285F4;color:#fff;border-radius:10px;padding:0 14px;cursor:pointer;font-weight:600}`;
+  document.head.appendChild(css);
+  const fab=document.createElement('button');fab.id='askFab';fab.title='Ask AI';fab.textContent='✨';
+  const p=document.createElement('div');p.id='askPanel';
+  p.innerHTML=`<div class="hd">✨ Ask AI <small id="askMode"></small></div>
+    <div id="askLog"><div class="a">Hi! Ask me about your GA4 data — revenue, channels, campaigns, cities, products, conversion, or “top actions today”.<div class="src">grounded on current filters</div></div></div>
+    <div id="askChips"></div>
+    <div id="askBar"><input id="askInput" placeholder="Ask a question…" autocomplete="off"><button id="askSend">Send</button></div>`;
+  document.body.appendChild(fab);document.body.appendChild(p);
+  document.getElementById('askMode').textContent=CONFIG.API_BASE?'· Gemini':'· local';
+  const log=document.getElementById('askLog'),inp=document.getElementById('askInput');
+  const add=(cls,html)=>{const d=document.createElement('div');d.className=cls;d.innerHTML=html;log.appendChild(d);log.scrollTop=log.scrollHeight;return d;};
+  const send=async()=>{const q=inp.value.trim();if(!q)return;inp.value='';add('q',_aiEsc(q));
+    const a=add('a','<span style="opacity:.6">…</span>');const r=await askAI(q);
+    a.innerHTML=r.html+`<div class="src">${r.src}</div>`;log.scrollTop=log.scrollHeight;};
+  fab.onclick=()=>{p.classList.toggle('on');if(p.classList.contains('on'))inp.focus();};
+  document.getElementById('askSend').onclick=send;
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+  const chips=['Top actions today','Revenue summary','Best campaign','Lowest-conversion cities','Top products'];
+  const cw=document.getElementById('askChips');
+  chips.forEach(c=>{const b=document.createElement('button');b.textContent=c;b.onclick=()=>{inp.value=c;send();};cw.appendChild(b);});
+}
+document.addEventListener('DOMContentLoaded',boot);
+</script>
+</body>
+</html>
