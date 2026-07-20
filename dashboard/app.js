@@ -17,6 +17,10 @@ var CONFIG = {
    tabs fetch /api/* live (browser reuses the app's login). On the static Pages build the flag is
    absent → CONFIG.ZOHO_API stays "" → those tabs show their setup panel, exactly as before. */
 try{ if(typeof window!=='undefined' && window.ZOHO_API_BASE!=null && window.ZOHO_API_BASE!=='') CONFIG.ZOHO_API=String(window.ZOHO_API_BASE); }catch(e){}
+/* Live CRM feed: when served by the Zoho app, the template injects window.CRM_API_BASE = "/api/crm-bundle"
+   (a same-origin endpoint that rebuilds this dashboard's bundle live from BigQuery). Set → LIVE mode
+   (always current); absent on the static Pages build → CONFIG.CRM_API stays "" → snapshot mode (data.js). */
+try{ if(typeof window!=='undefined' && window.CRM_API_BASE!=null && window.CRM_API_BASE!=='') CONFIG.CRM_API=String(window.CRM_API_BASE); }catch(e){}
 
 var DASH = window.DASH || {};
 var OWN = DASH.owners || {};

@@ -204,6 +204,11 @@ tr.grow td{background:var(--bg2);font-weight:700;color:var(--tx)}
   <div id="views"></div>
 </div>
 
+<script>
+  // Live BigQuery feed (cdc_* tables, synced every 15 min) → Deals VS Call is always current,
+  // not frozen on the static data.js snapshot. Same-origin, so it reuses the app's login.
+  window.CRM_API_BASE = "{{ url_for('api_crm_bundle') }}";
+</script>
 <script src="{{ url_for('static', filename='data.js') }}"></script>
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
