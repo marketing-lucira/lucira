@@ -655,14 +655,71 @@ const KB={
   "AI Health Score":{def:"Same as Inventory Health Score — the AI engine's per-SKU grade rolled up.",formula:"avg(health_score)",mean:"Portfolio quality signal.",improve:"Lift the long tail of low scorers.",best:"≥ 70 network average."}
 };
 function infoIcon(key){return `<span class="info-i" data-kb="${esc(key)}" title="What is this?">i</span>`;}
-function openKB(key){const k=KB[key];if(!k)return;$("#kbBox").innerHTML=
-  `<h3>${esc(key)} ${infoIcon(key)}</h3>
-   <div class="kbrow"><b>Definition</b><p>${esc(k.def)}</p></div>
-   <div class="kbrow"><b>Formula</b><p>${esc(k.formula)}</p></div>
-   <div class="kbrow"><b>Business Meaning</b><p>${esc(k.mean)}</p></div>
-   <div class="kbrow"><b>How to Improve</b><p>${esc(k.improve)}</p></div>
-   <div class="kbrow"><b>Industry Best Practice</b><p>${esc(k.best)}</p></div>
-   <div style="margin-top:16px;text-align:right"><button class="btn" onclick="document.getElementById('kbModal').classList.remove('on')">Close</button></div>`;
+
+/* Section / chart help — every report gets an ⓘ explaining What / How to read / How to act. */
+const SECTIONS={
+ "Inventory vs Sales":{what:"On-hand inventory (units) plotted against units sold per day over the last 30 days.",read:"When the sales line climbs toward the inventory line, cover is shrinking; flat sales with high inventory = slow movement.",act:"Refill lines where sales approach stock; review flat-sales high-stock items for promotion or transfer."},
+ "Inventory Status Mix":{what:"Every in-scope SKU×store bucketed as Out of Stock, Low, Over, Dead or Healthy.",read:"Bigger red/amber slices = more risk; a large Over/Dead share = capital locked up.",act:"Clear Out-of-Stock and Low first; rebalance or discount Over/Dead."},
+ "Top Refill Priorities":{what:"The highest priority-score SKUs that need replenishment now.",read:"Priority blends stock-out urgency, demand, value and OOS — higher means act sooner.",act:"Start refills from the top; action Critical priority the same day."},
+ "Refill Priority Matrix":{what:"Every refill candidate plotted by days-of-cover (x) vs monthly demand (y); bubble size = inventory value.",read:"Bottom-right (low cover, high demand, big bubble) is the most urgent.",act:"Clear the bottom-right cluster first."},
+ "Refill Worklist":{what:"The full ranked list of SKUs needing replenishment with a suggested refill quantity.",read:"Refill Qty = daily run-rate × 60-day target − on-hand.",act:"Raise manufacturing / purchase orders for the listed quantities."},
+ "AI Refill Recommendation":{what:"Every SKU classified by a transparent decision tree into an action (refill, transfer, discount, stop, scale).",read:"Each card shows how many SKUs fall in that action, their value and average confidence.",act:"Work Critical/High actions first; use the reason + business impact to justify."},
+ "All Recommendations":{what:"Every SKU with its AI recommendation, priority and status in one table.",read:"Sortable by priority score.",act:"Filter to one action and execute in bulk."},
+ "Transfer Flow Matrix":{what:"Units recommended to move from each source store (rows) to each destination store (columns).",read:"Hotter cells = more units; the diagonal is blank (no self-transfer).",act:"Execute the biggest moves before manufacturing new stock."},
+ "Recommended Transfers":{what:"SKU-level inter-store transfers that fix a shortage from surplus elsewhere.",read:"Suggested qty never exceeds the source store's protected surplus.",act:"Transfer before you manufacture — it's cheaper and faster."},
+ "ABC Analysis":{what:"SKUs classed by inventory value: A = top 80% of value, B = next 15%, C = last 5%.",read:"A-items are few but hold most of the money.",act:"Tightly control A-item stock; thin or simplify the C tail."},
+ "XYZ Analysis":{what:"SKUs classed by demand predictability: X steady, Y variable, Z erratic / dead.",read:"X items forecast well; Z items are hard to predict.",act:"Automate X replenishment; review Z for discontinuation."},
+ "Pareto":{what:"Cumulative share of revenue contributed by the top SKUs (the 80/20 rule).",read:"A steep early curve means a few SKUs drive most revenue.",act:"Protect the vital few; rationalise the trivial many."},
+ "Fast Movers":{what:"Best-selling SKUs by units sold in the last 90 days.",read:"Longer bars sell faster.",act:"Keep these always in stock; consider increasing production."},
+ "Slow / Dead":{what:"Slow-moving and dead SKUs ranked by the capital they lock up.",read:"Longer bars tie up more money with little or no sales.",act:"Discount, transfer or liquidate the top bars."},
+ "High Demand, Low Stock":{what:"SKUs that are selling well but running thin on cover.",read:"High run-rate + low days-cover = imminent stock-out.",act:"Prioritise these on the next refill run."},
+ "High Margin, Low Stock":{what:"High-MRP SKUs with 2 or fewer units and live demand.",read:"Losing these sales costs the most per unit.",act:"Protect the availability of premium pieces first."},
+ "Projected Daily Demand":{what:"Forecast units/day for the next 30 days from the trailing 90-day run-rate.",read:"Peaks show heavier-demand days.",act:"Make sure cover spans the projected demand window."},
+ "Suggested Future Refill":{what:"Top-demand SKUs with projected 7/15/30-day demand and a suggested refill quantity.",read:"Suggested refill = 30-day forecast − on-hand.",act:"Pre-build stock for the coming month."},
+ "Aging Buckets":{what:"Inventory value grouped by how long each item has been held.",read:"Value shifting into the 180d+ buckets signals aging risk.",act:"Act on the oldest, highest-value buckets first."},
+ "Stock Waterfall":{what:"How the position moved: opening + GRN received − sold = current stock.",read:"Green bars add stock, red bars remove it.",act:"If 'sold' is small versus 'received', tighten future buying."},
+ "Dead & Aging Detail":{what:"The specific dead / never-sold SKUs and the capital locked in each.",read:"Sorted by value, with the longest-idle at the top.",act:"Liquidate or transfer the highest-value dead stock."},
+ "Inventory Value by Store":{what:"Total inventory value held at each store / location.",read:"Longer bars hold more capital.",act:"Balance stock against each store's sell-through."},
+ "Store Health Heatmap":{what:"Issue intensity per store — OOS, Low, Dead, Refill counts and health score.",read:"Greener = fewer issues / healthier; redder = needs attention.",act:"Send help to the reddest stores first."},
+ "Store Scorecard":{what:"Per-store SKUs, units, value, units sold and issue counts, side by side.",read:"Compare stores like-for-like.",act:"Coach low-health stores; replicate what the top stores do."},
+ "Inventory Value Treemap":{what:"Inventory value split by category — bigger tiles hold more value.",read:"The largest tiles are where your capital sits.",act:"Make sure big-value categories rotate well."},
+ "Best Performing":{what:"Top categories by sell-through %.",read:"Higher = demand absorbs supply well.",act:"Invest more assortment here."},
+ "Worst Performing":{what:"Lowest categories by sell-through %.",read:"Low = supply is outpacing demand.",act:"Slow the buying; promote to clear."},
+ "Category Scorecard":{what:"Per-category value, units sold, revenue and sell-through.",read:"Compare categories side by side.",act:"Shift open-to-buy toward the strongest categories."},
+ "Refill Immediately":{what:"SKUs that are out of stock (or below lead-time cover) with live demand.",read:"These lose sales every day until replenished.",act:"Raise urgent replenishment today."},
+ "Liquidate / Promote":{what:"Slow / dead SKUs whose capital should be released.",read:"Ranked by value locked.",act:"Run promotions or liquidate the top items."},
+ "Increase Manufacturing":{what:"Fast-movers where demand is outpacing supply.",read:"Strong 90-day sales with cover below target.",act:"Scale up production on these lines."},
+ "Stop Manufacturing":{what:"SKUs with no demand signal since GRN.",read:"No sales despite being received.",act:"Pause production to avoid further dead stock."},
+};
+function matchSection(t){t=(t||"").toLowerCase();for(const k in SECTIONS){if(t.includes(k.toLowerCase()))return k;}return null;}
+function attachSectionInfo(el){
+  $$(".card h3",el).forEach(h=>{
+    if(h.querySelector(".info-i"))return;
+    const clone=h.cloneNode(true);clone.querySelectorAll(".rt,.info-i").forEach(n=>n.remove());
+    const key=matchSection(clone.textContent);if(!key)return;
+    const span=document.createElement("span");span.className="info-i";span.dataset.kb=key;span.textContent="i";
+    span.title="What is this?";span.style.marginLeft="6px";span.onclick=()=>openKB(key);
+    const rt=h.querySelector(".rt");if(rt)h.insertBefore(span,rt);else h.appendChild(span);
+  });
+}
+function openKB(key){
+  const k=KB[key];
+  if(k){$("#kbBox").innerHTML=
+    `<h3>${esc(key)} ${infoIcon(key)}</h3>
+     <div class="kbrow"><b>Definition</b><p>${esc(k.def)}</p></div>
+     <div class="kbrow"><b>Formula</b><p>${esc(k.formula)}</p></div>
+     <div class="kbrow"><b>Business Meaning</b><p>${esc(k.mean)}</p></div>
+     <div class="kbrow"><b>How to Improve</b><p>${esc(k.improve)}</p></div>
+     <div class="kbrow"><b>Industry Best Practice</b><p>${esc(k.best)}</p></div>
+     <div style="margin-top:16px;text-align:right"><button class="btn" onclick="document.getElementById('kbModal').classList.remove('on')">Close</button></div>`;
+    $("#kbModal").classList.add("on");return;}
+  const s=SECTIONS[key];if(!s)return;
+  $("#kbBox").innerHTML=
+    `<h3>${esc(key)}</h3>
+     <div class="kbrow"><b>What it shows</b><p>${esc(s.what)}</p></div>
+     <div class="kbrow"><b>How to read it</b><p>${esc(s.read)}</p></div>
+     <div class="kbrow"><b>How to act on it</b><p>${esc(s.act)}</p></div>
+     <div style="margin-top:16px;text-align:right"><button class="btn" onclick="document.getElementById('kbModal').classList.remove('on')">Close</button></div>`;
   $("#kbModal").classList.add("on");}
 
 /* ── recommendation visuals ─────────────────────────────────────────────── */
@@ -718,6 +775,7 @@ function render(){
     insights:renderInsights,assistant:renderAssistant,actions:renderActions,kb:renderKB}[STATE.tab]||(()=>{}))(el,items,k);}
   catch(e){el.innerHTML=`<div class="card"><h3>⚠ Render error</h3><p class="muted">${esc(e.message)}</p></div>`;console.error(e);}
   $$("[data-kb]",el).forEach(i=>i.onclick=()=>openKB(i.dataset.kb));
+  attachSectionInfo(el);
 }
 
 /* OVERVIEW */
