@@ -239,6 +239,28 @@ svg{display:block;overflow:visible}
 .controlbar select,.controlbar input[type=date]{padding:8px 11px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:12.5px;font-family:inherit;cursor:pointer}
 .controlbar select:focus,.controlbar input:focus{outline:none;border-color:var(--accent)}
 .controlbar .cbcustom{flex-direction:row;align-items:flex-end;gap:8px}
+/* Insights & Actions tab */
+.ins-head{font-size:13px;color:var(--ink2);margin:0 0 12px;line-height:1.5}
+.ins-act{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.ins-act:last-child{border-bottom:0}
+.ins-rank{flex:0 0 26px;height:26px;border-radius:8px;display:grid;place-items:center;font-weight:800;background:var(--accent-soft);color:var(--accent)}
+.ins-t{font-weight:700;font-size:13.5px}
+.ins-imp{font-weight:700;color:var(--s2);font-size:12px;margin-left:6px}
+.ins-d{font-size:12.5px;color:var(--ink2);margin:3px 0}
+.ins-meta{font-size:11px;color:var(--muted)}
+.ins-meta .pri{font-weight:700;padding:1px 7px;border-radius:20px}
+.pri.high{background:rgba(208,59,59,.16);color:#e0574f}.pri.med{background:rgba(250,178,25,.16);color:#c98500}.pri.low{background:rgba(12,163,12,.14);color:#0ca30c}
+.ins-funnel{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.ins-fbar{height:30px;border-radius:7px;background:var(--accent);display:flex;align-items:center;padding:0 10px;color:#fff;font-size:12px;font-weight:600;min-width:82px;white-space:nowrap}
+.ins-fbar.leakbar{background:var(--s6)}
+.ins-fbar .fv{margin-left:auto;font-variant-numeric:tabular-nums;padding-left:10px}
+.ins-leak{color:#e0574f;font-weight:600;font-size:12px}
+.ins-mini{font-size:12.5px}
+.ins-mini .r{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dashed var(--border)}
+.ins-tag{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:20px;margin-left:6px}
+.ins-tag.focus{background:rgba(12,163,12,.14);color:#0ca30c}.ins-tag.fix{background:rgba(250,178,25,.16);color:#c98500}
+.ins-sub{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:12px 0 4px}
+.ins-sub:first-child{margin-top:0}
 </style>
 </head>
 <body>
@@ -1040,7 +1062,7 @@ function dl(blob,name){const a=document.createElement('a');a.href=URL.createObje
    TABS
    ══════════════════════════════════════════════════════════════════ */
 const TABS=[
-  ['overview','Overview','◱'],['sales','Sales & Revenue','₹'],['traffic','Traffic','⇄'],
+  ['overview','Overview','◱'],['insights','Insights & Actions','⚑'],['sales','Sales & Revenue','₹'],['traffic','Traffic','⇄'],
   ['users','Users','☺'],['devices','Devices','▤'],['geo','Locations','⌖'],
   ['pages','Pages','▦'],['events','Events','✦'],['ecom','E-commerce','⛢'],
   ['marketing','Marketing','◎'],['data','Data Explorer','▤'],
@@ -1052,7 +1074,7 @@ function render(){
   const v=document.getElementById('view');
   const R=filtered();
   if(!R.length){v.innerHTML=`<div class="card"><div class="emptybox">No data matches the current filters.<br><button class="btn" style="margin-top:12px" onclick="resetFilters()">Reset filters</button></div></div>`;return;}
-  const fn={overview:tabOverview,sales:tabSales,traffic:tabTraffic,users:tabUsers,devices:tabDevices,
+  const fn={overview:tabOverview,insights:tabInsights,sales:tabSales,traffic:tabTraffic,users:tabUsers,devices:tabDevices,
     geo:tabGeo,pages:tabPages,events:tabEvents,ecom:tabEcom,marketing:tabMarketing,data:tabData}[STATE.tab];
   v.innerHTML=fn(R);
   wireDynamic();
@@ -1137,6 +1159,111 @@ function tabOverview(R){
     </div>`;
 }
 function granToggle(){return tabToggle('gran',STATE.gran,[['day','D'],['week','W'],['month','M'],['quarter','Q'],['year','Y']]);}
+
+/* ─── INSIGHTS & ACTIONS ───────────────────────────────────────
+   Auto-generated business read from the CURRENT filtered data: executive KPIs,
+   ranked actions with estimated revenue impact, the ATC/checkout funnel with
+   the biggest leak, products to push, and where to focus (audience/channels).
+   Works on sample now; becomes real advice once real data is connected. */
+function tabInsights(R){
+  const k=kpis(R), p=kpis(filteredPrev());
+  const AOV=k.aov||0, overallConv=k.purchaseConvRate||0;
+  const share=(n)=>k.revenue?(n/k.revenue*100):0;
+
+  // Executive KPI row (business impact)
+  const exec=[
+    {label:'Revenue',icon:'₹',value:fmtMoney(k.revenue),delta:pctDelta(k.revenue,p.revenue),color:'var(--s3)'},
+    {label:'Orders',value:fmtInt(k.purchases),delta:pctDelta(k.purchases,p.purchases),color:'var(--s2)'},
+    {label:'Conversion',value:k.purchaseConvRate.toFixed(2)+'%',delta:pctDelta(k.purchaseConvRate,p.purchaseConvRate),color:'var(--s5)'},
+    {label:'AOV',value:fmtMoney(k.aov),delta:pctDelta(k.aov,p.aov),color:'var(--s4)'},
+    {label:'Revenue / User',value:fmtMoney(k.revenuePerUser),delta:pctDelta(k.revenuePerUser,p.revenuePerUser),color:'var(--s1)'},
+    {label:'Returning Users',value:fmtInt(k.returningUsers),delta:pctDelta(k.returningUsers,p.returningUsers),color:'var(--s7)'},
+  ];
+
+  // Funnel (View item → ATC → checkout → payment → purchase) + biggest leak
+  const F=[['View item',k.viewItem||0],['Add to cart',k.cart||0],['Begin checkout',k.checkout||0],['Add payment',k.payment||0],['Purchase',k.purchases||0]];
+  let leak={drop:-1,from:'',to:'',fromCount:0};
+  const frows=F.map((s,i)=>{const prev=i>0?F[i-1][1]:s[1];const conv=prev?s[1]/prev*100:100;const drop=i>0?Math.max(0,prev-s[1]):0;
+    if(i>0&&drop>leak.drop)leak={drop,from:F[i-1][0],to:s[0],fromCount:prev};return {stage:s[0],count:s[1],conv,drop};});
+  const downRate=leak.fromCount?k.purchases/leak.fromCount:0;
+  const leakRecover=0.10*leak.drop*downRate*AOV;
+  const fmax=Math.max.apply(null,F.map(s=>s[1]))||1;
+  const funnelBars=frows.map(fr=>{const w=Math.max(8,fr.count/fmax*100);const isLeak=leak.to===fr.stage;
+    return '<div class="ins-fbar'+(isLeak?' leakbar':'')+'" style="width:'+w+'%">'+fr.stage+'<span class="fv">'+fmtInt(fr.count)+(fr.stage!=='View item'?' · '+fr.conv.toFixed(0)+'%':'')+'</span></div>';}).join('');
+  const funnelHtml='<div class="ins-funnel">'+funnelBars+'</div>'
+    +'<div class="ins-leak">Biggest leak: '+esc(leak.from)+' → '+esc(leak.to)+' — '+fmtInt(leak.drop)+' lost ('+(leak.fromCount?(leak.drop/leak.fromCount*100).toFixed(0):0)+'% drop). Recovering 10% ≈ '+fmtMoney(leakRecover)+'/period.</div>'
+    +'<div class="ins-head" style="margin-top:8px">Add-to-carts <b>'+fmtInt(k.cart)+'</b> · Checkouts <b>'+fmtInt(k.checkout)+'</b> · Purchases <b>'+fmtInt(k.purchases)+'</b> · Cart→Purchase <b>'+(k.cart?(k.purchases/k.cart*100).toFixed(1):0)+'%</b> · Cart abandonment <b>'+(k.cart?((1-k.purchases/k.cart)*100).toFixed(1):0)+'%</b></div>';
+
+  // Rankings
+  const chans=groupBy(R,r=>r.channel).sort(byDesc('revenue'));
+  const cities=groupBy(R,r=>r.city);
+  const devs=groupBy(R,r=>r.device);
+  const prods=groupBy(R,r=>r.product).filter(pr=>pr.name&&pr.name!=='(not set)');
+  const prodsV=prods.filter(pr=>pr.views>0);
+  const convFrac=pr=>pr.sessions?pr.purchases/pr.sessions:0;
+  const medConv=(()=>{const a=prodsV.map(convFrac).sort((x,y)=>x-y);return a.length?a[Math.floor(a.length/2)]:0;})();
+  const topChan=chans[0];
+  const bigCities=cities.filter(c=>c.sessions>=Math.max(25,k.sessions*0.015)).map(c=>({name:c.name,sessions:c.sessions,revenue:c.revenue,purchases:c.purchases,conv:c.sessions?c.purchases/c.sessions*100:0}));
+  const weakCity=bigCities.filter(c=>c.conv<overallConv).sort((a,b)=>(b.sessions*(overallConv-b.conv))-(a.sessions*(overallConv-a.conv)))[0];
+  const weakCityGain=weakCity?weakCity.sessions*((overallConv-weakCity.conv)/100)*AOV:0;
+  const pushProd=prodsV.map(pr=>({name:pr.name,views:pr.views,conv:convFrac(pr),score:pr.views*Math.max(0,medConv-convFrac(pr))})).sort((a,b)=>b.score-a.score)[0];
+  const dmap={};devs.forEach(d=>dmap[String(d.name||'').toLowerCase()]=d);
+  const mob=dmap['mobile'],desk=dmap['desktop'];
+  const mobConv=mob&&mob.sessions?mob.purchases/mob.sessions*100:0, deskConv=desk&&desk.sessions?desk.purchases/desk.sessions*100:0;
+  const mobGain=(mob&&desk&&deskConv>mobConv)?mob.sessions*((deskConv-mobConv)/100)*AOV:0;
+
+  // Priority actions (ranked by estimated revenue impact)
+  const actions=[];
+  if(topChan)actions.push({t:'Scale '+topChan.name,d:'Top revenue channel at '+fmtMoney(topChan.revenue)+' ('+share(topChan.revenue).toFixed(0)+'% of revenue). Shift budget & best creative here.',impact:0.15*topChan.revenue,pri:'High',eff:'Low',owner:'Marketing'});
+  if(weakCityGain>0)actions.push({t:'Fix conversion in '+weakCity.name,d:weakCity.name+' converts at '+weakCity.conv.toFixed(2)+'% vs '+overallConv.toFixed(2)+'% overall on '+fmtInt(weakCity.sessions)+' sessions. Localize offers, COD, shipping, language.',impact:weakCityGain,pri:'High',eff:'Med',owner:'Growth'});
+  if(leakRecover>0)actions.push({t:'Recover '+leak.from+'→'+leak.to+' drop-off',d:fmtInt(leak.drop)+' users lost at this step. Fewer form fields, trust badges, saved carts, retargeting.',impact:leakRecover,pri:'High',eff:'Med',owner:'Product'});
+  actions.push({t:'Recover abandoned carts',d:fmtInt(Math.max(0,k.cart-k.purchases))+' add-to-carts didn’t buy. WhatsApp/email recovery + limited-time nudge.',impact:0.08*Math.max(0,k.cart-k.purchases)*AOV,pri:'High',eff:'Low',owner:'CRM'});
+  if(pushProd&&pushProd.score>0)actions.push({t:'Promote “'+pushProd.name+'”',d:'High interest ('+fmtInt(pushProd.views)+' views) but weak conversion. Better images, price/EMI, reviews, or a bundle.',impact:pushProd.views*Math.max(0,medConv-pushProd.conv)*AOV,pri:'Med',eff:'Low',owner:'Merchandising'});
+  if(mobGain>0)actions.push({t:'Improve mobile experience',d:'Mobile converts '+mobConv.toFixed(2)+'% vs desktop '+deskConv.toFixed(2)+'%. Page speed, checkout UX, mobile wallets.',impact:mobGain,pri:'Med',eff:'Med',owner:'Web/Dev'});
+  actions.sort((a,b)=>b.impact-a.impact);
+  const actionCards=actions.slice(0,6).map((a,i)=>'<div class="ins-act"><div class="ins-rank">'+(i+1)+'</div>'
+    +'<div class="ins-body"><div class="ins-t">'+esc(a.t)+' <span class="ins-imp">+'+fmtMoney(a.impact)+' est.</span></div>'
+    +'<div class="ins-d">'+esc(a.d)+'</div>'
+    +'<div class="ins-meta"><span class="pri '+a.pri.toLowerCase()+'">'+a.pri+' priority</span> · Effort: '+a.eff+' · Owner: '+a.owner+'</div></div></div>').join('');
+
+  // Products to push
+  const miniList=(arr,fmt)=>arr.length?arr.map(fmt).join(''):'<div class="ins-head">Not enough data yet.</div>';
+  const winners=prods.slice().sort(byDesc('revenue')).slice(0,5);
+  const potential=prodsV.map(pr=>({name:pr.name,views:pr.views,conv:convFrac(pr),score:pr.views*Math.max(0,medConv-convFrac(pr))})).sort((a,b)=>b.score-a.score).slice(0,5);
+  const converters=prodsV.filter(pr=>pr.sessions>=15).map(pr=>({name:pr.name,conv:convFrac(pr)*100})).sort((a,b)=>b.conv-a.conv).slice(0,5);
+  const prodHtml='<div class="ins-sub">🏆 Revenue winners</div><div class="ins-mini">'+miniList(winners,pr=>'<div class="r"><span>'+esc(pr.name)+'</span><b>'+fmtMoney(pr.revenue)+'</b></div>')+'</div>'
+    +'<div class="ins-sub">🚀 High potential — push these</div><div class="ins-mini">'+miniList(potential,pr=>'<div class="r"><span>'+esc(pr.name)+'</span><b>'+fmtInt(pr.views)+' views · '+(pr.conv*100).toFixed(1)+'%</b></div>')+'</div>'
+    +'<div class="ins-sub">✅ Best converters</div><div class="ins-mini">'+miniList(converters,pr=>'<div class="r"><span>'+esc(pr.name)+'</span><b>'+pr.conv.toFixed(1)+'%</b></div>')+'</div>';
+
+  // Where to focus (audience + channels)
+  const cityT=bigCities.slice().sort((a,b)=>b.revenue-a.revenue).slice(0,8);
+  const cityRows=miniList(cityT,c=>{const focus=c.conv>=overallConv;return '<div class="r"><span>'+esc(c.name)+'</span><span>'+fmtInt(c.sessions)+' · '+c.conv.toFixed(1)+'% · '+fmtMoney(c.revenue)+'<span class="ins-tag '+(focus?'focus':'fix')+'">'+(focus?'Focus':'Fix')+'</span></span></div>';});
+  const chanRows=miniList(chans.slice(0,4),c=>'<div class="r"><span>'+esc(c.name)+'</span><b>'+fmtMoney(c.revenue)+'</b></div>');
+  const audHtml='<div class="ins-sub">Cities — focus vs fix</div><div class="ins-mini">'+cityRows+'</div>'
+    +'<div class="ins-sub">Channels to scale</div><div class="ins-mini">'+chanRows+'</div>';
+
+  // Growth opportunities
+  const retShare=k.users?k.returningUsers/k.users*100:0;
+  const topCityShare=cities.length?(cities.slice().sort(byDesc('revenue'))[0].revenue/(k.revenue||1)*100):0;
+  const opps=[];
+  opps.push('Returning users are <b>'+retShare.toFixed(0)+'%</b> of visitors'+(retShare<35?' — a loyalty / repeat-purchase push (WhatsApp, rewards) lifts LTV.':' — strong repeat base; upsell premium to them.'));
+  opps.push('Your top city drives <b>'+topCityShare.toFixed(0)+'%</b> of revenue'+(topCityShare>35?' — concentrated; test new metros to diversify risk.':' — revenue is well spread.'));
+  if(mob&&desk)opps.push('Mobile converts '+(mobConv<deskConv?'<b>'+(deskConv-mobConv).toFixed(1)+'pp lower</b> than desktop — mobile UX/speed is the fastest lever.':'on par with desktop — good.'));
+  opps.push('AOV is <b>'+fmtMoney(k.aov)+'</b> — bundle accessories / cross-sell to raise it 5–10%.');
+  const oppHtml='<ul class="ai-list">'+opps.map(o=>'<li>'+o+'</li>').join('')+'</ul>';
+
+  return '<div class="ins-head">In this period Lucira earned <b>'+fmtMoneyFull(k.revenue)+'</b> from <b>'+fmtInt(k.purchases)+'</b> orders at <b>'+k.purchaseConvRate.toFixed(2)+'%</b> conversion (AOV '+fmtMoney(k.aov)+'). Highest-impact moves below.</div>'
+    +'<div class="grid g4" style="margin-bottom:16px">'+exec.map(kpiCard).join('')+'</div>'
+    +'<div class="grid g2" style="margin-bottom:16px">'
+      +card('Priority actions','Ranked by estimated revenue impact',actionCards,{icon:'⚑'})
+      +card('Purchase funnel & leaks','View → ATC → Checkout → Payment → Purchase',funnelHtml,{icon:'⛢'})
+    +'</div>'
+    +'<div class="grid g3">'
+      +card('Products to push','Winners, high-potential & best converters',prodHtml,{icon:'◆'})
+      +card('Where to focus','Audience & channels to prioritise',audHtml,{icon:'⌖'})
+      +card('Growth opportunities','Data-driven leads',oppHtml,{icon:'📈'})
+    +'</div>';
+}
 
 /* ─── SALES & REVENUE ──────────────────────────────────────── */
 function tabSales(R){
