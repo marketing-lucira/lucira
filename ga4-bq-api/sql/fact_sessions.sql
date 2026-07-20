@@ -23,7 +23,8 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 DECLARE target_date    DATE          DEFAULT DATE_SUB(COALESCE(@run_date, CURRENT_DATE('Asia/Kolkata')), INTERVAL 1 DAY);
 DECLARE suffix         STRING        DEFAULT FORMAT_DATE('%Y%m%d', target_date);
-DECLARE key_events_set ARRAY<STRING> DEFAULT ['purchase'];   -- ← set to your GA4 Key Events
+-- ⚠ CONFIRM these against GA4 Admin → "Key events" (add/remove event names).
+DECLARE key_events_set ARRAY<STRING> DEFAULT ['purchase','begin_checkout','generate_lead','sign_up'];
 
 -- idempotent: rebuild just this day's partition
 DELETE FROM `lucirajewelry-prod.ga4_dashboard.ga4_fact_sessions`
