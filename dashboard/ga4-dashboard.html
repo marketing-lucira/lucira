@@ -232,6 +232,13 @@ svg{display:block;overflow:visible}
 :fullscreen .wrap{max-width:100%;background:var(--plane)}
 :fullscreen{overflow:auto}
 @media print{.topbar,.tabrail,.drawer,.scrim,#tip,.tools,.tblbar{display:none!important}.wrap{max-width:100%}.card{break-inside:avoid;box-shadow:none;border:1px solid #ccc}}
+/* Global control bar — always-visible date-range + granularity dropdowns */
+.controlbar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin:2px 0 14px}
+.controlbar .ctl{display:flex;flex-direction:column;gap:4px}
+.controlbar label{font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.4px}
+.controlbar select,.controlbar input[type=date]{padding:8px 11px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:12.5px;font-family:inherit;cursor:pointer}
+.controlbar select:focus,.controlbar input:focus{outline:none;border-color:var(--accent)}
+.controlbar .cbcustom{flex-direction:row;align-items:flex-end;gap:8px}
 </style>
 </head>
 <body>
@@ -261,6 +268,40 @@ svg{display:block;overflow:visible}
 
 <!-- Active filters row + content -->
 <main class="wrap">
+  <!-- Always-visible advanced controls: date range + granularity -->
+  <div class="controlbar">
+    <div class="ctl">
+      <label for="cbRange">Date range</label>
+      <select id="cbRange">
+        <option value="today">Today</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="7d">Last 7 Days</option>
+        <option value="30d">Last 30 Days</option>
+        <option value="90d">Last 90 Days</option>
+        <option value="thisMonth">This Month</option>
+        <option value="lastMonth">Last Month</option>
+        <option value="3m">Last 3 Months</option>
+        <option value="6m">Last 6 Months</option>
+        <option value="thisYear">This Year</option>
+        <option value="lastYear">Last Year</option>
+        <option value="custom">Custom Range</option>
+      </select>
+    </div>
+    <div class="ctl cbcustom" id="cbCustom" style="display:none">
+      <div class="ctl"><label for="cbFrom">From</label><input type="date" id="cbFrom"></div>
+      <div class="ctl"><label for="cbTo">To</label><input type="date" id="cbTo"></div>
+    </div>
+    <div class="ctl">
+      <label for="cbGran">Granularity</label>
+      <select id="cbGran">
+        <option value="day">Daily</option>
+        <option value="week">Weekly</option>
+        <option value="month">Monthly</option>
+        <option value="quarter">Quarterly</option>
+        <option value="year">Yearly</option>
+      </select>
+    </div>
+  </div>
   <div class="pill-row" id="activeFilters"></div>
   <div id="view"></div>
 </main>
@@ -1007,7 +1048,7 @@ const TABS=[
 function renderTabs(){document.getElementById('tabrail').innerHTML=TABS.map(t=>`<div class="tab ${STATE.tab===t[0]?'active':''}" data-tab="${t[0]}"><span class="ic">${t[2]}</span>${t[1]}</div>`).join('');}
 
 function render(){
-  renderTabs();renderActiveFilters();
+  renderTabs();renderActiveFilters();syncControlbar();
   const v=document.getElementById('view');
   const R=filtered();
   if(!R.length){v.innerHTML=`<div class="card"><div class="emptybox">No data matches the current filters.<br><button class="btn" style="margin-top:12px" onclick="resetFilters()">Reset filters</button></div></div>`;return;}
@@ -1033,6 +1074,17 @@ function renderActiveFilters(){
 }
 const presetLabels={today:'Today',yesterday:'Yesterday','7d':'Last 7 Days','30d':'Last 30 Days',thisMonth:'This Month',lastMonth:'Last Month','3m':'Last 3 Months','6m':'Last 6 Months','90d':'Last 90 Days',thisYear:'This Year',lastYear:'Last Year',custom:'Custom'};
 const presetLabel=p=>presetLabels[p]||p;
+
+/* Keep the global control-bar dropdowns (date range + granularity) in sync with
+   STATE — also reflects changes made from the filter drawer or a per-card toggle. */
+function syncControlbar(){
+  const rSel=document.getElementById('cbRange'),gSel=document.getElementById('cbGran'),
+        cust=document.getElementById('cbCustom'),fI=document.getElementById('cbFrom'),tI=document.getElementById('cbTo');
+  if(!rSel)return;
+  rSel.value=STATE.filters.preset; gSel.value=STATE.gran;
+  const isCustom=STATE.filters.preset==='custom'; cust.style.display=isCustom?'flex':'none';
+  const [fr,to]=activeRange(); fI.value=STATE.filters.from||fr; tI.value=STATE.filters.to||to;
+}
 
 /* ─── OVERVIEW ─────────────────────────────────────────────── */
 function tabOverview(R){
@@ -1730,6 +1782,14 @@ function boot(){
     if(snapshotUrl()){await loadSnapshot(true);}render();setTimeout(()=>document.getElementById('btnRefresh').style.transform='',400);};
   // active-filter chip clears
   document.getElementById('activeFilters').onclick=e=>{const b=e.target.closest('[data-clear]');if(b){const k=b.dataset.clear;if(k==='price'){STATE.filters.priceMin=null;STATE.filters.priceMax=null;}else STATE.filters[k]='';render();}};
+  // Global control bar — date range + granularity dropdowns (drive the same STATE as the drawer/toggles)
+  document.getElementById('cbRange').onchange=e=>{const v=e.target.value;STATE.filters.preset=v;
+    if(v!=='custom'){STATE.filters.from=null;STATE.filters.to=null;}
+    else{const[fr,to]=activeRange();STATE.filters.from=STATE.filters.from||fr;STATE.filters.to=STATE.filters.to||to;}
+    render();};
+  document.getElementById('cbGran').onchange=e=>{STATE.gran=e.target.value;render();};
+  document.getElementById('cbFrom').onchange=e=>{STATE.filters.from=e.target.value||null;STATE.filters.preset='custom';render();};
+  document.getElementById('cbTo').onchange=e=>{STATE.filters.to=e.target.value||null;STATE.filters.preset='custom';render();};
   // Daily snapshot: load once (cached), reuse all day, auto-refresh at 09:00 IST.
   if(snapshotUrl()){ loadSnapshot(false).then(ok=>{if(ok)render();}); scheduleDailyRefresh(); }
   else setLiveChip(false,'Sample data · configure daily snapshot to go live');
