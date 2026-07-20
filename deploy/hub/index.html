@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucira Jewelry — Analytics Dashboards</title>
+<style>
+  :root{color-scheme:light dark}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+    background:#0d0d0f;color:#f4f4f2;display:flex;align-items:center;justify-content:center;padding:28px}
+  @media (prefers-color-scheme:light){body{background:#f6f6f4;color:#141414}}
+  .wrap{width:100%;max-width:820px}
+  .brand{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .mark{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-weight:800;color:#160f00;
+    background:linear-gradient(135deg,#f2d888,#b8860b)}
+  h1{font-size:22px;margin:0}
+  p.sub{opacity:.7;margin:2px 0 26px;font-size:14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+  a.card{display:block;text-decoration:none;color:inherit;border:1px solid rgba(184,134,11,.3);
+    border-radius:16px;padding:20px;background:rgba(184,134,11,.06);transition:transform .12s,border-color .12s}
+  a.card:hover{transform:translateY(-3px);border-color:#d4af37}
+  .ic{font-size:26px}
+  .card h2{font-size:16px;margin:10px 0 4px}
+  .card small{opacity:.65;font-size:12.5px;line-height:1.5;display:block}
+  footer{opacity:.5;font-size:12px;margin-top:26px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand"><div class="mark">L</div><div><h1>Lucira Jewelry</h1></div></div>
+    <p class="sub">Analytics command centers</p>
+    <div class="grid">
+      <a class="card" href="./sales/">
+        <div class="ic">💎</div>
+        <h2>Sales Intelligence Command Center</h2>
+        <small>Executive KPIs, RFM &amp; CLV, MTO/RTS, returns, stores, products &amp; an AI copilot — from the daily 10:00 IST sales reporting layer.</small>
+      </a>
+    </div>
+    <footer>Served from GitHub Pages · data refreshes daily at 10:00 IST via the sales reporting layer.</footer>
+  </div>
+</body>
+</html>

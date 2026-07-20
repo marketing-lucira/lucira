@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Lucira · Sales Intelligence Command Center</title>
+<meta name="description" content="Executive Sales Intelligence Platform for Lucira Jewelry — CEO command center reading the daily Sales_overview reporting layer.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23f4d78b'/%3E%3Cstop offset='1' stop-color='%23b8860b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='%230b0b0d'/%3E%3Ctext x='50' y='70' font-family='Georgia,serif' font-size='58' font-weight='700' text-anchor='middle' fill='url(%23g)'%3EL%3C/text%3E%3C/svg%3E">
+<style>
+/* ═══════════════════════════════════════════════════════════════════════
+   LUCIRA SALES INTELLIGENCE — premium luxury jewellery command center
+   Two themes (Luxury Dark / Premium Light) via [data-theme] on <html>.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root{
+  --gold:#d4af37; --gold-2:#f2d888; --gold-deep:#b8860b; --gold-soft:rgba(212,175,55,.14);
+  --emerald:#12b886; --royal:#8b5cf6; --navy:#3b5bdb; --rose:#e0a899; --platinum:#c7cdd4;
+  --good:#12b886; --warn:#f2b13a; --crit:#ef5350; --info:#4d96ff;
+  --r-lg:20px; --r-md:14px; --r-sm:10px;
+  --shadow:0 18px 50px -20px rgba(0,0,0,.65);
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --serif:"Cormorant Garamond","Playfair Display",Georgia,"Times New Roman",serif;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+html[data-theme=dark]{
+  --bg:#08080a; --bg-2:#0d0d10; --surface:#141418; --surface-2:#1b1b21; --surface-3:#22222a;
+  --glass:rgba(26,26,32,.62); --glass-brd:rgba(212,175,55,.16); --hair:rgba(255,255,255,.07);
+  --ink:#f4f1ea; --ink-2:#b9b6ad; --muted:#7d7a72; --grid:rgba(255,255,255,.06); --axis:rgba(255,255,255,.14);
+  --sheen:radial-gradient(120% 120% at 0% 0%,rgba(212,175,55,.10),transparent 46%),radial-gradient(120% 120% at 100% 0%,rgba(139,92,246,.08),transparent 50%);
+  --card-grad:linear-gradient(158deg,rgba(255,255,255,.045),rgba(255,255,255,.008));
+}
+html[data-theme=light]{
+  --bg:#efece5; --bg-2:#f6f4ef; --surface:#ffffff; --surface-2:#faf8f3; --surface-3:#f1ede3;
+  --glass:rgba(255,255,255,.72); --glass-brd:rgba(184,134,11,.22); --hair:rgba(20,15,5,.09);
+  --ink:#20180c; --ink-2:#5c5346; --muted:#8a8272; --grid:rgba(20,15,5,.08); --axis:rgba(20,15,5,.2);
+  --gold:#b8860b; --gold-2:#c99a26;
+  --sheen:radial-gradient(120% 120% at 0% 0%,rgba(184,134,11,.10),transparent 46%),radial-gradient(120% 120% at 100% 0%,rgba(139,92,246,.06),transparent 50%);
+  --card-grad:linear-gradient(158deg,rgba(255,255,255,.9),rgba(250,247,240,.55));
+  --shadow:0 18px 44px -22px rgba(80,60,10,.28);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--sans); background:var(--bg); color:var(--ink);
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  background-image:var(--sheen); background-attachment:fixed;
+  overflow-x:hidden;
+}
+::selection{background:var(--gold-soft);color:var(--ink)}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:600;letter-spacing:.2px;line-height:1.15}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:20px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--gold-deep);background-clip:content-box}
+
+/* ── Loading screen ─────────────────────────────────────────── */
+#loader{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:26px;transition:opacity .7s var(--ease),visibility .7s}
+#loader.done{opacity:0;visibility:hidden}
+.load-mark{width:112px;height:112px;position:relative;display:grid;place-items:center}
+.load-mark svg{width:100%;height:100%}
+.load-ring{position:absolute;inset:-14px;border-radius:50%;border:1.5px solid var(--glass-brd);
+  border-top-color:var(--gold);animation:spin 1.15s linear infinite}
+.load-ring.r2{inset:-26px;border-top-color:transparent;border-right-color:var(--royal);opacity:.5;animation-duration:2.1s;animation-direction:reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-word{font-family:var(--serif);font-size:34px;letter-spacing:8px;
+  background:linear-gradient(100deg,var(--gold-2),var(--gold),var(--gold-deep));-webkit-background-clip:text;background-clip:text;color:transparent;
+  text-transform:uppercase;padding-left:8px}
+.load-sub{font-size:11px;letter-spacing:5px;color:var(--muted);text-transform:uppercase}
+.load-bar{width:190px;height:2px;background:var(--hair);border-radius:2px;overflow:hidden}
+.load-bar i{display:block;height:100%;width:40%;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:load 1.1s var(--ease) infinite}
+@keyframes load{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+
+/* ── Brand mark ─────────────────────────────────────────────── */
+.brand{display:flex;align-items:center;gap:12px}
+.brand .mono{width:38px;height:38px;border-radius:11px;flex:0 0 auto;
+  background:linear-gradient(150deg,#1c1c22,#0c0c0e);border:1px solid var(--glass-brd);display:grid;place-items:center;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.brand .mono svg{width:24px;height:24px}
+.brand .wm{display:flex;flex-direction:column;line-height:1}
+.brand .wm b{font-family:var(--serif);font-size:19px;font-weight:600;letter-spacing:3px;
+  background:linear-gradient(100deg,var(--gold-2),var(--gold-deep));-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand .wm span{font-size:8.5px;letter-spacing:3.4px;color:var(--muted);text-transform:uppercase;margin-top:3px}
+
+/* ── App layout ─────────────────────────────────────────────── */
+#app{opacity:0;transition:opacity .6s var(--ease)}
+#app.ready{opacity:1}
+header.top{position:sticky;top:0;z-index:60;backdrop-filter:blur(18px) saturate(1.3);
+  background:linear-gradient(180deg,var(--glass),transparent);border-bottom:1px solid var(--hair);
+  padding:11px clamp(14px,3vw,30px);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.top .spacer{flex:1}
+.clock{font-variant-numeric:tabular-nums;font-size:12px;color:var(--ink-2);text-align:right;line-height:1.35}
+.clock b{color:var(--gold);font-weight:600;letter-spacing:.5px}
+.src-dot{display:inline-flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-2);
+  padding:5px 11px;border:1px solid var(--hair);border-radius:20px;background:var(--surface-2)}
+.src-dot i{width:7px;height:7px;border-radius:50%;background:var(--warn);box-shadow:0 0 8px var(--warn)}
+.src-dot.live i{background:var(--good);box-shadow:0 0 8px var(--good)}
+.iconbtn{width:38px;height:38px;border-radius:11px;border:1px solid var(--hair);background:var(--surface-2);
+  display:grid;place-items:center;color:var(--ink-2);transition:.2s var(--ease);font-size:16px}
+.iconbtn:hover{color:var(--gold);border-color:var(--glass-brd);transform:translateY(-1px)}
+.btn{padding:8px 15px;border-radius:11px;border:1px solid var(--hair);background:var(--surface-2);
+  color:var(--ink);font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:7px;transition:.2s var(--ease)}
+.btn:hover{border-color:var(--glass-brd);transform:translateY(-1px)}
+.btn.gold{background:linear-gradient(120deg,var(--gold),var(--gold-deep));color:#160f00;border:none;font-weight:600;box-shadow:0 8px 20px -8px var(--gold-deep)}
+.btn.gold:hover{filter:brightness(1.06)}
+
+/* nav */
+nav.tabs{position:sticky;top:60px;z-index:55;display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;
+  padding:9px clamp(14px,3vw,30px);backdrop-filter:blur(18px);background:linear-gradient(180deg,var(--glass),transparent);
+  border-bottom:1px solid var(--hair)}
+nav.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 15px;border-radius:10px;font-size:12.5px;font-weight:500;color:var(--ink-2);white-space:nowrap;
+  display:inline-flex;align-items:center;gap:7px;transition:.18s var(--ease);border:1px solid transparent}
+.tab:hover{color:var(--ink);background:var(--surface-2)}
+.tab.active{color:var(--gold);background:var(--gold-soft);border-color:var(--glass-brd)}
+.tab .ic{font-size:14px;opacity:.85}
+
+main{padding:clamp(16px,3vw,30px);max-width:1560px;margin:0 auto}
+.view{display:none;animation:fade .5s var(--ease)}
+.view.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* section chrome */
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:6px 0 16px}
+.sec-head h2{font-size:clamp(21px,2.6vw,29px)}
+.sec-head .sub{color:var(--muted);font-size:12.5px;margin-top:3px}
+.eyebrow{font-size:10.5px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:600}
+
+/* card / glass */
+.card{background:var(--card-grad),var(--glass);border:1px solid var(--glass-brd);border-radius:var(--r-lg);
+  backdrop-filter:blur(14px);box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card>.pad{padding:18px}
+.card .ct{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.card .ct h3{font-size:16px;letter-spacing:.3px}
+.card .ct .hint{font-size:11px;color:var(--muted)}
+.grid{display:grid;gap:16px}
+.g-2{grid-template-columns:repeat(2,1fr)}.g-3{grid-template-columns:repeat(3,1fr)}
+.g-4{grid-template-columns:repeat(4,1fr)}.g-6{grid-template-columns:repeat(6,1fr)}
+@media(max-width:1120px){.g-4,.g-6{grid-template-columns:repeat(3,1fr)}.g-3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.g-2,.g-3,.g-4,.g-6{grid-template-columns:1fr}}
+
+/* KPI card */
+.kpi{background:var(--card-grad),var(--glass);border:1px solid var(--glass-brd);border-radius:var(--r-md);
+  padding:15px 16px 13px;position:relative;overflow:hidden;transition:.25s var(--ease);cursor:default}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold);opacity:.75}
+.kpi:hover{transform:translateY(-3px);border-color:var(--glass-brd);box-shadow:0 22px 44px -24px rgba(0,0,0,.7)}
+.kpi.pos::before{background:var(--good)}.kpi.neg::before{background:var(--crit)}.kpi.neu::before{background:var(--muted)}
+.kpi .lab{font-size:11px;color:var(--ink-2);letter-spacing:.4px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.kpi .val{font-family:var(--serif);font-size:26px;font-weight:600;margin:5px 0 2px;letter-spacing:.3px;line-height:1}
+.kpi .row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.kpi .delta{font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;gap:3px}
+.kpi .delta.up{color:var(--good)}.kpi .delta.down{color:var(--crit)}.kpi .delta.flat{color:var(--muted)}
+.kpi .prev{font-size:10.5px;color:var(--muted)}
+.kpi .spark{margin-top:9px;height:30px;width:100%}
+.kpi .ai{margin-top:9px;font-size:10.8px;color:var(--ink-2);border-top:1px dashed var(--hair);padding-top:8px;
+  display:flex;gap:6px;line-height:1.4}
+.kpi .ai b{color:var(--gold);font-weight:600}
+.kpi .ai .sp{flex:0 0 auto}
+
+/* pills / tags / chips */
+.pill{font-size:10.5px;padding:3px 9px;border-radius:20px;border:1px solid var(--hair);background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+.pill.g{color:var(--gold);border-color:var(--glass-brd);background:var(--gold-soft)}
+.pill.ok{color:var(--good);border-color:rgba(18,184,134,.3);background:rgba(18,184,134,.1)}
+.pill.bad{color:var(--crit);border-color:rgba(239,83,80,.3);background:rgba(239,83,80,.1)}
+.pill.warn{color:var(--warn);border-color:rgba(242,177,58,.3);background:rgba(242,177,58,.1)}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:3px;gap:2px}
+.seg button{padding:5px 11px;border-radius:7px;font-size:11.5px;color:var(--ink-2);transition:.15s}
+.seg button.on{background:var(--gold-soft);color:var(--gold)}
+select.inp,input.inp{background:var(--surface-2);border:1px solid var(--hair);border-radius:9px;color:var(--ink);
+  padding:7px 10px;font-size:12px;outline:none;transition:.15s}
+select.inp:focus,input.inp:focus{border-color:var(--gold)}
+
+/* tables */
+table.dt{width:100%;border-collapse:collapse;font-size:12.5px}
+table.dt th{text-align:left;padding:9px 11px;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;
+  letter-spacing:.5px;border-bottom:1px solid var(--hair);cursor:pointer;white-space:nowrap;position:sticky;top:0;background:var(--surface)}
+table.dt th.num,table.dt td.num{text-align:right;font-variant-numeric:tabular-nums}
+table.dt td{padding:9px 11px;border-bottom:1px solid var(--hair)}
+table.dt tbody tr{transition:.12s}
+table.dt tbody tr:hover{background:var(--surface-2)}
+.rank{width:24px;height:24px;border-radius:7px;display:inline-grid;place-items:center;font-size:11px;font-weight:700;
+  background:var(--surface-3);color:var(--ink-2)}
+.rank.r1{background:linear-gradient(135deg,var(--gold-2),var(--gold-deep));color:#160f00}
+.rank.r2{background:linear-gradient(135deg,#e6e6ea,#a9adb5);color:#161616}
+.rank.r3{background:linear-gradient(135deg,var(--rose),#b06a52);color:#160f00}
+.bar-cell{position:relative;background:linear-gradient(90deg,var(--gold-soft) var(--w,0%),transparent 0)}
+
+/* charts */
+.chart{width:100%;height:auto;display:block;overflow:visible}
+.ttip{position:fixed;z-index:200;background:var(--surface-3);border:1px solid var(--glass-brd);border-radius:9px;
+  padding:8px 11px;font-size:11.5px;color:var(--ink);pointer-events:none;opacity:0;transition:opacity .12s;
+  box-shadow:var(--shadow);max-width:260px;line-height:1.5}
+.tip.on{opacity:1}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;font-size:11.5px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:.15s}
+.legend span.off{opacity:.35;text-decoration:line-through}
+.legend i{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+
+/* alerts / actions */
+.alert{display:flex;gap:12px;padding:13px 15px;border-radius:var(--r-md);border:1px solid var(--hair);
+  background:var(--surface-2);align-items:flex-start;transition:.2s}
+.alert:hover{border-color:var(--glass-brd)}
+.alert .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex:0 0 auto;font-size:16px}
+.alert.crit .ic{background:rgba(239,83,80,.14);color:var(--crit)}
+.alert.warn .ic{background:rgba(242,177,58,.14);color:var(--warn)}
+.alert.good .ic{background:rgba(18,184,134,.14);color:var(--good)}
+.alert.info .ic{background:rgba(77,150,255,.14);color:var(--info)}
+.alert h4{font-family:var(--sans);font-size:13px;font-weight:600;margin-bottom:2px}
+.alert p{font-size:11.8px;color:var(--ink-2)}
+.alert .meta{font-size:10.5px;color:var(--muted);margin-top:4px}
+
+/* action center rows */
+.action{border:1px solid var(--hair);border-radius:var(--r-md);padding:14px 16px;background:var(--card-grad),var(--glass);margin-bottom:12px}
+.action .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+.action .top h4{font-family:var(--sans);font-size:13.5px;font-weight:700;flex:1}
+.action .kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px 16px;font-size:12px}
+.action .kv b{color:var(--muted);font-weight:600;display:block;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+
+/* filter drawer */
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(400px,92vw);z-index:120;background:var(--bg-2);
+  border-left:1px solid var(--glass-brd);box-shadow:-30px 0 60px -30px rgba(0,0,0,.7);
+  transform:translateX(100%);transition:transform .4s var(--ease);display:flex;flex-direction:column}
+#drawer.on{transform:none}
+#drawer .dh{padding:18px 20px;border-bottom:1px solid var(--hair);display:flex;align-items:center;justify-content:space-between}
+#drawer .db{padding:18px 20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px}
+#drawer .df{padding:14px 20px;border-top:1px solid var(--hair);display:flex;gap:10px}
+.fld{display:flex;flex-direction:column;gap:6px}
+.fld label{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:600}
+.fld .inp{width:100%}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#scrim{position:fixed;inset:0;z-index:110;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:.35s}
+#scrim.on{opacity:1;visibility:visible}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.chip{font-size:11px;padding:4px 10px 4px 11px;border-radius:20px;background:var(--gold-soft);color:var(--gold);
+  border:1px solid var(--glass-brd);display:inline-flex;align-items:center;gap:6px}
+.chip b{cursor:pointer;opacity:.7}.chip b:hover{opacity:1}
+
+/* copilot */
+#fab{position:fixed;right:22px;bottom:22px;z-index:130;width:58px;height:58px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold-2),var(--gold-deep));color:#160f00;display:grid;place-items:center;
+  font-size:24px;box-shadow:0 16px 34px -12px var(--gold-deep);transition:.25s var(--ease)}
+#fab:hover{transform:scale(1.07) translateY(-2px)}
+#copilot{position:fixed;right:22px;bottom:92px;z-index:131;width:min(430px,94vw);height:min(620px,80vh);
+  background:var(--bg-2);border:1px solid var(--glass-brd);border-radius:var(--r-lg);box-shadow:var(--shadow);
+  display:none;flex-direction:column;overflow:hidden}
+#copilot.on{display:flex;animation:fade .3s var(--ease)}
+.cp-h{padding:15px 18px;border-bottom:1px solid var(--hair);display:flex;align-items:center;gap:11px}
+.cp-h .av{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--gold-2),var(--gold-deep));display:grid;place-items:center;font-size:17px;color:#160f00}
+.cp-h b{font-family:var(--serif);font-size:16px}.cp-h span{font-size:10.5px;color:var(--muted)}
+.cp-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:86%;padding:11px 13px;border-radius:13px;font-size:12.8px;line-height:1.55}
+.msg.u{align-self:flex-end;background:var(--gold-soft);border:1px solid var(--glass-brd);border-bottom-right-radius:4px}
+.msg.a{align-self:flex-start;background:var(--surface-2);border:1px solid var(--hair);border-bottom-left-radius:4px}
+.msg.a b{color:var(--gold)}
+.msg.a .k{color:var(--ink);font-weight:600}
+.cp-sug{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px}
+.cp-sug button{font-size:11px;padding:6px 10px;border-radius:18px;border:1px solid var(--hair);background:var(--surface-2);color:var(--ink-2);transition:.15s}
+.cp-sug button:hover{color:var(--gold);border-color:var(--glass-brd)}
+.cp-in{padding:12px 14px;border-top:1px solid var(--hair);display:flex;gap:9px}
+.cp-in input{flex:1;background:var(--surface-2);border:1px solid var(--hair);border-radius:11px;padding:10px 12px;color:var(--ink);font-size:12.5px;outline:none}
+.cp-in input:focus{border-color:var(--gold)}
+.cp-in button{width:40px;border-radius:11px;background:linear-gradient(135deg,var(--gold-2),var(--gold-deep));color:#160f00;font-size:16px}
+
+/* home hero */
+.hero{border-radius:var(--r-lg);padding:clamp(20px,4vw,40px);position:relative;overflow:hidden;
+  background:linear-gradient(135deg,rgba(212,175,55,.10),rgba(139,92,246,.06)),var(--glass);
+  border:1px solid var(--glass-brd);box-shadow:var(--shadow);margin-bottom:18px}
+.hero::after{content:"";position:absolute;right:-60px;top:-60px;width:340px;height:340px;border-radius:50%;
+  background:radial-gradient(circle,rgba(212,175,55,.18),transparent 62%);pointer-events:none}
+.hero .eyebrow{margin-bottom:10px}
+.hero h1{font-size:clamp(28px,4.6vw,50px);line-height:1.05;max-width:16ch}
+.hero h1 em{font-style:italic;background:linear-gradient(100deg,var(--gold-2),var(--gold-deep));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--ink-2);font-size:14px;margin-top:12px;max-width:60ch}
+.hero .stats{display:flex;flex-wrap:wrap;gap:26px;margin-top:22px}
+.hero .stats .s b{font-family:var(--serif);font-size:clamp(22px,3vw,32px);display:block;line-height:1}
+.hero .stats .s span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.navcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.navcard{padding:18px;border-radius:var(--r-md);border:1px solid var(--glass-brd);background:var(--card-grad),var(--glass);
+  transition:.25s var(--ease);cursor:pointer;position:relative;overflow:hidden}
+.navcard:hover{transform:translateY(-4px)}
+.navcard .ic{font-size:22px;margin-bottom:10px;display:block}
+.navcard h4{font-family:var(--sans);font-size:14px;font-weight:600}
+.navcard p{font-size:11.5px;color:var(--muted);margin-top:4px}
+.navcard .arw{position:absolute;right:16px;bottom:14px;color:var(--gold);opacity:0;transition:.25s}
+.navcard:hover .arw{opacity:1;transform:translateX(3px)}
+
+/* misc */
+.banner{display:flex;gap:10px;align-items:center;padding:10px 14px;border-radius:var(--r-sm);font-size:12px;
+  background:rgba(242,177,58,.1);border:1px solid rgba(242,177,58,.3);color:var(--warn);margin-bottom:14px}
+.stat-row{display:flex;flex-wrap:wrap;gap:14px}
+.mini{flex:1;min-width:140px;padding:13px 15px;border-radius:var(--r-md);border:1px solid var(--hair);background:var(--surface-2)}
+.mini .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.mini .v{font-family:var(--serif);font-size:22px;margin-top:4px}
+.mini .d{font-size:11px;margin-top:2px}
+.heat{display:grid;gap:3px}
+.heat .cell{aspect-ratio:1;border-radius:5px;display:grid;place-items:center;font-size:10px;color:var(--ink);transition:.15s}
+.heat .cell:hover{outline:2px solid var(--gold)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.spin{width:20px;height:20px;border:2px solid var(--hair);border-top-color:var(--gold);border-radius:50%;animation:spin .9s linear infinite;display:inline-block}
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:12.5px}
+.scroll-x{overflow-x:auto}
+.fs .card>.pad{max-height:none}
+body.modal-open{overflow:hidden}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);z-index:200;
+  background:var(--surface-3);border:1px solid var(--glass-brd);border-radius:11px;padding:11px 18px;font-size:12.5px;
+  box-shadow:var(--shadow);opacity:0;transition:.3s var(--ease);pointer-events:none}
+#toast.on{opacity:1;transform:translateX(-50%)}
+@media print{header.top,nav.tabs,#fab,#copilot,#drawer,#scrim,.no-print{display:none!important}
+  .view{display:block!important}body{background:#fff}.card{break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<!-- ══ LOADING ══ -->
+<div id="loader">
+  <div class="load-mark">
+    <div class="load-ring"></div><div class="load-ring r2"></div>
+    <svg viewBox="0 0 100 100"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f2d888"/><stop offset="1" stop-color="#b8860b"/></linearGradient></defs>
+      <text x="50" y="72" font-family="Georgia,serif" font-size="66" font-weight="700" text-anchor="middle" fill="url(#lg)">L</text></svg>
+  </div>
+  <div style="text-align:center">
+    <div class="load-word">Lucira</div>
+    <div class="load-sub">Sales Intelligence</div>
+  </div>
+  <div class="load-bar"><i></i></div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+  <header class="top">
+    <div class="brand">
+      <div class="mono"><svg viewBox="0 0 100 100"><text x="50" y="72" font-family="Georgia,serif" font-size="66" font-weight="700" text-anchor="middle" fill="url(#lg2)">L</text>
+        <defs><linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2d888"/><stop offset="1" stop-color="#b8860b"/></linearGradient></defs></svg></div>
+      <div class="wm"><b>LUCIRA</b><span>Sales Intelligence</span></div>
+    </div>
+    <div class="src-dot" id="srcDot"><i></i><span id="srcTxt">Sample data</span></div>
+    <div class="spacer"></div>
+    <div class="clock"><div id="clkDate">—</div><b id="clkTime">—</b></div>
+    <button class="iconbtn" id="btnCompare" title="Comparison period">⇄</button>
+    <button class="iconbtn" id="btnTheme" title="Toggle theme">◐</button>
+    <button class="iconbtn" id="btnFull" title="Fullscreen">⛶</button>
+    <button class="btn gold" id="btnFilter">☰ Filters</button>
+  </header>
+
+  <nav class="tabs" id="tabs"></nav>
+
+  <main id="main"></main>
+</div>
+
+<!-- ══ FILTER DRAWER ══ -->
+<div id="scrim"></div>
+<aside id="drawer">
+  <div class="dh"><h3 style="font-size:18px">Filters &amp; Controls</h3><button class="iconbtn" id="btnDrawerClose">✕</button></div>
+  <div class="db" id="drawerBody"></div>
+  <div class="df"><button class="btn" id="btnReset" style="flex:1">Reset all</button><button class="btn gold" id="btnApply" style="flex:1">Apply</button></div>
+</aside>
+
+<!-- ══ COPILOT ══ -->
+<button id="fab" title="Ask the AI Executive Assistant">✦</button>
+<div id="copilot">
+  <div class="cp-h"><div class="av">✦</div><div style="flex:1"><b>Executive Assistant</b><br><span>Grounded on your live filtered data</span></div><button class="iconbtn" id="cpClose" style="width:32px;height:32px">✕</button></div>
+  <div class="cp-body" id="cpBody"></div>
+  <div class="cp-sug" id="cpSug"></div>
+  <div class="cp-in"><input id="cpInput" placeholder="Ask about sales, customers, stores, returns…" autocomplete="off"><button id="cpSend">➤</button></div>
+</div>
+
+<div class="tip" id="tip"></div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* placeholder for lg gradient used by header mono (defined in loader svg too) */
+</script>
+<!-- SALES_CONFIG_INJECT: GitHub Pages CI replaces this line with <script>window.__SALES_CONFIG__ = {...}</script> from repo Variables (SALES_SNAPSHOT_URL / SALES_API_BASE / SALES_CURRENCY). Left as a comment for local/sample use. See .github/workflows/deploy-dashboards.yml -->
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   LUCIRA SALES INTELLIGENCE — engine
+   Single source of truth = lucirajewelry-prod.ornaverse_erp_administration
+   .Sales_overview_table, served through the daily 10:00 IST reporting layer.
+   Business rules: Gross = gross_amount summed (Returns negative); Net = Gross/1.03;
+   dedup on gross+date+document_no+net_weight; sale types MTO/RTS/TAH/Return/Other;
+   no salesperson column in the table (capability-gated).
+   ═══════════════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  API_BASE: "https://sales-snapshot-3mvv5mdr2q-el.a.run.app",   // deployed snapshot service (fallback / on-demand)
+  SNAPSHOT_URL: "https://storage.googleapis.com/lucira-dashboards/sales/latest.json",  // daily reporting-layer JSON (10:00 IST refresh)
+  REFRESH_HOUR_IST: 10,               // reporting layer refreshes 10:00 AM IST
+  WINDOW_DAYS: 540,
+  CURRENCY: "INR",
+  GST_DIVISOR: 1.03,                  // Net Sales = Gross Sales / 1.03
+  SALE_TYPES: ["MTO","RTS","TAH","Return","Other"],
+  VIP_LTV: 500000, HIGHVAL_LTV: 200000, DORMANT_DAYS: 180, LOST_DAYS: 365,
+  MOVEMENT: { fastUnits:12, deadDays:120, slowDays:60 }
+};
+/* CI/Pages override: merge injected config (see the HTML-comment marker above the engine script). */
+try{ if(typeof window!=='undefined' && window.__SALES_CONFIG__){ Object.assign(CONFIG, window.__SALES_CONFIG__); } }catch(e){}
+const GST = CONFIG.GST_DIVISOR;
+const PAL = ['#d4af37','#12b886','#8b5cf6','#4d96ff','#e0a899','#f2b13a','#3b5bdb','#ef5350','#4db6ac','#c77dff','#9c8b3e','#20c997'];
+const SALE_TYPE_COLOR = {MTO:'#4d96ff',RTS:'#12b886',TAH:'#8b5cf6',Return:'#ef5350',Exchange:'#f2b13a',Other:'#8a8272'};
+const SEG_COLOR = {'VIP':'#d4af37','High Value':'#8b5cf6','Loyal':'#12b886','Promising':'#4d96ff','New':'#20c997','At Risk':'#f2b13a','Dormant':'#e0a899','Lost':'#ef5350'};
+const METAL_COLOR={'Gold 22K':'#d4af37','Gold 24K':'#e5b93f','Gold 18K':'#e0b968','Silver 925':'#9aa4ad','Platinum':'#7fb0c4','Diamond':'#8fd3e8'};
+const PRICE_BAND_ORDER=['0 - 10K','10K - 20K','20K - 30K','30K - 40K','40K - 50K','50K - 75K','75K - 100K','100K - 150K','150K - 200K','200K+'];
+function realBand(g){ g=Math.abs(g||0);
+  if(g<10000)return'0 - 10K'; if(g<20000)return'10K - 20K'; if(g<30000)return'20K - 30K'; if(g<40000)return'30K - 40K';
+  if(g<50000)return'40K - 50K'; if(g<75000)return'50K - 75K'; if(g<100000)return'75K - 100K';
+  if(g<150000)return'100K - 150K'; if(g<200000)return'150K - 200K'; return'200K+'; }
+function palColor(i){ return PAL[i%PAL.length]; }
+function metalColor(m,i){ return METAL_COLOR[m]||palColor(i||0); }
+function saleColor(s){ return SALE_TYPE_COLOR[s]||'#8a8272'; }
+let C_INK='#f4f1ea',C_INK2='#b9b6ad',C_MUTED='#7d7a72',C_GRID='rgba(255,255,255,.06)',C_AXIS='rgba(255,255,255,.14)',C_SURF='#141418';
+function refreshThemeColors(){ const s=getComputedStyle(document.body);
+  C_INK=s.getPropertyValue('--ink').trim(); C_INK2=s.getPropertyValue('--ink-2').trim(); C_MUTED=s.getPropertyValue('--muted').trim();
+  C_GRID=s.getPropertyValue('--grid').trim(); C_AXIS=s.getPropertyValue('--axis').trim(); C_SURF=s.getPropertyValue('--surface').trim(); }
+
+const STATE = {
+  items:[], allItems:[], styleRef:new Map(), custRef:new Map(),
+  caps:{margin:false,inventory:false,selling_days:false,customer:true,salesperson:false,sale_type:true,weights:true,price_band:true,customer_type:true},
+  validation:null, days:[], now:new Date(), asOf:null, source:'sample', dims:{}, custStats:new Map(),
+  filters:{ range:'12m', from:null, to:null, category:'', collection:'', metal:'', band:'', saletype:'', store:'', ctype:'', channel:'', state:'', search:'' },
+  compare:'prev', gran:'monthly', tab:'home', drill:null
+};
+
+/* ── helpers ─────────────────────────────────────────────── */
+const NA='—';
+function ymd(d){ return d? d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0') : null; }
+function parseYmd(s){ if(!s) return null; const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function addMonths(d,n){ const x=new Date(d); x.setMonth(x.getMonth()+n); return x; }
+function diffDays(a,b){ return Math.round((parseYmd(a)-parseYmd(b))/86400000); }
+function monthKey(s){ return s.slice(0,7); }
+function weekKey(s){ const d=parseYmd(s); const dow=(d.getDay()+6)%7; return ymd(addDays(d,-dow)); }
+function quarterKey(s){ const d=parseYmd(s); return d.getFullYear()+'-Q'+(Math.floor(d.getMonth()/3)+1); }
+function yearKey(s){ return s.slice(0,4); }
+function fmtInt(n){ if(n==null||isNaN(n)) return NA; return Math.round(n).toLocaleString('en-IN'); }
+function fmtNum(n,dp){ if(n==null||isNaN(n)) return NA; return Number(n).toLocaleString('en-IN',{maximumFractionDigits:dp==null?0:dp}); }
+function pctStr(x,dp){ return (x==null||isNaN(x)||!isFinite(x))?NA:x.toFixed(dp==null?1:dp)+'%'; }
+function ratio(a,b){ return b?a/b:0; }
+function money(n){ if(n==null||isNaN(n)) return NA; const s=n<0?'-':''; n=Math.abs(n);
+  if(n>=1e7) return s+'₹'+(n/1e7).toFixed(n>=1e8?1:2)+'Cr';
+  if(n>=1e5) return s+'₹'+(n/1e5).toFixed(n>=1e6?1:2)+'L';
+  if(n>=1e3) return s+'₹'+(n/1e3).toFixed(1)+'K';
+  return s+'₹'+Math.round(n).toLocaleString('en-IN'); }
+function moneyFull(n){ if(n==null||isNaN(n)) return NA; const s=n<0?'-':''; return s+'₹'+Math.round(Math.abs(n)).toLocaleString('en-IN'); }
+function grams(n){ return (n==null||isNaN(n))?NA:fmtNum(n,2)+'g'; }
+function net(g){ return g/GST; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function round3(n){ return Math.round(n*1000)/1000; }
+function titleCase(s){ return String(s||'').replace(/\w\S*/g,t=>t.charAt(0).toUpperCase()+t.slice(1).toLowerCase()); }
+function clamp(n,a,b){ return Math.max(a,Math.min(b,n)); }
+function growth(cur,prev){ if(prev===0||prev==null) return cur>0?100:0; return (cur-prev)/Math.abs(prev)*100; }
+function sortDesc(arr,key){ return [...arr].sort((a,b)=>(key?b[key]-a[key]:b-a)); }
+
+function mulberry32(a){ return function(){ a|=0;a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+let RNG = mulberry32(20260720);
+function rnd(){ return RNG(); }
+function pick(arr){ return arr[Math.floor(rnd()*arr.length)]; }
+function pickW(arr,weights){ let s=weights.reduce((a,b)=>a+b,0)*rnd(); for(let i=0;i<arr.length;i++){ s-=weights[i]; if(s<=0) return arr[i]; } return arr[arr.length-1]; }
+function gauss(mean,sd){ let u=0,v=0; while(!u)u=rnd(); while(!v)v=rnd(); return mean+sd*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SAMPLE DATA — jewelry ERP shaped to the real Sales_overview schema
+   (mirrors the deployed sales-api sample: Gross authoritative, Net=Gross/1.03,
+    material categories, MTO/RTS/TAH/Return, +2% exact dupes for dedup.)
+   ═══════════════════════════════════════════════════════════════════════ */
+const CATS=[
+  {c:'Gold Jewellery',   w:40, rate:6800, prods:['Ring','Necklace','Bangle','Earrings','Chain','Mangalsutra','Pendant'], metal:['Gold 22K','Gold 18K'], nwt:[3,55]},
+  {c:'Diamond Jewellery',w:27, rate:16500,prods:['Ring','Earrings','Pendant','Necklace','Bracelet'], metal:['Gold 18K','Platinum'], nwt:[2,18]},
+  {c:'Gold Coin',        w:12, rate:6850, prods:['Coin'], metal:['Gold 24K'], nwt:[2,50], coin:true},
+  {c:'Platinum',         w:7,  rate:3200, prods:['Ring','Chain','Bracelet','Band'], metal:['Platinum'], nwt:[3,22]},
+  {c:'Silver',           w:8,  rate:95,   prods:['Idol','Coin','Payal','Bracelet','Utensil'], metal:['Silver 925'], nwt:[20,260]},
+  {c:'Others',           w:6,  rate:900,  prods:['Gift','Repair','Polish'], metal:['Silver 925','Gold 18K'], nwt:[1,15]}
+];
+const COLLECTIONS=['Aurelia','Celeste','Solitaire','Heritage','Everyday','Bridal Radiance','Zodiac','Minima','—'];
+const STORES=[
+  {s:'Bandra',city:'Mumbai',state:'Maharashtra',region:'West',tgt:1.9e7},
+  {s:'Borivali',city:'Mumbai',state:'Maharashtra',region:'West',tgt:1.4e7},
+  {s:'Chembur',city:'Mumbai',state:'Maharashtra',region:'West',tgt:1.2e7},
+  {s:'Pune FC Road',city:'Pune',state:'Maharashtra',region:'West',tgt:1.5e7},
+  {s:'Pashchim Vihar',city:'Delhi',state:'Delhi',region:'North',tgt:1.3e7},
+  {s:'Noida DLF',city:'Noida',state:'Uttar Pradesh',region:'North',tgt:1.1e7},
+  {s:'Online',city:'Online',state:'Online',region:'Online',tgt:1.6e7}
+];
+const PEOPLE=['Farha Ansari','Shreekant Balwat','Vishal Thapa','Shamwail Ansari','Raymon I.','Sheetal Parve','Bhav Nahar','Devjeet Bagchi'];
+
+let SAMPLE=null;
+function buildSample(){
+  RNG=mulberry32(20260720);
+  const today=new Date(STATE.now); today.setHours(0,0,0,0);
+  const N=CONFIG.WINDOW_DAYS;
+  const styles=[]; const nStyles=280;
+  for(let i=0;i<nStyles;i++){
+    const cat=CATS[pickW(CATS.map((_,i)=>i),CATS.map(x=>x.w))];
+    const prod=pick(cat.prods); const metal=pick(cat.metal); const coll=cat.c==='Others'?'—':pick(COLLECTIONS);
+    const netW=Math.max(0.5,gauss((cat.nwt[0]+cat.nwt[1])/2,(cat.nwt[1]-cat.nwt[0])/4));
+    styles.push({style:'ST-'+(1000+i),cat:cat.c,prod,metal,coll,rate:cat.rate,coin:!!cat.coin,baseNetW:netW,
+      pop:Math.max(.05,gauss(1,.7)),trend:(rnd()*2-1)*0.55,
+      invDate:ymd(addDays(today,-Math.floor(rnd()*(N+260))-5)),stock:Math.max(0,Math.round(gauss(9,7)))});
+  }
+  const customers=[]; const nCust=1600;
+  for(let i=0;i<nCust;i++){ const seg=pickW(['one','repeat','vip'],[60,32,8]);
+    customers.push({id:'C-'+(40000+i),name:'Customer '+(40000+i),seg,city:null,state:null,region:null,
+      firstSeed:ymd(addDays(today,-Math.floor(rnd()*(N+500))))}); }
+  const items=[]; const festival={9:1.6,10:2.2,3:1.5,4:1.7,1:1.35}; let docn=100000;
+  for(let k=N-1;k>=0;k--){
+    const d=addDays(today,-k); const dk=ymd(d); const dow=d.getDay(); const mon=d.getMonth();
+    const isWknd=(dow===0||dow===6);
+    const growthF=1+0.4*((N-k)/N);          // steady YoY growth
+    const seas=(festival[mon]||1)*(isWknd?1.35:1)*(1+0.16*Math.sin(k/34))*growthF;
+    const nOrders=Math.max(0,Math.round(gauss(11*seas,3)));
+    for(let o=0;o<nOrders;o++){
+      docn++; const store=pickW(STORES,[20,14,12,14,13,11,16]); const person=store.s==='Online'?'Online':pick(PEOPLE);
+      let cust; if(rnd()<0.44){ const pool=customers.filter(c=>c.seg!=='one'); cust=pool[Math.floor(rnd()*pool.length)]||pick(customers); } else cust=pick(customers);
+      if(!cust.city){ cust.city=store.city; cust.state=store.state; cust.region=store.region; }
+      const saleType=pickW(CONFIG.SALE_TYPES,[30,55,8,5,2]);
+      const doc='INV-'+docn; const nLines=saleType==='Return'?1:pickW([1,2,3,4],[70,20,7,3]);
+      for(let l=0;l<nLines;l++){
+        const st=pickW(styles,styles.map(s=>s.pop*(1+s.trend*((N-k)/365))));
+        const qty=st.coin?pickW([1,2,3,5],[60,20,12,8]):pickW([1,2],[92,8]);
+        const netW=Math.max(0.3,st.baseNetW*Math.max(.5,gauss(1,.14)))*qty;
+        const grossW=st.coin?netW*(1+rnd()*0.01):netW*(1+0.02+rnd()*0.14);
+        const making=st.coin?netW*st.rate*(0.005+rnd()*0.01):netW*st.rate*(0.08+rnd()*0.18);
+        const stone=st.cat==='Diamond Jewellery'?netW*st.rate*(0.6+rnd()*1.4):0;
+        let gross=Math.round(netW*st.rate+making+stone);
+        gross=Math.round(gross*Math.max(.6,gauss(1,.08)));
+        let sign=1; if(saleType==='Return') sign=-1;
+        gross*=sign;
+        const discPct=st.coin?pickW([0,0.005,0.01],[70,20,10]):pickW([0,0.03,0.06,0.1,0.15,0.22],[34,20,18,14,9,5]);
+        const discount=Math.round(Math.abs(gross)*discPct);
+        items.push({date:dk,document_no:doc,order_id:doc,customer_id:cust.id,customer_name:cust.name,
+          city:cust.city,state:cust.state,region:cust.region,sku:st.style+'-'+String.fromCharCode(65+l),
+          product_name:st.prod,style:st.style,category:st.cat,sub_category:'',collection:st.coll,metal:st.metal,
+          price_band:realBand(gross),customer_type:'',sale_type:saleType,
+          qty,gross,net:net(gross),discount,gross_weight:round3(grossW),net_weight:round3(netW),cogs:null,
+          store:store.s,salesperson:person,channel:store.s==='Online'?'Online':'Store'});
+      }
+    }
+  }
+  const custFirstDate=new Map();
+  for(const it of items){ const c=it.customer_id,f=custFirstDate.get(c); if(!f||it.date<f)custFirstDate.set(c,it.date); }
+  for(const it of items){ it.customer_type = it.date===custFirstDate.get(it.customer_id)?'New':'Repeat'; }
+  const dupN=Math.floor(items.length*0.02); const rawLen=items.length;
+  for(let i=0;i<dupN;i++){ const src=items[Math.floor(rnd()*rawLen)]; items.push(Object.assign({},src)); }
+  const styleRef=new Map(); const firstSale=new Map(),lastSale=new Map(),unitsAll=new Map();
+  for(const it of items){ const s=it.style; if(!firstSale.has(s)||it.date<firstSale.get(s))firstSale.set(s,it.date);
+    if(!lastSale.has(s)||it.date>lastSale.get(s))lastSale.set(s,it.date); unitsAll.set(s,(unitsAll.get(s)||0)+Math.abs(it.qty)); }
+  for(const st of styles){ if(!firstSale.has(st.style)) continue; let invD=st.invDate;
+    if(invD>firstSale.get(st.style)) invD=ymd(addDays(parseYmd(firstSale.get(st.style)),-Math.floor(rnd()*40)-2));
+    styleRef.set(st.style,{style:st.style,category:st.cat,metal:st.metal,collection:st.coll,
+      first_sale_date:firstSale.get(st.style),last_sale_date:lastSale.get(st.style),
+      units_all_time:unitsAll.get(st.style)||0,first_inventory_date:invD,stock_qty:st.stock}); }
+  const custRef=new Map(); const custFirst=new Map(),custNet=new Map(),custOrders=new Map();
+  for(const it of items){ const c=it.customer_id; const fs=custFirst.get(c); if(!fs||it.date<fs)custFirst.set(c,it.date);
+    custNet.set(c,(custNet.get(c)||0)+it.net); if(!custOrders.has(c))custOrders.set(c,new Set()); custOrders.get(c).add(it.document_no); }
+  for(const c of customers){ if(!custFirst.has(c.id)) continue; let fo=custFirst.get(c.id);
+    if(c.firstSeed<fo&&rnd()<0.5) fo=c.firstSeed;
+    custRef.set(c.id,{customer_id:c.id,first_order_date:fo,last_order_date:custFirst.get(c.id),
+      lifetime_orders:(custOrders.get(c.id)||new Set()).size,lifetime_net:Math.round(custNet.get(c.id)||0)}); }
+  return {items,styleRef,custRef,rawLen:items.length};
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LOAD + DEDUP + INGEST  (reporting-layer snapshot → API fallback → sample)
+   ═══════════════════════════════════════════════════════════════════════ */
+async function loadData(){
+  const url = CONFIG.SNAPSHOT_URL || CONFIG.API_BASE;
+  if(url){
+    try{ const u=new URL(url); if(CONFIG.API_BASE && !CONFIG.SNAPSHOT_URL) u.searchParams.set('days',CONFIG.WINDOW_DAYS);
+      const res=await fetch(u,{cache:'no-store'}); if(!res.ok) throw new Error('HTTP '+res.status);
+      const j=await res.json(); if(j.error) throw new Error(j.detail||j.error); ingest(j,'live'); return;
+    }catch(e){ console.warn('Reporting-layer load failed, using sample:',e.message); }
+  }
+  if(!SAMPLE) SAMPLE=buildSample();
+  ingest({items:SAMPLE.items,styleRef:[...SAMPLE.styleRef.values()],customerRef:[...SAMPLE.custRef.values()],
+    asOf:maxDate(SAMPLE.items),currency:'INR',gst_divisor:GST,
+    capabilities:{margin:false,inventory:false,selling_days:false,customer:true,salesperson:false,sale_type:true,weights:true,price_band:true,customer_type:true}},'sample');
+}
+function maxDate(items){ let m=null; for(const it of items) if(!m||it.date>m) m=it.date; return m; }
+function dedupKey(it){ return it.gross+'|'+it.date+'|'+it.document_no+'|'+it.net_weight; }
+function dedupe(items){ const seen=new Set(); const out=[]; let removed=0,rawGross=0;
+  for(const it of items){ rawGross+=(it.gross||0); const k=dedupKey(it); if(seen.has(k)){ removed++; continue; } seen.add(k); out.push(it); }
+  return {out,removed,rawRows:items.length,rawGross}; }
+function ingest(j,source){
+  let items=(j.items||[]).map(it=>{ it.net=net(it.gross||0); if(it.sale_type==null||it.sale_type==='') it.sale_type='Other';
+    if(!it.price_band) it.price_band=realBand(it.gross); return it; });
+  const dd=dedupe(items); items=dd.out;
+  STATE.allItems=items;
+  STATE.styleRef=new Map((j.styleRef||[]).map(r=>[r.style,r]));
+  STATE.custRef=new Map((j.customerRef||[]).map(r=>[r.customer_id,r]));
+  STATE.caps=Object.assign({margin:false,inventory:false,selling_days:false,customer:true,salesperson:false,sale_type:true,weights:true,price_band:true,customer_type:true},j.capabilities||{});
+  STATE.source=source; STATE.asOf=j.asOf||maxDate(items); STATE.now=STATE.asOf?parseYmd(STATE.asOf):new Date();
+  STATE.days=[...new Set(items.map(i=>i.date))].sort();
+  const dedupGross=items.reduce((s,i)=>s+(i.gross||0),0);
+  STATE.validation = j.validation ? j.validation : {
+    raw_rows:dd.rawRows, deduped_rows:items.length, removed:dd.removed, raw_gross:round3(dd.rawGross),
+    returned_rows:items.length, returned_gross:round3(dedupGross), gst_divisor:GST,
+    dedup_key:'gross + sale_date + document_no + net_weight' };
+  buildDims(); buildCustStats();
+}
+function buildDims(){
+  const D={category:new Set(),collection:new Set(),metal:new Set(),band:new Set(),saletype:new Set(),
+    store:new Set(),channel:new Set(),ctype:new Set(),state:new Set(),person:new Set()};
+  for(const it of STATE.allItems){
+    if(it.category)D.category.add(it.category); if(it.collection&&it.collection!=='—')D.collection.add(it.collection);
+    if(it.metal)D.metal.add(it.metal); if(it.price_band)D.band.add(it.price_band); if(it.sale_type)D.saletype.add(it.sale_type);
+    if(it.store)D.store.add(it.store); if(it.channel)D.channel.add(it.channel); if(it.customer_type)D.ctype.add(it.customer_type);
+    if(it.state&&it.state!=='—'&&it.state!=='Online')D.state.add(it.state); if(it.salesperson&&it.salesperson!=='Online')D.person.add(it.salesperson);
+  }
+  STATE.dims={}; for(const k in D){ let a=[...D[k]]; if(k==='band')a.sort((x,y)=>PRICE_BAND_ORDER.indexOf(x)-PRICE_BAND_ORDER.indexOf(y)); else a.sort(); STATE.dims[k]=a; }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+   DATE RANGE, FILTERS, COMPARISON WINDOWS
+   ═══════════════════════════════════════════════════════════════════════ */
+function monthStart(d){ return new Date(d.getFullYear(),d.getMonth(),1); }
+function quarterStart(d){ return new Date(d.getFullYear(),Math.floor(d.getMonth()/3)*3,1); }
+function yearStart(d){ return new Date(d.getFullYear(),0,1); }
+function weekStart(d){ const x=new Date(d); const dow=(x.getDay()+6)%7; return addDays(x,-dow); }
+function dateRange(range){
+  const now=new Date(STATE.now); now.setHours(0,0,0,0);
+  const f=STATE.filters; let from,to=now;
+  switch(range){
+    case 'today': from=now; break;
+    case 'yesterday': from=to=addDays(now,-1); break;
+    case '7d': from=addDays(now,-6); break;
+    case '30d': from=addDays(now,-29); break;
+    case '90d': from=addDays(now,-89); break;
+    case 'thisweek': from=weekStart(now); break;
+    case 'mtd': from=monthStart(now); break;
+    case 'qtd': from=quarterStart(now); break;
+    case 'ytd': from=yearStart(now); break;
+    case '12m': from=addDays(now,-364); break;
+    case 'all': from=parseYmd(STATE.days[0]||ymd(now)); break;
+    case 'custom': from=parseYmd(f.from)||addDays(now,-364); to=parseYmd(f.to)||now; break;
+    default: from=addDays(now,-364);
+  }
+  return {from:ymd(from),to:ymd(to)};
+}
+function comparePrev(cur){
+  const from=parseYmd(cur.from),to=parseYmd(cur.to); const len=diffDays(cur.to,cur.from)+1;
+  let pf,pt;
+  switch(STATE.compare){
+    case 'yoy': pf=addDays(from,-365); pt=addDays(to,-365); break;
+    case 'mom': pf=addMonths(from,-1); pt=addMonths(to,-1); break;
+    case 'wow': pf=addDays(from,-7); pt=addDays(to,-7); break;
+    case 'qoq': pf=addMonths(from,-3); pt=addMonths(to,-3); break;
+    default: pt=addDays(from,-1); pf=addDays(pt,-(len-1)); // previous period
+  }
+  return {from:ymd(pf),to:ymd(pt)};
+}
+const COMPARE_LABEL={prev:'Previous period',yoy:'Year over Year',mom:'Month over Month',wow:'Week over Week',qoq:'Quarter over Quarter'};
+function dimPass(it){
+  const f=STATE.filters;
+  if(f.category&&it.category!==f.category) return false;
+  if(f.collection&&it.collection!==f.collection) return false;
+  if(f.metal&&it.metal!==f.metal) return false;
+  if(f.band&&it.price_band!==f.band) return false;
+  if(f.saletype&&it.sale_type!==f.saletype) return false;
+  if(f.store&&it.store!==f.store) return false;
+  if(f.channel&&it.channel!==f.channel) return false;
+  if(f.ctype&&it.customer_type!==f.ctype) return false;
+  if(f.state&&it.state!==f.state) return false;
+  if(STATE.drill){ const[d,v]=STATE.drill; if((it[d]||'')!==v) return false; }
+  if(f.search){ const q=f.search.toLowerCase();
+    if(!((it.customer_name||'').toLowerCase().includes(q)||(it.customer_id||'').toLowerCase().includes(q)||
+         (it.sku||'').toLowerCase().includes(q)||(it.style||'').toLowerCase().includes(q)||
+         (it.document_no||'').toLowerCase().includes(q)||(it.product_name||'').toLowerCase().includes(q))) return false; }
+  return true;
+}
+function windowItems(from,to){ const out=[]; for(const it of STATE.allItems){ if(it.date<from||it.date>to) continue; if(!dimPass(it)) continue; out.push(it); } return out; }
+function applyFilters(){
+  const cur=dateRange(STATE.filters.range); const prev=comparePrev(cur);
+  STATE.curWin=cur; STATE.prevWin=prev;
+  STATE.items=windowItems(cur.from,cur.to);
+  STATE.prevItems=windowItems(prev.from,prev.to);
+}
+function anyFilter(){ const f=STATE.filters; return !!(f.category||f.collection||f.metal||f.band||f.saletype||f.store||f.channel||f.ctype||f.state||f.search||STATE.drill); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PER-CUSTOMER STATS  (RFM, segmentation, CLV) over full history
+   ═══════════════════════════════════════════════════════════════════════ */
+function buildCustStats(){
+  const m=new Map(); const asOf=STATE.asOf;
+  for(const it of STATE.allItems){
+    const id=it.customer_id; if(!id||id==='-') continue;
+    let c=m.get(id); if(!c){ c={id,name:it.customer_name||id,orders:new Set(),net:0,gross:0,units:0,first:it.date,last:it.date,
+      cats:{},stores:{},colls:{},returns:0,high:0,low:Infinity}; m.set(id,c); }
+    c.orders.add(it.document_no); c.net+=it.net; c.gross+=it.gross; c.units+=Math.abs(it.qty);
+    if(it.date<c.first)c.first=it.date; if(it.date>c.last)c.last=it.date;
+    if(it.category)c.cats[it.category]=(c.cats[it.category]||0)+it.net;
+    if(it.store)c.stores[it.store]=(c.stores[it.store]||0)+it.net;
+    if(it.collection&&it.collection!=='—')c.colls[it.collection]=(c.colls[it.collection]||0)+it.net;
+    if(it.sale_type==='Return')c.returns++;
+    if(it.gross>0){ if(it.gross>c.high)c.high=it.gross; if(it.gross<c.low)c.low=it.gross; }
+  }
+  const list=[...m.values()];
+  for(const c of list){
+    c.freq=c.orders.size; c.orders=c.freq; c.monetary=Math.round(c.net);
+    c.recency=diffDays(asOf,c.last);
+    c.tenure=Math.max(1,diffDays(c.last,c.first));
+    c.avgBasket=c.freq?c.net/c.freq:0;
+    c.daysBetween=c.freq>1?c.tenure/(c.freq-1):null;
+    c.pref=(o)=>{ let bk=null,bv=-1; for(const k in o) if(o[k]>bv){bv=o[k];bk=k;} return bk; };
+    c.prefCat=c.pref(c.cats); c.prefStore=c.pref(c.stores); c.prefColl=c.pref(c.colls);
+    if(c.low===Infinity)c.low=0;
+  }
+  // RFM scoring — quintiles
+  const q=(arr,rev)=>{ const s=[...arr].sort((a,b)=>a-b); return v=>{ let r=1; for(let i=1;i<=4;i++){ if(v>=s[Math.floor(s.length*i/5)]) r=i+1; } return rev?6-r:r; }; };
+  const rScore=q(list.map(c=>c.recency),true);   // lower recency = better → reversed
+  const fScore=q(list.map(c=>c.freq),false);
+  const mScore=q(list.map(c=>c.monetary),false);
+  for(const c of list){ c.R=rScore(c.recency); c.F=fScore(c.freq); c.M=mScore(c.monetary); c.rfm=''+c.R+c.F+c.M;
+    c.seg=segmentOf(c); }
+  STATE.custStats=m;
+}
+function segmentOf(c){
+  const {R,F,M,recency,monetary,freq}=c;
+  if(monetary>=CONFIG.VIP_LTV && freq>=2) return 'VIP';
+  if(recency>CONFIG.LOST_DAYS) return 'Lost';
+  if(recency>CONFIG.DORMANT_DAYS) return 'Dormant';
+  if(M>=4 && F>=3) return 'High Value';
+  if(F>=4) return 'Loyal';
+  if(F<=1 && R>=4) return 'New';
+  if(R<=2 && (F>=2||M>=3)) return 'At Risk';
+  return 'Promising';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   METRIC COMPUTATION  (one pass → every scalar the KPI grid needs)
+   ═══════════════════════════════════════════════════════════════════════ */
+function computeMetrics(items,win){
+  const M={gross:0,net:0,discount:0,salesGross:0,returnGross:0,exchangeGross:0,mtoNet:0,rtsNet:0,tahNet:0,
+    units:0,posUnits:0,orderSet:new Set(),returnOrderSet:new Set(),exchOrderSet:new Set(),cancelOrderSet:new Set(),
+    custSet:new Set(),cogs:0,hasCogs:false};
+  for(const it of items){
+    M.gross+=it.gross; M.net+=it.net; M.discount+=it.discount||0;
+    M.orderSet.add(it.document_no); if(it.customer_id&&it.customer_id!=='-')M.custSet.add(it.customer_id);
+    if(it.cogs!=null){ M.cogs+=it.cogs; M.hasCogs=true; }
+    const st=it.sale_type;
+    if(st==='Return'){ M.returnGross+=it.gross; M.returnOrderSet.add(it.document_no); }
+    else if(st==='Exchange'){ M.exchangeGross+=it.gross; M.exchOrderSet.add(it.document_no); }
+    else { M.salesGross+=it.gross; M.units+=Math.abs(it.qty); M.posUnits+=Math.abs(it.qty); }
+    if(st==='MTO')M.mtoNet+=it.net; else if(st==='RTS')M.rtsNet+=it.net; else if(st==='TAH')M.tahNet+=it.net;
+  }
+  const orders=M.orderSet.size, retOrders=M.returnOrderSet.size, exchOrders=M.exchOrderSet.size;
+  const active=[...M.custSet]; const cr=STATE.custRef;
+  let newC=0,returningC=0,repeatC=0,clvSum=0,clvN=0;
+  for(const id of active){ const ref=cr.get(id);
+    const first=ref?ref.first_order_date:null;
+    if(win&&first&&first>=win.from&&first<=win.to) newC++; else if(win) returningC++;
+    if(ref&&ref.lifetime_orders>1) repeatC++;
+    if(ref&&ref.lifetime_net!=null){ clvSum+=ref.lifetime_net; clvN++; } }
+  const stores=new Set(items.map(i=>i.store).filter(Boolean)).size;
+  const execs=new Set(items.map(i=>i.salesperson).filter(s=>s&&s!=='Online')).size;
+  const nc=active.length||1;
+  return {
+    gross:M.gross, net:M.net, revenue:M.net, salesGross:M.salesGross,
+    orders, units:M.units, discount:M.discount,
+    aov: orders?M.net/orders:0, asp: M.units?M.net/M.units:0,
+    customers: active.length, uniqueCustomers: active.length,
+    newCustomers:newC, repeatCustomers:repeatC, returningCustomers:returningC,
+    retentionPct: active.length?returningC/active.length*100:0,
+    repeatPct: active.length?repeatC/active.length*100:0,
+    clv: clvN?clvSum/clvN:0,
+    mtoRev:M.mtoNet, rtsRev:M.rtsNet, tahRev:M.tahNet,
+    mtoPct: M.net?M.mtoNet/M.net*100:0, rtsPct: M.net?M.rtsNet/M.net*100:0,
+    returnAmt: Math.abs(M.returnGross)/GST, refundAmt: Math.abs(M.returnGross),
+    returnPct: orders?retOrders/orders*100:0, exchangePct: orders?exchOrders/orders*100:0,
+    cancellationPct: 0,
+    discountPct: M.salesGross?M.discount/M.salesGross*100:0,
+    profit: M.hasCogs?M.net-M.cogs:null, margin: (M.hasCogs&&M.net)?(M.net-M.cogs)/M.net*100:null,
+    revPerCustomer: M.net/nc, revPerStore: stores?M.net/stores:0, revPerExec: execs?M.net/execs:null,
+    stores, execs, retOrders, exchOrders
+  };
+}
+/* granularity buckets for a window (for sparklines + trend charts) */
+function autoGran(from,to){ const days=diffDays(to,from)+1; if(days<=31)return'day'; if(days<=120)return'week'; if(days<=550)return'month'; return'quarter'; }
+function bucketKeyFn(g){ return g==='day'?(s=>s):g==='week'?weekKey:g==='month'?monthKey:g==='quarter'?quarterKey:yearKey; }
+function bucketWin(g,key){ // returns {from,to} for a bucket key
+  if(g==='day') return {from:key,to:key};
+  if(g==='week'){ return {from:key,to:ymd(addDays(parseYmd(key),6))}; }
+  if(g==='month'){ const d=parseYmd(key+'-01'); return {from:ymd(d),to:ymd(addDays(addMonths(d,1),-1))}; }
+  if(g==='quarter'){ const[y,q]=key.split('-Q'); const d=new Date(+y,(+q-1)*3,1); return {from:ymd(d),to:ymd(addDays(addMonths(d,3),-1))}; }
+  const d=new Date(+key,0,1); return {from:ymd(d),to:ymd(new Date(+key,11,31))};
+}
+function metricSeries(items,from,to,gran){
+  const g=gran||autoGran(from,to); const kf=bucketKeyFn(g);
+  const map=new Map();
+  for(const it of items){ const k=kf(it.date); if(!map.has(k))map.set(k,[]); map.get(k).push(it); }
+  const keys=[...map.keys()].sort();
+  return keys.map(k=>({key:k,metrics:computeMetrics(map.get(k),bucketWin(g,k))}));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   KPI DEFINITIONS  (28 executive KPIs)
+   ═══════════════════════════════════════════════════════════════════════ */
+const KPIS=[
+  {k:'revenue',   label:'Total Revenue',       fmt:money,  good:1, desc:'Net of GST'},
+  {k:'orders',    label:'Total Orders',        fmt:fmtInt, good:1, desc:'Distinct invoices'},
+  {k:'net',       label:'Net Sales',           fmt:money,  good:1, desc:'Gross ÷ 1.03'},
+  {k:'gross',     label:'Gross Sales',         fmt:money,  good:1, desc:'gross_amount, incl. returns'},
+  {k:'aov',       label:'Avg Order Value',     fmt:money,  good:1, desc:'Net ÷ orders'},
+  {k:'asp',       label:'Avg Selling Price',   fmt:money,  good:1, desc:'Net ÷ pieces'},
+  {k:'customers', label:'Total Customers',     fmt:fmtInt, good:1, desc:'Active this period'},
+  {k:'uniqueCustomers',label:'Unique Customers',fmt:fmtInt,good:1, desc:'Distinct party ids'},
+  {k:'newCustomers',label:'New Customers',     fmt:fmtInt, good:1, desc:'First purchase in period'},
+  {k:'repeatCustomers',label:'Repeat Customers',fmt:fmtInt,good:1, desc:'Lifetime orders > 1'},
+  {k:'returningCustomers',label:'Returning Customers',fmt:fmtInt,good:1,desc:'Purchased before'},
+  {k:'retentionPct',label:'Customer Retention',fmt:v=>pctStr(v),good:1,desc:'Returning ÷ active'},
+  {k:'repeatPct', label:'Customer Repeat %',   fmt:v=>pctStr(v),good:1,desc:'Repeat ÷ active'},
+  {k:'clv',       label:'Customer Lifetime Value',fmt:money,good:1,desc:'Mean lifetime net'},
+  {k:'mtoRev',    label:'MTO Revenue',         fmt:money,  good:1, desc:'Make-to-order net'},
+  {k:'rtsRev',    label:'RTS Revenue',         fmt:money,  good:1, desc:'Ready-to-sell net'},
+  {k:'mtoPct',    label:'MTO %',               fmt:v=>pctStr(v),good:0,desc:'Share of net'},
+  {k:'rtsPct',    label:'RTS %',               fmt:v=>pctStr(v),good:0,desc:'Share of net'},
+  {k:'returnPct', label:'Return %',            fmt:v=>pctStr(v),good:-1,desc:'Return orders ÷ orders'},
+  {k:'exchangePct',label:'Exchange %',         fmt:v=>pctStr(v),good:-1,desc:'Exchange orders ÷ orders',cap:'exchange'},
+  {k:'cancellationPct',label:'Cancellation %', fmt:v=>pctStr(v),good:-1,desc:'Not in source',cap:'cancellation'},
+  {k:'refundAmt', label:'Refund Amount',       fmt:money,  good:-1, desc:'Returned gross value'},
+  {k:'discountPct',label:'Discount %',         fmt:v=>pctStr(v),good:-1,desc:'Discount ÷ sales gross'},
+  {k:'profit',    label:'Profit',              fmt:money,  good:1, desc:'Needs COGS column',cap:'margin'},
+  {k:'margin',    label:'Margin',              fmt:v=>pctStr(v),good:1,desc:'Needs COGS column',cap:'margin'},
+  {k:'revPerCustomer',label:'Revenue / Customer',fmt:money,good:1,desc:'Net ÷ customers'},
+  {k:'revPerStore',label:'Revenue / Store',    fmt:money,  good:1, desc:'Net ÷ stores'},
+  {k:'revPerExec',label:'Revenue / Sales Exec',fmt:money,  good:1, desc:'No exec column',cap:'salesperson'}
+];
+/* ═══════════════════════════════════════════════════════════════════════
+   AGGREGATION HELPERS
+   ═══════════════════════════════════════════════════════════════════════ */
+function groupAgg(items,keyFn){
+  const m=new Map();
+  for(const it of items){ const k=keyFn(it); if(k==null||k===''||k==='—') continue;
+    let g=m.get(k); if(!g){ g={key:k,net:0,gross:0,disc:0,units:0,orders:new Set(),cust:new Set(),ret:0,retNet:0,mto:0,rts:0,weight:0}; m.set(k,g); }
+    g.net+=it.net; g.gross+=it.gross; g.disc+=it.discount||0; g.units+=Math.abs(it.qty); g.orders.add(it.document_no);
+    if(it.customer_id&&it.customer_id!=='-')g.cust.add(it.customer_id); g.weight+=it.net_weight||0;
+    if(it.sale_type==='Return'){ g.ret++; g.retNet+=it.net; } if(it.sale_type==='MTO')g.mto+=it.net; if(it.sale_type==='RTS')g.rts+=it.net;
+  }
+  return [...m.values()].map(g=>({...g,orders:g.orders.size,customers:g.cust.size,
+    aov:g.orders.size?g.net/g.orders.size:0,discPct:g.gross?g.disc/g.gross*100:0,
+    retPct:g.orders.size?g.ret/g.orders.size*100:0}));
+}
+function rank(arr,key,dir){ return [...arr].sort((a,b)=>(dir===1?a[key]-b[key]:b[key]-a[key])); }
+function sum(arr,f){ return arr.reduce((s,x)=>s+(f?f(x):x),0); }
+function distinct(items,f){ return new Set(items.map(f).filter(Boolean)).size; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TOOLTIP
+   ═══════════════════════════════════════════════════════════════════════ */
+const TIP=document.getElementById('tip');
+document.addEventListener('mousemove',e=>{
+  const t=e.target.closest('[data-tip]');
+  if(t){ TIP.innerHTML=t.getAttribute('data-tip'); TIP.classList.add('on');
+    let x=e.clientX+14,y=e.clientY+14; const r=TIP.getBoundingClientRect();
+    if(x+r.width>innerWidth-10)x=e.clientX-r.width-14; if(y+r.height>innerHeight-10)y=e.clientY-r.height-14;
+    TIP.style.left=x+'px'; TIP.style.top=y+'px'; }
+  else TIP.classList.remove('on');
+},{passive:true});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CHART PRIMITIVES  (responsive SVG via viewBox)
+   ═══════════════════════════════════════════════════════════════════════ */
+function sparkline(vals,color,h){ h=h||30; const w=120; color=color||'var(--gold)';
+  if(!vals.length) return ''; const mn=Math.min(...vals,0),mx=Math.max(...vals,1); const rng=(mx-mn)||1;
+  const pts=vals.map((v,i)=>[i/(Math.max(1,vals.length-1))*w, h-4-((v-mn)/rng)*(h-8)]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const area=line+` L${w} ${h} L0 ${h} Z`; const last=pts[pts.length-1];
+  const id='sg'+Math.floor(rnd()*1e6);
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:${h}px">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".28"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#${id})"/><path d="${line}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.4" fill="${color}"/></svg>`;
+}
+function lineArea(series,keys,opts){
+  opts=opts||{}; const W=760,H=opts.height||240,P={t:16,r:14,b:34,l:56};
+  const iw=W-P.l-P.r, ih=H-P.t-P.b; const fmt=opts.fmt||money;
+  let mx=0,mn=0; series.forEach(s=>s.data.forEach(v=>{ if(v>mx)mx=v; if(v<mn)mn=v; })); if(mx===mn)mx=mn+1;
+  const nk=keys.length; const xf=i=>P.l+(nk<=1?iw/2:i/(nk-1)*iw); const yf=v=>P.t+ih-((v-mn)/(mx-mn))*ih;
+  let g=''; const ticks=4; for(let i=0;i<=ticks;i++){ const val=mn+(mx-mn)*i/ticks; const y=yf(val);
+    g+=`<line x1="${P.l}" y1="${y}" x2="${W-P.r}" y2="${y}" stroke="${C_GRID}"/><text x="${P.l-8}" y="${y+3}" fill="${C_MUTED}" font-size="10" text-anchor="end">${fmt(val)}</text>`; }
+  const lstep=Math.ceil(nk/8);
+  keys.forEach((k,i)=>{ if(i%lstep&&i!==nk-1)return; g+=`<text x="${xf(i)}" y="${H-12}" fill="${C_MUTED}" font-size="9.5" text-anchor="middle">${esc(shortKey(k))}</text>`; });
+  let paths='';
+  series.forEach((s,si)=>{ const col=s.color||palColor(si);
+    const pts=s.data.map((v,i)=>[xf(i),yf(v)]);
+    const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+    if(opts.area!==false&&si===0){ const id='la'+si+Math.floor(rnd()*1e5);
+      paths+=`<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".25"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+        <path d="${line} L${xf(nk-1)} ${P.t+ih} L${xf(0)} ${P.t+ih} Z" fill="url(#${id})"/>`; }
+    paths+=`<path d="${line}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
+    pts.forEach((p,i)=>{ paths+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="8" fill="transparent" data-tip="<b>${esc(keys[i])}</b><br>${esc(s.name)}: ${fmt(s.data[i])}"/><circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.6" fill="${col}"/>`; });
+  });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">${g}${paths}</svg>`+legendFor(series,opts);
+}
+function shortKey(k){ if(/^\d{4}-\d{2}-\d{2}$/.test(k)) return k.slice(5); if(/^\d{4}-\d{2}$/.test(k)){ const[y,m]=k.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]+" '"+y.slice(2); } return k; }
+function legendFor(series,opts){ if(series.length<2||opts.noLegend)return''; return `<div class="legend">`+series.map((s,i)=>`<span><i style="background:${s.color||palColor(i)}"></i>${esc(s.name)}</span>`).join('')+`</div>`; }
+function bars(data,opts){ opts=opts||{}; const W=760,H=opts.height||240,P={t:14,r:12,b:40,l:52};
+  const iw=W-P.l-P.r,ih=H-P.t-P.b; const fmt=opts.fmt||money; const mx=Math.max(1,...data.map(d=>Math.abs(d.value)));
+  const bw=iw/data.length*0.62, gap=iw/data.length; let g='';
+  for(let i=0;i<=4;i++){ const y=P.t+ih-ih*i/4; g+=`<line x1="${P.l}" y1="${y}" x2="${W-P.r}" y2="${y}" stroke="${C_GRID}"/><text x="${P.l-7}" y="${y+3}" fill="${C_MUTED}" font-size="10" text-anchor="end">${fmt(mx*i/4)}</text>`; }
+  data.forEach((d,i)=>{ const h=Math.abs(d.value)/mx*ih; const x=P.l+gap*i+(gap-bw)/2; const y=P.t+ih-h;
+    const col=d.color||palColor(i);
+    g+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1,h).toFixed(1)}" rx="4" fill="${col}" ${opts.click?`data-filter="${opts.click}|${esc(d.key||d.label)}" style="cursor:pointer"`:''} data-tip="<b>${esc(d.label)}</b><br>${fmt(d.value)}"/>`;
+    g+=`<text x="${(x+bw/2).toFixed(1)}" y="${H-14}" fill="${C_MUTED}" font-size="9.5" text-anchor="middle" transform="rotate(0)">${esc(trunc(d.label,10))}</text>`; });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">${g}</svg>`;
+}
+function stackBars(keys,series,opts){ opts=opts||{}; const W=760,H=opts.height||250,P={t:14,r:12,b:40,l:56};
+  const iw=W-P.l-P.r,ih=H-P.t-P.b; const fmt=opts.fmt||money;
+  const totals=keys.map((k,i)=>sum(series,s=>Math.max(0,s.data[i]))); const mx=Math.max(1,...totals);
+  const gap=iw/keys.length, bw=gap*0.62; let g='';
+  for(let i=0;i<=4;i++){ const y=P.t+ih-ih*i/4; g+=`<line x1="${P.l}" y1="${y}" x2="${W-P.r}" y2="${y}" stroke="${C_GRID}"/><text x="${P.l-7}" y="${y+3}" fill="${C_MUTED}" font-size="10" text-anchor="end">${fmt(mx*i/4)}</text>`; }
+  keys.forEach((k,i)=>{ let acc=0; const x=P.l+gap*i+(gap-bw)/2;
+    series.forEach((s,si)=>{ const v=Math.max(0,s.data[i]); if(v<=0)return; const h=v/mx*ih; const y=P.t+ih-(acc+v)/mx*ih; acc+=v;
+      g+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,h).toFixed(1)}" fill="${s.color||palColor(si)}" data-tip="<b>${esc(k)}</b><br>${esc(s.name)}: ${fmt(v)}"/>`; });
+    g+=`<text x="${(x+bw/2).toFixed(1)}" y="${H-14}" fill="${C_MUTED}" font-size="9.5" text-anchor="middle">${esc(shortKey(k))}</text>`; });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">${g}</svg>`+legendFor(series,opts);
+}
+function donut(data,opts){ opts=opts||{}; const total=sum(data,d=>Math.abs(d.value))||1; const R=88,r=54,cx=100,cy=100;
+  let a=-Math.PI/2,g=''; const fmt=opts.fmt||money;
+  data.forEach((d,i)=>{ const frac=Math.abs(d.value)/total; const a2=a+frac*Math.PI*2; const col=d.color||palColor(i);
+    const x1=cx+R*Math.cos(a),y1=cy+R*Math.sin(a),x2=cx+R*Math.cos(a2),y2=cy+R*Math.sin(a2);
+    const xi2=cx+r*Math.cos(a2),yi2=cy+r*Math.sin(a2),xi1=cx+r*Math.cos(a),yi1=cy+r*Math.sin(a);
+    const large=frac>0.5?1:0;
+    g+=`<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} A${R} ${R} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} L${xi2.toFixed(1)} ${yi2.toFixed(1)} A${r} ${r} 0 ${large} 0 ${xi1.toFixed(1)} ${yi1.toFixed(1)} Z" fill="${col}" ${opts.click?`data-filter="${opts.click}|${esc(d.key||d.label)}" style="cursor:pointer"`:''} data-tip="<b>${esc(d.label)}</b><br>${fmt(d.value)} · ${pctStr(frac*100)}"/>`;
+    a=a2; });
+  const cen=opts.center||money(total);
+  g+=`<text x="${cx}" y="${cy-3}" fill="${C_INK}" font-size="18" font-weight="700" text-anchor="middle" font-family="var(--serif)">${esc(cen)}</text><text x="${cx}" y="${cy+15}" fill="${C_MUTED}" font-size="9.5" text-anchor="middle">${esc(opts.centerSub||'TOTAL')}</text>`;
+  return `<svg class="chart" viewBox="0 0 200 200" style="max-height:230px">${g}</svg>`+
+    `<div class="legend">`+data.map((d,i)=>`<span data-tip="${fmt(d.value)}"><i style="background:${d.color||palColor(i)}"></i>${esc(d.label)} · ${pctStr(Math.abs(d.value)/total*100)}</span>`).join('')+`</div>`;
+}
+function funnel(steps,opts){ opts=opts||{}; const W=760,H=Math.max(120,steps.length*54); const mx=Math.max(1,...steps.map(s=>s.value));
+  let g=''; steps.forEach((s,i)=>{ const w=s.value/mx*(W-140); const y=i*54+10; const x=(W-w)/2; const col=s.color||palColor(i);
+    const conv=i? (steps[i].value/steps[i-1].value*100):100;
+    g+=`<rect x="${x.toFixed(1)}" y="${y}" width="${Math.max(2,w).toFixed(1)}" height="38" rx="6" fill="${col}" opacity="${1-i*0.08}" data-tip="<b>${esc(s.label)}</b><br>${fmtInt(s.value)} · ${pctStr(conv)} of prev"/>`;
+    g+=`<text x="${W/2}" y="${y+24}" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">${esc(s.label)} · ${fmtInt(s.value)}</text>`;
+    if(i)g+=`<text x="${W-10}" y="${y+24}" fill="${C_MUTED}" font-size="10" text-anchor="end">${pctStr(conv)}</text>`; });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">${g}</svg>`;
+}
+function hbars(data,opts){ opts=opts||{}; const fmt=opts.fmt||money; const mx=Math.max(1,...data.map(d=>Math.abs(d.value)));
+  return `<div style="display:flex;flex-direction:column;gap:9px">`+data.map((d,i)=>{
+    const w=Math.abs(d.value)/mx*100; const col=d.color||palColor(i);
+    return `<div style="display:grid;grid-template-columns:130px 1fr auto;gap:10px;align-items:center;font-size:12px" ${opts.click?`data-filter="${opts.click}|${esc(d.key||d.label)}" style="cursor:pointer"`:''}>
+      <div style="color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(d.label)}">${esc(d.label)}</div>
+      <div style="background:var(--surface-3);border-radius:6px;height:16px;overflow:hidden"><div style="width:${w.toFixed(1)}%;height:100%;background:${col};border-radius:6px"></div></div>
+      <b style="font-variant-numeric:tabular-nums;min-width:66px;text-align:right">${fmt(d.value)}</b></div>`;
+  }).join('')+`</div>`;
+}
+function trunc(s,n){ s=String(s||''); return s.length>n?s.slice(0,n-1)+'…':s; }
+/* ═══════════════════════════════════════════════════════════════════════
+   RECOMPUTE CACHE  — metrics, comparison, sparkline series, driver context
+   ═══════════════════════════════════════════════════════════════════════ */
+function recompute(){
+  applyFilters();
+  STATE.M=computeMetrics(STATE.items,STATE.curWin);
+  STATE.PM=computeMetrics(STATE.prevItems,STATE.prevWin);
+  STATE.series=metricSeries(STATE.items,STATE.curWin.from,STATE.curWin.to);
+  STATE.byCat=rank(groupAgg(STATE.items,i=>i.category),'net');
+  STATE.byStore=rank(groupAgg(STATE.items,i=>i.store),'net');
+  STATE.byColl=rank(groupAgg(STATE.items,i=>i.collection),'net');
+  STATE.byStyle=rank(groupAgg(STATE.items,i=>i.style),'net');
+  STATE.byState=rank(groupAgg(STATE.items.filter(i=>i.state&&i.state!=='Online'),i=>i.state),'net');
+  STATE.byCity=rank(groupAgg(STATE.items.filter(i=>i.city&&i.city!=='Online'),i=>i.city),'net');
+}
+function sparkFor(key){ return STATE.series.map(s=>s.metrics[key]||0); }
+
+/* ── AI insight per KPI card ─────────────────────────────────── */
+function kpiInsight(kpi){
+  const M=STATE.M,PM=STATE.PM; const cur=M[kpi.k],prev=PM[kpi.k]; const g=growth(cur,prev);
+  const cl=COMPARE_LABEL[STATE.compare].toLowerCase();
+  const dir=g>0.5?'up':g<-0.5?'down':'flat';
+  const topCat=STATE.byCat[0], topStore=STATE.byStore[0];
+  const w=(t)=>({sp:'✦',t});
+  switch(kpi.k){
+    case 'revenue': case 'net': return dir==='flat'?`Holding steady vs ${cl}.`:`${dir==='up'?'Rising':'Softening'} ${pctStr(Math.abs(g))} ${cl}${topCat?`; ${esc(topCat.key)} leads`:''}.`;
+    case 'gross': return `${money(Math.abs(M.returnAmt))} of returns net against gross this period.`;
+    case 'orders': return `${dir==='up'?'More':'Fewer'} invoices than ${cl} (${pctStr(Math.abs(g))}).`;
+    case 'aov': return dir==='up'?`Basket richer — pricing/mix working.`:`Basket lighter vs ${cl}; watch discounting.`;
+    case 'asp': return `Avg piece realises ${money(cur)}.`;
+    case 'newCustomers': return `${fmtInt(cur)} first-time buyers acquired.`;
+    case 'repeatPct': return cur<25?`Repeat share low — loyalty upside.`:`Healthy repeat base.`;
+    case 'retentionPct': return cur<40?`Retention needs attention.`:`Retention solid at ${pctStr(cur)}.`;
+    case 'clv': return `Mean lifetime value ${money(cur)}.`;
+    case 'mtoPct': return `${pctStr(cur)} of net is made-to-order.`;
+    case 'rtsPct': return `${pctStr(cur)} sells from ready stock.`;
+    case 'returnPct': return cur>6?`Elevated — investigate top return drivers.`:`Within tolerance.`;
+    case 'refundAmt': return cur>0?`${money(cur)} refunded this period.`:`No refunds booked.`;
+    case 'discountPct': return cur>10?`Discount leakage — protect margin.`:`Discipline holding.`;
+    case 'revPerStore': return topStore?`${esc(topStore.key)} is the top revenue store.`:'—';
+    default: return dir==='flat'?`Stable vs ${cl}.`:`${dir==='up'?'Up':'Down'} ${pctStr(Math.abs(g))} vs ${cl}.`;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SMART ALERTS  — detect the spec's alert conditions from data
+   ═══════════════════════════════════════════════════════════════════════ */
+function generateAlerts(){
+  const M=STATE.M,PM=STATE.PM,A=[]; const cl=COMPARE_LABEL[STATE.compare].toLowerCase();
+  const gRev=growth(M.revenue,PM.revenue);
+  if(gRev<=-8) A.push({level:'crit',ic:'▼',title:'Revenue decline detected',text:`Net revenue is down ${pctStr(Math.abs(gRev))} vs ${cl} (${money(M.revenue)} vs ${money(PM.revenue)}).`,meta:'Sales Drop'});
+  else if(gRev>=15) A.push({level:'good',ic:'▲',title:'Revenue spike',text:`Net revenue up ${pctStr(gRev)} vs ${cl} — capture the momentum.`,meta:'Revenue Spike'});
+  if(M.returnPct>6) A.push({level:'crit',ic:'↩',title:'High return rate',text:`${pctStr(M.returnPct)} of orders returned (${money(M.refundAmt)} refunded). Threshold 6%.`,meta:'High Returns'});
+  if(M.refundAmt>0.03*M.salesGross&&M.salesGross>0) A.push({level:'warn',ic:'₹',title:'Refund value elevated',text:`Refunds of ${money(M.refundAmt)} = ${pctStr(M.refundAmt/M.salesGross*100)} of sales gross.`,meta:'High Refunds'});
+  if(M.repeatPct<25) A.push({level:'warn',ic:'♺',title:'Low repeat rate',text:`Only ${pctStr(M.repeatPct)} of active customers are repeat buyers — activate loyalty.`,meta:'Low Repeat Rate'});
+  if(M.discountPct>12) A.push({level:'warn',ic:'%',title:'High discounting',text:`Discount is ${pctStr(M.discountPct)} of sales gross — protect margin.`,meta:'High Discount'});
+  // store performance drop
+  const storesCur=groupAgg(STATE.items,i=>i.store), storesPrev=new Map(groupAgg(STATE.prevItems,i=>i.store).map(g=>[g.key,g]));
+  storesCur.forEach(s=>{ const p=storesPrev.get(s.key); if(p&&growth(s.net,p.net)<=-20&&s.net>0) A.push({level:'warn',ic:'⌂',title:`${esc(s.key)} store softening`,text:`${esc(s.key)} net down ${pctStr(Math.abs(growth(s.net,p.net)))} vs ${cl}.`,meta:'Store Performance Drop'}); });
+  // VIP purchases + large orders
+  const vipIds=new Set([...STATE.custStats.values()].filter(c=>c.seg==='VIP').map(c=>c.id));
+  const vipActive=distinct(STATE.items.filter(i=>vipIds.has(i.customer_id)),i=>i.customer_id);
+  if(vipActive>0) A.push({level:'good',ic:'★',title:`${vipActive} VIP customers active`,text:`${vipActive} VIP customers purchased this period — ensure white-glove follow-up.`,meta:'VIP Customer Purchase'});
+  const orderVal=new Map(); STATE.items.forEach(i=>orderVal.set(i.document_no,(orderVal.get(i.document_no)||0)+i.net));
+  const big=[...orderVal.entries()].filter(([,v])=>v>=CONFIG.HIGHVAL_LTV).length;
+  if(big>0) A.push({level:'info',ic:'◆',title:`${big} large orders`,text:`${big} orders above ${money(CONFIG.HIGHVAL_LTV)} booked this period.`,meta:'Large Order'});
+  // trend from sparkline
+  const s=sparkFor('revenue'); if(s.length>=3){ const slope=s[s.length-1]-s[0]; A.push(slope>=0?{level:'good',ic:'↗',title:'Positive revenue trend',text:'Trailing trend within the window is upward.',meta:'Positive Trend'}:{level:'warn',ic:'↘',title:'Negative revenue trend',text:'Trailing trend within the window is downward — monitor.',meta:'Negative Trend'}); }
+  if(!STATE.caps.margin) A.push({level:'info',ic:'ⓘ',title:'Margin analytics unavailable',text:'Sales_overview_table has no COGS column — Profit, Margin and Margin-Loss alerts activate once a cost column is added.',meta:'Inventory Risk'});
+  return A;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   EXECUTIVE ACTION CENTER  — issue → root cause → recommendation → ROI
+   ═══════════════════════════════════════════════════════════════════════ */
+function generateActions(){
+  const M=STATE.M,PM=STATE.PM,acts=[]; const cl=COMPARE_LABEL[STATE.compare].toLowerCase(); const asOf=STATE.asOf;
+  const dl=(d)=>ymd(addDays(parseYmd(asOf),d));
+  // 1 returns
+  const retCat=rank(groupAgg(STATE.items.filter(i=>i.sale_type==='Return'),i=>i.category),'retNet').filter(x=>x.retNet<0)[0];
+  if(M.returnPct>4) acts.push({issue:`Return rate at ${pctStr(M.returnPct)}`,cause:retCat?`${esc(retCat.key)} drives the most returned value`:'Concentrated in a few categories/products',
+    rec:'Audit top return SKUs for sizing/quality; add pre-dispatch QC and clearer PDP specs.',priority:'High',impact:`Recover ~${money(M.refundAmt*0.4)} of refunds`,revImpact:money(M.refundAmt*0.4),custImpact:'Fewer dissatisfied buyers',owner:'Retail Ops',deadline:dl(21),status:'Open',roi:'4–6×'});
+  // 2 repeat / retention
+  if(M.repeatPct<30) acts.push({issue:`Repeat rate only ${pctStr(M.repeatPct)}`,cause:'Weak post-purchase engagement; no structured loyalty nudges',
+    rec:'Launch 30/90-day re-engagement (care reminders, exclusive previews) to New & Promising segments.',priority:'High',impact:`+${money(M.revenue*0.06)} if repeat lifts 4pts`,revImpact:money(M.revenue*0.06),custImpact:`${fmtInt(M.newCustomers)} new buyers to nurture`,owner:'CRM / Marketing',deadline:dl(30),status:'Open',roi:'3–5×'});
+  // 3 discount leakage
+  if(M.discountPct>9) acts.push({issue:`Discounting at ${pctStr(M.discountPct)} of gross`,cause:'Blanket discounts rather than targeted offers',
+    rec:'Cap floor-discretion; move to segment-based offers; protect fast-movers from markdown.',priority:'Medium',impact:`~${money(M.salesGross*0.02)} margin protected`,revImpact:money(M.salesGross*0.02),custImpact:'Neutral',owner:'Sales / Finance',deadline:dl(14),status:'Open',roi:'6–10×'});
+  // 4 store attention
+  const storesPrev=new Map(groupAgg(STATE.prevItems,i=>i.store).map(g=>[g.key,g]));
+  const weak=rank(groupAgg(STATE.items,i=>i.store),'net').map(s=>({...s,g:storesPrev.get(s.key)?growth(s.net,storesPrev.get(s.key).net):0})).filter(s=>s.g<-10&&s.net>0)[0];
+  if(weak) acts.push({issue:`${esc(weak.key)} down ${pctStr(Math.abs(weak.g))} vs ${cl}`,cause:'Footfall/conversion or staffing gap at store',
+    rec:`Deploy floor coaching, refresh visual merchandising, redirect fast-moving inventory to ${esc(weak.key)}.`,priority:'High',impact:`Close ~${money(Math.abs(weak.net*weak.g/100))} gap`,revImpact:money(Math.abs(weak.net*weak.g/100)),custImpact:'Local base retention',owner:'Regional Manager',deadline:dl(21),status:'Open',roi:'3–4×'});
+  // 5 growth opportunity — top city
+  const topCity=STATE.byCity[0];
+  if(topCity) acts.push({issue:`${esc(topCity.key)} is the highest-opportunity city`,cause:`Strong demand concentration (${money(topCity.net)} net)`,
+    rec:`Increase inventory depth & targeted marketing spend in ${esc(topCity.key)}; pilot appointment-led selling.`,priority:'Medium',impact:`+${money(topCity.net*0.1)} upside`,revImpact:money(topCity.net*0.1),custImpact:'Deeper share of wallet',owner:'Marketing',deadline:dl(45),status:'Open',roi:'2–4×'});
+  return acts;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   NARRATIVE INSIGHTS  (home feed + CEO briefing)
+   ═══════════════════════════════════════════════════════════════════════ */
+function topMovers(){
+  const cur=groupAgg(STATE.items,i=>i.category), prev=new Map(groupAgg(STATE.prevItems,i=>i.category).map(g=>[g.key,g]));
+  return rank(cur.map(c=>({key:c.key,net:c.net,g:prev.get(c.key)?growth(c.net,prev.get(c.key).net):100})),'net');
+}
+/* ═══════════════════════════════════════════════════════════════════════
+   UI BUILDERS + ROUTER
+   ═══════════════════════════════════════════════════════════════════════ */
+const TABS=[
+  {id:'home',label:'Executive Home',ic:'⌂'},
+  {id:'kpis',label:'KPI Command',ic:'◈'},
+  {id:'customers',label:'Customers',ic:'♛'},
+  {id:'mtorts',label:'MTO vs RTS',ic:'⚙'},
+  {id:'returns',label:'Returns & Exchange',ic:'↩'},
+  {id:'stores',label:'Stores',ic:'⌂'},
+  {id:'products',label:'Products',ic:'◇'},
+  {id:'geo',label:'Geography',ic:'✦'},
+  {id:'team',label:'Sales Team',ic:'☰'},
+  {id:'ai',label:'AI Assistant',ic:'✧'},
+  {id:'actions',label:'Alerts & Actions',ic:'❢'},
+  {id:'reports',label:'Reports & Data',ic:'▤'}
+];
+function card(title,body,opts){ opts=opts||{}; return `<div class="card ${opts.cls||''}">${opts.bare?'':`<div class="pad">`}
+  ${title?`<div class="ct"><h3>${esc(title)}</h3>${opts.hint?`<span class="hint">${opts.hint}</span>`:''}${opts.head||''}</div>`:''}
+  ${body}${opts.bare?'':`</div>`}</div>`; }
+function secHead(eyebrow,title,sub,right){ return `<div class="sec-head"><div><div class="eyebrow">${esc(eyebrow)}</div><h2>${esc(title)}</h2>${sub?`<div class="sub">${sub}</div>`:''}</div>${right?`<div>${right}</div>`:''}</div>`; }
+function deltaMeta(cur,prev,good){ const g=growth(cur,prev); const sign=g>0.5?1:g<-0.5?-1:0;
+  const cls=(good===0||sign===0)?'flat':(sign===(good>0?1:-1)?'up':'down'); const arw=sign>0?'▲':sign<0?'▼':'▬';
+  return {g,sign,cls,arw}; }
+function gatedKpi(kpi){ return `<div class="kpi neu"><div class="lab">${esc(kpi.label)} <span class="dot" style="background:var(--muted)" data-tip="${esc(kpi.desc)}"></span></div>
+  <div class="val" style="color:var(--muted);font-size:18px">Not available</div>
+  <div class="ai"><span class="sp">ⓘ</span><span>${esc(kpi.desc)} — activates when the column exists in Sales_overview_table.</span></div></div>`; }
+function kpiCard(kpi){
+  if(kpi.cap && !STATE.caps[kpi.cap]) return gatedKpi(kpi);
+  const M=STATE.M,PM=STATE.PM; const cur=M[kpi.k],prev=PM[kpi.k]; const dm=deltaMeta(cur,prev,kpi.good);
+  const diff=cur-prev; const isPct=/Pct$|%$/.test(kpi.k)||/%/.test(kpi.label);
+  const spCol=dm.cls==='up'?'var(--good)':dm.cls==='down'?'var(--crit)':'var(--gold)';
+  const strip=dm.cls==='up'?'pos':dm.cls==='down'?'neg':'neu';
+  const diffStr=isPct?(diff>=0?'+':'')+diff.toFixed(1)+'pp':(diff>=0?'+':'−')+kpi.fmt(Math.abs(diff)).replace('-','');
+  return `<div class="kpi ${strip}" data-kpi="${kpi.k}">
+    <div class="lab">${esc(kpi.label)} <span class="dot" style="background:var(--gold);opacity:.5" data-tip="${esc(kpi.desc)}"></span></div>
+    <div class="val">${kpi.fmt(cur)}</div>
+    <div class="row"><span class="delta ${dm.cls}">${dm.arw} ${pctStr(Math.abs(dm.g))}</span>
+      <span class="prev" data-tip="Difference vs previous: ${diffStr}">vs ${kpi.fmt(prev)}</span></div>
+    <div class="spark">${sparkline(sparkFor(kpi.k),spCol,30)}</div>
+    <div class="ai"><span class="sp">✦</span><span>${kpiInsight(kpi)}</span></div></div>`;
+}
+function renderTabs(){ document.getElementById('tabs').innerHTML=TABS.map(t=>
+  `<button class="tab ${t.id===STATE.tab?'active':''}" data-tab="${t.id}"><span class="ic">${t.ic}</span>${esc(t.label)}</button>`).join(''); }
+const VIEW={};
+function render(){
+  recompute(); renderTabs();
+  const fn=VIEW[STATE.tab]||VIEW.home;
+  document.getElementById('main').innerHTML=`<div class="view on">${activeChips()}${fn()}</div>`;
+  wireView();
+  document.getElementById('srcTxt').textContent = STATE.source==='live'
+    ? `Live · reporting layer · as of ${STATE.asOf}` : `Sample data · as of ${STATE.asOf}`;
+  document.getElementById('srcDot').classList.toggle('live',STATE.source==='live');
+}
+function activeChips(){ const f=STATE.filters; const chips=[];
+  const add=(k,lab)=>{ if(f[k])chips.push(`<span class="chip">${esc(lab)}: ${esc(f[k])} <b data-clear="${k}">✕</b></span>`); };
+  chips.push(`<span class="chip" style="background:var(--surface-2);color:var(--ink-2)">${esc(rangeLabel(f.range))} · ${STATE.curWin.from}→${STATE.curWin.to}</span>`);
+  chips.push(`<span class="chip" style="background:var(--surface-2);color:var(--ink-2)">vs ${esc(COMPARE_LABEL[STATE.compare])}</span>`);
+  ['category','collection','metal','band','saletype','store','channel','ctype','state'].forEach(k=>add(k,k));
+  if(f.search)chips.push(`<span class="chip">search: ${esc(f.search)} <b data-clear="search">✕</b></span>`);
+  if(STATE.drill)chips.push(`<span class="chip" style="background:var(--royal);color:#fff">drill: ${esc(STATE.drill[0])}=${esc(STATE.drill[1])} <b data-clear="drill">✕</b></span>`);
+  return `<div class="chips no-print">${chips.join('')}</div>`;
+}
+function rangeLabel(r){ return {today:'Today',yesterday:'Yesterday','7d':'Last 7 days','30d':'Last 30 days','90d':'Last 90 days',thisweek:'This week',mtd:'This month',qtd:'This quarter',ytd:'This year','12m':'Last 12 months',all:'All time',custom:'Custom'}[r]||r; }
+function wireView(){
+  document.querySelectorAll('[data-filter]').forEach(el=>el.addEventListener('click',()=>{
+    const[d,v]=el.getAttribute('data-filter').split('|'); STATE.drill=[d,v]; render(); }));
+  document.querySelectorAll('[data-clear]').forEach(el=>el.addEventListener('click',()=>{
+    const k=el.getAttribute('data-clear'); if(k==='drill')STATE.drill=null; else STATE.filters[k]=''; syncDrawer(); render(); }));
+  document.querySelectorAll('[data-jump]').forEach(el=>el.addEventListener('click',()=>setTab(el.getAttribute('data-jump'))));
+  document.querySelectorAll('[data-sortcol]').forEach(th=>th.addEventListener('click',()=>sortTable(th)));
+  document.querySelectorAll('[data-act]').forEach(el=>el.addEventListener('click',()=>viewAction[el.getAttribute('data-act')] && viewAction[el.getAttribute('data-act')](el)));
+}
+function setTab(id){ STATE.tab=id; location.hash=id; render(); document.getElementById('main').scrollIntoView({behavior:'smooth',block:'start'}); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VIEW · EXECUTIVE HOME
+   ═══════════════════════════════════════════════════════════════════════ */
+VIEW.home=function(){
+  const M=STATE.M,PM=STATE.PM; const movers=topMovers(); const alerts=generateAlerts().slice(0,4);
+  const gRev=growth(M.revenue,PM.revenue);
+  const hero=`<div class="hero"><div class="eyebrow">Executive Command Center</div>
+    <h1>Lucira <em>Sales Intelligence</em>, at a glance.</h1>
+    <p>${homeSummary()}</p>
+    <div class="stats">
+      <div class="s"><b>${money(M.revenue)}</b><span>Net Revenue · ${(gRev>=0?'▲ ':'▼ ')+pctStr(Math.abs(gRev))}</span></div>
+      <div class="s"><b>${fmtInt(M.orders)}</b><span>Orders</span></div>
+      <div class="s"><b>${fmtInt(M.customers)}</b><span>Customers</span></div>
+      <div class="s"><b>${money(M.aov)}</b><span>Avg Order Value</span></div>
+      <div class="s"><b>${pctStr(M.repeatPct)}</b><span>Repeat Rate</span></div>
+    </div></div>`;
+  const strip=`<div class="grid g-4" style="margin-bottom:16px">`+
+    ['revenue','orders','aov','newCustomers'].map(k=>kpiCard(KPIS.find(x=>x.k===k))).join('')+`</div>`;
+  const trend=card('Revenue Trend',lineArea([{name:'Net Revenue',color:'#d4af37',data:sparfullSeries('revenue')}],STATE.series.map(s=>s.key),{height:230}),{hint:autoGran(STATE.curWin.from,STATE.curWin.to)+' grain'});
+  const mix=card('Sales Mix by Type',donut(saleTypeMix(),{center:money(M.net),centerSub:'NET'}),{});
+  const moversCard=card('Category Momentum',hbars(movers.slice(0,6).map(m=>({label:m.key+' ('+(m.g>=0?'+':'')+m.g.toFixed(0)+'%)',value:m.net,key:m.key,color:m.g>=0?'#12b886':'#ef5350'})),{click:'category'}),{hint:'click to drill'});
+  const alertCard=card('Smart Alerts',alerts.length?alerts.map(a=>alertRow(a)).join(''):`<div class="empty">No alerts — all clear.</div>`,{head:`<button class="btn" data-jump="actions" style="padding:5px 11px">View all</button>`});
+  const brief=card('✦ AI Daily CEO Briefing',`<div style="font-size:13px;line-height:1.7;color:var(--ink-2)">${ceoBriefing()}</div>`,{head:`<button class="btn" data-act="copyBrief" style="padding:5px 11px">Copy</button>`});
+  const nav=`<div class="navcards" style="margin-top:16px">`+TABS.filter(t=>!['home'].includes(t.id)).map(t=>
+    `<div class="navcard" data-jump="${t.id}"><span class="ic">${t.ic}</span><h4>${esc(t.label)}</h4><p>${navDesc(t.id)}</p><span class="arw">→</span></div>`).join('')+`</div>`;
+  return hero+strip+
+    `<div class="grid g-2" style="margin-bottom:16px">${trend}${mix}</div>`+
+    `<div class="grid g-2" style="margin-bottom:16px">${moversCard}${alertCard}</div>`+
+    brief+
+    secHead('Navigate','Intelligence Sections','Jump into any command view')+nav;
+};
+function navDesc(id){ return {kpis:'28 executive KPIs with comparison & AI insight',customers:'RFM, CLV, segmentation, VIP & churn',mtorts:'Make-to-order vs ready-to-sell split',returns:'Return & refund intelligence + AI fixes',stores:'Ranking, targets & performance score',products:'ABC, Pareto, movement, cross-sell',geo:'State & city revenue and opportunity',team:'Sales executive performance',ai:'Ask anything · CEO reports & plans',actions:'Alerts and executive action center',reports:'Detailed data, validation & exports'}[id]||''; }
+function sparfullSeries(key){ return STATE.series.map(s=>s.metrics[key]||0); }
+function saleTypeMix(){ const g=groupAgg(STATE.items,i=>i.sale_type); return CONFIG.SALE_TYPES.map(t=>{ const x=g.find(y=>y.key===t); return {label:t,value:Math.abs(x?x.net:0),key:t,color:saleColor(t)}; }).filter(d=>d.value>0); }
+function alertRow(a){ return `<div class="alert ${a.level}"><div class="ic">${a.ic}</div><div><h4>${esc(a.title)}</h4><p>${a.text}</p><div class="meta">${esc(a.meta)}</div></div></div>`; }
+function homeSummary(){ const M=STATE.M,PM=STATE.PM; const g=growth(M.revenue,PM.revenue); const top=STATE.byCat[0],topStore=STATE.byStore[0];
+  return `Across ${STATE.curWin.from} → ${STATE.curWin.to}, Lucira booked <b style="color:var(--ink)">${money(M.revenue)}</b> net revenue on ${fmtInt(M.orders)} orders — ${g>=0?'up':'down'} <b style="color:${g>=0?'var(--good)':'var(--crit)'}">${pctStr(Math.abs(g))}</b> versus the ${COMPARE_LABEL[STATE.compare].toLowerCase()}.${top?` ${esc(top.key)} leads categories`:''}${topStore?` and ${esc(topStore.key)} tops stores.`:'.'}`; }
+function ceoBriefing(){ const M=STATE.M,PM=STATE.PM; const g=growth(M.revenue,PM.revenue); const movers=topMovers();
+  const up=movers.filter(m=>m.g>0)[0], dn=[...movers].reverse().filter(m=>m.g<0)[0]; const acts=generateActions();
+  const parts=[];
+  parts.push(`<b>Headline.</b> Net revenue ${money(M.revenue)} (${g>=0?'+':''}${pctStr(g)} vs ${COMPARE_LABEL[STATE.compare].toLowerCase()}), ${fmtInt(M.orders)} orders, AOV ${money(M.aov)}, ${pctStr(M.repeatPct)} repeat.`);
+  if(up)parts.push(`<b>Winning.</b> ${esc(up.key)} is accelerating (${up.g>=0?'+':''}${up.g.toFixed(0)}%)${STATE.byStore[0]?`; ${esc(STATE.byStore[0].key)} is the strongest store.`:'.'}`);
+  if(dn)parts.push(`<b>Watch.</b> ${esc(dn.key)} is softening (${dn.g.toFixed(0)}%). Return rate ${pctStr(M.returnPct)}, discount ${pctStr(M.discountPct)} of gross.`);
+  if(acts[0])parts.push(`<b>Do next.</b> ${esc(acts[0].rec)} <span style="color:var(--gold)">(owner: ${esc(acts[0].owner)}, ${esc(acts[0].roi)} ROI)</span>`);
+  return parts.map(p=>`<div style="margin-bottom:9px">${p}</div>`).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VIEW · KPI COMMAND  (all 28)
+   ═══════════════════════════════════════════════════════════════════════ */
+VIEW.kpis=function(){
+  const right=`<div class="seg" id="cmpSeg">`+Object.keys(COMPARE_LABEL).map(k=>`<button data-cmp="${k}" class="${STATE.compare===k?'on':''}">${COMPARE_LABEL[k].replace('Year over Year','YoY').replace('Month over Month','MoM').replace('Week over Week','WoW').replace('Quarter over Quarter','QoQ').replace('Previous period','Prev')}</button>`).join('')+`</div>`;
+  const cards=`<div class="grid g-4">`+KPIS.map(kpiCard).join('')+`</div>`;
+  return secHead('Executive KPIs','KPI Command Center',`Every KPI vs ${COMPARE_LABEL[STATE.compare].toLowerCase()} — current, previous, difference, growth, sparkline & AI insight`,right)+cards;
+};
+/* mini stat helper */
+function miniRow(cards){ return `<div class="stat-row" style="margin-bottom:16px">`+cards.map(c=>
+  `<div class="mini"><div class="l">${esc(c.l)}</div><div class="v" style="${c.color?`color:${c.color}`:''}">${c.v}</div>${c.d?`<div class="d" style="color:${c.dc||'var(--muted)'}">${c.d}</div>`:''}</div>`).join('')+`</div>`; }
+function deltaTxt(cur,prev,good){ const dm=deltaMeta(cur,prev,good||1); return `<span style="color:${dm.cls==='up'?'var(--good)':dm.cls==='down'?'var(--crit)':'var(--muted)'}">${dm.arw} ${pctStr(Math.abs(dm.g))}</span>`; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VIEW · CUSTOMER INTELLIGENCE
+   ═══════════════════════════════════════════════════════════════════════ */
+VIEW.customers=function(){
+  const M=STATE.M,PM=STATE.PM; const cs=[...STATE.custStats.values()];
+  const segG={}; cs.forEach(c=>{ (segG[c.seg]=segG[c.seg]||{n:0,net:0})&&0; segG[c.seg].n++; segG[c.seg].net+=c.net; });
+  const segOrder=['VIP','High Value','Loyal','Promising','New','At Risk','Dormant','Lost'];
+  const segData=segOrder.filter(s=>segG[s]).map(s=>({label:s,value:segG[s].n,key:s,color:SEG_COLOR[s]}));
+  const mini=miniRow([
+    {l:'Active Customers',v:fmtInt(M.customers),d:deltaTxt(M.customers,PM.customers)},
+    {l:'New Customers',v:fmtInt(M.newCustomers),d:deltaTxt(M.newCustomers,PM.newCustomers)},
+    {l:'Repeat Customers',v:fmtInt(M.repeatCustomers),d:deltaTxt(M.repeatCustomers,PM.repeatCustomers)},
+    {l:'Retention',v:pctStr(M.retentionPct),d:deltaTxt(M.retentionPct,PM.retentionPct)},
+    {l:'Repeat %',v:pctStr(M.repeatPct),d:deltaTxt(M.repeatPct,PM.repeatPct)},
+    {l:'Avg Lifetime Value',v:money(M.clv),color:'var(--gold)'}
+  ]);
+  // new vs repeat trend
+  const keys=STATE.series.map(s=>s.key);
+  const nvr=stackBars(keys,[
+    {name:'New',color:'#20c997',data:STATE.series.map(s=>{ const g=groupAgg(bucketItems(s.key),i=>i.customer_type); const x=g.find(y=>y.key==='New'); return x?x.net:0; })},
+    {name:'Repeat',color:'#8b5cf6',data:STATE.series.map(s=>{ const g=groupAgg(bucketItems(s.key),i=>i.customer_type); const x=g.find(y=>y.key==='Repeat'); return x?x.net:0; })}
+  ],{height:230});
+  // RFM grid R(x) x F(y)
+  const grid=Array.from({length:5},()=>Array.from({length:5},()=>({n:0,m:0})));
+  cs.forEach(c=>{ const cell=grid[c.F-1][c.R-1]; cell.n++; cell.m+=c.monetary; });
+  const mxN=Math.max(1,...grid.flat().map(c=>c.n));
+  let rfm=`<div class="heat" style="grid-template-columns:auto repeat(5,1fr);max-width:420px">`;
+  rfm+=`<div></div>`+[1,2,3,4,5].map(r=>`<div style="text-align:center;font-size:10px;color:var(--muted)">R${r}</div>`).join('');
+  for(let f=4;f>=0;f--){ rfm+=`<div style="font-size:10px;color:var(--muted);display:grid;place-items:center">F${f+1}</div>`;
+    for(let r=0;r<5;r++){ const c=grid[f][r]; const t=c.n/mxN; const col=`rgba(212,175,55,${(0.12+t*0.8).toFixed(2)})`;
+      rfm+=`<div class="cell" style="background:${c.n?col:'var(--surface-3)'}" data-tip="R${r+1} F${f+1}<br>${c.n} customers<br>avg LTV ${money(c.n?c.m/c.n:0)}">${c.n||''}</div>`; } }
+  rfm+=`</div><div style="font-size:10.5px;color:var(--muted);margin-top:8px">Recency → · Frequency ↑ · shade = customer count</div>`;
+  // segment table
+  const segRows=segData.map(s=>{ const g=segG[s.key]; const tot=sum(cs,c=>c.net)||1;
+    return `<tr><td><span class="dot" style="background:${s.color}"></span> ${esc(s.key)}</td><td class="num">${fmtInt(g.n)}</td><td class="num">${money(g.net)}</td><td class="num">${pctStr(g.net/tot*100)}</td><td class="num">${money(g.net/g.n)}</td></tr>`; }).join('');
+  const segTable=card('Customer Segments',`<table class="dt"><thead><tr><th>Segment</th><th class="num">Customers</th><th class="num">Lifetime Net</th><th class="num">Contribution</th><th class="num">Avg LTV</th></tr></thead><tbody>${segRows}</tbody></table>`,{hint:'lifetime basis'});
+  // top 100
+  const top=rank(cs,'monetary').slice(0,100);
+  const topRows=top.slice(0,50).map((c,i)=>`<tr><td><span class="rank ${i<3?'r'+(i+1):''}">${i+1}</span></td><td>${esc(c.name)}</td>
+    <td><span class="pill" style="color:${SEG_COLOR[c.seg]};border-color:${SEG_COLOR[c.seg]}44">${esc(c.seg)}</span></td>
+    <td class="num">${fmtInt(c.freq)}</td><td class="num">${money(c.monetary)}</td><td class="num">${money(c.avgBasket)}</td>
+    <td class="num">${c.recency}d</td><td>${esc(c.prefCat||NA)}</td><td>${esc(c.prefStore||NA)}</td></tr>`).join('');
+  const topTable=card('Top Customers',`<div class="scroll-x"><table class="dt" id="topCustTable"><thead><tr><th>#</th><th>Customer</th><th>Segment</th><th class="num">Orders</th><th class="num">Lifetime Value</th><th class="num">Avg Basket</th><th class="num">Recency</th><th>Pref. Category</th><th>Pref. Store</th></tr></thead><tbody>${topRows}</tbody></table></div>`,{hint:'top 50 of 100',head:`<button class="btn" data-act="expCust" style="padding:5px 11px">⬇ Export</button>`});
+  // at-risk / lost / vip cohorts
+  const cohort=(seg,color)=>{ const l=rank(cs.filter(c=>c.seg===seg),'monetary').slice(0,6);
+    return card(seg+' Customers',l.length?l.map(c=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--hair);font-size:12px"><span>${esc(c.name)}</span><b style="color:${color}">${money(c.monetary)} · ${c.recency}d</b></div>`).join(''):`<div class="empty">None</div>`,{hint:seg==='Lost'?'>365d inactive':seg==='At Risk'?'declining':'≥₹5L LTV'}); };
+  return secHead('Customer 360','Customer Intelligence','RFM, lifetime value, segmentation, VIP & churn — lifetime view over all history')+
+    mini+
+    `<div class="grid g-2" style="margin-bottom:16px">${card('Segmentation',donut(segData,{center:fmtInt(cs.length),centerSub:'CUSTOMERS',fmt:fmtInt}),{})}${card('RFM Matrix',rfm,{hint:'5×5 quintiles'})}</div>`+
+    `<div class="grid g-2" style="margin-bottom:16px">${card('New vs Repeat Revenue',nvr,{})}${segTable}</div>`+
+    `<div class="grid g-3" style="margin-bottom:16px">${cohort('VIP','var(--gold)')}${cohort('At Risk','var(--warn)')}${cohort('Lost','var(--crit)')}</div>`+
+    topTable;
+};
+function bucketItems(key){ const g=autoGran(STATE.curWin.from,STATE.curWin.to); const kf=bucketKeyFn(g);
+  return STATE.items.filter(i=>kf(i.date)===key); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VIEW · MTO vs RTS
+   ═══════════════════════════════════════════════════════════════════════ */
+VIEW.mtorts=function(){
+  const M=STATE.M,PM=STATE.PM;
+  const g=groupAgg(STATE.items,i=>i.sale_type);
+  const gv=(t)=>g.find(x=>x.key===t)||{net:0,orders:0,units:0};
+  const mto=gv('MTO'),rts=gv('RTS'),tah=gv('TAH');
+  const mini=miniRow([
+    {l:'MTO Revenue',v:money(M.mtoRev),d:deltaTxt(M.mtoRev,PM.mtoRev),color:saleColor('MTO')},
+    {l:'RTS Revenue',v:money(M.rtsRev),d:deltaTxt(M.rtsRev,PM.rtsRev),color:saleColor('RTS')},
+    {l:'MTO Share',v:pctStr(M.mtoPct)},
+    {l:'RTS Share',v:pctStr(M.rtsPct)},
+    {l:'MTO AOV',v:money(mto.aov)},
+    {l:'RTS AOV',v:money(rts.aov)}
+  ]);
+  const keys=STATE.series.map(s=>s.key);
+  const trend=stackBars(keys,[
+    {name:'MTO',color:saleColor('MTO'),data:STATE.series.map(s=>s.metrics.mtoRev)},
+    {name:'RTS',color:saleColor('RTS'),data:STATE.series.map(s=>s.metrics.rtsRev)},
+    {name:'TAH',color:saleColor('TAH'),data:STATE.series.map(s=>s.metrics.tahRev)}
+  ],{height:250});
+  const mix=donut(CONFIG.SALE_TYPES.filter(t=>t!=='Other').map(t=>({label:t,value:Math.abs(gv(t).net),color:saleColor(t)})).filter(d=>d.value>0),{center:money(M.net),centerSub:'NET'});
+  // store comparison table
+  const stores=STATE.dims.store; const storeRows=stores.map(st=>{ const si=STATE.items.filter(i=>i.store===st);
+    const sg=groupAgg(si,i=>i.sale_type); const sv=t=>{const x=sg.find(y=>y.key===t);return x?x.net:0;};
+    const tot=sum(si,i=>i.net)||1;
+    return {st,mto:sv('MTO'),rts:sv('RTS'),tah:sv('TAH'),tot}; }).sort((a,b)=>b.tot-a.tot);
+  const stTable=card('MTO vs RTS by Store',`<table class="dt"><thead><tr><th>Store</th><th class="num">MTO</th><th class="num">RTS</th><th class="num">TAH</th><th class="num">MTO %</th><th class="num">RTS %</th></tr></thead><tbody>`+
+    storeRows.map(r=>`<tr><td>${esc(r.st)}</td><td class="num">${money(r.mto)}</td><td class="num">${money(r.rts)}</td><td class="num">${money(r.tah)}</td><td class="num">${pctStr(r.mto/r.tot*100)}</td><td class="num">${pctStr(r.rts/r.tot*100)}</td></tr>`).join('')+`</tbody></table>`,{});
+  const contrib=card('Sale-Type Contribution',`<table class="dt"><thead><tr><th>Type</th><th class="num">Net</th><th class="num">Orders</th><th class="num">AOV</th><th class="num">Share</th></tr></thead><tbody>`+
+    CONFIG.SALE_TYPES.map(t=>{ const x=gv(t); return `<tr><td><span class="dot" style="background:${saleColor(t)}"></span> ${t}</td><td class="num">${money(x.net)}</td><td class="num">${fmtInt(x.orders)}</td><td class="num">${money(x.aov)}</td><td class="num">${pctStr(M.net?x.net/M.net*100:0)}</td></tr>`; }).join('')+`</tbody></table>`,{});
+  const note=`<div class="banner">ⓘ Delivery/production-time & order-aging metrics require dispatch timestamps not present in Sales_overview_table. Revenue, orders, AOV, contribution & trend are exact.</div>`;
+  return secHead('Fulfilment','MTO vs RTS Intelligence','Make-to-order vs ready-to-sell — revenue, share, AOV, store split & trend')+
+    mini+note+
+    `<div class="grid g-2" style="margin-bottom:16px">${card('MTO / RTS / TAH Trend',trend,{})}${card('Fulfilment Mix',mix,{})}</div>`+
+    `<div class="grid g-2">${stTable}${contrib}</div>`;
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VIEW · RETURNS & EXCHANGE
+   ═══════════════════════════════════════════════════════════════════════ */
+VIEW.returns=function(){
+  const M=STATE.M,PM=STATE.PM; const rits=STATE.items.filter(i=>i.sale_type==='Return');
+  const mini=miniRow([
+    {l:'Return Orders',v:fmtInt(M.retOrders),d:deltaTxt(M.retOrders,PM.retOrders,-1),color:'var(--crit)'},
+    {l:'Return Rate',v:pctStr(M.returnPct),d:deltaTxt(M.returnPct,PM.returnPct,-1)},
+    {l:'Refund Amount',v:money(M.refundAmt),color:'var(--crit)'},
+    {l:'Return Net Value',v:money(M.returnAmt)},
+    {l:'Exchange %',v:STATE.caps.exchange?pctStr(M.exchangePct):'—',dc:'var(--muted)',d:STATE.caps.exchange?'':'no exchange flag'},
+    {l:'Repeat Returners',v:fmtInt([...STATE.custStats.values()].filter(c=>c.returns>1).length)}
+  ]);
+  const byStore=rank(groupAgg(STATE.items,i=>i.store).map(s=>({...s,rr:s.orders?s.ret/s.orders*100:0})),'rr').filter(s=>s.orders>3);
+  const byCat=rank(groupAgg(STATE.items,i=>i.category).map(s=>({...s,rr:s.orders?s.ret/s.orders*100:0})),'rr');
+  const byColl=rank(groupAgg(STATE.items,i=>i.collection).map(s=>({...s,rr:s.orders?s.ret/s.orders*100:0})),'rr').slice(0,8);
+  const rrBars=(arr,click)=>hbars(arr.slice(0,8).map(s=>({label:s.key,value:s.rr,key:s.key,color:s.rr>6?'#ef5350':s.rr>3?'#f2b13a':'#12b886'})),{fmt:v=>pctStr(v),click});
+  // high return customers / products
+  const hrc=rank([...STATE.custStats.values()].filter(c=>c.returns>0),'returns').slice(0,8);
+  const hrp=rank(groupAgg(rits,i=>i.style),'ret').slice(0,8);
+  const hrcCard=card('High-Return Customers',hrc.length?`<table class="dt"><thead><tr><th>Customer</th><th class="num">Returns</th><th class="num">LTV</th></tr></thead><tbody>`+hrc.map(c=>`<tr><td>${esc(c.name)}</td><td class="num">${c.returns}</td><td class="num">${money(c.monetary)}</td></tr>`).join('')+`</tbody></table>`:`<div class="empty">No repeat returns</div>`,{});
+  const hrpCard=card('High-Return Products (Style)',hrp.length?`<table class="dt"><thead><tr><th>Style</th><th class="num">Return Lines</th><th class="num">Return Value</th></tr></thead><tbody>`+hrp.map(s=>`<tr><td>${esc(s.key)}</td><td class="num">${s.ret}</td><td class="num">${money(Math.abs(s.retNet))}</td></tr>`).join('')+`</tbody></table>`:`<div class="empty">None</div>`,{});
+  // AI recs
+  const worstCat=byCat[0]; const recs=[
+    worstCat&&worstCat.rr>3?`<b>${esc(worstCat.key)}</b> has the highest return rate (${pctStr(worstCat.rr)}). Audit top SKUs for sizing/finish issues and tighten pre-dispatch QC.`:null,
+    M.returnPct>5?`Overall return rate (${pctStr(M.returnPct)}) is above the 5% comfort line — introduce a mandatory quality photo at packing and clearer PDP measurements.`:`Return rate (${pctStr(M.returnPct)}) is within tolerance — maintain QC discipline.`,
+    hrc.length?`${hrc.length} customers show repeat returns — flag for a concierge call to understand fit/expectation gaps before they churn.`:null,
+    `Model an easy-exchange (not refund) flow: converting even 30% of refunds to exchanges retains ~${money(M.refundAmt*0.3)} of value.`
+  ].filter(Boolean);
+  const aiCard=card('✦ AI Recommendations to Reduce Returns',`<ol style="margin-left:16px;font-size:12.8px;line-height:1.7;color:var(--ink-2)">`+recs.map(r=>`<li style="margin-bottom:7px">${r}</li>`).join('')+`</ol>`,{});
+  const exNote=STATE.caps.exchange?'':`<div class="banner">ⓘ Exchange & return-reason fields are not present in Sales_overview_table. Return orders, value, refund and rate breakdowns are exact; exchange analytics activate when the source exposes them.</div>`;
+  return secHead('Post-Purchase','Return &amp; Exchange Intelligence','Return volume, value, rate and drivers — with AI mitigation')+
+    mini+exNote+
+    `<div class="grid g-3" style="margin-bottom:16px">${card('Return % by Store',rrBars(byStore,'store'),{hint:'click to drill'})}${card('Return % by Category',rrBars(byCat,'category'),{})}${card('Return % by Collection',rrBars(byColl,'collection'),{})}</div>`+
+    `<div class="grid g-2" style="margin-bottom:16px">${hrcCard}${hrpCard}</div>`+
+    aiCard;
+};
+/* ═══════════════════════════════════════════════════════════════════════
+   VIEW · STORE INTELLIGENCE
+   ═══════════════════════════════════════════════════════════════════════ */
+function storeStats(){
+  const prev=new Map(groupAgg(STATE.prevItems,i=>i.store).map(g=>[g.key,g]));
+  const cr=STATE.custRef;
+  const rows=groupAgg(STATE.items,i=>i.store).map(s=>{
+    const p=prev.get(s.key); const g=p?growth(s.net,p.net):0;
+    const custIds=new Set(STATE.items.filter(i=>i.store===s.key).map(i=>i.customer_id));
+    let repeat=0; custIds.forEach(id=>{ const r=cr.get(id); if(r&&r.lifetime_orders>1)repeat++; });
+    const repPct=custIds.size?repeat/custIds.size*100:0;
+    const si=STATE.items.filter(i=>i.store===s.key); const sg=groupAgg(si,i=>i.sale_type);
+    const sv=t=>{const x=sg.find(y=>y.key===t);return x?x.net:0;};
+    const mtoP=s.net?sv('MTO')/s.net*100:0, rtsP=s.net?sv('RTS')/s.net*100:0;
+    const tgtObj=STORES.find(x=>x.s===s.key); const tgt=tgtObj?tgtObj.tgt*(diffDays(STATE.curWin.to,STATE.curWin.from)+1)/365:null;
+    const ach=tgt?s.net/tgt*100:null;
+    return {...s,g,repPct,mtoP,rtsP,retPct:s.retPct,tgt,ach}; }).sort((a,b)=>b.net-a.net);
+  const mxNet=Math.max(1,...rows.map(r=>r.net));
+  rows.forEach(r=>{ r.score=Math.round(clamp(
+    (r.net/mxNet)*45 + clamp(r.g+20,0,40)/40*20 + clamp(r.repPct,0,60)/60*20 + (100-clamp(r.retPct*5,0,100))/100*15, 0,100)); });
+  return rows;
+}
+VIEW.stores=function(){
+  const rows=storeStats(); const M=STATE.M;
+  const lead=rows.slice(0,3);
+  const board=`<div class="grid g-3" style="margin-bottom:16px">`+lead.map((r,i)=>
+    `<div class="card"><div class="pad"><div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="rank ${'r'+(i+1)}" style="width:34px;height:34px;font-size:15px">${i+1}</span>
+      <span class="pill g">Score ${r.score}</span></div>
+      <h3 style="margin:12px 0 2px;font-size:19px">${esc(r.key)}</h3>
+      <div style="font-family:var(--serif);font-size:26px;color:var(--gold)">${money(r.net)}</div>
+      <div style="font-size:11.5px;color:var(--ink-2);margin-top:6px">${deltaTxt(r.net,r.net/(1+r.g/100))} · ${fmtInt(r.orders)} orders · ${pctStr(r.repPct)} repeat</div>
+      ${r.ach!=null?`<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted)"><span>Target</span><span>${pctStr(r.ach)}</span></div><div style="background:var(--surface-3);border-radius:5px;height:7px;margin-top:3px;overflow:hidden"><div style="width:${clamp(r.ach,0,100).toFixed(0)}%;height:100%;background:${r.ach>=100?'var(--good)':r.ach>=70?'var(--gold)':'var(--warn)'}"></div></div></div>`:''}
+    </div></div>`).join('')+`</div>`;
+  const revBars=card('Store Revenue',bars(rows.map(r=>({label:r.key,value:r.net,key:r.key})),{click:'store',height:230}),{hint:'click to drill'});
+  const scoreCard=card('Performance Score',hbars(rank(rows,'score').map(r=>({label:r.key,value:r.score,key:r.key,color:r.score>=70?'#12b886':r.score>=50?'#d4af37':'#ef5350'})),{fmt:v=>v+' / 100',click:'store'}),{hint:'revenue · growth · repeat · returns'});
+  const tbl=card('Store Leaderboard',`<div class="scroll-x"><table class="dt" id="storeTable"><thead><tr>
+    <th>#</th><th>Store</th><th class="num">Revenue</th><th class="num">Growth</th><th class="num">Orders</th><th class="num">Customers</th><th class="num">Repeat %</th><th class="num">MTO %</th><th class="num">RTS %</th><th class="num">Return %</th>${rows[0].ach!=null?'<th class="num">Target</th>':''}<th class="num">Score</th>
+    </tr></thead><tbody>`+rows.map((r,i)=>`<tr><td><span class="rank ${i<3?'r'+(i+1):''}">${i+1}</span></td><td data-filter="store|${esc(r.key)}" style="cursor:pointer;color:var(--gold)">${esc(r.key)}</td>
+    <td class="num">${money(r.net)}</td><td class="num" style="color:${r.g>=0?'var(--good)':'var(--crit)'}">${(r.g>=0?'+':'')+pctStr(r.g)}</td>
+    <td class="num">${fmtInt(r.orders)}</td><td class="num">${fmtInt(r.customers)}</td><td class="num">${pctStr(r.repPct)}</td>
+    <td class="num">${pctStr(r.mtoP)}</td><td class="num">${pctStr(r.rtsP)}</td><td class="num" style="color:${r.retPct>6?'var(--crit)':'inherit'}">${pctStr(r.retPct)}</td>
+    ${r.ach!=null?`<td class="num">${pctStr(r.ach)}</td>`:''}<td class="num"><b>${r.score}</b></td></tr>`).join('')+`</tbody></table></div>`,{head:`<button class="btn" data-act="expStore" style="padding:5px 11px">⬇ Export</button>`});
+  const note=STORES.find(x=>x.s===rows[0].key)?'':`<div class="banner">ⓘ Store targets shown from a configured plan; wire real targets in the reporting layer to activate achievement %.</div>`;
+  return secHead('Retail Network','Store Intelligence','Ranking, targets, performance score & leaderboard')+
+    note+board+
+    `<div class="grid g-2" style="margin-bottom:16px">${revBars}${scoreCard}</div>`+tbl;
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VIEW · PRODUCT INTELLIGENCE
+   ═══════════════════════════════════════════════════════════════════════ */
+function styleMovement(){
+  const asOf=STATE.asOf; const out=[];
+  const winStyles=groupAgg(STATE.items,i=>i.style);
+  const wmap=new Map(winStyles.map(s=>[s.key,s]));
+  STATE.styleRef.forEach(ref=>{ const w=wmap.get(ref.style);
+    const recency=ref.last_sale_date?diffDays(asOf,ref.last_sale_date):999;
+    const units=w?w.units:0; const net=w?w.net:0;
+    let cls=recency>CONFIG.MOVEMENT.deadDays?'Dead':units>=CONFIG.MOVEMENT.fastUnits?'Fast':recency>CONFIG.MOVEMENT.slowDays?'Slow':'Steady';
+    out.push({style:ref.style,category:ref.category,metal:ref.metal,collection:ref.collection,net,units,recency,cls,
+      stock:ref.stock_qty}); });
+  return out;
+}
+VIEW.products=function(){
+  const mv=styleMovement(); const withNet=mv.filter(s=>s.net>0);
+  const top=rank(withNet,'net').slice(0,10), bottom=rank(withNet,'net',1).slice(0,10);
+  const movementCount={Fast:0,Steady:0,Slow:0,Dead:0}; mv.forEach(s=>movementCount[s.cls]++);
+  const mvDonut=donut(Object.keys(movementCount).map((k,i)=>({label:k,value:movementCount[k],color:['#12b886','#4d96ff','#f2b13a','#ef5350'][i]})),{center:fmtInt(mv.length),centerSub:'STYLES',fmt:fmtInt});
+  // ABC
+  const sorted=rank(withNet,'net'); const tot=sum(sorted,s=>s.net)||1; let cum=0; const abc={A:0,B:0,C:0},abcNet={A:0,B:0,C:0};
+  sorted.forEach(s=>{ cum+=s.net; const p=cum/tot; const cls=p<=0.8?'A':p<=0.95?'B':'C'; s.abc=cls; abc[cls]++; abcNet[cls]+=s.net; });
+  const abcTable=`<table class="dt"><thead><tr><th>Class</th><th class="num">Styles</th><th class="num">Revenue</th><th class="num">Rev Share</th><th class="num">Style Share</th></tr></thead><tbody>`+
+    ['A','B','C'].map(c=>`<tr><td><span class="pill ${c==='A'?'ok':c==='B'?'warn':'bad'}">Class ${c}</span></td><td class="num">${fmtInt(abc[c])}</td><td class="num">${money(abcNet[c])}</td><td class="num">${pctStr(abcNet[c]/tot*100)}</td><td class="num">${pctStr(abc[c]/sorted.length*100)}</td></tr>`).join('')+`</tbody></table>`;
+  // dimensional performance
+  const dimCard=(title,arr,click)=>card(title,hbars(rank(arr,'net').slice(0,7).map(x=>({label:x.key,value:x.net,key:x.key,color:click==='metal'?metalColor(x.key):undefined})),{click}),{});
+  // cross-sell (category co-occurrence within a document)
+  const docCats=new Map(); STATE.items.forEach(i=>{ if(!docCats.has(i.document_no))docCats.set(i.document_no,new Set()); docCats.get(i.document_no).add(i.category); });
+  const pair=new Map(); docCats.forEach(set=>{ const a=[...set]; for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){ const k=[a[i],a[j]].sort().join(' + '); pair.set(k,(pair.get(k)||0)+1); } });
+  const fbt=rank([...pair.entries()].map(([k,v])=>({key:k,value:v})),'value').slice(0,7);
+  const fbtCard=card('Frequently Bought Together',fbt.length?hbars(fbt.map(f=>({label:f.key,value:f.value})),{fmt:fmtInt}):`<div class="empty">Mostly single-category baskets</div>`,{hint:'category pairs per invoice'});
+  const topTable=(title,data)=>card(title,`<table class="dt"><thead><tr><th>Style</th><th>Category</th><th class="num">Revenue</th><th class="num">Units</th><th>Movement</th></tr></thead><tbody>`+
+    data.map(s=>`<tr><td>${esc(s.style)}</td><td>${esc(s.category)}</td><td class="num">${money(s.net)}</td><td class="num">${fmtInt(s.units)}</td><td><span class="pill ${s.cls==='Fast'?'ok':s.cls==='Dead'?'bad':s.cls==='Slow'?'warn':''}">${s.cls}</span></td></tr>`).join('')+`</tbody></table>`,{});
+  const deadNote=STATE.caps.inventory?'':`<div class="banner">ⓘ Movement is velocity-based (units sold & days since last sale). True dead-stock / overstock / sell-through activate when the reporting layer joins an inventory stock column.</div>`;
+  return secHead('Merchandising','Product Intelligence','Top & bottom sellers, movement, ABC/Pareto, collection & cross-sell')+
+    deadNote+
+    `<div class="grid g-2" style="margin-bottom:16px">${card('Movement Mix',mvDonut,{hint:'fast/steady/slow/dead'})}${card('ABC / Pareto Analysis',abcTable,{hint:'80/15/5 revenue rule'})}</div>`+
+    `<div class="grid g-2" style="margin-bottom:16px">${topTable('Top 10 Styles',top)}${topTable('Bottom 10 Styles',bottom)}</div>`+
+    `<div class="grid g-3" style="margin-bottom:16px">${dimCard('Category Performance',STATE.byCat,'category')}${dimCard('Collection Performance',STATE.byColl,'collection')}${dimCard('Metal Performance',groupAgg(STATE.items,i=>i.metal),'metal')}</div>`+
+    `<div class="grid g-2">${dimCard('Price-Band Performance',groupAgg(STATE.items,i=>i.price_band),'band')}${fbtCard}</div>`;
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VIEW · GEOGRAPHIC INTELLIGENCE
+   ═══════════════════════════════════════════════════════════════════════ */
+VIEW.geo=function(){
+  const states=STATE.byState, cities=STATE.byCity;
+  const regionG=rank(groupAgg(STATE.items.filter(i=>i.region&&i.region!=='Online'),i=>i.region),'net');
+  const prev=new Map(groupAgg(STATE.prevItems.filter(i=>i.state&&i.state!=='Online'),i=>i.state).map(g=>[g.key,g]));
+  const mx=Math.max(1,...states.map(s=>s.net));
+  const heat=`<div style="display:flex;flex-direction:column;gap:7px">`+states.slice(0,12).map(s=>{ const t=s.net/mx; const p=prev.get(s.key); const g=p?growth(s.net,p.net):0;
+    return `<div data-filter="state|${esc(s.key)}" style="display:grid;grid-template-columns:120px 1fr auto auto;gap:10px;align-items:center;cursor:pointer;font-size:12px">
+      <span style="color:var(--ink-2)">${esc(s.key)}</span>
+      <div style="height:20px;border-radius:5px;background:linear-gradient(90deg,rgba(212,175,55,${(0.2+t*0.8).toFixed(2)}),rgba(212,175,55,${(0.1+t*0.5).toFixed(2)}));width:${(t*100).toFixed(0)}%;min-width:4px"></div>
+      <b style="min-width:70px;text-align:right">${money(s.net)}</b>
+      <span style="min-width:56px;text-align:right;color:${g>=0?'var(--good)':'var(--crit)'};font-size:11px">${(g>=0?'▲':'▼')} ${pctStr(Math.abs(g))}</span></div>`; }).join('')+`</div>`;
+  const cityTable=card('Top Cities',`<table class="dt"><thead><tr><th>#</th><th>City</th><th class="num">Revenue</th><th class="num">Orders</th><th class="num">Customers</th><th class="num">AOV</th></tr></thead><tbody>`+
+    cities.slice(0,12).map((c,i)=>`<tr><td><span class="rank ${i<3?'r'+(i+1):''}">${i+1}</span></td><td>${esc(c.key)}</td><td class="num">${money(c.net)}</td><td class="num">${fmtInt(c.orders)}</td><td class="num">${fmtInt(c.customers)}</td><td class="num">${money(c.aov)}</td></tr>`).join('')+`</tbody></table>`,{});
+  const regionDonut=card('Revenue by Region',donut(regionG.map((r,i)=>({label:r.key,value:r.net})),{center:money(sum(regionG,r=>r.net)),centerSub:'NET'}),{});
+  const opp=cities[0];
+  const oppCard=card('✦ Geographic Opportunity',`<div style="font-size:13px;line-height:1.7;color:var(--ink-2)">
+    ${opp?`<b>${esc(opp.key)}</b> is the single highest-revenue city (${money(opp.net)}, ${fmtInt(opp.customers)} customers). `:''}
+    ${states[0]?`<b>${esc(states[0].key)}</b> leads states. `:''}Concentrate inventory depth and marketing spend where demand density and repeat rate are highest; pilot appointment-led selling in the top 3 cities to lift AOV.</div>`,{});
+  return secHead('Geography','Geographic Intelligence','State & city revenue, density and growth opportunity')+
+    `<div class="grid g-2" style="margin-bottom:16px">${card('State Revenue Heat',heat,{hint:'shade & bar = revenue · click to drill'})}${regionDonut}</div>`+
+    `<div class="grid g-2" style="margin-bottom:16px">${cityTable}${oppCard}</div>`;
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VIEW · SALES TEAM  (capability-gated: no salesperson column in source)
+   ═══════════════════════════════════════════════════════════════════════ */
+VIEW.team=function(){
+  const people=STATE.dims.person||[];
+  if(!STATE.caps.salesperson || !people.length){
+    return secHead('People','Salesperson Intelligence','Executive performance by sales executive')+
+      `<div class="card"><div class="pad" style="text-align:center;padding:50px 20px">
+        <div style="font-size:34px;margin-bottom:12px">☰</div>
+        <h3 style="font-size:20px;margin-bottom:8px">Salesperson data not in Sales_overview_table</h3>
+        <p style="color:var(--ink-2);max-width:52ch;margin:0 auto;line-height:1.7">The source reporting table has no sales-executive / owner column. Every other section is fully live; this view — leaderboard, per-exec revenue, repeat, conversion and coaching flags — activates automatically once the reporting layer joins a salesperson column. The layout below previews the experience on sample data.</p>
+      </div></div>`+ (STATE.source==='sample'? teamBody(people):'');
+  }
+  return secHead('People','Salesperson Intelligence','Revenue, customers, repeat, MTO/RTS & performance score by executive')+teamBody(people);
+};
+function teamBody(people){
+  if(!people.length) return '';
+  const cr=STATE.custRef;
+  const rows=people.map(p=>{ const pi=STATE.items.filter(i=>i.salesperson===p);
+    const net=sum(pi,i=>i.net); const orders=distinct(pi,i=>i.document_no); const custIds=new Set(pi.map(i=>i.customer_id));
+    let repeat=0; custIds.forEach(id=>{ const r=cr.get(id); if(r&&r.lifetime_orders>1)repeat++; });
+    const pg=groupAgg(pi,i=>i.sale_type); const sv=t=>{const x=pg.find(y=>y.key===t);return x?x.net:0;};
+    const ret=pi.filter(i=>i.sale_type==='Return').length;
+    return {p,net,orders,customers:custIds.size,repPct:custIds.size?repeat/custIds.size*100:0,aov:orders?net/orders:0,
+      mto:net?sv('MTO')/net*100:0,retPct:orders?ret/orders*100:0}; }).sort((a,b)=>b.net-a.net);
+  const mx=Math.max(1,...rows.map(r=>r.net));
+  rows.forEach(r=>r.score=Math.round(clamp((r.net/mx)*50+clamp(r.repPct,0,60)/60*30+(100-clamp(r.retPct*6,0,100))/100*20,0,100)));
+  const board=`<div class="grid g-3" style="margin-bottom:16px">`+rows.slice(0,3).map((r,i)=>
+    `<div class="card"><div class="pad"><div style="display:flex;justify-content:space-between;align-items:center"><span class="rank r${i+1}" style="width:34px;height:34px;font-size:15px">${i+1}</span><span class="pill g">Score ${r.score}</span></div>
+    <h3 style="margin:12px 0 2px;font-size:18px">${esc(r.p)}</h3><div style="font-family:var(--serif);font-size:24px;color:var(--gold)">${money(r.net)}</div>
+    <div style="font-size:11.5px;color:var(--ink-2);margin-top:6px">${fmtInt(r.orders)} orders · ${money(r.aov)} AOV · ${pctStr(r.repPct)} repeat</div></div></div>`).join('')+`</div>`;
+  const tbl=card('Sales Executive Leaderboard',`<div class="scroll-x"><table class="dt"><thead><tr><th>#</th><th>Executive</th><th class="num">Revenue</th><th class="num">Orders</th><th class="num">Customers</th><th class="num">AOV</th><th class="num">Repeat %</th><th class="num">MTO %</th><th class="num">Return %</th><th class="num">Score</th></tr></thead><tbody>`+
+    rows.map((r,i)=>`<tr><td><span class="rank ${i<3?'r'+(i+1):''}">${i+1}</span></td><td>${esc(r.p)}</td><td class="num">${money(r.net)}</td><td class="num">${fmtInt(r.orders)}</td><td class="num">${fmtInt(r.customers)}</td><td class="num">${money(r.aov)}</td><td class="num">${pctStr(r.repPct)}</td><td class="num">${pctStr(r.mto)}</td><td class="num">${pctStr(r.retPct)}</td><td class="num"><b>${r.score}</b></td></tr>`).join('')+`</tbody></table></div>`,{});
+  const coach=rows.filter(r=>r.score<55).slice(0,3);
+  const coachCard=coach.length?card('✦ Coaching Flags',coach.map(r=>`<div class="alert warn"><div class="ic">◎</div><div><h4>${esc(r.p)}</h4><p>Score ${r.score}/100 — ${r.repPct<20?'low repeat rate, focus on relationship selling':r.retPct>6?'elevated returns, review expectation-setting':'below-peer revenue, pair with a top performer'}.</p></div></div>`).join(''),{}):'';
+  return board+tbl+ (coach.length?`<div style="margin-top:16px">${coachCard}</div>`:'');
+}
+/* ═══════════════════════════════════════════════════════════════════════
+   AI · local grounded answer engine  (knowledge-base flavoured)
+   ═══════════════════════════════════════════════════════════════════════ */
+function localAnswer(q){
+  q=(q||'').toLowerCase(); const M=STATE.M,PM=STATE.PM; const g=growth(M.revenue,PM.revenue);
+  const movers=topMovers(); const stores=storeStats(); const mv=styleMovement();
+  const wrap=(t)=>`<div>${t}</div>`;
+  const cl=COMPARE_LABEL[STATE.compare].toLowerCase();
+  if(/(down|drop|declin|why.*sales|fall)/.test(q)&&/(sale|revenue)/.test(q)){
+    const dn=[...movers].reverse().filter(m=>m.g<0)[0]; const ws=stores.filter(s=>s.g<0)[0];
+    return wrap(`Net revenue is <b class="k">${money(M.revenue)}</b>, ${g>=0?'up':'down'} <b class="k">${pctStr(Math.abs(g))}</b> vs ${cl}. ${dn?`The biggest drag is <b class="k">${esc(dn.key)}</b> (${dn.g.toFixed(0)}%).`:''} ${ws?`<b class="k">${esc(ws.key)}</b> is the softest store (${ws.g.toFixed(0)}%).`:''} Discount is ${pctStr(M.discountPct)} of gross and returns ${pctStr(M.returnPct)} — both worth checking as margin/volume leaks.`);
+  }
+  if(/(up|increase|grew|why.*revenue|spike)/.test(q)&&/(sale|revenue|up)/.test(q)){
+    const up=movers.filter(m=>m.g>0)[0];
+    return wrap(`Revenue moved ${g>=0?'up':'down'} <b class="k">${pctStr(Math.abs(g))}</b> vs ${cl}. ${up?`<b class="k">${esc(up.key)}</b> led the gain (+${up.g.toFixed(0)}%).`:''} AOV is ${money(M.aov)} and ${fmtInt(M.newCustomers)} new customers were acquired — a mix of basket size and acquisition.`);
+  }
+  if(/store.*(attention|help|worst|focus|drop)/.test(q)||/which store/.test(q)){
+    const w=stores.filter(s=>s.score<60).slice(0,3);
+    return wrap(`Stores needing attention (lowest performance score): ${w.length?w.map(s=>`<b class="k">${esc(s.key)}</b> (${s.score}/100, ${s.g>=0?'+':''}${s.g.toFixed(0)}%)`).join(', '):'none — all above 60/100'}. Best performer: <b class="k">${esc(stores[0].key)}</b> (${stores[0].score}/100).`);
+  }
+  if(/promot|which product.*(sell|push)|best product/.test(q)){
+    const fast=rank(mv.filter(s=>s.cls==='Fast'&&s.net>0),'net').slice(0,3);
+    return wrap(`Promote your fast-movers with healthy revenue: ${fast.map(s=>`<b class="k">${esc(s.style)}</b> (${esc(s.category)}, ${money(s.net)})`).join(', ')}. Category momentum favours <b class="k">${esc(movers[0].key)}</b>.`);
+  }
+  if(/discontinu|dead|slow.*product|stop selling/.test(q)){
+    const dead=rank(mv.filter(s=>s.cls==='Dead'),'recency',1).slice(0,4);
+    return wrap(`Candidates to discontinue / clear (no sale in ${CONFIG.MOVEMENT.deadDays}+ days): ${dead.length?dead.map(s=>`<b class="k">${esc(s.style)}</b> (${s.recency}d, ${esc(s.category)})`).join(', '):'none flagged dead in this window'}. Bundle or mark down before capital ages further.`);
+  }
+  if(/(which )?customer.*(contact|call|reach|risk)/.test(q)||/win.?back/.test(q)){
+    const risk=rank([...STATE.custStats.values()].filter(c=>c.seg==='At Risk'||c.seg==='VIP'),'monetary').slice(0,4);
+    return wrap(`Prioritise these high-value / at-risk customers for a concierge call: ${risk.map(c=>`<b class="k">${esc(c.name)}</b> (${c.seg}, ${money(c.monetary)}, ${c.recency}d)`).join(', ')}.`);
+  }
+  if(/salesperson|executive.*coach|team.*coach/.test(q)){
+    if(!STATE.caps.salesperson&&STATE.source!=='sample') return wrap(`Salesperson data isn't in Sales_overview_table, so per-executive coaching can't be computed live. Add a sales-executive column to the reporting layer to unlock it.`);
+    return wrap(`See the <b class="k">Sales Team</b> tab — executives below a 55 performance score are flagged for coaching, with the specific gap (repeat rate, returns or revenue) called out.`);
+  }
+  if(/increase|grow.*(sale|revenue|next month)|how.*more/.test(q)){
+    return wrap(`Three highest-leverage moves right now: (1) lift repeat rate from <b class="k">${pctStr(M.repeatPct)}</b> with 30/90-day re-engagement, (2) push <b class="k">${esc(movers[0].key)}</b> where momentum is strongest, (3) protect margin by trimming discount from <b class="k">${pctStr(M.discountPct)}</b>. Combined upside modelled at ~${money(M.revenue*0.08)}.`);
+  }
+  if(/inventory|stock|which store.*inventory/.test(q)){
+    return wrap(`On velocity, route fast-movers toward the highest-demand city (<b class="k">${esc(STATE.byCity[0]?.key||'—')}</b>) and top store (<b class="k">${esc(stores[0].key)}</b>). True stock-level allocation activates once the reporting layer joins an inventory column.`);
+  }
+  if(/city.*(opportunity|highest|best)/.test(q)){
+    return wrap(`<b class="k">${esc(STATE.byCity[0]?.key||'—')}</b> has the highest revenue (${money(STATE.byCity[0]?.net||0)}). Top 3: ${STATE.byCity.slice(0,3).map(c=>esc(c.key)).join(', ')}.`);
+  }
+  if(/return.*(reduce|lower|fix)|reduce return/.test(q)){
+    const wc=rank(groupAgg(STATE.items,i=>i.category).map(s=>({...s,rr:s.orders?s.ret/s.orders*100:0})),'rr')[0];
+    return wrap(`Return rate is <b class="k">${pctStr(M.returnPct)}</b> (${money(M.refundAmt)} refunded). ${wc&&wc.rr>3?`<b class="k">${esc(wc.key)}</b> returns most.`:''} Tighten pre-dispatch QC, add packing photos and clearer PDP sizing, and convert refunds to easy exchanges. See the <b class="k">Returns</b> tab for the full plan.`);
+  }
+  if(/repeat|loyal|retention/.test(q)){
+    return wrap(`Repeat rate is <b class="k">${pctStr(M.repeatPct)}</b> and retention <b class="k">${pctStr(M.retentionPct)}</b>. Nurture the ${fmtInt(M.newCustomers)} new buyers with a structured 30/90-day journey and reward the ${fmtInt(M.repeatCustomers)} repeat customers with early access to new collections.`);
+  }
+  if(/marketing|spend|where.*invest|budget/.test(q)){
+    return wrap(`Concentrate spend where return-on-attention is proven: <b class="k">${esc(STATE.byCity[0]?.key||'—')}</b> and <b class="k">${esc(movers[0].key)}</b>. Defend the base with retention (repeat ${pctStr(M.repeatPct)}) before buying new acquisition.`);
+  }
+  if(/brief|summary|today|overview/.test(q)) return wrap(ceoBriefing());
+  // default
+  return wrap(`I can answer on revenue drivers, stores needing attention, products to promote or discontinue, customers to contact, returns, retention, city opportunity and marketing focus — grounded on your current filters (${money(M.revenue)} net, ${fmtInt(M.orders)} orders). Try one of the suggestions below.`);
+}
+const AI_PRESETS=['Why are sales down today?','Which stores need attention?','Which products should we promote?','Which products should we discontinue?','Which customers should we contact?','How can we increase sales next month?','How can returns be reduced?','Which city has the highest opportunity?'];
+
+function reportText(kind){
+  const M=STATE.M,PM=STATE.PM; const g=growth(M.revenue,PM.revenue); const acts=generateActions(); const movers=topMovers();
+  const H=(t)=>`<div style="font-family:var(--serif);font-size:16px;color:var(--gold);margin:14px 0 6px">${t}</div>`;
+  const li=(a)=>`<li style="margin-bottom:5px">${a}</li>`;
+  let body=`<div style="font-size:12.8px;line-height:1.7;color:var(--ink-2)">`;
+  body+=`<div style="font-size:11px;color:var(--muted)">Lucira Jewelry · ${kind} · ${STATE.curWin.from} → ${STATE.curWin.to} · vs ${COMPARE_LABEL[STATE.compare]}</div>`;
+  body+=H('Performance Headline');
+  body+=`Net revenue <b style="color:var(--ink)">${money(M.revenue)}</b> (${g>=0?'+':''}${pctStr(g)}), ${fmtInt(M.orders)} orders, AOV ${money(M.aov)}, ${fmtInt(M.customers)} customers (${fmtInt(M.newCustomers)} new), repeat ${pctStr(M.repeatPct)}, return ${pctStr(M.returnPct)}.`;
+  body+=H('What Moved');
+  body+=`<ul style="margin-left:16px">`+movers.slice(0,3).map(m=>li(`<b>${esc(m.key)}</b>: ${money(m.net)} (${m.g>=0?'+':''}${m.g.toFixed(0)}%)`)).join('')+`</ul>`;
+  body+=H('Fulfilment & Customers');
+  body+=`MTO ${pctStr(M.mtoPct)} · RTS ${pctStr(M.rtsPct)} of net. CLV ${money(M.clv)}. Retention ${pctStr(M.retentionPct)}.`;
+  body+=H('Recommended Actions');
+  body+=`<ol style="margin-left:16px">`+acts.slice(0,kind.includes('Board')?5:3).map(a=>li(`<b>${esc(a.issue)}</b> — ${esc(a.rec)} <span style="color:var(--gold)">(${esc(a.owner)}, impact ${esc(a.revImpact)}, ROI ${esc(a.roi)})</span>`)).join('')+`</ol>`;
+  body+=`</div>`;
+  return body;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VIEW · AI EXECUTIVE ASSISTANT
+   ═══════════════════════════════════════════════════════════════════════ */
+VIEW.ai=function(){
+  const presets=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">`+AI_PRESETS.map(p=>`<button class="btn" data-ask="${esc(p)}">${esc(p)}</button>`).join('')+`</div>`;
+  const out=`<div id="aiOut" class="card"><div class="pad"><div style="font-size:13px;line-height:1.7;color:var(--ink-2)">${localAnswer('brief')}</div></div></div>`;
+  const reports=`<div class="grid g-4" style="margin:16px 0">`+[
+    ['Daily CEO Briefing','brief','◈'],['Weekly Executive Report','Weekly Executive Report','▤'],
+    ['Monthly Board Summary','Monthly Board Summary','◆'],['Action Plan','Action Plan','❢']
+  ].map(([lab,kind,ic])=>`<div class="navcard" data-report="${esc(kind)}"><span class="ic">${ic}</span><h4>${esc(lab)}</h4><p>Generate & export</p><span class="arw">→</span></div>`).join('')+`</div>`;
+  const kb=card('Knowledge Base',`<div style="display:flex;flex-wrap:wrap;gap:7px">`+
+    ['Luxury Jewellery Business','Retail Analytics','Customer Behaviour','Pricing Strategy','MTO / RTS Process','Store Operations','Retention Strategy','Cross-Sell','Revenue Optimization','Executive Reporting','Business Forecasting','Inventory Planning'].map(k=>`<span class="pill g">${k}</span>`).join('')+
+    `</div><p style="font-size:12px;color:var(--muted);margin-top:12px">The assistant grounds every answer on your live filtered data and Lucira's luxury-retail playbook. Answers stay in-browser; connect the reporting-layer <code>/ai</code> endpoint (Gemini) for open-ended generation.</p>`,{});
+  return secHead('Copilot','AI Executive Assistant','Ask anything · generate CEO / board reports & action plans')+
+    presets+out+
+    secHead('Reports','One-Click Executive Reports','Branded, filter-aware, export to PDF / deck')+reports+kb;
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VIEW · ALERTS & EXECUTIVE ACTION CENTER
+   ═══════════════════════════════════════════════════════════════════════ */
+VIEW.actions=function(){
+  const alerts=generateAlerts(); const acts=generateActions();
+  const alertCard=card('Smart Alerts',`<div style="display:flex;flex-direction:column;gap:10px">`+(alerts.length?alerts.map(alertRow).join(''):`<div class="empty">No alerts.</div>`)+`</div>`,{hint:alerts.length+' signals'});
+  const prio={High:'bad',Medium:'warn',Low:'ok'};
+  const actList=acts.map(a=>`<div class="action">
+    <div class="top"><span class="pill ${prio[a.priority]||''}">${esc(a.priority)} priority</span><h4>${esc(a.issue)}</h4><span class="pill g">ROI ${esc(a.roi)}</span></div>
+    <div class="kv">
+      <div><b>Root Cause</b>${esc(a.cause)}</div>
+      <div><b>Recommendation</b>${esc(a.rec)}</div>
+      <div><b>Business Impact</b>${esc(a.impact)}</div>
+      <div><b>Expected Revenue</b>${esc(a.revImpact)}</div>
+      <div><b>Customer Impact</b>${esc(a.custImpact)}</div>
+      <div><b>Owner</b>${esc(a.owner)}</div>
+      <div><b>Deadline</b>${esc(a.deadline)}</div>
+      <div><b>Status</b><span class="pill warn">${esc(a.status)}</span></div>
+    </div></div>`).join('');
+  return secHead('Command','Alerts &amp; Executive Action Center','Auto-detected signals → issue, root cause, recommendation, impact, owner & ROI')+
+    `<div style="margin-bottom:16px">${alertCard}</div>`+
+    secHead('Action Center','Prioritised Executive Actions','')+ (acts.length?actList:`<div class="empty">No actions.</div>`);
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VIEW · REPORTS & DATA  (detailed table, validation, exports)
+   ═══════════════════════════════════════════════════════════════════════ */
+let TBL={page:0,size:50,sort:'date',dir:-1,q:''};
+function detailRows(){ let r=STATE.items; if(TBL.q){ const q=TBL.q.toLowerCase();
+  r=r.filter(i=>(i.customer_name||'').toLowerCase().includes(q)||(i.document_no||'').toLowerCase().includes(q)||(i.sku||'').toLowerCase().includes(q)||(i.style||'').toLowerCase().includes(q)||(i.category||'').toLowerCase().includes(q)); }
+  return [...r].sort((a,b)=>{ const x=a[TBL.sort],y=b[TBL.sort]; const c=(x<y?-1:x>y?1:0); return c*TBL.dir; }); }
+VIEW.reports=function(){
+  const exp=`<div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:16px">
+    <button class="btn gold" data-act="expCSV">⬇ CSV</button>
+    <button class="btn" data-act="expXLS">⬇ Excel</button>
+    <button class="btn" data-act="expPDF">⬇ PDF (print)</button>
+    <button class="btn" data-act="expDeck">⬇ Board Deck</button></div>`;
+  const V=STATE.validation; const M=STATE.M;
+  // reconciliation across granularities
+  const granTot=(g)=>{ const kf=bucketKeyFn(g); const m=new Map(); STATE.items.forEach(i=>m.set(kf(i.date),(m.get(kf(i.date))||0)+i.gross)); return sum([...m.values()]); };
+  const grand=sum(STATE.items,i=>i.gross);
+  const recon=['day','week','month','quarter','year'].map(g=>{ const t=granTot(g); const ok=Math.abs(t-grand)<=Math.max(1,Math.abs(grand)*1e-6);
+    return `<tr><td>${titleCase(g)}ly</td><td class="num">${moneyFull(t)}</td><td>${ok?'<span class="pill ok">MATCH</span>':'<span class="pill bad">DIFF</span>'}</td></tr>`; }).join('');
+  const stRecon=CONFIG.SALE_TYPES.map(t=>{ const v=sum(STATE.items.filter(i=>i.sale_type===t),i=>i.gross); return `<tr><td><span class="dot" style="background:${saleColor(t)}"></span> ${t}</td><td class="num">${moneyFull(v)}</td></tr>`; }).join('');
+  const valCard=card('Data Validation &amp; Reconciliation',`
+    <div class="stat-row" style="margin-bottom:14px">
+      <div class="mini"><div class="l">Raw Rows</div><div class="v">${fmtInt(V.raw_rows)}</div></div>
+      <div class="mini"><div class="l">Deduped Rows</div><div class="v">${fmtInt(V.deduped_rows)}</div><div class="d">${fmtInt(V.raw_rows-V.deduped_rows)} exact dupes removed</div></div>
+      <div class="mini"><div class="l">Gross (deduped)</div><div class="v">${money(V.returned_gross)}</div></div>
+      <div class="mini"><div class="l">Net = Gross ÷ ${GST}</div><div class="v">${money(V.returned_gross/GST)}</div></div>
+    </div>
+    <div class="grid g-2">
+      <div><div class="ct"><h3 style="font-size:14px">Granularity Reconciliation</h3></div><table class="dt"><thead><tr><th>Grain</th><th class="num">Σ Gross</th><th>Status</th></tr></thead><tbody>${recon}</tbody></table><p style="font-size:10.5px;color:var(--muted);margin-top:8px">Every grain must sum to the grand total ${moneyFull(grand)}.</p></div>
+      <div><div class="ct"><h3 style="font-size:14px">Sale-Type Reconciliation</h3></div><table class="dt"><thead><tr><th>Type</th><th class="num">Σ Gross</th></tr></thead><tbody>${stRecon}</tbody></table><p style="font-size:10.5px;color:var(--muted);margin-top:8px">Dedup key: ${esc(V.dedup_key)}. Returns are negative gross.</p></div>
+    </div>`,{hint:'single source of truth: Sales_overview_table'});
+  // detail table
+  const rows=detailRows(); const total=rows.length; const pages=Math.max(1,Math.ceil(total/TBL.size));
+  TBL.page=clamp(TBL.page,0,pages-1); const slice=rows.slice(TBL.page*TBL.size,(TBL.page+1)*TBL.size);
+  const cols=[['date','Date'],['document_no','Invoice'],['customer_name','Customer'],['category','Category'],['style','Style'],['sale_type','Type'],['qty','Qty',1],['gross','Gross',1],['net','Net',1],['discount','Discount',1],['net_weight','Net Wt',1],['store','Store']];
+  const head=cols.map(c=>`<th class="${c[2]?'num':''}" data-sortcol="${c[0]}">${esc(c[1])}${TBL.sort===c[0]?(TBL.dir<0?' ▼':' ▲'):''}</th>`).join('');
+  const body=slice.map(i=>`<tr>
+    <td>${i.date}</td><td>${esc(i.document_no)}</td><td>${esc(trunc(i.customer_name,18))}</td><td>${esc(i.category)}</td><td>${esc(i.style)}</td>
+    <td><span class="pill" style="color:${saleColor(i.sale_type)}">${i.sale_type}</span></td>
+    <td class="num">${fmtNum(i.qty,0)}</td><td class="num">${moneyFull(i.gross)}</td><td class="num">${moneyFull(i.net)}</td>
+    <td class="num">${moneyFull(i.discount)}</td><td class="num">${grams(i.net_weight)}</td><td>${esc(i.store)}</td></tr>`).join('');
+  const tblCard=card('Detailed Sales',`
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <input class="inp" id="tblSearch" placeholder="Search invoice, customer, style…" value="${esc(TBL.q)}" style="flex:1;min-width:180px">
+      <span style="font-size:11.5px;color:var(--muted)">${fmtInt(total)} rows</span></div>
+    <div class="scroll-x"><table class="dt"><thead><tr>${head}</tr></thead><tbody>${body||`<tr><td colspan="12" class="empty">No rows</td></tr>`}</tbody></table></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+      <button class="btn" data-act="pgPrev" ${TBL.page===0?'disabled style="opacity:.4"':''}>← Prev</button>
+      <span style="font-size:12px;color:var(--muted)">Page ${TBL.page+1} / ${pages}</span>
+      <button class="btn" data-act="pgNext" ${TBL.page>=pages-1?'disabled style="opacity:.4"':''}>Next →</button></div>`,{head:`<button class="btn" data-act="expCSV" style="padding:5px 11px">⬇ CSV</button>`});
+  return secHead('Reports','Reports &amp; Data','Branded exports, the detailed order-line table, and full reconciliation')+
+    exp+valCard+`<div style="margin-top:16px">${tblCard}</div>`;
+};
+/* ═══════════════════════════════════════════════════════════════════════
+   EXPORTS
+   ═══════════════════════════════════════════════════════════════════════ */
+function dl(name,content,mime){ const b=new Blob([content],{type:mime}); const u=URL.createObjectURL(b);
+  const a=document.createElement('a'); a.href=u; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(u),1500); toast('Exported '+name); }
+function csvEsc(v){ v=String(v==null?'':v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function exportCSV(){ const cols=['date','document_no','customer_id','customer_name','city','state','category','collection','metal','price_band','sale_type','qty','gross','net','discount','net_weight','store','channel'];
+  const lines=[cols.join(',')]; STATE.items.forEach(i=>lines.push(cols.map(c=>csvEsc(i[c])).join(',')));
+  dl('lucira-sales_'+STATE.curWin.from+'_'+STATE.curWin.to+'.csv',lines.join('\n'),'text/csv'); }
+function exportXLS(){ const cols=['Date','Invoice','Customer','Category','Collection','Metal','Type','Qty','Gross','Net','Discount','Net Wt','Store'];
+  const rowsH=cols.map(c=>`<Cell><Data ss:Type="String">${esc(c)}</Data></Cell>`).join('');
+  const body=STATE.items.map(i=>`<Row>${[['String',i.date],['String',i.document_no],['String',i.customer_name],['String',i.category],['String',i.collection],['String',i.metal],['String',i.sale_type],['Number',i.qty],['Number',i.gross],['Number',Math.round(i.net)],['Number',i.discount],['Number',i.net_weight],['String',i.store]].map(([t,v])=>`<Cell><Data ss:Type="${t}">${esc(v)}</Data></Cell>`).join('')}</Row>`).join('');
+  const xml=`<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Lucira Sales"><Table><Row>${rowsH}</Row>${body}</Table></Worksheet></Workbook>`;
+  dl('lucira-sales_'+STATE.curWin.from+'_'+STATE.curWin.to+'.xls',xml,'application/vnd.ms-excel'); }
+function exportGeneric(name,cols,data){ const lines=[cols.map(c=>c[1]).join(',')];
+  data.forEach(r=>lines.push(cols.map(c=>csvEsc(typeof c[2]==='function'?c[2](r):r[c[0]])).join(','))); dl(name,lines.join('\n'),'text/csv'); }
+function exportDeck(){
+  const M=STATE.M,PM=STATE.PM; const g=growth(M.revenue,PM.revenue); const movers=topMovers(); const acts=generateActions();
+  const slide=(inner)=>`<section style="width:960px;min-height:540px;margin:0 auto 24px;padding:48px 56px;box-sizing:border-box;background:#0d0d10;color:#f4f1ea;border-radius:14px;border:1px solid rgba(212,175,55,.25);page-break-after:always;font-family:Georgia,serif">${inner}</section>`;
+  const kpi=(l,v,d)=>`<div style="display:inline-block;width:30%;margin:0 1% 18px;vertical-align:top"><div style="font-size:13px;color:#8a8272;letter-spacing:1px;text-transform:uppercase">${l}</div><div style="font-size:30px;color:#d4af37;margin-top:4px">${v}</div><div style="font-size:12px;color:#b9b6ad">${d||''}</div></div>`;
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Lucira Board Deck</title></head><body style="margin:0;background:#08080a;padding:24px 0;font-family:Georgia,serif">`+
+    slide(`<div style="font-size:12px;letter-spacing:4px;color:#d4af37;text-transform:uppercase">Lucira Jewelry</div><h1 style="font-size:46px;margin:80px 0 8px">Sales Intelligence<br>Executive Briefing</h1><div style="color:#b9b6ad;font-size:16px">${STATE.curWin.from} → ${STATE.curWin.to} · vs ${COMPARE_LABEL[STATE.compare]}</div><div style="position:absolute"></div>`)+
+    slide(`<h2 style="color:#d4af37;font-size:30px;margin-bottom:24px">Performance Snapshot</h2>${kpi('Net Revenue',money(M.revenue),(g>=0?'▲ ':'▼ ')+pctStr(Math.abs(g)))}${kpi('Orders',fmtInt(M.orders))}${kpi('AOV',money(M.aov))}${kpi('Customers',fmtInt(M.customers),fmtInt(M.newCustomers)+' new')}${kpi('Repeat Rate',pctStr(M.repeatPct))}${kpi('Return Rate',pctStr(M.returnPct))}${kpi('MTO / RTS',pctStr(M.mtoPct)+' / '+pctStr(M.rtsPct))}${kpi('CLV',money(M.clv))}${kpi('Refunds',money(M.refundAmt))}`)+
+    slide(`<h2 style="color:#d4af37;font-size:30px;margin-bottom:24px">What Moved</h2><ul style="font-size:20px;line-height:1.9">`+movers.slice(0,5).map(m=>`<li><b>${esc(m.key)}</b> — ${money(m.net)} (${m.g>=0?'+':''}${m.g.toFixed(0)}%)</li>`).join('')+`</ul>`)+
+    slide(`<h2 style="color:#d4af37;font-size:30px;margin-bottom:24px">Recommended Actions</h2><ol style="font-size:17px;line-height:1.7">`+acts.map(a=>`<li style="margin-bottom:12px"><b>${esc(a.issue)}</b><br><span style="color:#b9b6ad;font-size:15px">${esc(a.rec)} — ${esc(a.owner)}, ROI ${esc(a.roi)}</span></li>`).join('')+`</ol>`)+
+    `</body></html>`;
+  dl('lucira-board-deck_'+STATE.asOf+'.html',html,'text/html');
+}
+const viewAction={
+  expCSV:exportCSV, expXLS:exportXLS, expDeck:exportDeck,
+  expPDF:()=>window.print(),
+  pgPrev:()=>{ TBL.page--; render(); }, pgNext:()=>{ TBL.page++; render(); },
+  expCust:()=>exportGeneric('lucira-top-customers.csv',[['name','Customer'],['seg','Segment'],['freq','Orders'],['monetary','LTV'],['avgBasket','AvgBasket',r=>Math.round(r.avgBasket)],['recency','RecencyDays'],['prefCat','PrefCategory'],['prefStore','PrefStore']],rank([...STATE.custStats.values()],'monetary').slice(0,100)),
+  expStore:()=>exportGeneric('lucira-stores.csv',[['key','Store'],['net','Revenue'],['g','GrowthPct',r=>r.g.toFixed(1)],['orders','Orders'],['customers','Customers'],['repPct','RepeatPct',r=>r.repPct.toFixed(1)],['retPct','ReturnPct',r=>r.retPct.toFixed(1)],['score','Score']],storeStats()),
+  copyBrief:()=>{ const t=document.querySelector('#main .card').innerText||''; navigator.clipboard&&navigator.clipboard.writeText(ceoBriefing().replace(/<[^>]+>/g,'')); toast('Briefing copied'); }
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   COPILOT
+   ═══════════════════════════════════════════════════════════════════════ */
+function cpMsg(html,who){ const b=document.getElementById('cpBody'); const d=document.createElement('div');
+  d.className='msg '+who; d.innerHTML=html; b.appendChild(d); b.scrollTop=b.scrollHeight; }
+function cpAsk(q){ cpMsg(esc(q),'u'); setTimeout(()=>cpMsg(localAnswer(q),'a'),160); }
+function initCopilot(){
+  document.getElementById('cpBody').innerHTML='';
+  cpMsg(`Good ${dayPart()} — I'm your Lucira Executive Assistant. Ask about revenue, stores, products, customers or returns, or pick a prompt below.`,'a');
+  document.getElementById('cpSug').innerHTML=AI_PRESETS.slice(0,4).map(p=>`<button data-cpq="${esc(p)}">${esc(trunc(p,26))}</button>`).join('');
+  document.querySelectorAll('#cpSug [data-cpq]').forEach(b=>b.onclick=()=>cpAsk(b.getAttribute('data-cpq')));
+}
+function dayPart(){ const h=new Date().getHours(); return h<12?'morning':h<17?'afternoon':'evening'; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FILTER DRAWER
+   ═══════════════════════════════════════════════════════════════════════ */
+const RANGES=[['today','Today'],['yesterday','Yesterday'],['7d','Last 7 days'],['30d','Last 30 days'],['90d','Last 90 days'],['thisweek','This week'],['mtd','This month'],['qtd','This quarter'],['ytd','This year'],['12m','Last 12 months'],['all','All time'],['custom','Custom range']];
+function opt(v,cur){ return `<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v||'All')}</option>`; }
+function buildDrawer(){
+  const f=STATE.filters; const sel=(id,label,vals,cur)=>`<div class="fld"><label>${label}</label><select class="inp" id="${id}">${['',...vals].map(v=>opt(v,cur)).join('')}</select></div>`;
+  document.getElementById('drawerBody').innerHTML=`
+    <div class="fld"><label>Date Range</label><select class="inp" id="f_range">${RANGES.map(r=>`<option value="${r[0]}" ${f.range===r[0]?'selected':''}>${r[1]}</option>`).join('')}</select></div>
+    <div class="two" id="customWrap" style="display:${f.range==='custom'?'grid':'none'}">
+      <div class="fld"><label>From</label><input type="date" class="inp" id="f_from" value="${f.from||''}"></div>
+      <div class="fld"><label>To</label><input type="date" class="inp" id="f_to" value="${f.to||''}"></div></div>
+    <div class="fld"><label>Compare Against</label><select class="inp" id="f_compare">${Object.keys(COMPARE_LABEL).map(k=>`<option value="${k}" ${STATE.compare===k?'selected':''}>${COMPARE_LABEL[k]}</option>`).join('')}</select></div>
+    ${sel('f_category','Category',STATE.dims.category,f.category)}
+    ${sel('f_collection','Collection',STATE.dims.collection,f.collection)}
+    ${sel('f_metal','Metal',STATE.dims.metal,f.metal)}
+    ${sel('f_band','Price Band',STATE.dims.band,f.band)}
+    ${sel('f_saletype','Sale Type',STATE.dims.saletype,f.saletype)}
+    ${sel('f_store','Store',STATE.dims.store,f.store)}
+    ${sel('f_channel','Channel',STATE.dims.channel,f.channel)}
+    ${sel('f_ctype','Customer Type',STATE.dims.ctype,f.ctype)}
+    ${sel('f_state','State',STATE.dims.state,f.state)}
+    <div class="fld"><label>Global Search</label><input class="inp" id="f_search" placeholder="customer / invoice / style / sku" value="${esc(f.search)}"></div>`;
+  document.getElementById('f_range').addEventListener('change',e=>{ document.getElementById('customWrap').style.display=e.target.value==='custom'?'grid':'none'; });
+}
+function syncDrawer(){ buildDrawer(); }
+function readDrawer(){ const g=id=>document.getElementById(id); const f=STATE.filters;
+  f.range=g('f_range').value; f.from=g('f_from')?g('f_from').value:f.from; f.to=g('f_to')?g('f_to').value:f.to;
+  STATE.compare=g('f_compare').value;
+  f.category=g('f_category').value; f.collection=g('f_collection').value; f.metal=g('f_metal').value;
+  f.band=g('f_band').value; f.saletype=g('f_saletype').value; f.store=g('f_store').value;
+  f.channel=g('f_channel').value; f.ctype=g('f_ctype').value; f.state=g('f_state').value; f.search=g('f_search').value.trim();
+}
+function openDrawer(){ buildDrawer(); document.getElementById('drawer').classList.add('on'); document.getElementById('scrim').classList.add('on'); }
+function closeDrawer(){ document.getElementById('drawer').classList.remove('on'); document.getElementById('scrim').classList.remove('on'); }
+function resetFilters(){ STATE.filters={range:'12m',from:null,to:null,category:'',collection:'',metal:'',band:'',saletype:'',store:'',ctype:'',channel:'',state:'',search:''}; STATE.compare='prev'; STATE.drill=null; buildDrawer(); render(); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SORT + TOAST + THEME + CLOCK
+   ═══════════════════════════════════════════════════════════════════════ */
+function sortTable(th){ const c=th.getAttribute('data-sortcol'); if(TBL.sort===c)TBL.dir*=-1; else{TBL.sort=c;TBL.dir=-1;} TBL.page=0; render(); }
+let toastT; function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2200); }
+function setTheme(t){ document.documentElement.setAttribute('data-theme',t); try{localStorage.setItem('lucira_theme',t);}catch(e){} refreshThemeColors(); if(STATE.items.length)render(); }
+function tickClock(){ const d=new Date();
+  document.getElementById('clkDate').textContent=d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('clkTime').textContent=d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' · IST'; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   BOOT
+   ═══════════════════════════════════════════════════════════════════════ */
+function cycleCompare(){ const ks=Object.keys(COMPARE_LABEL); STATE.compare=ks[(ks.indexOf(STATE.compare)+1)%ks.length]; toast('Compare: '+COMPARE_LABEL[STATE.compare]); render(); }
+function bindEvents(){
+  document.getElementById('btnFilter').onclick=openDrawer;
+  document.getElementById('btnDrawerClose').onclick=closeDrawer;
+  document.getElementById('scrim').onclick=closeDrawer;
+  document.getElementById('btnApply').onclick=()=>{ readDrawer(); closeDrawer(); render(); };
+  document.getElementById('btnReset').onclick=resetFilters;
+  document.getElementById('btnTheme').onclick=()=>setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
+  document.getElementById('btnCompare').onclick=cycleCompare;
+  document.getElementById('btnFull').onclick=()=>{ if(!document.fullscreenElement)document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); else document.exitFullscreen&&document.exitFullscreen(); };
+  document.getElementById('fab').onclick=()=>{ const c=document.getElementById('copilot'); c.classList.toggle('on'); if(c.classList.contains('on')&&!c.dataset.init){ initCopilot(); c.dataset.init=1; } };
+  document.getElementById('cpClose').onclick=()=>document.getElementById('copilot').classList.remove('on');
+  const send=()=>{ const inp=document.getElementById('cpInput'); const q=inp.value.trim(); if(!q)return; inp.value=''; cpAsk(q); };
+  document.getElementById('cpSend').onclick=send;
+  document.getElementById('cpInput').addEventListener('keydown',e=>{ if(e.key==='Enter')send(); });
+  // delegated dynamic controls
+  document.getElementById('main').addEventListener('click',e=>{
+    const ask=e.target.closest('[data-ask]'); if(ask){ const out=document.getElementById('aiOut'); if(out)out.querySelector('.pad').firstChild.innerHTML=localAnswer(ask.getAttribute('data-ask')); return; }
+    const rep=e.target.closest('[data-report]'); if(rep){ const kind=rep.getAttribute('data-report'); const out=document.getElementById('aiOut');
+      if(out){ out.querySelector('.pad').firstChild.innerHTML=reportText(kind==='brief'?'Daily CEO Briefing':kind); out.scrollIntoView({behavior:'smooth',block:'center'}); toast('Generated: '+(kind==='brief'?'Daily CEO Briefing':kind)); } return; }
+    const cmp=e.target.closest('[data-cmp]'); if(cmp){ STATE.compare=cmp.getAttribute('data-cmp'); render(); return; }
+  });
+  document.getElementById('main').addEventListener('input',e=>{
+    if(e.target.id==='tblSearch'){ TBL.q=e.target.value; TBL.page=0; const cur=e.target.selectionStart; render();
+      const s=document.getElementById('tblSearch'); if(s){ s.focus(); s.setSelectionRange(cur,cur); } } });
+  document.querySelectorAll('#tabs').forEach(n=>n.addEventListener('click',e=>{ const t=e.target.closest('[data-tab]'); if(t)setTab(t.getAttribute('data-tab')); }));
+  window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(h&&TABS.find(t=>t.id===h)&&h!==STATE.tab){ STATE.tab=h; render(); } });
+  document.addEventListener('keydown',e=>{ if(e.target.matches('input,select,textarea'))return;
+    if(e.key==='f'){ e.preventDefault(); openDrawer(); } else if(e.key==='t'){ setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'); }
+    else if(e.key==='c'){ cycleCompare(); } else if(e.key==='Escape'){ closeDrawer(); document.getElementById('copilot').classList.remove('on'); }
+    else if(/^[1-9]$/.test(e.key)){ const t=TABS[+e.key-1]; if(t)setTab(t.id); } });
+}
+async function boot(){
+  try{ const t=localStorage.getItem('lucira_theme'); if(t)document.documentElement.setAttribute('data-theme',t); }catch(e){}
+  refreshThemeColors(); tickClock(); setInterval(tickClock,1000*30);
+  const h=location.hash.slice(1); if(h&&TABS.find(t=>t.id===h))STATE.tab=h;
+  await loadData();
+  bindEvents(); render();
+  document.getElementById('app').classList.add('ready');
+  setTimeout(()=>document.getElementById('loader').classList.add('done'),600);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot); else boot();
+
+</script>
+</body>
+</html>
