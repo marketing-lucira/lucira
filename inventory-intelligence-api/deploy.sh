@@ -10,6 +10,9 @@ NAME="inventory-intel-api"
 
 echo "▶ Deploying ${NAME} to ${PROJECT}/${REGION} …"
 
+# Bundle the dashboard so it can be served live from ?action=app (same origin).
+cp ../dashboard/inventory-intelligence.html ./app.html
+
 gcloud functions deploy "${NAME}" \
   --gen2 --runtime=python312 --region="${REGION}" --project="${PROJECT}" \
   --source=. --entry-point=inventory_intel \
