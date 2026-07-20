@@ -78,7 +78,7 @@ agg AS (
 ins AS (
   SELECT 'risk' AS kind, 'critical' AS severity, 1 AS ord,
          CONCAT(CAST(stockout_7d AS STRING), ' products likely to stock out within 7 days') AS title,
-         'Prioritise these on today''s refill run before demand is lost.' AS detail FROM agg WHERE stockout_7d > 0
+         'Prioritise these on the next refill run before demand is lost.' AS detail FROM agg WHERE stockout_7d > 0
   UNION ALL
   SELECT 'aging', 'warn', 2,
          CONCAT(CAST(aged_180 AS STRING), ' products are older than 180 days'),
