@@ -1888,13 +1888,65 @@ function localAnswer(q){
   return wrap(_aiRow('Revenue',fmtMoneyFull(t.revenue))+_aiRow('Orders',fmtInt(t.orders))+_aiRow('Conversion',pct(t.conv))+_aiRow('AOV',fmtMoneyFull(t.aov))
     +`<div class="ai-note">Top channel: ${ch?_aiEsc(ch.name):'—'} · Top city: ${city?_aiEsc(city.name):'—'}. Ask about revenue, channels, campaigns, cities, products, conversion, or “top actions”.</div>`);
 }
+/* ── Generative AI (Google Gemini), browser-direct ─────────────────
+   Advanced Q&A without a backend: the user pastes their own Gemini API key
+   (stored only in their browser's localStorage) and the assistant calls the
+   Gemini API directly, grounded on a compact snapshot of the CURRENT filtered
+   data. Falls back to the backend /ai, then to the local rule-based answer. */
+function _gemGet(k,def){try{return localStorage.getItem(k)||def;}catch(e){return def;}}
+function _aiCtx(){
+  const R=(typeof filtered==='function')?filtered():(STATE.rows||[]);
+  const t=_aiTotals(R);
+  let vi=0,atc=0,chk=0,pay=0;
+  R.forEach(r=>{if(r.ev){vi+=r.ev.view_item||0;atc+=r.ev.add_to_cart||0;chk+=r.ev.begin_checkout||0;pay+=r.ev.add_payment_info||0;}});
+  const top=(fn,n)=>_aiTop(R,fn,'revenue').slice(0,n).map(g=>({name:g.name,sessions:g.sessions,orders:g.purchases,revenue:Math.round(g.revenue||0)}));
+  const [from,to]=activeRange();
+  let daily=[];
+  try{daily=timeSeries(R,'day').slice(-30).map(d=>({d:d.label,sessions:d.sessions,revenue:Math.round(d.revenue||0)}));}catch(e){}
+  return {brand:'Lucira Jewelry (India D2C fine jewellery)',currency:CONFIG.CURRENCY,dateRange:[from,to],
+    totals:{sessions:t.sessions,users:t.users,buyers:t.buyers,orders:t.orders,revenue:Math.round(t.revenue),
+      aov:Math.round(t.aov),conversionRatePct:+t.conv.toFixed(2),revenuePerUser:Math.round(t.rpu)},
+    funnel:{view_item:vi,add_to_cart:atc,begin_checkout:chk,add_payment_info:pay,purchase:t.orders},
+    topChannels:top(r=>r.channel,8),topCampaigns:top(r=>r.campaign,8),topCities:top(r=>r.city,10),
+    topDevices:top(r=>r.device,5),topProducts:top(r=>r.product,10),dailyTrend:daily};
+}
+function _mdLite(s){let h=_aiEsc(s);
+  h=h.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/\*([^*]+)\*/g,'<i>$1</i>')
+     .replace(/^\s*#{1,6}\s*(.*)$/gm,'<b>$1</b>').replace(/^\s*[-*]\s+/gm,'• ');
+  return h.replace(/\n/g,'<br>');}
+async function _callGemini(key,model,system,user){
+  const url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(key);
+  const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({system_instruction:{parts:[{text:system}]},contents:[{role:'user',parts:[{text:user}]}],
+      generationConfig:{temperature:0.4,maxOutputTokens:1200}})});
+  if(!res.ok){let d='';try{d=(await res.json()).error.message;}catch(e){}throw new Error('Gemini '+res.status+(d?': '+d:''));}
+  const j=await res.json();
+  const cand=(j.candidates||[])[0]||{};const parts=((cand.content||{}).parts)||[];
+  const txt=parts.map(p=>p.text||'').join('').trim();
+  if(!txt)throw new Error('empty response'+(cand.finishReason?' ('+cand.finishReason+')':''));
+  return txt;
+}
+const AI_SYSTEM='You are the analytics co-pilot for Lucira Jewelry, an Indian D2C fine-jewellery brand. '+
+  'Answer ONLY from the JSON data provided (all revenue is in the given currency). Be concrete and cite the numbers. '+
+  'For "actions"/"grow"/"what to do" questions, give prioritized, quantified recommendations — each with expected impact, '+
+  'a rough revenue effect, and who should own it. For audience/targeting questions, name the specific channels, cities, '+
+  'devices and products from the data. Never invent data you were not given. Keep it tight and skimmable.';
 async function askAI(q){
+  const key=_gemGet('ga4_gemini_key',''), model=_gemGet('ga4_gemini_model','gemini-2.0-flash');
+  if(key){
+    try{
+      const txt=await _callGemini(key,model,AI_SYSTEM,'DATA (JSON):\n'+JSON.stringify(_aiCtx())+'\n\nQUESTION: '+q);
+      return{html:_mdLite(txt),src:'Gemini · '+model};
+    }catch(e){
+      if(!CONFIG.API_BASE)return{html:'<div class="ai-note">⚠ '+_aiEsc(e.message)+' — showing the built-in answer instead.</div>'+localAnswer(q),src:'local (Gemini error)'};
+    }
+  }
   if(CONFIG.API_BASE){
     try{
       const base=CONFIG.API_BASE.replace(/\/(data|ga4-data)\/?$/i,'').replace(/\/$/,'');
       const res=await fetch(base+'/ai',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({question:q,days:90})});
-      if(res.ok){const j=await res.json();if(j&&j.answer)return{html:_aiEsc(j.answer).replace(/\n/g,'<br>'),src:'Gemini AI'};}
+      if(res.ok){const j=await res.json();if(j&&j.answer)return{html:_mdLite(j.answer),src:'Gemini AI'};}
     }catch(e){}
   }
   return{html:localAnswer(q),src:'local'};
@@ -1921,16 +1973,29 @@ function initAssistant(){
   #askChips button{font-size:11px;border:1px solid var(--grid,#ddd);background:transparent;color:inherit;border-radius:20px;padding:4px 9px;cursor:pointer}
   #askBar{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--grid,#eee)}
   #askInput{flex:1;border:1px solid var(--grid,#ccc);border-radius:10px;padding:8px 10px;font:inherit;background:transparent;color:inherit}
-  #askSend{border:0;background:#4285F4;color:#fff;border-radius:10px;padding:0 14px;cursor:pointer;font-weight:600}`;
+  #askSend{border:0;background:#4285F4;color:#fff;border-radius:10px;padding:0 14px;cursor:pointer;font-weight:600}
+  #askCfg{margin-left:auto;background:transparent;border:0;color:#fff;cursor:pointer;font-size:15px;opacity:.9}
+  #askCfgRow{padding:10px 12px;border-bottom:1px solid var(--grid,#eee);font-size:12px}
+  #askCfgRow input{width:100%;border:1px solid var(--grid,#ccc);border-radius:8px;padding:7px 9px;font:inherit;background:transparent;color:inherit;margin-top:4px}
+  #askCfgRow .r{display:flex;gap:6px;margin-top:6px}
+  #askCfgRow button{border:0;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:600}
+  #askKeySave{background:#199e70;color:#fff}#askKeyClear{background:transparent;border:1px solid var(--grid,#ccc);color:inherit}`;
   document.head.appendChild(css);
   const fab=document.createElement('button');fab.id='askFab';fab.title='Ask AI';fab.textContent='✨';
   const p=document.createElement('div');p.id='askPanel';
-  p.innerHTML=`<div class="hd">✨ Ask AI <small id="askMode"></small></div>
-    <div id="askLog"><div class="a">Hi! Ask me about your GA4 data — revenue, channels, campaigns, cities, products, conversion, or “top actions today”.<div class="src">grounded on current filters</div></div></div>
+  p.innerHTML=`<div class="hd">✨ Ask AI <small id="askMode"></small><button id="askCfg" title="AI settings (Gemini key)">⚙</button></div>
+    <div id="askCfgRow" style="display:none">
+      <div style="opacity:.75">Paste your Google <b>Gemini API key</b> for advanced generative answers. It is stored <b>only in this browser</b> and sent directly to Google.</div>
+      <input id="askKey" type="password" placeholder="Gemini API key (AIza…)" autocomplete="off">
+      <div class="r"><input id="askModel" placeholder="gemini-2.0-flash"><button id="askKeySave">Save</button><button id="askKeyClear">Clear</button></div>
+      <div style="opacity:.6;margin-top:6px">Get one free at aistudio.google.com/apikey · tip: restrict the key to the “Generative Language API”.</div>
+    </div>
+    <div id="askLog"><div class="a">Hi! Ask me about your GA4 data — revenue, channels, campaigns, cities, products, conversion, or “top actions today”. Add a Gemini key (⚙) for open-ended, generative answers.<div class="src">grounded on current filters</div></div></div>
     <div id="askChips"></div>
     <div id="askBar"><input id="askInput" placeholder="Ask a question…" autocomplete="off"><button id="askSend">Send</button></div>`;
   document.body.appendChild(fab);document.body.appendChild(p);
-  document.getElementById('askMode').textContent=CONFIG.API_BASE?'· Gemini':'· local';
+  const updateMode=()=>{document.getElementById('askMode').textContent=_gemGet('ga4_gemini_key','')?'· Gemini':(CONFIG.API_BASE?'· Gemini (api)':'· local');};
+  updateMode();
   const log=document.getElementById('askLog'),inp=document.getElementById('askInput');
   const add=(cls,html)=>{const d=document.createElement('div');d.className=cls;d.innerHTML=html;log.appendChild(d);log.scrollTop=log.scrollHeight;return d;};
   const send=async()=>{const q=inp.value.trim();if(!q)return;inp.value='';add('q',_aiEsc(q));
@@ -1939,6 +2004,12 @@ function initAssistant(){
   fab.onclick=()=>{p.classList.toggle('on');if(p.classList.contains('on'))inp.focus();};
   document.getElementById('askSend').onclick=send;
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+  // AI settings — Gemini key (stored only in this browser)
+  const cfgRow=document.getElementById('askCfgRow'),keyIn=document.getElementById('askKey'),modelIn=document.getElementById('askModel');
+  keyIn.value=_gemGet('ga4_gemini_key','');modelIn.value=_gemGet('ga4_gemini_model','gemini-2.0-flash');
+  document.getElementById('askCfg').onclick=()=>{cfgRow.style.display=cfgRow.style.display==='none'?'block':'none';};
+  document.getElementById('askKeySave').onclick=()=>{const k=keyIn.value.trim();try{localStorage.setItem('ga4_gemini_key',k);localStorage.setItem('ga4_gemini_model',modelIn.value.trim()||'gemini-2.0-flash');}catch(e){}updateMode();cfgRow.style.display='none';add('a',k?'✓ Gemini connected — ask anything, e.g. “Why did revenue move and what 3 actions should we take?”':'Key cleared — using the built-in assistant.');};
+  document.getElementById('askKeyClear').onclick=()=>{try{localStorage.removeItem('ga4_gemini_key');}catch(e){}keyIn.value='';updateMode();};
   const chips=['Top actions today','Revenue summary','Best campaign','Lowest-conversion cities','Top products'];
   const cw=document.getElementById('askChips');
   chips.forEach(c=>{const b=document.createElement('button');b.textContent=c;b.onclick=()=>{inp.value=c;send();};cw.appendChild(b);});
