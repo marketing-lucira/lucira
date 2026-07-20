@@ -1,5 +1,4 @@
 -- Auto-generated from 10_build_fact.sql + 20_build_transfers_insights.sql.
--- Daily scheduled query runs: CALL reporting.build_inventory_intelligence();
 CREATE OR REPLACE PROCEDURE `lucirajewelry-prod.reporting.build_inventory_intelligence`()
 BEGIN
 DECLARE LEAD_TIME_DAYS    INT64 DEFAULT 21;
@@ -109,7 +108,7 @@ item_key AS (
 -- 2) Sales velocity — network-wide, aggregated two ways so we can match by the
 --    precise SKU (Full_sku) OR fall back to style. Jewelry only.
 sales_base AS (
-  SELECT Full_sku, style_code,
+  SELECT Full_sku, style_code, image_url,
          SAFE_CAST(Transaction_Date AS DATE) AS d,
          SAFE_CAST(pieces AS FLOAT64) AS q,
          SAFE_CAST(gross_amount AS FLOAT64) AS amt
@@ -120,6 +119,7 @@ sales_base AS (
 ),
 sales_by_full AS (
   SELECT Full_sku AS k,
+    ANY_VALUE(IF(image_url!='',image_url,NULL)) img,
     SUM(q) sold_all, SUM(amt) rev_all, MIN(d) first_sale, MAX(d) last_sale,
     COUNT(DISTINCT d) active_days,
     SUM(IF(d>=DATE_SUB(CURRENT_DATE(),INTERVAL 1   DAY),q,0)) s1,
@@ -131,6 +131,7 @@ sales_by_full AS (
 ),
 sales_by_style AS (
   SELECT style_code AS k,
+    ANY_VALUE(IF(image_url!='',image_url,NULL)) img,
     SUM(q) sold_all, SUM(amt) rev_all, MIN(d) first_sale, MAX(d) last_sale,
     COUNT(DISTINCT d) active_days,
     SUM(IF(d>=DATE_SUB(CURRENT_DATE(),INTERVAL 1   DAY),q,0)) s1,
@@ -160,6 +161,7 @@ item_vel AS (
     COALESCE(f.s1,  st.s1,  0) AS s1,  COALESCE(f.s7,  st.s7,  0) AS s7,
     COALESCE(f.s30, st.s30, 0) AS s30, COALESCE(f.s90, st.s90, 0) AS s90,
     COALESCE(f.s180, st.s180, 0) AS s180,
+    COALESCE(f.img, st.img) AS image_url,
     g.grn_qty, g.first_grn, g.last_grn
   FROM item_key ik
   LEFT JOIN sales_by_full  f  ON f.k  = ik.item_code
@@ -171,7 +173,7 @@ item_vel AS (
 alloc AS (
   SELECT
     i.*, iv.style AS _style, iv.first_sale, iv.last_sale, iv.first_grn, iv.last_grn,
-    iv.active_days,
+    iv.active_days, iv.image_url AS shopify_image,
     SAFE_DIVIDE(i.on_hand, NULLIF(iv.total_on_hand, 0)) AS share,
     iv.total_on_hand,
     iv.sold_all  * IFNULL(SAFE_DIVIDE(i.on_hand, NULLIF(iv.total_on_hand,0)),0) AS store_sold_all,
@@ -214,6 +216,7 @@ SELECT
   f.store, f.store AS location, f.sku, f.item_code, f.item_name, f.style,
   f.category, f.sub_category, f.product_type, f.collection,
   f.metal, f.purity, f.stone, f.gender, f.vendor, f.designer, f.image,
+  f.shopify_image AS image_url,
   CAST(NULL AS STRING)                    AS tags,
   f.mrp, f.weight,
   x.region, x.company, x.city,
