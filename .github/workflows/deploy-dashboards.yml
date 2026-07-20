@@ -1,0 +1,106 @@
+name: Deploy Dashboards to Pages
+
+# Publishes the Lucira dashboards to GitHub Pages as ONE site (a repo can host
+# only one Pages site, so dashboards share it under subpaths):
+#   /                 → hub landing page (deploy/hub/index.html)
+#   /sales/           → dashboard/sales-intelligence.html
+#
+# Only these specific files are published — never the repo root — so the rest of
+# this monorepo (CRM data, backend functions, any secrets) is NOT exposed.
+#
+# The per-dashboard steps SKIP gracefully when a source file is absent, so this
+# workflow is forward-compatible: when other dashboards (ga4, gcp-cost, …) are
+# merged later, just add their inject step — nothing here needs to change.
+#
+# Per-dashboard config is injected inline at deploy time from GitHub repo
+# Variables (Settings → Secrets and variables → Actions → Variables):
+#   Sales : SALES_SNAPSHOT_URL (daily 10:00 IST reporting-layer snapshot),
+#           SALES_API_BASE (optional, on-demand refresh service), SALES_CURRENCY
+# Unset → the dashboard uses its built-in defaults (already the deployed live URLs).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dashboard/sales-intelligence.html"
+      - "deploy/hub/index.html"
+      - ".github/workflows/deploy-dashboards.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble Pages site (hub + dashboards, config injected)
+        env:
+          # Sales Intelligence (daily 10:00 IST reporting-layer snapshot)
+          SALES_SNAPSHOT_URL: ${{ vars.SALES_SNAPSHOT_URL }}
+          SALES_API_BASE:     ${{ vars.SALES_API_BASE }}
+          SALES_CURRENCY:     ${{ vars.SALES_CURRENCY }}
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          touch _site/.nojekyll
+
+          # Copy a dashboard file to dest, replacing its config-marker line with an
+          # inline <script> that sets a config global (or nothing). Line loop — not
+          # sed/awk — so URLs with & / \ can't corrupt output. SKIPS if src absent.
+          inject () {
+            local src="$1" dest="$2" marker="$3" global="$4" cfg="$5"
+            if [ ! -f "$src" ]; then echo "skip (absent): $src"; return 0; fi
+            mkdir -p "$(dirname "$dest")"
+            local snippet=""
+            if [ -n "$cfg" ] && [ "$cfg" != "{}" ]; then
+              snippet="<script>window.${global} = ${cfg};</script>"
+            fi
+            # Match ONLY the HTML-comment marker line ("<!-- TOKEN ..."), never a
+            # JS line that merely mentions the token — else we'd blank real code.
+            while IFS= read -r line || [ -n "$line" ]; do
+              case "$line" in
+                *"<!-- $marker"*) printf '%s\n' "$snippet" ;;
+                *)                printf '%s\n' "$line" ;;
+              esac
+            done < "$src" > "$dest"
+            echo "built: $dest"
+          }
+
+          # ---- Sales Intelligence config (daily-snapshot model) ----
+          SALES_CFG="$(jq -nc \
+            --arg snap "${SALES_SNAPSHOT_URL:-}" --arg api "${SALES_API_BASE:-}" --arg cur "${SALES_CURRENCY:-}" '
+            {} | (if $snap!="" then .SNAPSHOT_URL=$snap else . end)
+               | (if $api !="" then .API_BASE=$api else . end)
+               | (if $cur !="" then .CURRENCY=$cur else . end)')"
+          inject dashboard/sales-intelligence.html _site/sales/index.html \
+                 SALES_CONFIG_INJECT __SALES_CONFIG__ "$SALES_CFG"
+
+          # ---- hub landing page ----
+          if [ -f deploy/hub/index.html ]; then cp deploy/hub/index.html _site/index.html; fi
+
+          echo "Sales cfg: ${SALES_CFG}"
+          ls -R _site
+          grep -q "Sales Intelligence" _site/sales/index.html || { echo "::error::sales dashboard content missing"; exit 1; }
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
