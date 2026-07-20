@@ -998,6 +998,13 @@ def dashboard():
                            inv_api=INVENTORY_API_BASE)
 
 
+@app.route("/deals-vs-call")
+def deals_vs_call():
+    """Standalone Deals VS Call analytics dashboard (client-side; reads /static/app.js + /static/data.js).
+    Embedded as a top-level '📊 Deals VS Call' tab inside /dashboard via a lazy-loaded iframe."""
+    return render_template("deals_vs_call.html")
+
+
 # ----- JSON APIs backing the independent dashboard cards --------------------- #
 @app.route("/api/summary")
 def api_summary():

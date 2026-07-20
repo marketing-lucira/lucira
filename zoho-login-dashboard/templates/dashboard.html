@@ -123,6 +123,7 @@
   <div class="topflip">
     <button class="flip active" data-flip="zoho" onclick="flipView('zoho')">🔐 Zoho — Login &amp; Status</button>
     <button class="flip" data-flip="stock" onclick="flipView('stock')">💎 Stock — Inventory</button>
+    <button class="flip" data-flip="deals" onclick="flipView('deals')">📊 Deals VS Call</button>
   </div>
 
   <div class="wrap" id="zohoView">
@@ -398,18 +399,23 @@
   <iframe id="stockFrame" title="Stock — Inventory" style="width:100%;height:calc(100vh - 150px);border:0;display:block"></iframe>
 </div>
 
+<div id="dealsView" class="hidden">
+  <iframe id="dealsFrame" title="Deals VS Call" style="width:100%;height:calc(100vh - 150px);border:0;display:block"></iframe>
+</div>
+
 <script>
 const $ = id => document.getElementById(id);
-// ── Top-level Zoho ↔ Stock flip. Stock iframe is loaded ONLY on first click,
-//    so the inventory/BigQuery query is never hit until the tab is chosen. ──
+// ── Top-level flip: Zoho ↔ Stock ↔ Deals VS Call. Each iframe is loaded ONLY on
+//    first click of its tab, so its data source is never hit until chosen. ──
 const INV_API = "{{ inv_api }}";
 function flipView(v){
   document.querySelectorAll('.topflip .flip').forEach(f => f.classList.toggle('active', f.dataset.flip===v));
-  const stock = v==='stock';
-  const zv = document.getElementById('zohoView'); if(zv) zv.classList.toggle('hidden', stock);
-  const sv = document.getElementById('stockView'); if(sv) sv.classList.toggle('hidden', !stock);
-  if(stock){ const fr = document.getElementById('stockFrame');
+  const map = { zoho:'zohoView', stock:'stockView', deals:'dealsView' };
+  Object.keys(map).forEach(k => { const el = document.getElementById(map[k]); if(el) el.classList.toggle('hidden', k!==v); });
+  if(v==='stock'){ const fr = document.getElementById('stockFrame');
     if(fr && !fr.getAttribute('src')){ fr.src = '/static/stock.html' + (INV_API ? ('?api=' + encodeURIComponent(INV_API)) : ''); } }
+  if(v==='deals'){ const fr = document.getElementById('dealsFrame');
+    if(fr && !fr.getAttribute('src')){ fr.src = '/deals-vs-call'; } }   // live Deals VS Call, lazy-loaded on first click
 }
 const fmtInr = v => '₹' + Math.round(v||0).toLocaleString('en-IN');
 const fmtHrs = v => (v||0).toFixed(1);
