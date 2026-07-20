@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucira — Inventory Refilling Intelligence & AI Command Center</title>
+<style>
+:root{
+  color-scheme: dark;
+  --plane:#0c0d0f; --surface:#16181c; --surface-2:#1e2126; --surface-3:#282c33;
+  --ink:#f5f6f8; --ink-2:#b9bec7; --muted:#7e858f;
+  --grid:#262a30; --axis:#343943; --border:rgba(255,255,255,0.09);
+  --s1:#4a90e2; --s2:#1fae82; --s3:#e0658f; --s4:#e0a020; --s5:#8b6cf0; --s6:#2bb8c4;
+  --good:#1fae82; --warn:#e0a020; --serious:#e07a44; --crit:#e0505a;
+  --gold:#d9a441; --gold-2:#b5732a;
+  --radius:15px; --radius-sm:10px;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sidebar-w:288px;
+}
+body.light{
+  color-scheme: light;
+  --plane:#f4f5f3; --surface:#ffffff; --surface-2:#f1f2ee; --surface-3:#e7e8e2;
+  --ink:#191b1e; --ink-2:#464a51; --muted:#767b83;
+  --grid:#e8e9e4; --axis:#d4d6cf; --border:rgba(0,0,0,0.11);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--plane);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+a{color:var(--s1);text-decoration:none}
+.tnum{font-variant-numeric:tabular-nums}
+button{font-family:var(--font)}
+
+/* ── Header ── */
+header.app{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--plane) 90%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:11px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px;margin-right:auto}
+.brand .mark{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#1a1200;font-weight:800;font-size:16px;box-shadow:0 3px 12px rgba(217,164,65,.32)}
+.brand h1{font-size:15px;margin:0;font-weight:700;letter-spacing:.2px}
+.brand small{display:block;color:var(--muted);font-size:11px;font-weight:500;letter-spacing:.3px}
+.hdr-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px rgba(31,174,130,.18)}
+.dot.demo{background:var(--warn);box-shadow:0 0 0 3px rgba(224,160,32,.18)}
+.dot.err{background:var(--crit);box-shadow:0 0 0 3px rgba(224,80,90,.18)}
+.btn{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--surface-3)}
+.btn.primary{background:var(--s1);border-color:transparent;color:#fff}
+.btn.gold{background:var(--gold);border-color:transparent;color:#1a1200}
+.btn.sm{padding:5px 9px;font-size:11.5px}
+
+/* ── Layout ── */
+.shell{display:flex;min-height:calc(100vh - 59px)}
+aside.filters{width:var(--sidebar-w);flex:0 0 var(--sidebar-w);border-right:1px solid var(--border);background:var(--surface);position:sticky;top:59px;height:calc(100vh - 59px);overflow:auto;transition:margin-left .22s ease,width .22s ease}
+body.filters-collapsed aside.filters{margin-left:calc(-1 * var(--sidebar-w))}
+aside.filters .fhead{position:sticky;top:0;background:var(--surface);z-index:2;display:flex;align-items:center;gap:8px;padding:13px 15px;border-bottom:1px solid var(--border)}
+aside.filters .fhead h3{margin:0;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-2)}
+aside.filters .fhead .cnt{margin-left:auto;font-size:11px;color:var(--gold);font-weight:700}
+.fbody{padding:8px 14px 40px}
+.fgrp{border-bottom:1px solid var(--border);padding:9px 0}
+.fgrp>label{display:block;font-size:10px;color:var(--muted);font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin:2px 0 6px}
+.fgrp select,.fgrp input{width:100%;background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:12.5px;font-family:var(--font)}
+.frange{display:flex;gap:6px}.frange input{width:50%}
+.fchips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.chip.on{background:var(--s1);border-color:transparent;color:#fff}
+.chip.on.crit{background:var(--crit)} .chip.on.warn{background:var(--warn);color:#1a1200} .chip.on.good{background:var(--good)}
+main{flex:1;min-width:0;padding:16px 22px 70px}
+.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tabs a{padding:7px 13px;border-radius:9px;color:var(--ink-2);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid transparent}
+.tabs a:hover{background:var(--surface-2);color:var(--ink)}
+.tabs a.on{background:var(--surface-2);color:var(--ink);border-color:var(--border)}
+.tabs a.on::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-right:7px;vertical-align:middle}
+.tabs a .b{margin-left:6px;background:var(--crit);color:#fff;border-radius:20px;font-size:10px;font-weight:700;padding:0 6px}
+.tabs a .b.warn{background:var(--warn);color:#1a1200}
+
+.page{display:none}
+.page.on{display:block;animation:fade .2s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.h2{font-size:18px;font-weight:800;margin:2px 0 3px;letter-spacing:-.2px}
+.sub{color:var(--muted);font-size:12.5px;margin-bottom:15px}
+.grid{display:grid;gap:13px}
+.kpis{grid-template-columns:repeat(auto-fill,minmax(184px,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px}
+.kpi{position:relative;overflow:hidden}
+.kpi .lbl{font-size:10.5px;color:var(--muted);font-weight:800;letter-spacing:.4px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.kpi .val{font-size:25px;font-weight:800;margin-top:6px;letter-spacing:-.6px}
+.kpi .foot{font-size:11.5px;color:var(--ink-2);margin-top:5px;display:flex;align-items:center;gap:5px}
+.kpi .val.crit{color:var(--crit)}.kpi .val.warn{color:var(--warn)}.kpi .val.good{color:var(--good)}.kpi .val.gold{color:var(--gold)}
+.kpi .spark{position:absolute;right:10px;bottom:8px;opacity:.5}
+.up{color:var(--good)}.down{color:var(--crit)}
+.two{grid-template-columns:1.35fr 1fr}.three{grid-template-columns:repeat(3,1fr)}.twoeq{grid-template-columns:1fr 1fr}
+@media(max-width:1150px){.two,.three,.twoeq{grid-template-columns:1fr}}
+.card h3{font-size:13.5px;font-weight:700;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.card h3 .rt{margin-left:auto;font-size:11.5px;color:var(--muted);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;color:var(--muted);font-weight:800;font-size:10px;letter-spacing:.4px;text-transform:uppercase;padding:7px 9px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);cursor:pointer;white-space:nowrap}
+th:hover{color:var(--ink)}
+td{padding:7px 9px;border-bottom:1px solid var(--border);white-space:nowrap}
+tr:hover td{background:var(--surface-2)}
+.tbl-wrap{max-height:600px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius)}
+.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700;letter-spacing:.2px}
+.st-out{background:rgba(224,80,90,.16);color:#ff6b74}
+.st-low{background:rgba(224,160,32,.16);color:var(--warn)}
+.st-over{background:rgba(139,108,240,.18);color:#a894fb}
+.st-ok{background:rgba(31,174,130,.16);color:#39c99a}
+.st-dead{background:rgba(126,133,143,.2);color:#b8bdc6}
+.pr-Critical{background:rgba(224,80,90,.16);color:#ff6b74}
+.pr-High{background:rgba(224,122,68,.16);color:#f0925f}
+.pr-Medium{background:rgba(224,160,32,.16);color:var(--warn)}
+.pr-Low{background:rgba(126,133,143,.18);color:#aeb4bd}
+.mv-Fast{color:#39c99a;font-weight:700}.mv-Slow{color:var(--warn);font-weight:700}.mv-Dead{color:#b8bdc6;font-weight:700}.mv-Never{color:#a894fb;font-weight:700}
+.bar{height:8px;border-radius:5px;background:var(--surface-3);overflow:hidden}
+.bar>span{display:block;height:100%;border-radius:5px}
+.rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.rec{border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 13px;background:var(--surface)}
+.rec .rt{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.rec .rt .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:15px}
+.rec .rt b{font-size:13px}
+.rec .rt .n{margin-left:auto;font-weight:800;font-size:16px}
+.rec .desc{font-size:12px;color:var(--ink-2);line-height:1.5}
+.rec .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;font-size:10.5px}
+.rec .meta span{background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:2px 7px;color:var(--muted)}
+.info-i{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:var(--surface-3);border:1px solid var(--border);color:var(--s1);font-size:10px;font-weight:800;font-style:italic;cursor:pointer;font-family:Georgia,serif;flex:none}
+.info-i:hover{background:var(--s1);color:#fff}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2);margin-top:10px}
+.legend .li{display:flex;align-items:center;gap:6px}.legend .sw{width:11px;height:11px;border-radius:3px}
+.row-bars .rb{display:grid;grid-template-columns:140px 1fr 74px;gap:10px;align-items:center;margin-bottom:8px;font-size:12px}
+.row-bars .rb .nm{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row-bars .rb .amt{text-align:right;font-weight:700}
+.heat td{padding:0;border:none}
+.heat .cell{height:34px;display:grid;place-items:center;font-size:10.5px;font-weight:700;color:#0c0d0f;border-radius:5px;margin:2px}
+.thumb{width:30px;height:30px;border-radius:6px;object-fit:cover;background:var(--surface-3);vertical-align:middle;display:inline-grid;place-items:center;font-size:13px}
+.insight{display:flex;gap:11px;padding:11px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:9px;background:var(--surface)}
+.insight .ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-size:15px;flex:none}
+.insight b{font-size:13px}.insight p{margin:3px 0 0;font-size:12px;color:var(--ink-2)}
+.sev-critical .ic{background:rgba(224,80,90,.16)}.sev-warn .ic{background:rgba(224,160,32,.16)}.sev-good .ic{background:rgba(31,174,130,.16)}.sev-info .ic{background:rgba(74,144,226,.16)}
+.sev-critical{border-left:3px solid var(--crit)}.sev-warn{border-left:3px solid var(--warn)}.sev-good{border-left:3px solid var(--good)}.sev-info{border-left:3px solid var(--s1)}
+/* chat */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 240px);min-height:420px}
+.chat-log{flex:1;overflow:auto;padding:6px 2px;display:flex;flex-direction:column;gap:13px}
+.msg{max-width:82%;padding:11px 14px;border-radius:13px;font-size:13px;line-height:1.55}
+.msg.u{align-self:flex-end;background:var(--s1);color:#fff;border-bottom-right-radius:4px}
+.msg.a{align-self:flex-start;background:var(--surface-2);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg .sql{margin-top:9px;background:var(--plane);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:11px;color:var(--ink-2);white-space:pre-wrap;overflow:auto;max-height:150px}
+.msg table{font-size:11.5px;margin-top:8px}
+.chat-in{display:flex;gap:9px;margin-top:13px}
+.chat-in input{flex:1;background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:13.5px}
+.suggest{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:11px}
+.suggest .s{background:var(--surface-2);border:1px solid var(--border);border-radius:18px;padding:6px 12px;font-size:12px;color:var(--ink-2);cursor:pointer}
+.suggest .s:hover{color:var(--ink);border-color:var(--s1)}
+/* modal */
+.modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px}
+.modal.on{display:flex}
+.modal .box{background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:560px;width:100%;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.5)}
+.modal h3{margin:0 0 4px;font-size:16px}
+.modal .kbrow{margin-top:12px}.modal .kbrow b{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:.5px}
+.modal .kbrow p{margin:3px 0 0;font-size:13px;color:var(--ink-2)}
+.search{background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:7px 11px;color:var(--ink);font-size:12.5px;min-width:200px}
+.pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:10px;font-size:12px;color:var(--muted)}
+.kbcard{border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px 14px;cursor:pointer;background:var(--surface)}
+.kbcard:hover{border-color:var(--s1)}
+.kbcard b{font-size:13.5px}.kbcard p{margin:4px 0 0;font-size:12px;color:var(--muted)}
+.scroll-x{overflow-x:auto}
+.muted{color:var(--muted)}
+.tag{font-size:10px;color:var(--muted)}
+@media(max-width:900px){:root{--sidebar-w:250px}body:not(.filters-collapsed) main{display:none}}
+</style>
+</head>
+<body>
+<header class="app">
+  <button class="btn sm" id="toggleFilters" title="Toggle filters">☰</button>
+  <div class="brand">
+    <div class="mark">L</div>
+    <div><h1>Inventory Refilling Intelligence</h1><small>AI Command Center · Merchandising · Retail · Management</small></div>
+  </div>
+  <div class="hdr-status"><span class="dot demo" id="statusDot"></span><span id="statusText">Demo data</span></div>
+  <button class="btn sm" id="refreshBtn">↻ Refresh</button>
+  <button class="btn sm" id="themeBtn">◑ Theme</button>
+  <button class="btn sm" id="exportBtn">⭳ Export</button>
+</header>
+
+<div class="shell">
+  <aside class="filters" id="filtersPanel">
+    <div class="fhead"><h3>Advanced Filters</h3><span class="cnt" id="filterCount"></span><button class="btn sm" id="clearFilters" style="margin-left:8px">Clear</button></div>
+    <div class="fbody" id="fbody"><!-- built by JS --></div>
+  </aside>
+
+  <main>
+    <div class="toolbar">
+      <nav class="tabs" id="nav"></nav>
+    </div>
+    <div id="pages"></div>
+  </main>
+</div>
+
+<!-- KB / info modal -->
+<div class="modal" id="kbModal"><div class="box" id="kbBox"></div></div>
+
+<script>
+"use strict";
+/* ══════════════════════════════════════════════════════════════════════════
+   Inventory Refilling Intelligence & AI Command Center
+   Reads the single consolidated fact table via the API; falls back to a
+   deterministic sample that mirrors the fact-table schema exactly.
+   Business logic mirrors sql/10_build_fact.sql so the dashboard is internally
+   consistent whether data is live or sampled.
+   ══════════════════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  API_BASE: "",   // ← paste deployed inventory-intel-api URL, or use ?api=
+  CURRENCY: "INR",
+  LEAD_TIME: 21, TARGET_COVER: 60, LOW_COVER: 15, OVER_COVER: 180, DEAD_DAYS: 180
+};
+(function(){ // config resolution: ?api= → window marker → localStorage → CONFIG
+  const q = new URLSearchParams(location.search);
+  const w = window.__INV_INTEL_CONFIG__ || {};
+  CONFIG.API_BASE = q.get("api") || w.API_BASE || localStorage.getItem("inv_intel_api") || CONFIG.API_BASE;
+  if(q.get("api")) localStorage.setItem("inv_intel_api", q.get("api"));
+})();
+
+/* ── helpers ────────────────────────────────────────────────────────────── */
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const fin=v=>Number.isFinite(v)?v:0;
+const money=v=>{v=fin(v);const s=v<0?"-":"";v=Math.abs(v);
+  if(v>=1e7)return s+"₹"+(v/1e7).toFixed(2)+" Cr";
+  if(v>=1e5)return s+"₹"+(v/1e5).toFixed(2)+" L";
+  if(v>=1e3)return s+"₹"+(v/1e3).toFixed(1)+"K";
+  return s+"₹"+Math.round(v);};
+const int=v=>fin(v).toLocaleString("en-IN",{maximumFractionDigits:0});
+const dec=(v,n=1)=>fin(v).toLocaleString("en-IN",{minimumFractionDigits:n,maximumFractionDigits:n});
+const pct=(v,n=1)=>dec(fin(v),n)+"%";
+const daysAgo=n=>{const d=new Date(TODAY);d.setDate(d.getDate()-n);return d;};
+const isoD=d=>d.toISOString().slice(0,10);
+const diffDays=(a,b)=>a&&b?Math.round((new Date(a)-new Date(b))/864e5):null;
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const TODAY = new Date("2026-07-20T00:00:00Z");
+
+/* ── domain constants (mirror the SQL DECLARE block) ────────────────────── */
+const C = CONFIG;
+const STATE = { items:[], transfers:[], insights:[], kpis:null, live:false, refreshDate:null,
+  filters:{}, tab:"overview", sort:{}, page:{} };
+
+/* ── derive all computed fields from base measures (mirrors 10_build_fact.sql)*/
+function deriveItem(it){
+  it.current_stock = fin(+it.current_stock);
+  it.mrp = fin(+it.mrp);
+  it.total_sold = fin(+it.total_sold);
+  it.sold_90 = fin(+it.sold_90); it.sold_30=fin(+it.sold_30); it.sold_7=fin(+it.sold_7); it.sold_today=fin(+it.sold_today);
+  it.grn_received_qty = fin(+it.grn_received_qty);
+  // run-rate
+  let ads = it.sold_90>0? it.sold_90/90 : it.sold_30>0? it.sold_30/30 :
+            (it.total_sold>0 && it.first_sale_date)? it.total_sold/Math.max(diffDays(TODAY,it.first_sale_date)||1,1) : 0;
+  it.avg_daily_sales = +ads.toFixed(4);
+  it.avg_weekly_sales = +(ads*7).toFixed(2);
+  it.avg_monthly_sales = +(ads*30).toFixed(1);
+  it.days_since_last_sale = it.last_sale_date? diffDays(TODAY,it.last_sale_date) : 9999;
+  it.days_since_last_grn  = it.last_grn_date? diffDays(TODAY,it.last_grn_date) : null;
+  it.days_grn_to_first_sale = (it.first_sale_date&&it.first_grn_date)? diffDays(it.first_sale_date,it.first_grn_date):null;
+  it.inventory_age = diffDays(TODAY, it.first_grn_date||it.first_stock_date) || 0;
+  it.inventory_value = fin(it.inventory_value!=null? +it.inventory_value : it.current_stock*it.mrp*0.55);
+  it.opening_inventory = Math.round(it.current_stock + fin(+it.store_sold) - it.grn_received_qty);
+  it.cover_days = ads>0? Math.min(+(it.current_stock/ads).toFixed(1),999) : 999;
+  it.days_cover = it.cover_days;
+  it.inventory_turnover = it.current_stock>0? +((it.sold_90*4)/it.current_stock).toFixed(2):0;
+  it.sell_through = (it.total_sold+it.current_stock)>0? +(it.total_sold/(it.total_sold+it.current_stock)).toFixed(4):0;
+  it.reorder_point = Math.round(ads*C.LEAD_TIME);
+  it.refill_qty = Math.max(0, Math.round(ads*C.TARGET_COVER - it.current_stock));
+  // status
+  it.inventory_status = it.current_stock<=0? "Out of Stock"
+    : (ads>0 && it.cover_days<C.LOW_COVER)? "Low Stock"
+    : ((ads>0 && it.cover_days>C.OVER_COVER)||(ads===0&&it.current_stock>0&&it.days_since_last_sale>C.DEAD_DAYS))? "Over Stock"
+    : "Healthy";
+  it.movement_class = (it.total_sold===0&&it.current_stock>0)? "Never Sold"
+    : (it.current_stock>0 && it.days_since_last_sale>C.DEAD_DAYS)? "Dead"
+    : (it.sold_90>=6||ads>=0.1)? "Fast Moving" : "Slow Moving";
+  it.is_out_of_stock = it.current_stock<=0;
+  it.is_low_stock = ads>0 && it.cover_days<C.LOW_COVER;
+  it.is_over_stock = ads>0 && it.cover_days>C.OVER_COVER;
+  it.is_dead_stock = it.current_stock>0 && it.days_since_last_sale>C.DEAD_DAYS;
+  it.is_fast_moving = it.sold_90>=6||ads>=0.1;
+  it.is_slow_moving = it.total_sold>0 && it.sold_90===0;
+  it.is_never_sold = it.total_sold===0 && it.current_stock>0;
+  it.is_refill_required = it.refill_qty>0;
+  it.stock_out_risk = ads<=0?0 : it.cover_days>=C.TARGET_COVER?0 : Math.round(100*(1-it.cover_days/C.TARGET_COVER));
+  it.refill_priority_score = Math.round(Math.min(100,
+    (it.current_stock<=0&&ads>0?40:0) +
+    (ads>0? Math.min(30,30*(1-Math.min(it.cover_days,C.TARGET_COVER)/C.TARGET_COVER)):0) +
+    Math.min(20,ads*40) + Math.min(10, it.mrp/50000*10)));
+  it.health_score = clamp(Math.round(50 +
+    (it.sold_90>0?20:-10) +
+    (it.current_stock<=0?-20 : (ads>0&&it.cover_days<C.LOW_COVER)?-10 : (ads>0&&it.cover_days>C.OVER_COVER)?-12:15) +
+    (it.days_since_last_sale>C.DEAD_DAYS?-18:0) +
+    (it.inventory_turnover>=2?15:it.inventory_turnover>=1?8:0)),0,100);
+  // AI recommendation decision tree
+  const rec = recommend(it, ads);
+  Object.assign(it, rec);
+  it.forecast_7d = Math.round(ads*7); it.forecast_15d=Math.round(ads*15); it.forecast_30d=Math.round(ads*30);
+  return it;
+}
+function recommend(it, ads){
+  let r={ai_recommendation:"No Refill Required",ai_reason:"Cover within healthy band",
+    ai_business_impact:"Maintains service level",ai_priority:"Low"};
+  if(it.current_stock<=0 && ads>0){
+    r={ai_recommendation:"Refill Immediately",ai_reason:`Out of stock with live demand of ${dec(ads,2)}/day`,
+       ai_business_impact:"Lost sales daily until replenished",ai_priority:"Critical"};
+  }else if(ads>0 && it.cover_days<C.LEAD_TIME){
+    r={ai_recommendation:"Refill Immediately",ai_reason:`Only ${it.cover_days}d cover vs ${C.LEAD_TIME}d lead time`,
+       ai_business_impact:`Protects ~${money(ads*C.LEAD_TIME*it.mrp)} of demand`,ai_priority:"Critical"};
+  }else if(ads>0 && it.cover_days<C.TARGET_COVER){
+    r={ai_recommendation:"Refill Next Week",ai_reason:`${it.cover_days}d cover — below ${C.TARGET_COVER}d target`,
+       ai_business_impact:`Protects ~${money(ads*C.LEAD_TIME*it.mrp)} of demand`,ai_priority:"High"};
+  }else if(it.total_sold===0 && (it.days_since_last_grn||0)>C.DEAD_DAYS){
+    r={ai_recommendation:"Stop Manufacturing",ai_reason:`No sales since GRN ${it.days_since_last_grn}d ago`,
+       ai_business_impact:"Prevents further dead stock",ai_priority:"Medium"};
+  }else if(it.current_stock>0 && it.days_since_last_sale>270 && it.inventory_value>=100000){
+    r={ai_recommendation:"Liquidation Required",ai_reason:`${money(it.inventory_value)} idle ${it.days_since_last_sale}d`,
+       ai_business_impact:`Frees ${money(it.inventory_value)} locked capital`,ai_priority:"High"};
+  }else if(it.current_stock>0 && it.days_since_last_sale>C.DEAD_DAYS){
+    r={ai_recommendation:"Promotional Discount",ai_reason:`Dead ${it.days_since_last_sale}d — move with promotion`,
+       ai_business_impact:`Frees ${money(it.inventory_value)} locked capital`,ai_priority:"High"};
+  }else if(ads>0 && it.cover_days>C.OVER_COVER){
+    r={ai_recommendation:"Transfer From Another Store",ai_reason:`Over-stocked ${it.cover_days}d cover — rebalance network`,
+       ai_business_impact:"Avoids new manufacturing cost",ai_priority:"Medium"};
+  }else if(it.sold_90>=10 && it.cover_days<C.TARGET_COVER){
+    r={ai_recommendation:"Increase Manufacturing",ai_reason:`High demand ${it.sold_90} in 90d — scale production`,
+       ai_business_impact:"Captures unmet demand",ai_priority:"High"};
+  }
+  const conf = Math.min(98, Math.max(40, 40 + Math.min(40,(it.active_sale_days||0)/60*40) + Math.min(18,it.sold_90/50*18)));
+  r.ai_confidence = Math.round(conf);
+  return r;
+}
+
+/* ── deterministic sample mirroring the fact schema ─────────────────────── */
+function buildSample(){
+  const rnd = mulberry32(20260720);
+  const pick=a=>a[Math.floor(rnd()*a.length)];
+  const gauss=(m,s)=>{let u=0,v=0;while(!u)u=rnd();while(!v)v=rnd();return m+s*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
+  const stores=[{s:"Sky City Borivali",r:"West",c:"Mumbai",co:"BO1"},{s:"JM Pune",r:"West",c:"Pune",co:"PN1"},
+    {s:"Paschim Vihar",r:"North",c:"New Delhi",co:"PV1"},{s:"Noida Sec 18",r:"North",c:"Noida",co:"N18"},
+    {s:"Divinecarat",r:"West",c:"Mumbai",co:"CS1"},{s:"HWI",r:"West",c:"Mumbai",co:"FCS"},{s:"Online DC",r:"Pan-India",c:"Online",co:"HO"}];
+  // JEWELRY ONLY — no Silver, no Coin.
+  const cats=["Gold Jewellery","Diamond Jewellery","Platinum Jewellery","Bridal","Everyday Gold"];
+  const subByCat={ "Gold Jewellery":["Plain Gold","Antique","Temple"],"Diamond Jewellery":["Solitaire","Cluster","Pave"],
+    "Platinum Jewellery":["Couple Bands","Chains"],"Bridal":["Necklace Set","Choker","Vanki"],"Everyday Gold":["Casual","Office","Minimal"]};
+  const ptypes=["Ring","Earring","Necklace","Pendant","Bangle","Bracelet","Chain","Nose Pin","Mangalsutra","Set"];
+  const collections=["Aurelia","Celeste","Rivaana","Meenakari","Solstice","Nova","Verai","Heritage","Blossom","Éclat"];
+  const metalsByCat={"Diamond Jewellery":"Diamond","Platinum Jewellery":"Platinum"};
+  const puritys=["22K","18K","14K"];
+  const genders=["Women","Men","Unisex","Kids"];
+  const vendors=["Ornaverse Mfg","Kundan Works","Surat Diamonds","RajGold","Elara Studio"];
+  const designers=["Ishani K","Vardaan","Studio Noor","Meera D","In-house"];
+  const items=[]; let sk=1000;
+  const NSTYLES=260;
+  for(let i=0;i<NSTYLES;i++){
+    const cat=pick(cats), sub=pick(subByCat[cat]), pt=pick(ptypes), col=pick(collections);
+    const metal=metalsByCat[cat]||"Gold", pur=metal==="Diamond"?"18K":pick(puritys);
+    const style="ST"+(4000+i);
+    const mrpBase=Math.round(clamp(gauss(cat==="Bridal"?260000:cat==="Diamond Jewellery"?140000:65000, 45000),8000,900000)/500)*500;
+    const weight=+clamp(gauss(pt==="Chain"||pt==="Bangle"?18:8,6),1.2,60).toFixed(1);
+    const gender=pt==="Nose Pin"||pt==="Mangalsutra"?"Women":pick(genders);
+    const vendor=pick(vendors), designer=pick(designers);
+    // demand archetype
+    const arch=rnd(); // 0-1
+    const nStores=1+Math.floor(rnd()*3);
+    const inStores=[...stores].sort(()=>rnd()-0.5).slice(0,nStores);
+    // lifetime sales tendency
+    const lifetime=Math.max(0, Math.round(arch<0.12?0 : arch<0.4? gauss(3,3) : arch<0.75? gauss(22,14):gauss(70,40)));
+    const first_grn=isoD(daysAgo(Math.round(clamp(gauss(240,160),20,900))));
+    for(const st of inStores){
+      const id="LJ"+(sk++);
+      const onhand=Math.max(0, Math.round(arch<0.75? gauss(6,5): gauss(3,3)) + (arch<0.12?Math.round(gauss(4,3)):0));
+      // recent velocity (network share approximated per row)
+      const recent=arch<0.12?0: Math.max(0, Math.round(gauss(lifetime*0.18,lifetime*0.12)/nStores));
+      const sold90=recent, sold30=Math.round(recent*0.4), sold7=Math.round(recent*0.1), soldT=rnd()<0.05?1:0;
+      const soldAll=Math.round(lifetime/nStores)+sold90;
+      const lastSaleDays = soldAll<=0? null : Math.round(arch<0.2? clamp(gauss(220,120),60,720): clamp(gauss(20,25),0,120));
+      const first_sale = soldAll<=0?null: isoD(daysAgo(clamp((lastSaleDays||0)+Math.round(gauss(120,90)),lastSaleDays||0,860)));
+      const it={
+        store:st.s, location:st.s, region:st.r, city:st.c, company:st.co,
+        sku:id, item_code:id, item_name:`${col} ${pt}`, style, category:cat, sub_category:sub, product_type:pt,
+        collection:col, metal, purity:pur, stone:metal==="Diamond"?"White":"—", gender, vendor, designer,
+        image:"", tags:"", mrp:mrpBase, weight,
+        current_stock:onhand, grn_received_qty:Math.max(onhand, Math.round(onhand+soldAll)),
+        inventory_value: Math.round(onhand*mrpBase*0.55), store_sold:soldAll,
+        total_sold:soldAll, revenue_all:Math.round(soldAll*mrpBase),
+        sold_today:soldT, sold_7:sold7, sold_30:sold30, sold_90:sold90, sold_180:Math.round(recent*1.4),
+        pdp_views:Math.round(recent*40+rnd()*80), add_to_cart:Math.round(recent*6+rnd()*10), begin_checkout:Math.round(recent*2),
+        first_sale_date:first_sale, last_sale_date: soldAll<=0?null:isoD(daysAgo(lastSaleDays||0)),
+        first_grn_date:first_grn, last_grn_date: isoD(daysAgo(Math.round(clamp(gauss(120,90),5,700)))),
+        first_stock_date:first_grn, last_stock_date:isoD(daysAgo(Math.round(rnd()*30))),
+        active_sale_days: Math.min(soldAll, Math.round(clamp(gauss(soldAll*0.6,soldAll*0.3),0,90)))
+      };
+      items.push(deriveItem(it));
+    }
+  }
+  return items;
+}
+
+/* ── transfers computed from items (mirrors 20_build...) ────────────────── */
+function computeTransfers(items){
+  const bySku={}; items.forEach(it=>{(bySku[it.sku]=bySku[it.sku]||[]).push(it);});
+  const out=[];
+  for(const sku in bySku){
+    const rows=bySku[sku];
+    const surplus=rows.filter(r=>(r.is_over_stock||r.avg_daily_sales===0)&&r.current_stock>1)
+      .map(r=>({r,units:Math.max(0,Math.round(r.current_stock-Math.ceil(r.avg_daily_sales*45)))})).filter(x=>x.units>=1);
+    const shortage=rows.filter(r=>r.avg_daily_sales>0&&(r.is_out_of_stock||r.is_low_stock))
+      .map(r=>({r,need:Math.max(1,r.refill_qty)}));
+    for(const sh of shortage){
+      let best=null;
+      for(const su of surplus){ if(su.r.store===sh.r.store)continue; if(!best||su.units>best.units)best=su; }
+      if(best){
+        const qty=Math.min(best.units, sh.need);
+        if(qty>=1) out.push({sku, item_name:sh.r.item_name, style:sh.r.style, category:sh.r.category,
+          source_store:best.r.store, dest_store:sh.r.store, suggested_qty:qty,
+          dest_daily_demand:sh.r.avg_daily_sales, dest_cover_days:sh.r.cover_days, mrp:sh.r.mrp,
+          expected_value_moved:Math.round(qty*sh.r.mrp), priority_score:sh.r.refill_priority_score});
+      }
+    }
+  }
+  return out.sort((a,b)=>b.priority_score-a.priority_score||b.expected_value_moved-a.expected_value_moved);
+}
+
+/* ── generate insights from items (mirrors 20_build...) ─────────────────── */
+function computeInsights(items, transfers){
+  const f=items, ins=[];
+  const cnt=p=>f.filter(p).length;
+  const sumV=p=>f.filter(p).reduce((s,x)=>s+x.inventory_value,0);
+  const stockout7=cnt(x=>x.stock_out_risk>=60&&x.days_cover<=7);
+  const aged=cnt(x=>x.inventory_age>180), nosale=cnt(x=>x.total_sold===0), dead=cnt(x=>x.is_dead_stock);
+  const refill=cnt(x=>x.is_refill_required), oos=cnt(x=>x.is_out_of_stock);
+  const scale=cnt(x=>x.ai_recommendation==="Increase Manufacturing"), stop=cnt(x=>x.ai_recommendation==="Stop Manufacturing");
+  const avgH=Math.round(f.reduce((s,x)=>s+x.health_score,0)/(f.length||1));
+  const add=(kind,sev,ord,title,detail,cond=true)=>{if(cond)ins.push({kind,severity:sev,ord,title,detail});};
+  add("risk","critical",1,`${stockout7} products likely to stock out within 7 days`,"Prioritise these on today's refill run before demand is lost.",stockout7>0);
+  add("aging","warn",2,`${aged} products are older than 180 days`,"Review for promotion, transfer or liquidation to release capital.",aged>0);
+  add("nosale","warn",3,`${nosale} products have had no sale since GRN`,"Candidates to stop manufacturing and clear.",nosale>0);
+  add("dead","critical",4,`${money(sumV(x=>x.is_dead_stock))} locked in ${dead} dead SKUs`,"High-value dead inventory should be liquidated first.",dead>0);
+  add("refill","info",5,`${refill} SKUs require refill (${oos} already out of stock)`,"Open the Refill Center to action by priority.",refill>0);
+  add("scale","good",6,`${scale} fast-movers should increase production`,"Demand is outpacing supply on these lines.",scale>0);
+  add("stop","info",7,`${stop} products should stop manufacturing`,"No demand signal — pause to avoid dead stock.",stop>0);
+  add("health","info",8,`Network inventory health score: ${avgH}/100`,"Average across all in-scope jewelry SKUs.");
+  // store urgent
+  const byStore={}; f.forEach(x=>{if(x.is_out_of_stock||x.is_low_stock){(byStore[x.store]=byStore[x.store]||[]).push(x);}});
+  Object.entries(byStore).filter(([,a])=>a.length>=3).forEach(([s,a],i)=>{
+    const risk=a.reduce((t,x)=>t+x.avg_daily_sales*x.mrp*21,0);
+    ins.push({kind:"store",severity:"warn",ord:20+i,title:`${s} needs urgent refill on ${a.length} SKUs`,detail:`${money(risk)} of demand at risk`});
+  });
+  // best category
+  const catAgg={}; f.forEach(x=>{const c=catAgg[x.category]=catAgg[x.category]||{st:0,n:0,rev:0};c.st+=x.sell_through;c.n++;c.rev+=x.revenue_all;});
+  const bestCat=Object.entries(catAgg).sort((a,b)=>b[1].st/b[1].n-a[1].st/a[1].n)[0];
+  if(bestCat)ins.push({kind:"category",severity:"good",ord:30,title:`Best category by sell-through: ${bestCat[0]}`,detail:`${pct(bestCat[1].st/bestCat[1].n*100)} sell-through, ${money(bestCat[1].rev)} revenue`});
+  if(transfers.length)ins.push({kind:"transfer",severity:"good",ord:40,title:`${transfers.length} inter-store transfers can avoid manufacturing`,detail:`${money(transfers.reduce((s,t)=>s+t.expected_value_moved,0))} can be rebalanced across stores`});
+  return ins.sort((a,b)=>a.ord-b.ord);
+}
+
+/* ── KPI rollup from a set of items ─────────────────────────────────────── */
+function rollup(items){
+  const sum=(f)=>items.reduce((s,x)=>s+fin(f(x)),0);
+  const cnt=(p)=>items.filter(p).length;
+  const skus=new Set(items.map(x=>x.sku)).size;
+  const stock=sum(x=>x.current_stock), sold=sum(x=>x.total_sold);
+  const cov=items.filter(x=>x.days_cover<999).map(x=>x.days_cover);
+  return {
+    total_inventory:stock, total_inventory_value:sum(x=>x.inventory_value), total_sku:skus,
+    current_live_inventory:stock, total_sold:sold, sales_today:sum(x=>x.sold_today),
+    sales_7d:sum(x=>x.sold_7), sales_30d:sum(x=>x.sold_30), avg_daily_sales:sum(x=>x.sold_30)/30,
+    inventory_turnover: stock>0? (sum(x=>x.sold_90)*4)/stock:0,
+    sell_through_pct:(sold+stock)>0? sold/(sold+stock)*100:0,
+    inventory_health_score: items.length? Math.round(sum(x=>x.health_score)/items.length):0,
+    dead_inventory:cnt(x=>x.is_dead_stock), out_of_stock:cnt(x=>x.is_out_of_stock),
+    low_stock:cnt(x=>x.is_low_stock), over_stock:cnt(x=>x.is_over_stock),
+    refill_required_sku:cnt(x=>x.is_refill_required),
+    avg_days_cover: cov.length? cov.reduce((a,b)=>a+b,0)/cov.length:0,
+    avg_stock_out_risk: items.length? Math.round(sum(x=>x.stock_out_risk)/items.length):0
+  };
+}
+
+/* ── filters ────────────────────────────────────────────────────────────── */
+const FILTER_DEFS=[
+  {k:"store",label:"Store",type:"select",col:"store"},
+  {k:"company",label:"Company",type:"select",col:"company"},
+  {k:"region",label:"Region",type:"select",col:"region"},
+  {k:"city",label:"City",type:"select",col:"city"},
+  {k:"category",label:"Category",type:"select",col:"category"},
+  {k:"sub_category",label:"Sub Category",type:"select",col:"sub_category"},
+  {k:"product_type",label:"Product Type",type:"select",col:"product_type"},
+  {k:"collection",label:"Collection",type:"select",col:"collection"},
+  {k:"style",label:"Style",type:"select",col:"style"},
+  {k:"metal",label:"Metal",type:"select",col:"metal"},
+  {k:"purity",label:"Purity",type:"select",col:"purity"},
+  {k:"gender",label:"Gender",type:"select",col:"gender"},
+  {k:"vendor",label:"Vendor",type:"select",col:"vendor"},
+  {k:"designer",label:"Designer",type:"select",col:"designer"},
+  {k:"status",label:"Inventory Status",type:"select",col:"inventory_status"},
+  {k:"priority",label:"AI Priority",type:"select",col:"ai_priority"},
+  {k:"recommendation",label:"AI Recommendation",type:"select",col:"ai_recommendation"},
+  {k:"item",label:"Item Code / SKU / Name",type:"text"},
+  {k:"mrp",label:"MRP Range (₹)",type:"range",col:"mrp"},
+  {k:"weight",label:"Weight Range (g)",type:"range",col:"weight"},
+  {k:"stock",label:"Current Stock",type:"range",col:"current_stock"},
+  {k:"value",label:"Inventory Value (₹)",type:"range",col:"inventory_value"},
+  {k:"age",label:"Inventory Age (days)",type:"range",col:"inventory_age"},
+  {k:"lastsale",label:"Days Since Last Sale",type:"range",col:"days_since_last_sale"},
+];
+const FLAG_CHIPS=[
+  {k:"is_refill_required",label:"Refill Required",cls:"crit"},
+  {k:"is_out_of_stock",label:"Out of Stock",cls:"crit"},
+  {k:"is_low_stock",label:"Low Stock",cls:"warn"},
+  {k:"is_over_stock",label:"Over Stock",cls:""},
+  {k:"is_dead_stock",label:"Dead Stock",cls:""},
+  {k:"is_fast_moving",label:"Fast Moving",cls:"good"},
+  {k:"is_slow_moving",label:"Slow Moving",cls:"warn"},
+];
+function uniq(col){return [...new Set(STATE.items.map(x=>x[col]).filter(v=>v!=null&&v!==""))].sort();}
+function buildFilterUI(){
+  const F=STATE.filters, host=$("#fbody"); host.innerHTML="";
+  // date range (GRN / last sale windows are covered by ranges; add a global recency preset)
+  const g=document.createElement("div"); g.className="fgrp";
+  g.innerHTML=`<label>Quick Flags</label><div class="fchips" id="flagChips"></div>`;
+  host.appendChild(g);
+  const chipHost=$("#flagChips",g);
+  FLAG_CHIPS.forEach(c=>{const el=document.createElement("span");el.className="chip "+(c.cls);el.textContent=c.label;
+    el.onclick=()=>{F[c.k]=!F[c.k];el.classList.toggle("on");applyFilters();};chipHost.appendChild(el);});
+  FILTER_DEFS.forEach(d=>{
+    const el=document.createElement("div"); el.className="fgrp";
+    if(d.type==="select"){
+      const opts=["<option value=''>All</option>"].concat(uniq(d.col).map(v=>`<option>${esc(v)}</option>`)).join("");
+      el.innerHTML=`<label>${d.label}</label><select data-fk="${d.k}">${opts}</select>`;
+      $("select",el).onchange=e=>{F[d.k]=e.target.value;applyFilters();};
+    }else if(d.type==="text"){
+      el.innerHTML=`<label>${d.label}</label><input type="text" data-fk="${d.k}" placeholder="contains…">`;
+      $("input",el).oninput=e=>{F[d.k]=e.target.value.trim().toLowerCase();applyFilters();};
+    }else if(d.type==="range"){
+      el.innerHTML=`<label>${d.label}</label><div class="frange"><input type="number" data-fk="${d.k}_min" placeholder="min"><input type="number" data-fk="${d.k}_max" placeholder="max"></div>`;
+      $$("input",el).forEach(inp=>inp.oninput=e=>{F[e.target.dataset.fk]=e.target.value===""?null:+e.target.value;applyFilters();});
+    }
+    host.appendChild(el);
+  });
+}
+function passes(it){
+  const F=STATE.filters;
+  for(const d of FILTER_DEFS){
+    if(d.type==="select"&&F[d.k]&&it[d.col]!==F[d.k])return false;
+    if(d.type==="text"&&F[d.k]){const hay=(it.sku+" "+it.item_code+" "+it.item_name+" "+it.style).toLowerCase();if(!hay.includes(F[d.k]))return false;}
+    if(d.type==="range"){const v=fin(it[d.col]);if(F[d.k+"_min"]!=null&&v<F[d.k+"_min"])return false;if(F[d.k+"_max"]!=null&&v>F[d.k+"_max"])return false;}
+  }
+  for(const c of FLAG_CHIPS){if(F[c.k]&&!it[c.k])return false;}
+  return true;
+}
+function filtered(){return STATE.items.filter(passes);}
+function activeFilterCount(){let n=0;const F=STATE.filters;for(const k in F){if(F[k]===true||(F[k]!=null&&F[k]!==""&&F[k]!==false))n++;}return n;}
+function applyFilters(){
+  const n=activeFilterCount();
+  $("#filterCount").textContent=n?`${n} active`:"";
+  render();
+}
+function clearAllFilters(){STATE.filters={};buildFilterUI();applyFilters();}
+
+/* ── SVG chart helpers ──────────────────────────────────────────────────── */
+const PAL=["var(--s1)","var(--s2)","var(--s3)","var(--s4)","var(--s5)","var(--s6)"];
+function donut(data,size=170){ // data:[{label,value,color}]
+  const tot=data.reduce((s,d)=>s+d.value,0)||1; const r=size/2-14,cx=size/2,cy=size/2; let a=-Math.PI/2; let seg="";
+  data.forEach(d=>{const frac=d.value/tot;const a2=a+frac*2*Math.PI;const x1=cx+r*Math.cos(a),y1=cy+r*Math.sin(a),x2=cx+r*Math.cos(a2),y2=cy+r*Math.sin(a2);const large=frac>0.5?1:0;
+    seg+=`<path d="M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z" fill="${d.color}" stroke="var(--surface)" stroke-width="2"/>`;a=a2;});
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}"><circle cx="${cx}" cy="${cy}" r="${r*0.58}" fill="var(--surface)"/>${seg}<text x="${cx}" y="${cy-2}" text-anchor="middle" font-size="20" font-weight="800" fill="var(--ink)">${int(tot)}</text><text x="${cx}" y="${cy+15}" text-anchor="middle" font-size="10" fill="var(--muted)">TOTAL</text></svg>`;
+}
+function lineChart(series,w=640,h=210,labels=[]){ // series:[{name,color,points:[]}]
+  const pad={l:44,r:14,t:12,b:24}; const all=series.flatMap(s=>s.points); const max=Math.max(1,...all),min=Math.min(0,...all);
+  const n=series[0]?series[0].points.length:0; const X=i=>pad.l+(w-pad.l-pad.r)*(n<2?0:i/(n-1)); const Y=v=>pad.t+(h-pad.t-pad.b)*(1-(v-min)/((max-min)||1));
+  let g=""; for(let i=0;i<=4;i++){const y=pad.t+(h-pad.t-pad.b)*i/4;g+=`<line x1="${pad.l}" y1="${y}" x2="${w-pad.r}" y2="${y}" stroke="var(--grid)"/><text x="${pad.l-6}" y="${y+3}" text-anchor="end" font-size="9" fill="var(--muted)">${int(max-(max-min)*i/4)}</text>`;}
+  let xl=""; labels.forEach((lb,i)=>{if(i%Math.ceil(n/8||1)===0)xl+=`<text x="${X(i)}" y="${h-8}" text-anchor="middle" font-size="9" fill="var(--muted)">${lb}</text>`;});
+  let paths=series.map(s=>{const d=s.points.map((p,i)=>`${i?'L':'M'} ${X(i).toFixed(1)} ${Y(p).toFixed(1)}`).join(" ");return `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.2"/>`;}).join("");
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" preserveAspectRatio="none">${g}${xl}${paths}</svg>`;
+}
+function barsH(rows,fmt=int,max=null){ // rows:[{nm,val,color}]
+  const m=max||Math.max(1,...rows.map(r=>r.val));
+  return `<div class="row-bars">`+rows.map(r=>`<div class="rb"><div class="nm" title="${esc(r.nm)}">${esc(r.nm)}</div><div class="bar"><span style="width:${clamp(r.val/m*100,0,100)}%;background:${r.color||'var(--s1)'}"></span></div><div class="amt">${fmt(r.val)}</div></div>`).join("")+`</div>`;
+}
+function heatColor(v){ // 0..1 → warn scale
+  const c=[[31,174,130],[224,160,32],[224,80,90]]; const t=clamp(v,0,1); const seg=t<0.5?0:1; const lt=t<0.5?t*2:(t-0.5)*2;
+  const a=c[seg],b=c[seg+1]; return `rgb(${a.map((x,i)=>Math.round(x+(b[i]-x)*lt)).join(",")})`;
+}
+function scatter(pts,w=640,h=260,xl="",yl=""){ // pts:[{x,y,r,color,label}]
+  const pad={l:44,r:14,t:14,b:30}; const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
+  const xmax=Math.max(1,...xs),ymax=Math.max(1,...ys);
+  const X=v=>pad.l+(w-pad.l-pad.r)*(v/xmax),Y=v=>pad.t+(h-pad.t-pad.b)*(1-v/ymax);
+  let g="";for(let i=0;i<=4;i++){const y=pad.t+(h-pad.t-pad.b)*i/4;g+=`<line x1="${pad.l}" y1="${y}" x2="${w-pad.r}" y2="${y}" stroke="var(--grid)"/>`;}
+  const dots=pts.map(p=>`<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${p.r||4}" fill="${p.color}" opacity="0.72"><title>${esc(p.label||"")}</title></circle>`).join("");
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%">${g}${dots}<text x="${w/2}" y="${h-4}" text-anchor="middle" font-size="10" fill="var(--muted)">${xl}</text><text x="12" y="${h/2}" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-90 12 ${h/2})">${yl}</text></svg>`;
+}
+function treemap(rows,w=640,h=300){ // rows:[{nm,val,color}] simple squarified-ish slice
+  const tot=rows.reduce((s,r)=>s+r.val,0)||1; let x=0,out="";const sorted=[...rows].sort((a,b)=>b.val-a.val);
+  // row-based layout
+  let y=0; let i=0;
+  while(i<sorted.length){
+    const rowH= h* (sorted[i].val/tot) *1; // fallback grid
+    break;
+  }
+  // simpler: grid of proportional rectangles across width by cumulative
+  let cx=0; const rowFrac=sorted.map(r=>r.val/tot);
+  // pack into rows of ~3
+  const per=3; let ry=0;
+  for(let r=0;r<Math.ceil(sorted.length/per);r++){
+    const group=sorted.slice(r*per,r*per+per); const gTot=group.reduce((s,z)=>s+z.val,0)||1;
+    const gh=h*(gTot/tot); let gx=0;
+    group.forEach(z=>{const gw=w*(z.val/gTot);
+      out+=`<g><rect x="${gx.toFixed(1)}" y="${ry.toFixed(1)}" width="${(gw-3).toFixed(1)}" height="${(gh-3).toFixed(1)}" rx="6" fill="${z.color}" opacity="0.85"/><text x="${(gx+7).toFixed(1)}" y="${(ry+18).toFixed(1)}" font-size="11" font-weight="700" fill="#0c0d0f">${esc(z.nm)}</text><text x="${(gx+7).toFixed(1)}" y="${(ry+33).toFixed(1)}" font-size="10" fill="#0c0d0f">${money(z.val)}</text></g>`;
+      gx+=gw;});
+    ry+=gh;
+  }
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%">${out}</svg>`;
+}
+function waterfall(steps,w=640,h=230){ // steps:[{nm,delta}] cumulative
+  const pad={l:50,r:14,t:14,b:40}; let cum=0; const pts=[]; steps.forEach(s=>{pts.push({nm:s.nm,from:cum,to:cum+s.delta,delta:s.delta});cum+=s.delta;});
+  const max=Math.max(...pts.map(p=>Math.max(p.from,p.to)),1),min=Math.min(0,...pts.map(p=>Math.min(p.from,p.to)));
+  const bw=(w-pad.l-pad.r)/steps.length*0.6; const gap=(w-pad.l-pad.r)/steps.length;
+  const Y=v=>pad.t+(h-pad.t-pad.b)*(1-(v-min)/((max-min)||1));
+  let out="";pts.forEach((p,i)=>{const x=pad.l+gap*i+gap*0.2;const y1=Y(Math.max(p.from,p.to)),y2=Y(Math.min(p.from,p.to));
+    const col=p.delta>=0?"var(--good)":"var(--crit)";
+    out+=`<rect x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(2,y2-y1).toFixed(1)}" rx="3" fill="${col}" opacity="0.85"/><text x="${(x+bw/2).toFixed(1)}" y="${h-24}" text-anchor="middle" font-size="9" fill="var(--muted)">${esc(p.nm)}</text><text x="${(x+bw/2).toFixed(1)}" y="${(y1-4).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--ink-2)">${int(p.to)}</text>`;});
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%">${out}</svg>`;
+}
+
+/* continued in part 2 ... */
+</script>
+<script>
+/* ══ PART 2 — rendering, tabs, KB, chat, boot ══════════════════════════════ */
+
+/* ── Knowledge Base content ─────────────────────────────────────────────── */
+const KB={
+  "Total Inventory":{def:"Total on-hand units across all in-scope jewelry SKUs and stores.",formula:"Σ current_stock",mean:"The physical count of sellable jewelry you are holding.",improve:"Right-size with refill/transfer; liquidate dead units to lower holding cost.",best:"Hold enough to cover lead time + safety, no more."},
+  "Total Inventory Value":{def:"Capital tied up in on-hand stock at cost.",formula:"Σ (unit cost × on-hand)",mean:"Working capital locked in inventory.",improve:"Reduce dead/overstock; improve turnover.",best:"Maximise turns while protecting service level."},
+  "Total SKU":{def:"Distinct items (Full_sku) in scope.",formula:"COUNT(DISTINCT sku)",mean:"Assortment breadth being managed.",improve:"Rationalise slow tail; deepen winners.",best:"80% of value from ~20% of SKUs (Pareto)."},
+  "Inventory Turnover":{def:"How many times stock sells through per year.",formula:"(90-day units sold × 4) ÷ on-hand",mean:"Capital efficiency of inventory.",improve:"Refill fast-movers, cut dead stock.",best:"Fine jewelry: 1–3× is typical; higher for everyday gold."},
+  "Sell Through %":{def:"Share of total supply that has sold.",formula:"sold ÷ (sold + on-hand)",mean:"How well demand absorbs supply.",improve:"Better buying + promotions on laggards.",best:"60–80% within a season is strong."},
+  "Days Cover":{def:"Days current stock lasts at the current run-rate.",formula:"on-hand ÷ avg daily sales",mean:"Runway before stock-out.",improve:"Refill when cover < lead time.",best:"Keep ≥ lead time + safety (here ≥ 21d)."},
+  "Inventory Health Score":{def:"Composite 0–100 of velocity, cover, aging and turnover.",formula:"weighted blend (see build SQL)",mean:"One-glance quality of the inventory position.",improve:"Fix the worst-scoring SKUs first.",best:"Aim network average ≥ 70."},
+  "Stock Out Risk":{def:"Likelihood of running out before replenishment (0–100).",formula:"100 × (1 − cover ÷ target) when demand>0",mean:"Prioritises urgent refills.",improve:"Refill high-risk SKUs first.",best:"Keep high-value SKUs at <20 risk."},
+  "Refill Quantity":{def:"Units to order to reach the target days-of-cover.",formula:"max(0, avg daily sales × target cover − on-hand)",mean:"Exactly how much to make/buy.",improve:"Trust the run-rate; adjust target by seasonality.",best:"Order to cover, not to fill shelves."},
+  "Refill Priority Score":{def:"0–100 ranking blending demand, urgency, value and OOS.",formula:"OOS + urgency + velocity + value weights",mean:"What to action first today.",improve:"Work the list top-down.",best:"Clear all Critical before Medium."},
+  "Dead Inventory":{def:"On-hand SKUs with no sale for > 180 days.",formula:"on-hand>0 AND days since last sale>180",mean:"Capital frozen with no demand.",improve:"Transfer, discount or liquidate.",best:"Keep < 5% of value in dead stock."},
+  "Average Daily Sales":{def:"Run-rate of units sold per day.",formula:"trailing-90 units ÷ 90 (fallbacks to 30d / lifetime)",mean:"Drives cover, refill and forecast.",improve:"Grow via demand generation on winners.",best:"Track by SKU, not just category."},
+  "AI Health Score":{def:"Same as Inventory Health Score — the AI engine's per-SKU grade rolled up.",formula:"avg(health_score)",mean:"Portfolio quality signal.",improve:"Lift the long tail of low scorers.",best:"≥ 70 network average."}
+};
+function infoIcon(key){return `<span class="info-i" data-kb="${esc(key)}" title="What is this?">i</span>`;}
+function openKB(key){const k=KB[key];if(!k)return;$("#kbBox").innerHTML=
+  `<h3>${esc(key)} ${infoIcon(key)}</h3>
+   <div class="kbrow"><b>Definition</b><p>${esc(k.def)}</p></div>
+   <div class="kbrow"><b>Formula</b><p>${esc(k.formula)}</p></div>
+   <div class="kbrow"><b>Business Meaning</b><p>${esc(k.mean)}</p></div>
+   <div class="kbrow"><b>How to Improve</b><p>${esc(k.improve)}</p></div>
+   <div class="kbrow"><b>Industry Best Practice</b><p>${esc(k.best)}</p></div>
+   <div style="margin-top:16px;text-align:right"><button class="btn" onclick="document.getElementById('kbModal').classList.remove('on')">Close</button></div>`;
+  $("#kbModal").classList.add("on");}
+
+/* ── recommendation visuals ─────────────────────────────────────────────── */
+const REC_META={
+  "Refill Immediately":{ic:"🔴",col:"var(--crit)"},"Refill Next Week":{ic:"🟠",col:"var(--warn)"},
+  "No Refill Required":{ic:"✅",col:"var(--good)"},"Transfer From Another Store":{ic:"🔁",col:"var(--s6)"},
+  "Stop Manufacturing":{ic:"⛔",col:"var(--muted)"},"Increase Manufacturing":{ic:"📈",col:"var(--s2)"},
+  "Promotional Discount":{ic:"🏷️",col:"var(--s5)"},"Liquidation Required":{ic:"💧",col:"var(--s3)"}
+};
+const STATUS_CLS={"Out of Stock":"st-out","Low Stock":"st-low","Over Stock":"st-over","Healthy":"st-ok"};
+
+/* ── TABS ───────────────────────────────────────────────────────────────── */
+const TABS=[
+  {k:"overview",label:"Overview"},
+  {k:"refill",label:"Refill Center"},
+  {k:"ai",label:"AI Recommendations"},
+  {k:"transfers",label:"Store Transfers"},
+  {k:"bi",label:"Business Intelligence"},
+  {k:"forecast",label:"Forecasting"},
+  {k:"aging",label:"Aging & Movement"},
+  {k:"stores",label:"Stores"},
+  {k:"category",label:"Categories"},
+  {k:"data",label:"Data Table"},
+  {k:"insights",label:"AI Insights"},
+  {k:"assistant",label:"Ask AI"},
+  {k:"actions",label:"Action Center"},
+  {k:"kb",label:"Knowledge Base"},
+];
+function buildNav(){
+  $("#nav").innerHTML=TABS.map(t=>`<a data-tab="${t.k}" class="${t.k===STATE.tab?'on':''}">${t.label}<span class="b" id="badge-${t.k}" style="display:none"></span></a>`).join("");
+  $("#pages").innerHTML=TABS.map(t=>`<section class="page ${t.k===STATE.tab?'on':''}" data-page="${t.k}"></section>`).join("");
+  $$("#nav a").forEach(a=>a.onclick=()=>{STATE.tab=a.dataset.tab;location.hash=a.dataset.tab;
+    $$("#nav a").forEach(x=>x.classList.toggle("on",x===a));
+    $$(".page").forEach(p=>p.classList.toggle("on",p.dataset.page===STATE.tab));render();});
+}
+function setBadge(k,n,warn){const b=$("#badge-"+k);if(!b)return;if(n>0){b.textContent=n;b.style.display="";b.className="b"+(warn?" warn":"");}else b.style.display="none";}
+
+/* ── KPI card ───────────────────────────────────────────────────────────── */
+function kpiCard(label,val,cls="",foot="",kb=""){
+  return `<div class="card kpi"><div class="lbl">${esc(label)}${kb?infoIcon(kb):""}</div><div class="val ${cls}">${val}</div>${foot?`<div class="foot">${foot}</div>`:""}</div>`;
+}
+
+/* ── main render dispatch ───────────────────────────────────────────────── */
+function render(){
+  const items=filtered(); const k=rollup(items);
+  // badges
+  setBadge("refill",k.refill_required_sku,false);
+  setBadge("transfers",STATE.transfers.length,true);
+  setBadge("aging",k.dead_inventory,false);
+  const el=$(`.page[data-page="${STATE.tab}"]`); if(!el)return;
+  try{ ({overview:renderOverview,refill:renderRefill,ai:renderAI,transfers:renderTransfers,bi:renderBI,
+    forecast:renderForecast,aging:renderAging,stores:renderStores,category:renderCategory,data:renderData,
+    insights:renderInsights,assistant:renderAssistant,actions:renderActions,kb:renderKB}[STATE.tab]||(()=>{}))(el,items,k);}
+  catch(e){el.innerHTML=`<div class="card"><h3>⚠ Render error</h3><p class="muted">${esc(e.message)}</p></div>`;console.error(e);}
+  $$("[data-kb]",el).forEach(i=>i.onclick=()=>openKB(i.dataset.kb));
+}
+
+/* OVERVIEW */
+function renderOverview(el,items,k){
+  const statusData=[
+    {label:"Out of Stock",value:k.out_of_stock,color:"var(--crit)"},
+    {label:"Low Stock",value:k.low_stock,color:"var(--warn)"},
+    {label:"Over Stock",value:k.over_stock,color:"var(--s5)"},
+    {label:"Dead",value:k.dead_inventory,color:"var(--muted)"},
+    {label:"Healthy",value:Math.max(0,items.length-k.out_of_stock-k.low_stock-k.over_stock-k.dead_inventory),color:"var(--good)"},
+  ];
+  // trend (synthetic from run-rate for demo; live build can add a snapshot history table)
+  const days=30, salesTrend=[],invTrend=[]; let base=k.total_inventory;
+  for(let i=days;i>=0;i--){const s=Math.round(k.avg_daily_sales*(0.7+0.6*Math.abs(Math.sin(i))));salesTrend.push(s);invTrend.push(Math.round(base+ s*i*0.02));}
+  const topRefill=[...items].filter(x=>x.is_refill_required).sort((a,b)=>b.refill_priority_score-a.refill_priority_score).slice(0,8);
+  el.innerHTML=`
+   <div class="h2">Executive Overview</div>
+   <div class="sub">In-scope jewelry only · Silver &amp; Coins excluded · single fact table${STATE.refreshDate?` · as of ${esc(STATE.refreshDate)}`:""}</div>
+   <div class="grid kpis" style="margin-bottom:14px">
+    ${kpiCard("Total Inventory Value",money(k.total_inventory_value),"gold","","Total Inventory Value")}
+    ${kpiCard("Total Inventory",int(k.total_inventory)+" u","","","Total Inventory")}
+    ${kpiCard("Total SKU",int(k.total_sku),"","","Total SKU")}
+    ${kpiCard("Sales Today",int(k.sales_today)+" u",k.sales_today?"good":"")}
+    ${kpiCard("Sales · 7d",int(k.sales_7d)+" u")}
+    ${kpiCard("Sales · 30d",int(k.sales_30d)+" u")}
+    ${kpiCard("Avg Daily Sales",dec(k.avg_daily_sales,1)+" u","","","Average Daily Sales")}
+    ${kpiCard("Inventory Turnover",dec(k.inventory_turnover,2)+"×","","","Inventory Turnover")}
+    ${kpiCard("Sell Through",pct(k.sell_through_pct),"","","Sell Through %")}
+    ${kpiCard("Health Score",k.inventory_health_score+"/100",k.inventory_health_score>=70?"good":k.inventory_health_score>=50?"warn":"crit","","Inventory Health Score")}
+    ${kpiCard("Days Cover",dec(k.avg_days_cover,0)+"d","","","Days Cover")}
+    ${kpiCard("Stock-Out Risk",k.avg_stock_out_risk+"/100",k.avg_stock_out_risk>=50?"crit":k.avg_stock_out_risk>=25?"warn":"good","","Stock Out Risk")}
+    ${kpiCard("Refill Required",int(k.refill_required_sku),k.refill_required_sku?"warn":"good","SKUs","Refill Quantity")}
+    ${kpiCard("Out of Stock",int(k.out_of_stock),k.out_of_stock?"crit":"good")}
+    ${kpiCard("Low Stock",int(k.low_stock),k.low_stock?"warn":"good")}
+    ${kpiCard("Over Stock",int(k.over_stock),k.over_stock?"":"good")}
+    ${kpiCard("Dead Inventory",int(k.dead_inventory),k.dead_inventory?"crit":"good","","Dead Inventory")}
+    ${kpiCard("Total Sold (life)",int(k.total_sold)+" u")}
+   </div>
+   <div class="grid two" style="margin-bottom:14px">
+     <div class="card"><h3>Inventory vs Sales · 30 days <span class="rt">units</span></h3>
+       ${lineChart([{name:"Inventory",color:"var(--s1)",points:invTrend},{name:"Sales",color:"var(--gold)",points:salesTrend}],640,220,[...Array(days+1)].map((_,i)=>i%6===0?`-${days-i}d`:""))}
+       <div class="legend"><span class="li"><span class="sw" style="background:var(--s1)"></span>Inventory on-hand</span><span class="li"><span class="sw" style="background:var(--gold)"></span>Units sold/day</span></div>
+     </div>
+     <div class="card"><h3>Inventory Status Mix</h3>
+       <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><div>${donut(statusData)}</div>
+       <div class="legend" style="flex-direction:column;gap:8px">${statusData.map(d=>`<span class="li"><span class="sw" style="background:${d.color}"></span>${d.label} · <b>${int(d.value)}</b></span>`).join("")}</div></div>
+     </div>
+   </div>
+   <div class="card"><h3>🎯 Top Refill Priorities <span class="rt">by priority score</span></h3>
+     ${itemTable(topRefill,["priority","item","store","stock","cover","rec"])}
+   </div>`;
+}
+
+/* shared item table renderer */
+function itemTable(rows,cols){
+  const H={priority:"Priority",item:"Item",store:"Store",stock:"Stock",cover:"Cover",rec:"AI Rec",value:"Value",
+    sold90:"90d Sold",risk:"Risk",refill:"Refill Qty",turnover:"Turns",age:"Age",move:"Movement",status:"Status",lastsale:"Last Sale"};
+  const cell=(it,c)=>({
+    priority:`<span class="pill pr-${it.ai_priority}">${it.refill_priority_score}</span>`,
+    item:`<span class="thumb">💍</span> ${esc(it.item_name)} <span class="tag">${esc(it.sku)} · ${esc(it.category)}</span>`,
+    store:esc(it.store), stock:`<b class="tnum">${int(it.current_stock)}</b>`,
+    cover:it.days_cover>=999?'<span class="muted">∞</span>':`<span class="tnum">${dec(it.days_cover,0)}d</span>`,
+    rec:`<span class="tag">${REC_META[it.ai_recommendation]?.ic||""}</span> ${esc(it.ai_recommendation)}`,
+    value:money(it.inventory_value), sold90:int(it.sold_90), risk:`<span class="tnum ${it.stock_out_risk>=50?'down':''}">${it.stock_out_risk}</span>`,
+    refill:`<b class="tnum">${int(it.refill_qty)}</b>`, turnover:dec(it.inventory_turnover,2)+"×",
+    age:int(it.inventory_age)+"d", move:`<span class="mv-${it.movement_class.split(' ')[0]}">${esc(it.movement_class)}</span>`,
+    status:`<span class="pill ${STATUS_CLS[it.inventory_status]}">${esc(it.inventory_status)}</span>`,
+    lastsale:it.days_since_last_sale>=9999?'<span class="muted">never</span>':int(it.days_since_last_sale)+"d ago"
+  }[c]);
+  return `<div class="tbl-wrap"><table><thead><tr>${cols.map(c=>`<th>${H[c]}</th>`).join("")}</tr></thead><tbody>${rows.length?rows.map(it=>`<tr>${cols.map(c=>`<td>${cell(it,c)}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${cols.length}" class="muted" style="text-align:center;padding:24px">No items match the current filters.</td></tr>`}</tbody></table></div>`;
+}
+
+/* REFILL CENTER */
+function renderRefill(el,items,k){
+  const refill=[...items].filter(x=>x.is_refill_required).sort((a,b)=>b.refill_priority_score-a.refill_priority_score);
+  const units=refill.reduce((s,x)=>s+x.refill_qty,0);
+  const val=refill.reduce((s,x)=>s+x.refill_qty*x.mrp,0);
+  // priority matrix: x=cover, y=demand, size=value
+  const pts=refill.slice(0,180).map(x=>({x:Math.min(x.days_cover,120),y:Math.min(x.avg_daily_sales*30,60),r:clamp(Math.sqrt(x.inventory_value)/60,3,14),color:x.ai_priority==="Critical"?"var(--crit)":x.ai_priority==="High"?"var(--warn)":"var(--s1)",label:`${x.item_name} · ${x.store} · cover ${x.days_cover}d`}));
+  el.innerHTML=`
+   <div class="h2">Refill Center</div><div class="sub">Refill quantity = max(0, run-rate × ${C.TARGET_COVER}d target − on-hand). Work top-down by priority.</div>
+   <div class="grid kpis" style="margin-bottom:14px">
+     ${kpiCard("SKUs to Refill",int(refill.length),refill.length?"warn":"good","","Refill Quantity")}
+     ${kpiCard("Total Refill Units",int(units)+" u")}
+     ${kpiCard("Refill Value (MRP)",money(val),"gold")}
+     ${kpiCard("Out of Stock w/ Demand",int(refill.filter(x=>x.is_out_of_stock).length),"crit")}
+     ${kpiCard("Critical Priority",int(refill.filter(x=>x.ai_priority==="Critical").length),"crit","","Refill Priority Score")}
+   </div>
+   <div class="card" style="margin-bottom:14px"><h3>Refill Priority Matrix <span class="rt">x: days cover · y: monthly demand · size: value</span></h3>
+     ${scatter(pts,760,280,"Days of cover →","Monthly demand →")}
+     <div class="legend"><span class="li"><span class="sw" style="background:var(--crit)"></span>Critical</span><span class="li"><span class="sw" style="background:var(--warn)"></span>High</span><span class="li"><span class="sw" style="background:var(--s1)"></span>Medium/Low</span></div>
+   </div>
+   <div class="card"><h3>Refill Worklist <span class="rt">${refill.length} SKUs</span></h3>
+     ${itemTable(refill.slice(0,300),["priority","item","store","stock","cover","sold90","refill","rec"])}
+   </div>`;
+}
+
+/* AI RECOMMENDATIONS */
+function renderAI(el,items,k){
+  const groups={};items.forEach(x=>{(groups[x.ai_recommendation]=groups[x.ai_recommendation]||[]).push(x);});
+  const order=["Refill Immediately","Refill Next Week","Increase Manufacturing","Transfer From Another Store","Promotional Discount","Liquidation Required","Stop Manufacturing","No Refill Required"];
+  const cards=order.filter(g=>groups[g]&&groups[g].length).map(g=>{
+    const arr=groups[g].sort((a,b)=>b.refill_priority_score-a.refill_priority_score);const m=REC_META[g]||{ic:"•",col:"var(--s1)"};
+    const val=arr.reduce((s,x)=>s+x.inventory_value,0); const avgConf=Math.round(arr.reduce((s,x)=>s+x.ai_confidence,0)/arr.length);
+    const top=arr[0];
+    return `<div class="rec" style="border-left:3px solid ${m.col}">
+      <div class="rt"><div class="ic" style="background:${m.col}22">${m.ic}</div><b>${esc(g)}</b><span class="n">${arr.length}</span></div>
+      <div class="desc"><b>Top:</b> ${esc(top.item_name)} <span class="tag">${esc(top.store)}</span><br>${esc(top.ai_reason)}.<br><span class="muted">${esc(top.ai_business_impact)}.</span></div>
+      <div class="meta"><span>Value ${money(val)}</span><span>Avg confidence ${avgConf}%</span><span>${arr.filter(x=>x.ai_priority==="Critical").length} critical</span></div>
+    </div>`;}).join("");
+  el.innerHTML=`
+   <div class="h2">AI Refill Recommendation Engine</div>
+   <div class="sub">Every SKU is classified by a transparent decision tree. Each recommendation carries a reason, business impact, priority and confidence.</div>
+   <div class="rec-grid" style="margin-bottom:16px">${cards||'<p class="muted">No recommendations for the current filter.</p>'}</div>
+   <div class="card"><h3>All Recommendations <span class="rt">${items.length} SKU×store rows</span></h3>
+     ${itemTable([...items].sort((a,b)=>b.refill_priority_score-a.refill_priority_score).slice(0,300),["priority","item","store","stock","cover","rec","status"])}
+   </div>`;
+}
+
+/* STORE TRANSFERS */
+function renderTransfers(el,items,k){
+  const T=STATE.transfers.filter(t=>items.some(i=>i.sku===t.sku)); // respect filters loosely
+  const val=T.reduce((s,t)=>s+t.expected_value_moved,0), units=T.reduce((s,t)=>s+t.suggested_qty,0);
+  // matrix source→dest
+  const stores=[...new Set(items.map(i=>i.store))];
+  const mtx={};T.forEach(t=>{const kk=t.source_store+"→"+t.dest_store;mtx[kk]=(mtx[kk]||0)+t.suggested_qty;});
+  const maxCell=Math.max(1,...Object.values(mtx));
+  const matrixHtml=`<div class="scroll-x"><table class="heat"><thead><tr><th>From \\ To</th>${stores.map(s=>`<th>${esc(s.split(' ')[0])}</th>`).join("")}</tr></thead><tbody>${stores.map(sr=>`<tr><td style="font-weight:700;font-size:11px">${esc(sr.split(' ')[0])}</td>${stores.map(ds=>{const v=mtx[sr+"→"+ds]||0;return `<td>${v?`<div class="cell" style="background:${heatColor(v/maxCell)}">${v}</div>`:`<div class="cell" style="background:var(--surface-2);color:var(--muted)">·</div>`}</td>`;}).join("")}</tr>`).join("")}</tbody></table></div>`;
+  el.innerHTML=`
+   <div class="h2">Store Transfer Recommendations</div>
+   <div class="sub">Rebalance surplus into shortage <b>before</b> manufacturing. Suggested qty never exceeds the source store's protected surplus.</div>
+   <div class="grid kpis" style="margin-bottom:14px">
+     ${kpiCard("Transfer Moves",int(T.length),T.length?"good":"")}
+     ${kpiCard("Units to Move",int(units)+" u")}
+     ${kpiCard("Value Rebalanced",money(val),"gold")}
+     ${kpiCard("Mfg Avoided (est.)",money(val*0.55),"good","at cost")}
+   </div>
+   <div class="card" style="margin-bottom:14px"><h3>Transfer Flow Matrix <span class="rt">units source → destination</span></h3>${matrixHtml}</div>
+   <div class="card"><h3>Recommended Transfers <span class="rt">${T.length}</span></h3>
+   <div class="tbl-wrap"><table><thead><tr><th>Priority</th><th>Item</th><th>From</th><th>To</th><th>Qty</th><th>Dest Demand</th><th>Dest Cover</th><th>Value Moved</th></tr></thead><tbody>
+   ${T.length?T.slice(0,300).map(t=>`<tr><td><span class="pill pr-${t.priority_score>=60?'Critical':t.priority_score>=40?'High':'Medium'}">${t.priority_score}</span></td><td><span class="thumb">💍</span> ${esc(t.item_name)} <span class="tag">${esc(t.sku)}</span></td><td>${esc(t.source_store)}</td><td><b>${esc(t.dest_store)}</b></td><td><b class="tnum">${int(t.suggested_qty)}</b></td><td class="tnum">${dec(t.dest_daily_demand,2)}/d</td><td class="tnum">${dec(t.dest_cover_days,0)}d</td><td>${money(t.expected_value_moved)}</td></tr>`).join(""):`<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">No transfer opportunities — surplus and shortage don't overlap on any SKU.</td></tr>`}
+   </tbody></table></div></div>`;
+}
+
+/* BUSINESS INTELLIGENCE — ABC, XYZ, Pareto, fast/slow/dead, high-demand-low-stock */
+function renderBI(el,items,k){
+  // ABC by value
+  const byVal=[...items].sort((a,b)=>b.inventory_value-a.inventory_value);const totV=byVal.reduce((s,x)=>s+x.inventory_value,0)||1;
+  let cum=0;const abc={A:0,B:0,C:0};byVal.forEach(x=>{cum+=x.inventory_value;const p=cum/totV;x._abc=p<=0.8?"A":p<=0.95?"B":"C";abc[x._abc]++;});
+  // XYZ by demand variability (proxy: cover stability via movement)
+  const xyz={X:items.filter(x=>x.is_fast_moving).length,Y:items.filter(x=>x.movement_class==="Slow Moving").length,Z:items.filter(x=>x.is_dead_stock||x.is_never_sold).length};
+  // Pareto (top SKUs by revenue)
+  const byRev=[...items].sort((a,b)=>b.revenue_all-a.revenue_all).slice(0,20);const totR=items.reduce((s,x)=>s+x.revenue_all,0)||1;let cr=0;
+  const paretoPts=byRev.map((x,i)=>{cr+=x.revenue_all;return {nm:x.item_name.slice(0,10),rev:x.revenue_all,cum:cr/totR*100};});
+  const fast=[...items].filter(x=>x.is_fast_moving).sort((a,b)=>b.sold_90-a.sold_90).slice(0,10);
+  const slow=[...items].filter(x=>x.is_slow_moving||x.is_dead_stock).sort((a,b)=>b.inventory_value-a.inventory_value).slice(0,10);
+  const hotLow=[...items].filter(x=>x.avg_daily_sales>0&&x.is_low_stock).sort((a,b)=>b.avg_daily_sales-a.avg_daily_sales).slice(0,10);
+  const highMargin=[...items].filter(x=>x.mrp>=100000&&x.current_stock<=2&&x.avg_daily_sales>0).sort((a,b)=>b.mrp-a.mrp).slice(0,10);
+  el.innerHTML=`
+   <div class="h2">Business Intelligence</div><div class="sub">ABC / XYZ / Pareto classification, movement analysis and demand-vs-supply gaps.</div>
+   <div class="grid three" style="margin-bottom:14px">
+    <div class="card"><h3>ABC Analysis <span class="rt">by value</span></h3>
+     <div style="display:flex;gap:14px;align-items:center"><div>${donut([{label:"A",value:abc.A,color:"var(--s1)"},{label:"B",value:abc.B,color:"var(--s4)"},{label:"C",value:abc.C,color:"var(--muted)"}],150)}</div>
+     <div class="legend" style="flex-direction:column;gap:7px"><span class="li"><span class="sw" style="background:var(--s1)"></span>A · top 80% value · ${abc.A}</span><span class="li"><span class="sw" style="background:var(--s4)"></span>B · next 15% · ${abc.B}</span><span class="li"><span class="sw" style="background:var(--muted)"></span>C · last 5% · ${abc.C}</span></div></div></div>
+    <div class="card"><h3>XYZ Analysis <span class="rt">by predictability</span></h3>
+     <div style="display:flex;gap:14px;align-items:center"><div>${donut([{label:"X",value:xyz.X,color:"var(--good)"},{label:"Y",value:xyz.Y,color:"var(--warn)"},{label:"Z",value:xyz.Z,color:"var(--crit)"}],150)}</div>
+     <div class="legend" style="flex-direction:column;gap:7px"><span class="li"><span class="sw" style="background:var(--good)"></span>X · steady (fast) · ${xyz.X}</span><span class="li"><span class="sw" style="background:var(--warn)"></span>Y · variable (slow) · ${xyz.Y}</span><span class="li"><span class="sw" style="background:var(--crit)"></span>Z · erratic/dead · ${xyz.Z}</span></div></div></div>
+    <div class="card"><h3>Pareto <span class="rt">revenue concentration</span></h3>
+     ${lineChart([{name:"cum%",color:"var(--gold)",points:paretoPts.map(p=>p.cum)}],320,190,paretoPts.map((p,i)=>i%4===0?p.nm:""))}
+     <p class="muted" style="font-size:11.5px;margin:8px 0 0">Top ${byRev.length} SKUs drive ${pct(paretoPts.length?paretoPts[paretoPts.length-1].cum:0,0)} of revenue.</p></div>
+   </div>
+   <div class="grid twoeq" style="margin-bottom:14px">
+    <div class="card"><h3>⚡ Fast Movers</h3>${barsH(fast.map(x=>({nm:x.item_name,val:x.sold_90,color:"var(--good)"})))}</div>
+    <div class="card"><h3>🐌 Slow / Dead — capital locked</h3>${barsH(slow.map(x=>({nm:x.item_name,val:x.inventory_value,color:"var(--crit)"})),money)}</div>
+   </div>
+   <div class="grid twoeq">
+    <div class="card"><h3>🔥 High Demand, Low Stock <span class="rt">push refill</span></h3>${itemTable(hotLow,["item","store","stock","cover","sold90","refill"])}</div>
+    <div class="card"><h3>💎 High Margin, Low Stock <span class="rt">protect availability</span></h3>${itemTable(highMargin,["item","store","stock","value","cover","rec"])}</div>
+   </div>`;
+}
+
+/* FORECASTING */
+function renderForecast(el,items,k){
+  const f7=items.reduce((s,x)=>s+x.forecast_7d,0),f15=items.reduce((s,x)=>s+x.forecast_15d,0),f30=items.reduce((s,x)=>s+x.forecast_30d,0);
+  const f7v=items.reduce((s,x)=>s+x.forecast_7d*x.mrp,0),f30v=items.reduce((s,x)=>s+x.forecast_30d*x.mrp,0);
+  // demand curve next 30 days
+  const curve=[];for(let d=1;d<=30;d++){curve.push(Math.round(k.avg_daily_sales*(0.85+0.3*Math.sin(d/5))));}
+  const topFc=[...items].filter(x=>x.avg_daily_sales>0).sort((a,b)=>b.forecast_30d-a.forecast_30d).slice(0,12);
+  el.innerHTML=`
+   <div class="h2">Demand Forecasting</div><div class="sub">Run-rate projection (trailing-90 velocity). Suggested future refill quantities derive from projected demand vs on-hand.</div>
+   <div class="grid kpis" style="margin-bottom:14px">
+     ${kpiCard("Forecast · Next 7d",int(f7)+" u","","≈ "+money(f7v))}
+     ${kpiCard("Forecast · Next 15d",int(f15)+" u")}
+     ${kpiCard("Forecast · Next 30d",int(f30)+" u","","≈ "+money(f30v))}
+     ${kpiCard("Projected Daily",dec(k.avg_daily_sales,1)+" u")}
+   </div>
+   <div class="card" style="margin-bottom:14px"><h3>Projected Daily Demand · next 30 days <span class="rt">units</span></h3>
+     ${lineChart([{name:"demand",color:"var(--s2)",points:curve}],760,220,[...Array(30)].map((_,i)=>i%5===0?`+${i+1}d`:""))}</div>
+   <div class="card"><h3>Suggested Future Refill <span class="rt">top demand SKUs</span></h3>
+     <div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Store</th><th>On-hand</th><th>7d</th><th>15d</th><th>30d</th><th>Suggested Refill</th></tr></thead><tbody>
+     ${topFc.map(x=>`<tr><td><span class="thumb">💍</span> ${esc(x.item_name)} <span class="tag">${esc(x.sku)}</span></td><td>${esc(x.store)}</td><td class="tnum">${int(x.current_stock)}</td><td class="tnum">${int(x.forecast_7d)}</td><td class="tnum">${int(x.forecast_15d)}</td><td class="tnum">${int(x.forecast_30d)}</td><td><b class="tnum">${int(Math.max(0,x.forecast_30d-x.current_stock))}</b></td></tr>`).join("")}
+     </tbody></table></div></div>`;
+}
+
+/* AGING & MOVEMENT */
+function renderAging(el,items,k){
+  const buckets=[["0–30",0,30],["31–60",31,60],["61–90",61,90],["91–180",91,180],["181–365",181,365],["365+",366,99999]];
+  const rows=buckets.map(([nm,a,b])=>{const arr=items.filter(x=>x.inventory_age>=a&&x.inventory_age<=b);return {nm,n:arr.length,val:arr.reduce((s,x)=>s+x.inventory_value,0)};});
+  const maxV=Math.max(1,...rows.map(r=>r.val));
+  const move={};["Fast Moving","Slow Moving","Dead","Never Sold"].forEach(m=>move[m]=items.filter(x=>x.movement_class===m));
+  const waterfallSteps=[{nm:"Opening",delta:items.reduce((s,x)=>s+x.opening_inventory,0)},{nm:"GRN +",delta:items.reduce((s,x)=>s+x.grn_received_qty,0)},{nm:"Sold −",delta:-items.reduce((s,x)=>s+x.total_sold,0)}];
+  el.innerHTML=`
+   <div class="h2">Inventory Aging &amp; Movement</div><div class="sub">How long capital has been held, and how fast it rotates.</div>
+   <div class="grid two" style="margin-bottom:14px">
+     <div class="card"><h3>Aging Buckets <span class="rt">value by age</span></h3>${barsH(rows.map((r,i)=>({nm:r.nm+" ("+r.n+")",val:r.val,color:heatColor(i/5)})),money,maxV)}</div>
+     <div class="card"><h3>Stock Waterfall <span class="rt">units</span></h3>${waterfall(waterfallSteps)}<p class="muted" style="font-size:11.5px;margin-top:8px">Opening + GRN received − sold = current position.</p></div>
+   </div>
+   <div class="grid kpis" style="margin-bottom:14px">
+     ${kpiCard("Fast Moving",int(move["Fast Moving"].length),"good")}
+     ${kpiCard("Slow Moving",int(move["Slow Moving"].length),"warn")}
+     ${kpiCard("Dead Stock",int(move["Dead"].length),"crit","","Dead Inventory")}
+     ${kpiCard("Never Sold",int(move["Never Sold"].length),"")}
+     ${kpiCard("Aged > 180d",int(items.filter(x=>x.inventory_age>180).length),"warn")}
+     ${kpiCard("Dead Capital",money(move["Dead"].reduce((s,x)=>s+x.inventory_value,0)),"crit")}
+   </div>
+   <div class="card"><h3>Dead &amp; Aging Detail <span class="rt">liquidation candidates</span></h3>
+     ${itemTable([...items].filter(x=>x.is_dead_stock||x.is_never_sold).sort((a,b)=>b.inventory_value-a.inventory_value).slice(0,200),["item","store","stock","value","age","lastsale","rec"])}</div>`;
+}
+
+/* STORES */
+function renderStores(el,items,k){
+  const byStore={};items.forEach(x=>{const s=byStore[x.store]=byStore[x.store]||{store:x.store,region:x.region,items:0,units:0,value:0,sold:0,oos:0,low:0,dead:0,refill:0,health:0};
+    s.items++;s.units+=x.current_stock;s.value+=x.inventory_value;s.sold+=x.total_sold;s.oos+=x.is_out_of_stock?1:0;s.low+=x.is_low_stock?1:0;s.dead+=x.is_dead_stock?1:0;s.refill+=x.is_refill_required?1:0;s.health+=x.health_score;});
+  const stores=Object.values(byStore).map(s=>({...s,health:Math.round(s.health/s.items)})).sort((a,b)=>b.value-a.value);
+  // store heatmap: metric intensity
+  const metrics=["oos","low","dead","refill"];const maxM={};metrics.forEach(m=>maxM[m]=Math.max(1,...stores.map(s=>s[m])));
+  const heat=`<div class="scroll-x"><table class="heat"><thead><tr><th>Store</th><th>OOS</th><th>Low</th><th>Dead</th><th>Refill</th><th>Health</th></tr></thead><tbody>${stores.map(s=>`<tr><td style="font-weight:700;font-size:11px">${esc(s.store)}</td>${metrics.map(m=>`<td><div class="cell" style="background:${heatColor(s[m]/maxM[m])}">${s[m]}</div></td>`).join("")}<td><div class="cell" style="background:${heatColor(1-s.health/100)}">${s.health}</div></td></tr>`).join("")}</tbody></table></div>`;
+  el.innerHTML=`
+   <div class="h2">Store Performance</div><div class="sub">On-hand is per store; velocity is network-wide by SKU (store↔sales-code mapping is approximate — see Knowledge Base).</div>
+   <div class="grid two" style="margin-bottom:14px">
+     <div class="card"><h3>Inventory Value by Store</h3>${barsH(stores.map((s,i)=>({nm:s.store,val:s.value,color:PAL[i%PAL.length]})),money)}</div>
+     <div class="card"><h3>Store Health Heatmap <span class="rt">issue intensity</span></h3>${heat}<p class="muted" style="font-size:11px;margin-top:8px">Greener = fewer issues / higher health.</p></div>
+   </div>
+   <div class="card"><h3>Store Scorecard</h3>
+   <div class="tbl-wrap"><table><thead><tr><th>Store</th><th>Region</th><th>SKUs</th><th>Units</th><th>Value</th><th>Sold</th><th>OOS</th><th>Low</th><th>Dead</th><th>Refill</th><th>Health</th></tr></thead><tbody>
+   ${stores.map(s=>`<tr><td><b>${esc(s.store)}</b></td><td>${esc(s.region)}</td><td class="tnum">${int(s.items)}</td><td class="tnum">${int(s.units)}</td><td>${money(s.value)}</td><td class="tnum">${int(s.sold)}</td><td class="tnum ${s.oos?'down':''}">${s.oos}</td><td class="tnum">${s.low}</td><td class="tnum">${s.dead}</td><td class="tnum">${s.refill}</td><td><span class="pill ${s.health>=70?'st-ok':s.health>=50?'st-low':'st-out'}">${s.health}</span></td></tr>`).join("")}
+   </tbody></table></div></div>`;
+}
+
+/* CATEGORIES */
+function renderCategory(el,items,k){
+  const agg={};items.forEach(x=>{const c=agg[x.category]=agg[x.category]||{cat:x.category,items:0,value:0,sold:0,rev:0,st:0,refill:0};
+    c.items++;c.value+=x.inventory_value;c.sold+=x.total_sold;c.rev+=x.revenue_all;c.st+=x.sell_through;c.refill+=x.is_refill_required?1:0;});
+  const cats=Object.values(agg).map(c=>({...c,st:c.st/c.items*100})).sort((a,b)=>b.value-a.value);
+  const tm=cats.map((c,i)=>({nm:c.cat,val:c.value,color:PAL[i%PAL.length]}));
+  const best=[...cats].sort((a,b)=>b.st-a.st).slice(0,3),worst=[...cats].sort((a,b)=>a.st-b.st).slice(0,3);
+  el.innerHTML=`
+   <div class="h2">Category Analysis</div><div class="sub">Where value concentrates and how each category rotates.</div>
+   <div class="card" style="margin-bottom:14px"><h3>Inventory Value Treemap <span class="rt">by category</span></h3>${treemap(tm)}</div>
+   <div class="grid twoeq" style="margin-bottom:14px">
+     <div class="card"><h3>✅ Best Performing <span class="rt">sell-through</span></h3>${barsH(best.map(c=>({nm:c.cat,val:c.st,color:"var(--good)"})),v=>pct(v))}</div>
+     <div class="card"><h3>⚠ Worst Performing <span class="rt">sell-through</span></h3>${barsH(worst.map(c=>({nm:c.cat,val:c.st,color:"var(--crit)"})),v=>pct(v))}</div>
+   </div>
+   <div class="card"><h3>Category Scorecard</h3>
+   <div class="tbl-wrap"><table><thead><tr><th>Category</th><th>SKUs</th><th>Inv Value</th><th>Units Sold</th><th>Revenue</th><th>Sell-Through</th><th>Refill</th></tr></thead><tbody>
+   ${cats.map(c=>`<tr><td><b>${esc(c.cat)}</b></td><td class="tnum">${int(c.items)}</td><td>${money(c.value)}</td><td class="tnum">${int(c.sold)}</td><td>${money(c.rev)}</td><td class="tnum">${pct(c.st)}</td><td class="tnum">${c.refill}</td></tr>`).join("")}
+   </tbody></table></div></div>`;
+}
+
+/* DATA TABLE */
+function renderData(el,items,k){
+  const cols=[["item_name","Item"],["sku","SKU"],["store","Store"],["category","Category"],["metal","Metal"],["current_stock","Stock"],["inventory_value","Value"],["total_sold","Sold"],["days_cover","Cover"],["inventory_turnover","Turns"],["sell_through","Sell%"],["inventory_age","Age"],["days_since_last_sale","Last Sale"],["inventory_status","Status"],["ai_recommendation","AI Rec"],["refill_qty","Refill"],["refill_priority_score","Prio"]];
+  const s=STATE.sort.data||{c:"refill_priority_score",d:-1};const q=(STATE.page.dataQ||"").toLowerCase();
+  let rows=items.filter(x=>!q||(x.item_name+x.sku+x.store+x.category).toLowerCase().includes(q));
+  rows=[...rows].sort((a,b)=>{const va=a[s.c],vb=b[s.c];return (va<vb?-1:va>vb?1:0)*s.d;});
+  const per=50;const pg=STATE.page.data||0;const pages=Math.ceil(rows.length/per)||1;const view=rows.slice(pg*per,pg*per+per);
+  const fmt=(x,c)=>({inventory_value:money(x[c]),days_cover:x.days_cover>=999?"∞":dec(x[c],0)+"d",inventory_turnover:dec(x[c],2)+"×",sell_through:pct(x[c]*100),inventory_age:int(x[c])+"d",days_since_last_sale:x[c]>=9999?"never":int(x[c])+"d",inventory_status:`<span class="pill ${STATUS_CLS[x.inventory_status]}">${esc(x[c])}</span>`}[c]??(typeof x[c]==="number"?int(x[c]):esc(x[c])));
+  el.innerHTML=`
+   <div class="h2">Interactive Data Table</div><div class="sub">${int(rows.length)} rows · click headers to sort · search + paginate + export.</div>
+   <div class="toolbar"><input class="search" id="dataSearch" placeholder="Search item / SKU / store / category…" value="${esc(STATE.page.dataQ||"")}">
+     <button class="btn sm" id="dataCsv">⭳ CSV</button><span class="muted" style="margin-left:auto">Showing ${view.length} of ${int(rows.length)}</span></div>
+   <div class="tbl-wrap"><table><thead><tr>${cols.map(([c,l])=>`<th data-sc="${c}">${l}${s.c===c?(s.d>0?" ▲":" ▼"):""}</th>`).join("")}</tr></thead><tbody>
+   ${view.map(x=>`<tr>${cols.map(([c])=>`<td>${fmt(x,c)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${cols.length}" class="muted" style="text-align:center;padding:24px">No rows.</td></tr>`}
+   </tbody></table></div>
+   <div class="pager"><button class="btn sm" id="pgPrev" ${pg<=0?"disabled":""}>‹ Prev</button><span>Page ${pg+1} / ${pages}</span><button class="btn sm" id="pgNext" ${pg>=pages-1?"disabled":""}>Next ›</button></div>`;
+  $("#dataSearch",el).oninput=e=>{STATE.page.dataQ=e.target.value;STATE.page.data=0;render();};
+  $$("th[data-sc]",el).forEach(th=>th.onclick=()=>{const c=th.dataset.sc;STATE.sort.data={c,d:s.c===c?-s.d:-1};render();});
+  $("#pgPrev",el)&&($("#pgPrev",el).onclick=()=>{STATE.page.data=Math.max(0,pg-1);render();});
+  $("#pgNext",el)&&($("#pgNext",el).onclick=()=>{STATE.page.data=Math.min(pages-1,pg+1);render();});
+  $("#dataCsv",el).onclick=()=>exportCSV(rows,cols.map(c=>c[0]));
+}
+
+/* AI INSIGHTS */
+function renderInsights(el,items,k){
+  const ins=STATE.live?STATE.insights:computeInsights(items,STATE.transfers);
+  const icon={critical:"🚨",warn:"⚠️",good:"✅",info:"💡"};
+  el.innerHTML=`
+   <div class="h2">AI Insights</div><div class="sub">Auto-generated on every refresh. ${STATE.live?"Live from the insights table.":"Computed from the current data."}</div>
+   <div class="grid twoeq"><div>${ins.filter((_,i)=>i%2===0).map(x=>insightHtml(x,icon)).join("")}</div><div>${ins.filter((_,i)=>i%2===1).map(x=>insightHtml(x,icon)).join("")}</div></div>`;
+}
+function insightHtml(x,icon){return `<div class="insight sev-${x.severity}"><div class="ic">${icon[x.severity]||"•"}</div><div><b>${esc(x.title)}</b><p>${esc(x.detail)}</p></div></div>`;}
+
+/* ASK AI */
+function renderAssistant(el,items,k){
+  const sugg=["Which products need refill today?","Which products will stock out this week?","Show dead inventory","Products with no sales after GRN","Which stores require refill?","Which products should stop manufacturing?","Which products should be transferred?","Compare stores","Explain inventory turnover"];
+  el.innerHTML=`
+   <div class="h2">Ask AI · Inventory Assistant</div><div class="sub">${CONFIG.API_BASE?"Natural-language → guarded BigQuery over the fact table.":"Offline assistant — answers computed from the loaded data. Wire the API for live SQL."}</div>
+   <div class="suggest">${sugg.map(s=>`<span class="s">${esc(s)}</span>`).join("")}</div>
+   <div class="chat-wrap"><div class="chat-log" id="chatLog"></div>
+   <div class="chat-in"><input id="chatInput" placeholder="Ask about refill, stock-outs, dead stock, transfers, stores…"><button class="btn primary" id="chatSend">Send</button></div></div>`;
+  const log=$("#chatLog",el);
+  if(!STATE._chat)STATE._chat=[{who:"a",text:"Hi! I'm your inventory intelligence assistant. Ask me what to refill, what's at risk, or what to transfer."}];
+  const draw=()=>{log.innerHTML=STATE._chat.map(m=>`<div class="msg ${m.who}">${m.text}${m.sql?`<div class="sql">${esc(m.sql)}</div>`:""}${m.table||""}${m.meta?`<div class="mt">${esc(m.meta)}</div>`:""}</div>`).join("");log.scrollTop=log.scrollHeight;};
+  draw();
+  const ask=async q=>{if(!q.trim())return;STATE._chat.push({who:"u",text:esc(q)});draw();
+    STATE._chat.push({who:"a",text:"<span class='muted'>Thinking…</span>"});draw();
+    const ans=await answerQuestion(q);STATE._chat.pop();STATE._chat.push(ans);draw();};
+  $("#chatSend",el).onclick=()=>{const v=$("#chatInput",el).value;$("#chatInput",el).value="";ask(v);};
+  $("#chatInput",el).onkeydown=e=>{if(e.key==="Enter"){const v=e.target.value;e.target.value="";ask(v);}};
+  $$(".suggest .s",el).forEach(s=>s.onclick=()=>ask(s.textContent));
+}
+async function answerQuestion(q){
+  if(CONFIG.API_BASE){
+    try{const r=await fetch(CONFIG.API_BASE+"?action=chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question:q})});
+      const j=await r.json();if(j.error)return{who:"a",text:esc(j.answer||j.error),sql:j.sql};
+      let tbl="";if(j.rows&&j.rows.length){const cols=Object.keys(j.rows[0]).slice(0,6);tbl=`<table><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${j.rows.slice(0,8).map(r=>`<tr>${cols.map(c=>`<td>${esc(r[c])}</td>`).join("")}</tr>`).join("")}</tbody></table>`;}
+      return{who:"a",text:esc(j.answer||"Done."),sql:j.sql,table:tbl,meta:j.row_count!=null?`${j.row_count} rows · ${j.scanned_gb||0} GB scanned`:""};
+    }catch(e){return{who:"a",text:"Live query failed ("+esc(e.message)+"). Falling back to local: "+localAnswer(q).text,table:localAnswer(q).table};}
+  }
+  return localAnswer(q);
+}
+function localAnswer(q){
+  const s=q.toLowerCase();const items=filtered();
+  const tbl=(rows,cols,hdr)=>rows.length?`<table><thead><tr>${hdr.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.slice(0,8).map(r=>`<tr>${cols.map(c=>`<td>${c(r)}</td>`).join("")}</tr>`).join("")}</tbody></table>`:"";
+  if(/refill.*today|need.*refill|what.*refill/.test(s)){const r=items.filter(x=>x.ai_priority==="Critical"&&x.is_refill_required).sort((a,b)=>b.refill_priority_score-a.refill_priority_score);
+    return{who:"a",text:`<b>${r.length}</b> SKUs need refilling today (Critical priority), ${r.filter(x=>x.is_out_of_stock).length} already out of stock. Action them in the Refill Center.`,table:tbl(r,[x=>esc(x.item_name),x=>esc(x.store),x=>int(x.current_stock),x=>int(x.refill_qty)],["Item","Store","Stock","Refill"])};}
+  if(/stock out|stockout|run out.*week/.test(s)){const r=items.filter(x=>x.stock_out_risk>=60&&x.days_cover<=7).sort((a,b)=>b.stock_out_risk-a.stock_out_risk);
+    return{who:"a",text:`<b>${r.length}</b> products are likely to stock out within 7 days (risk ≥ 60, cover ≤ 7d).`,table:tbl(r,[x=>esc(x.item_name),x=>esc(x.store),x=>dec(x.days_cover,0)+"d",x=>x.stock_out_risk],["Item","Store","Cover","Risk"])};}
+  if(/dead/.test(s)){const r=items.filter(x=>x.is_dead_stock).sort((a,b)=>b.inventory_value-a.inventory_value);
+    return{who:"a",text:`<b>${r.length}</b> dead SKUs (no sale >180d) holding <b>${money(r.reduce((t,x)=>t+x.inventory_value,0))}</b>. Liquidate the highest-value first.`,table:tbl(r,[x=>esc(x.item_name),x=>esc(x.store),x=>money(x.inventory_value),x=>int(x.days_since_last_sale)+"d"],["Item","Store","Value","Idle"])};}
+  if(/no sale.*grn|after grn|never sold/.test(s)){const r=items.filter(x=>x.total_sold===0);
+    return{who:"a",text:`<b>${r.length}</b> products have had no sale since GRN — candidates to stop manufacturing.`,table:tbl(r,[x=>esc(x.item_name),x=>esc(x.store),x=>int(x.current_stock),x=>(x.days_since_last_grn||"—")+"d"],["Item","Store","Stock","Since GRN"])};}
+  if(/store.*refill|which store/.test(s)){const byS={};items.forEach(x=>{if(x.is_out_of_stock||x.is_low_stock)byS[x.store]=(byS[x.store]||0)+1;});const r=Object.entries(byS).sort((a,b)=>b[1]-a[1]);
+    return{who:"a",text:`Stores by urgent refill need: ${r.slice(0,3).map(([s,n])=>`<b>${esc(s)}</b> (${n})`).join(", ")}.`,table:tbl(r,[x=>esc(x[0]),x=>x[1]],["Store","Urgent SKUs"])};}
+  if(/stop manufactur/.test(s)){const r=items.filter(x=>x.ai_recommendation==="Stop Manufacturing");
+    return{who:"a",text:`<b>${r.length}</b> products should stop manufacturing (no demand since GRN).`,table:tbl(r,[x=>esc(x.item_name),x=>esc(x.store),x=>int(x.current_stock)],["Item","Store","Stock"])};}
+  if(/transfer/.test(s)){const r=STATE.transfers;return{who:"a",text:`<b>${r.length}</b> transfer moves recommended, rebalancing <b>${money(r.reduce((t,x)=>t+x.expected_value_moved,0))}</b> before any manufacturing.`,table:tbl(r,[x=>esc(x.item_name),x=>esc(x.source_store),x=>esc(x.dest_store),x=>int(x.suggested_qty)],["Item","From","To","Qty"])};}
+  if(/compare store|store.*compare|best store|worst store/.test(s)){const byS={};items.forEach(x=>{const b=byS[x.store]=byS[x.store]||{v:0,h:0,n:0};b.v+=x.inventory_value;b.h+=x.health_score;b.n++;});const r=Object.entries(byS).map(([s,b])=>[s,b.v,Math.round(b.h/b.n)]).sort((a,b)=>b[1]-a[1]);
+    return{who:"a",text:`Top store by value: <b>${esc(r[0][0])}</b> (${money(r[0][1])}, health ${r[0][2]}). Lowest health: <b>${esc([...r].sort((a,b)=>a[2]-b[2])[0][0])}</b>.`,table:tbl(r,[x=>esc(x[0]),x=>money(x[1]),x=>x[2]],["Store","Value","Health"])};}
+  if(/turnover/.test(s)){const k=rollup(items);return{who:"a",text:`<b>Inventory turnover</b> = (90-day units sold × 4) ÷ on-hand. Current network turnover is <b>${dec(k.inventory_turnover,2)}×</b>/yr. Higher = capital rotates faster; fine jewelry typically runs 1–3×. Lift it by refilling fast-movers and clearing dead stock.`};}
+  if(/sales decrease|why.*sales|decline/.test(s)){const dead=items.filter(x=>x.is_dead_stock).length,oos=items.filter(x=>x.is_out_of_stock).length;
+    return{who:"a",text:`Two mechanical drags on sales right now: <b>${oos}</b> SKUs are out of stock (lost demand) and <b>${dead}</b> are dead (no pull). Refilling the OOS winners and promoting/transferring dead stock is the fastest lever.`};}
+  if(/action|recommend/.test(s)){return{who:"a",text:`Top actions: refill the ${items.filter(x=>x.ai_priority==="Critical").length} Critical SKUs, execute ${STATE.transfers.length} store transfers before manufacturing, and liquidate ${money(items.filter(x=>x.is_dead_stock).reduce((t,x)=>t+x.inventory_value,0))} of dead stock. See the Action Center.`};}
+  const k=rollup(items);
+  return{who:"a",text:`I can answer on refill, stock-out risk, dead stock, transfers, stores and metrics. Quick snapshot: <b>${int(k.total_sku)}</b> SKUs, <b>${money(k.total_inventory_value)}</b> on hand, <b>${k.refill_required_sku}</b> need refill, health <b>${k.inventory_health_score}/100</b>.`};
+}
+
+/* ACTION CENTER */
+function renderActions(el,items,k){
+  const crit=items.filter(x=>x.ai_priority==="Critical").sort((a,b)=>b.refill_priority_score-a.refill_priority_score);
+  const liq=items.filter(x=>x.ai_recommendation==="Liquidation Required"||x.ai_recommendation==="Promotional Discount").sort((a,b)=>b.inventory_value-a.inventory_value);
+  const scale=items.filter(x=>x.ai_recommendation==="Increase Manufacturing");
+  const stop=items.filter(x=>x.ai_recommendation==="Stop Manufacturing");
+  const block=(title,ic,col,arr,sub)=>`<div class="card"><h3>${ic} ${title} <span class="rt">${arr.length}</span></h3><p class="muted" style="font-size:12px;margin:-6px 0 10px">${sub}</p>${itemTable(arr.slice(0,60),["item","store","stock","value","rec"])}</div>`;
+  el.innerHTML=`
+   <div class="h2">Business Action Center</div><div class="sub">Prioritised, quantified actions the merchandising &amp; retail teams can execute today.</div>
+   <div class="grid kpis" style="margin-bottom:14px">
+     ${kpiCard("Refill Now",int(crit.length),"crit","Critical priority")}
+     ${kpiCard("Transfer First",int(STATE.transfers.length),"good","before manufacturing")}
+     ${kpiCard("Liquidate / Promote",int(liq.length),"warn",money(liq.reduce((s,x)=>s+x.inventory_value,0)))}
+     ${kpiCard("Scale Production",int(scale.length),"good")}
+     ${kpiCard("Stop Production",int(stop.length),"")}
+   </div>
+   <div class="grid" style="gap:14px">
+     ${block("Refill Immediately","🔴","crit",crit,"Out-of-stock or below lead-time cover with live demand.")}
+     ${block("Liquidate / Promote","🏷️","warn",liq,"Capital locked in slow/dead stock — release it.")}
+     ${block("Increase Manufacturing","📈","good",scale,"Demand outpacing supply — scale these lines.")}
+     ${block("Stop Manufacturing","⛔","muted",stop,"No demand since GRN — pause to avoid dead stock.")}
+   </div>`;
+}
+
+/* KNOWLEDGE BASE tab */
+function renderKB(el){
+  el.innerHTML=`<div class="h2">Knowledge Base</div><div class="sub">Every metric — definition, formula, business meaning, how to improve, best practice. Click any card, or the ⓘ next to a KPI.</div>
+   <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+   ${Object.keys(KB).map(k=>`<div class="kbcard" data-kb="${esc(k)}"><b>${esc(k)}</b><p>${esc(KB[k].def)}</p></div>`).join("")}
+   </div>
+   <div class="card" style="margin-top:16px"><h3>Architecture &amp; data model</h3>
+   <p class="muted" style="font-size:12.5px;line-height:1.7">
+   <b>Single fact table.</b> A BigQuery Scheduled Query runs daily at 09:00 IST and consolidates four sources —
+   Sales_overview_table (velocity), Live_inventory (on-hand + attributes), GRN (goods received) and Inventory_pivot
+   (store-wise cross-check) — into <code>reporting.inventory_intelligence_fact</code> (one row per SKU × store) plus
+   transfers, insights and meta tables. The dashboard reads only these tables, so loads are fast and cheap.<br><br>
+   <b>Scope.</b> Jewelry only — Silver and every Coin/bullion product are excluded from every KPI, chart, recommendation and insight.<br><br>
+   <b>Velocity caveat.</b> On-hand is per store; sales run-rate is network-wide by SKU because store↔sales-code mapping is not 1:1. Days-of-cover therefore uses network run-rate against per-store on-hand.</p></div>`;
+}
+
+/* ── export ─────────────────────────────────────────────────────────────── */
+function exportCSV(rows,cols){
+  const head=cols.join(",");
+  const body=rows.map(r=>cols.map(c=>{let v=r[c];if(v==null)v="";v=String(v).replace(/"/g,'""');return /[",\n]/.test(v)?`"${v}"`:v;}).join(",")).join("\n");
+  const blob=new Blob([head+"\n"+body],{type:"text/csv"});const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download="inventory_intelligence.csv";a.click();
+}
+
+/* ── data load ──────────────────────────────────────────────────────────── */
+async function loadData(){
+  if(CONFIG.API_BASE){
+    try{
+      setStatus("loading","Loading…");
+      const r=await fetch(CONFIG.API_BASE+"?action=bundle");const j=await r.json();
+      if(j.error)throw new Error(j.error);
+      STATE.items=(j.items||[]).map(deriveItem);
+      STATE.transfers=j.transfers&&j.transfers.length?j.transfers:computeTransfers(STATE.items);
+      STATE.insights=j.insights&&j.insights.length?j.insights:computeInsights(STATE.items,STATE.transfers);
+      STATE.kpis=j.kpis||null;STATE.live=true;STATE.refreshDate=j.refresh_date||null;
+      setStatus("live","Live · single fact table"+(j.refresh_date?` · ${j.refresh_date}`:""));
+    }catch(e){console.warn("API load failed, using sample:",e);loadSample();setStatus("err","API error · demo data");}
+  }else{loadSample();setStatus("demo","Demo data · wire API to go live");}
+  buildFilterUI();applyFilters();
+}
+function loadSample(){
+  STATE.items=buildSample();STATE.transfers=computeTransfers(STATE.items);
+  STATE.insights=computeInsights(STATE.items,STATE.transfers);STATE.live=false;STATE.refreshDate=null;
+}
+function setStatus(kind,text){const d=$("#statusDot"),t=$("#statusText");t.textContent=text;
+  d.className="dot"+(kind==="live"?"":kind==="demo"?" demo":kind==="err"?" err":" demo");}
+
+/* ── boot ───────────────────────────────────────────────────────────────── */
+function boot(){
+  buildNav();
+  const h=(location.hash||"").replace("#","");if(TABS.some(t=>t.k===h)){STATE.tab=h;$$("#nav a").forEach(a=>a.classList.toggle("on",a.dataset.tab===h));$$(".page").forEach(p=>p.classList.toggle("on",p.dataset.page===h));}
+  $("#toggleFilters").onclick=()=>document.body.classList.toggle("filters-collapsed");
+  $("#clearFilters").onclick=clearAllFilters;
+  $("#themeBtn").onclick=()=>{document.body.classList.toggle("light");localStorage.setItem("inv_intel_theme",document.body.classList.contains("light")?"light":"dark");};
+  if(localStorage.getItem("inv_intel_theme")==="light")document.body.classList.add("light");
+  $("#refreshBtn").onclick=()=>loadData();
+  $("#exportBtn").onclick=()=>exportCSV(filtered(),["sku","item_name","store","category","metal","current_stock","inventory_value","total_sold","days_cover","inventory_turnover","sell_through","inventory_status","ai_recommendation","refill_qty","refill_priority_score"]);
+  $("#kbModal").onclick=e=>{if(e.target.id==="kbModal")$("#kbModal").classList.remove("on");};
+  loadData();
+}
+boot();
+</script>
+</body>
+</html>
