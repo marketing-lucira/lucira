@@ -285,6 +285,19 @@ def inventory_intel(request):
 
     action = (request.args.get("action") or "bundle").lower()
     try:
+        if action == "app":
+            # Serve the dashboard itself from this (already-public) endpoint, so
+            # the page and its data share one origin. app.html is bundled next to
+            # main.py at deploy time (deploy.sh copies it from ../dashboard/).
+            try:
+                with open(os.path.join(os.path.dirname(__file__), "app.html"), "r", encoding="utf-8") as fh:
+                    html = fh.read()
+            except OSError as e:  # noqa: BLE001
+                return ("Dashboard asset not bundled: %s" % e, 500,
+                        {"Content-Type": "text/plain", "Access-Control-Allow-Origin": "*"})
+            return (html, 200, {"Content-Type": "text/html; charset=utf-8",
+                                "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store"})
+
         if action == "health":
             return (json.dumps({"ok": True, "service": "inventory-intelligence-api",
                                 "model": VERTEX_MODEL, "tables": sorted(ALLOWED_TABLES)}), 200, CORS)
