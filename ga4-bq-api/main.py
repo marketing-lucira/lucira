@@ -124,20 +124,23 @@ def _f(v, nd=2):
         return 0
 
 
-# The metric bundle every single-dimension breakdown returns (matches the
-# dashboard's ingestLive contract exactly).
-_BREAKDOWN_COLS = """
-  HLL_COUNT.MERGE(users_hll)                                   AS users,
-  HLL_COUNT.MERGE(new_users_hll)                               AS newUsers,
-  SUM(sessions)                                                AS sessions,
-  SUM(engaged_sessions)                                        AS engagedSessions,
-  SAFE_DIVIDE(SUM(engaged_sessions), SUM(sessions)) * 100      AS engagementRate,
-  SUM(page_views)                                              AS views,
-  SUM(event_count)                                             AS eventCount,
-  SUM(key_events)                                              AS keyEvents,
-  SUM(transactions)                                            AS purchases,
-  SUM(items_purchased)                                         AS items,
-  SUM(revenue)                                                 AS revenue
+# The SINGLE consolidated fact table is the dashboard's only data source.
+FACT = f"`{PROJECT}.{DATASET}.ga4_fact_sessions`"
+
+# The metric bundle every single-dimension breakdown returns (session grain, so
+# distinct users = COUNT(DISTINCT); matches the dashboard's ingestLive contract).
+_FACT_COLS = """
+  COUNT(DISTINCT user_pseudo_id)                        AS users,
+  COUNT(DISTINCT IF(is_new_user, user_pseudo_id, NULL)) AS newUsers,
+  COUNT(*)                                              AS sessions,
+  COUNTIF(engaged)                                      AS engagedSessions,
+  SAFE_DIVIDE(COUNTIF(engaged), COUNT(*)) * 100         AS engagementRate,
+  SUM(page_views)                                       AS views,
+  SUM(event_count)                                      AS eventCount,
+  SUM(key_events)                                       AS keyEvents,
+  SUM(transactions)                                     AS purchases,
+  SUM(items_qty)                                        AS items,
+  SUM(revenue)                                          AS revenue
 """
 
 
@@ -161,21 +164,12 @@ def _map_breakdown(rows):
     return out
 
 
-def _campaign_breakdown(frm, to, dim_expr, limit):
+def _bd(frm, to, name_expr, limit):
+    """One single-dimension breakdown straight off the consolidated fact table."""
     sql = f"""
-      SELECT {dim_expr} AS name, {_BREAKDOWN_COLS}
-      FROM {FQ}.ga4_campaign_summary`
-      WHERE event_date BETWEEN @from AND @to
-      GROUP BY name ORDER BY sessions DESC LIMIT @limit
-    """
-    return _map_breakdown(_q(sql, frm, to, limit))
-
-
-def _audience_breakdown(frm, to, dim, limit):
-    sql = f"""
-      SELECT value AS name, {_BREAKDOWN_COLS}
-      FROM {FQ}.ga4_audience_summary`
-      WHERE event_date BETWEEN @from AND @to AND dim = '{dim}'
+      SELECT {name_expr} AS name, {_FACT_COLS}
+      FROM {FACT}
+      WHERE session_date BETWEEN @from AND @to
       GROUP BY name ORDER BY sessions DESC LIMIT @limit
     """
     return _map_breakdown(_q(sql, frm, to, limit))
@@ -187,11 +181,14 @@ def _audience_breakdown(frm, to, dim, limit):
 def build_payload(frm, to):
     # ---- daily rows ----
     daily = _q(f"""
-      SELECT CAST(event_date AS STRING) AS date, users, new_users AS newUsers, sessions,
-             engaged_sessions AS engagedSessions, page_views AS pageViews, event_count AS eventCount,
-             ev_purchase AS purchases, key_events AS keyEvents, revenue
-      FROM {FQ}.ga4_daily_summary`
-      WHERE event_date BETWEEN @from AND @to ORDER BY event_date
+      SELECT CAST(session_date AS STRING) AS date,
+             COUNT(DISTINCT user_pseudo_id) AS users,
+             COUNT(DISTINCT IF(is_new_user, user_pseudo_id, NULL)) AS newUsers,
+             COUNT(*) AS sessions, COUNTIF(engaged) AS engagedSessions,
+             SUM(page_views) AS pageViews, SUM(event_count) AS eventCount,
+             SUM(ev_purchase) AS purchases, SUM(key_events) AS keyEvents, SUM(revenue) AS revenue
+      FROM {FACT}
+      WHERE session_date BETWEEN @from AND @to GROUP BY session_date ORDER BY session_date
     """, frm, to)
     daily = [{
         "date": r["date"], "sessions": _f(r["sessions"]), "users": _f(r["users"]),
@@ -204,20 +201,20 @@ def build_payload(frm, to):
     # ---- totals (HLL merge for distinct users; weighted avg eng time) ----
     tr = _q(f"""
       SELECT
-        HLL_COUNT.MERGE(users_hll)     AS users,
-        HLL_COUNT.MERGE(new_users_hll) AS newUsers,
-        SUM(sessions) AS sessions, SUM(engaged_sessions) AS engagedSessions,
+        COUNT(DISTINCT user_pseudo_id) AS users,
+        COUNT(DISTINCT IF(is_new_user, user_pseudo_id, NULL)) AS newUsers,
+        COUNT(*) AS sessions, COUNTIF(engaged) AS engagedSessions,
         SUM(page_views) AS pageViews, SUM(event_count) AS eventCount,
         SUM(key_events) AS keyEvents, SUM(transactions) AS purchases,
-        SUM(items_purchased) AS itemsPurchased, SUM(ev_add_to_cart) AS addToCarts,
+        SUM(items_qty) AS itemsPurchased, SUM(ev_add_to_cart) AS addToCarts,
         SUM(ev_begin_checkout) AS checkouts, SUM(revenue) AS revenue,
-        SAFE_DIVIDE(SUM(engaged_sessions), SUM(sessions)) * 100 AS engagementRate,
-        SAFE_DIVIDE(SUM(avg_engagement_time_sec * users), SUM(users)) AS avgEngTime,
+        SAFE_DIVIDE(COUNTIF(engaged), COUNT(*)) * 100 AS engagementRate,
+        SAFE_DIVIDE(SUM(engagement_time_sec), COUNT(DISTINCT user_pseudo_id)) AS avgEngTime,
         SUM(ev_view_item) AS viewItem, SUM(ev_add_to_cart) AS addToCart,
         SUM(ev_begin_checkout) AS beginCheckout, SUM(ev_add_payment) AS addPayment,
         SUM(ev_purchase) AS purchaseEv
-      FROM {FQ}.ga4_daily_summary`
-      WHERE event_date BETWEEN @from AND @to
+      FROM {FACT}
+      WHERE session_date BETWEEN @from AND @to
     """, frm, to)
     t = tr[0] if tr else {}
     totals = {
@@ -240,75 +237,56 @@ def build_payload(frm, to):
         {"name": "purchase",         "count": _f(t.get("purchaseEv"))},
     ]
 
-    # ---- traffic/campaign breakdowns ----
-    channels    = _campaign_breakdown(frm, to, "channel", 20)
-    sources     = _campaign_breakdown(frm, to, "source", TOP_LIMIT)
-    mediums     = _campaign_breakdown(frm, to, "medium", 20)
-    campaigns   = _campaign_breakdown(frm, to, "campaign", TOP_LIMIT)
-    sourceMed   = _campaign_breakdown(frm, to, "CONCAT(source, ' / ', medium)", TOP_LIMIT)
+    # ---- all single-dimension breakdowns (fact-table columns) ----
+    channels    = _bd(frm, to, "channel", 20)
+    sources     = _bd(frm, to, "source", TOP_LIMIT)
+    mediums     = _bd(frm, to, "medium", 20)
+    campaigns   = _bd(frm, to, "campaign", TOP_LIMIT)
+    sourceMed   = _bd(frm, to, "CONCAT(source, ' / ', medium)", TOP_LIMIT)
+    devices     = _bd(frm, to, "device_category", 10)
+    browsers    = _bd(frm, to, "browser", 15)
+    opsys       = _bd(frm, to, "operating_system", 15)
+    platforms   = _bd(frm, to, "platform", 10)
+    countries   = _bd(frm, to, "country", 25)
+    regions     = _bd(frm, to, "region", 25)
+    cities      = _bd(frm, to, "city", 30)
+    languages   = _bd(frm, to, "language", 20)
+    hostnames   = _bd(frm, to, "hostname", 10)
+    newReturn   = _bd(frm, to, "IF(is_new_user, 'new', 'returning')", 5)
+    contentGrp  = _bd(frm, to, "content_group", 15)
+    landing     = _bd(frm, to, "landing_page", TOP_LIMIT)
 
-    # ---- audience breakdowns (tall table) ----
-    def aud(dim, lim):
-        return _audience_breakdown(frm, to, dim, lim)
-    devices     = aud("device", 10)
-    browsers    = aud("browser", 15)
-    opsys       = aud("os", 15)
-    platforms   = aud("platform", 10)
-    countries   = aud("country", 25)
-    regions     = aud("region", 25)
-    cities       = aud("city", 30)
-    languages   = aud("language", 20)
-    hostnames   = aud("hostname", 10)
-    newReturn   = aud("newReturning", 5)
-    contentGrp  = aud("contentGroup", 15)
-
-    # ---- events (dim='event') → {name,count,users} ----
+    # ---- events (UNNEST events[]) → {name,count,users} ----
     ev_rows = _q(f"""
-      SELECT value AS name, SUM(event_count) AS count, HLL_COUNT.MERGE(users_hll) AS users
-      FROM {FQ}.ga4_audience_summary`
-      WHERE event_date BETWEEN @from AND @to AND dim = 'event'
+      SELECT e.event_name AS name, SUM(e.cnt) AS count,
+             COUNT(DISTINCT user_pseudo_id) AS users
+      FROM {FACT}, UNNEST(events) AS e
+      WHERE session_date BETWEEN @from AND @to
       GROUP BY name ORDER BY count DESC LIMIT @limit
     """, frm, to, TOP_LIMIT)
     events = [{"name": r["name"] or "(unnamed)", "count": _f(r["count"]), "users": _f(r["users"])}
               for r in ev_rows]
 
-    # ---- landing pages (is_landing) — landing table has its own column set ----
-    landing = _map_breakdown(_q(f"""
-      SELECT page_path AS name,
-        HLL_COUNT.MERGE(users_hll)                              AS users,
-        0                                                       AS newUsers,
-        SUM(sessions)                                           AS sessions,
-        SUM(engaged_sessions)                                   AS engagedSessions,
-        SAFE_DIVIDE(SUM(engaged_sessions), SUM(sessions)) * 100 AS engagementRate,
-        SUM(page_views)                                         AS views,
-        0                                                       AS eventCount,
-        SUM(key_events)                                         AS keyEvents,
-        SUM(transactions)                                       AS purchases,
-        0                                                       AS items,
-        SUM(revenue)                                            AS revenue
-      FROM {FQ}.ga4_landing_summary`
-      WHERE event_date BETWEEN @from AND @to AND is_landing
-      GROUP BY name ORDER BY sessions DESC LIMIT @limit
-    """, frm, to, TOP_LIMIT))
-
-    # ---- pages (all pages) → {path,title,views,users} ----
+    # ---- pages (UNNEST pages[]) → {path,title,views,users} ----
     pg = _q(f"""
-      SELECT page_path AS path, ANY_VALUE(page_title) AS title,
-             SUM(page_views) AS views, HLL_COUNT.MERGE(users_hll) AS users
-      FROM {FQ}.ga4_landing_summary`
-      WHERE event_date BETWEEN @from AND @to AND NOT is_landing
+      SELECT p.page_path AS path, ANY_VALUE(p.page_title) AS title,
+             SUM(p.views) AS views, COUNT(DISTINCT user_pseudo_id) AS users
+      FROM {FACT}, UNNEST(pages) AS p
+      WHERE session_date BETWEEN @from AND @to
       GROUP BY path ORDER BY views DESC LIMIT @limit
     """, frm, to, TOP_LIMIT)
     pages = [{"path": r["path"] or "(not set)", "title": r["title"] or "(not set)",
               "views": _f(r["views"]), "users": _f(r["users"])} for r in pg]
 
-    # ---- items / products ----
+    # ---- items / products (UNNEST items[]) ----
     it = _q(f"""
-      SELECT item_name AS name, ANY_VALUE(item_category) AS category, ANY_VALUE(item_brand) AS brand,
-             SUM(items_purchased) AS items, SUM(item_revenue) AS revenue,
-             SUM(item_views) AS views, SUM(items_added) AS addToCart
-      FROM {FQ}.ga4_sku_summary`
-      WHERE event_date BETWEEN @from AND @to
+      SELECT it.item_name AS name, ANY_VALUE(it.item_category) AS category, ANY_VALUE(it.item_brand) AS brand,
+             SUM(IF(it.event_name='purchase', it.quantity, 0))     AS items,
+             SUM(IF(it.event_name='purchase', it.item_revenue, 0)) AS revenue,
+             COUNTIF(it.event_name='view_item')                    AS views,
+             COUNTIF(it.event_name='add_to_cart')                  AS addToCart
+      FROM {FACT}, UNNEST(items) AS it
+      WHERE session_date BETWEEN @from AND @to
       GROUP BY name ORDER BY revenue DESC LIMIT @limit
     """, frm, to, TOP_LIMIT)
     items = [{"name": r["name"] or "(not set)", "category": r["category"] or "(not set)",
@@ -320,7 +298,7 @@ def build_payload(frm, to):
     win_to = daily[-1]["date"] if daily else to.isoformat()
     return {
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
-        "source": "bigquery_export_aggregates",
+        "source": "bigquery_fact_table:ga4_fact_sessions",
         "currency": CURRENCY,
         "window": {"from": win_from, "to": win_to},
         "metrics": {"keyEvent": "key_events", "revenue": "purchase_revenue"},
@@ -381,13 +359,10 @@ def _prime_sql(sql, date_str):
     )
 
 
+# The single consolidated fact table is (re)built by one query. (The old 6
+# per-topic aggregate refreshes are superseded by ga4_fact_sessions.)
 REFRESH_FILES = [
-    "10_refresh_daily_summary.sql",
-    "11_refresh_campaign_summary.sql",
-    "12_refresh_landing_summary.sql",
-    "13_refresh_sku_summary.sql",
-    "14_refresh_product_summary.sql",
-    "15_refresh_audience_summary.sql",
+    "fact_sessions.sql",
 ]
 
 
