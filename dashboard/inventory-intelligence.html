@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lucira — Inventory Refilling Intelligence & AI Command Center</title>
+<link rel="icon" href="https://luciraonline.myshopify.com/cdn/shop/files/Favicon_New_10.png">
+<link rel="preconnect" href="https://luciraonline.myshopify.com">
+<link rel="preconnect" href="https://cdn.shopify.com">
 <style>
 :root{
   color-scheme: dark;
@@ -35,6 +38,7 @@ button{font-family:var(--font)}
 header.app{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--plane) 90%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:11px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:11px;margin-right:auto}
 .brand .mark{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#1a1200;font-weight:800;font-size:16px;box-shadow:0 3px 12px rgba(217,164,65,.32)}
+.brand .logo{height:30px;width:auto;max-width:132px;display:block;object-fit:contain}
 .brand h1{font-size:15px;margin:0;font-weight:700;letter-spacing:.2px}
 .brand small{display:block;color:var(--muted);font-size:11px;font-weight:500;letter-spacing:.3px}
 .hdr-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2)}
@@ -129,7 +133,8 @@ tr:hover td{background:var(--surface-2)}
 .row-bars .rb .amt{text-align:right;font-weight:700}
 .heat td{padding:0;border:none}
 .heat .cell{height:34px;display:grid;place-items:center;font-size:10.5px;font-weight:700;color:#0c0d0f;border-radius:5px;margin:2px}
-.thumb{width:30px;height:30px;border-radius:6px;object-fit:cover;background:var(--surface-3);vertical-align:middle;display:inline-grid;place-items:center;font-size:13px}
+.thumb{position:relative;width:30px;height:30px;border-radius:6px;object-fit:cover;background:var(--surface-3);vertical-align:middle;display:inline-grid;place-items:center;font-size:13px;overflow:hidden;flex:none}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:6px;background:var(--surface-3)}
 .insight{display:flex;gap:11px;padding:11px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:9px;background:var(--surface)}
 .insight .ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-size:15px;flex:none}
 .insight b{font-size:13px}.insight p{margin:3px 0 0;font-size:12px;color:var(--ink-2)}
@@ -170,7 +175,7 @@ tr:hover td{background:var(--surface-2)}
 <header class="app">
   <button class="btn sm" id="toggleFilters" title="Toggle filters">☰</button>
   <div class="brand">
-    <div class="mark">L</div>
+    <img class="logo" src="https://luciraonline.myshopify.com/cdn/shop/files/LJ_Logo_Pink.svg" alt="Lucira Jewelry" onerror="this.outerHTML='&lt;div class=&quot;mark&quot;&gt;L&lt;/div&gt;'">
     <div><h1>Inventory Refilling Intelligence</h1><small>AI Command Center · Merchandising · Retail · Management</small></div>
   </div>
   <div class="hdr-status"><span class="dot demo" id="statusDot"></span><span id="statusText">Demo data</span></div>
@@ -234,6 +239,10 @@ const daysAgo=n=>{const d=new Date(TODAY);d.setDate(d.getDate()-n);return d;};
 const isoD=d=>d.toISOString().slice(0,10);
 const diffDays=(a,b)=>a&&b?Math.round((new Date(a)-new Date(b))/864e5):null;
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+// Product thumbnail: real photo when available, 💍 fallback (img removes itself on error).
+const thumbHtml=it=>{const u=it&&(it.image_url||it.image_full);return u&&/^https?:\/\//.test(u)
+  ? `<span class="thumb"><img src="${esc(u)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">💍</span>`
+  : `<span class="thumb">💍</span>`;};
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 const TODAY = new Date("2026-07-20T00:00:00Z");
 
@@ -768,7 +777,7 @@ function itemTable(rows,cols){
     sold90:"90d Sold",risk:"Risk",refill:"Refill Qty",turnover:"Turns",age:"Age",move:"Movement",status:"Status",lastsale:"Last Sale"};
   const cell=(it,c)=>({
     priority:`<span class="pill pr-${it.ai_priority}">${it.refill_priority_score}</span>`,
-    item:`<span class="thumb">💍</span> ${esc(it.item_name)} <span class="tag">${esc(it.sku)} · ${esc(it.category)}</span>`,
+    item:`${thumbHtml(it)} ${esc(it.item_name)} <span class="tag">${esc(it.sku)} · ${esc(it.category)}</span>`,
     store:esc(it.store), stock:`<b class="tnum">${int(it.current_stock)}</b>`,
     cover:it.days_cover>=999?'<span class="muted">∞</span>':`<span class="tnum">${dec(it.days_cover,0)}d</span>`,
     rec:`<span class="tag">${REC_META[it.ai_recommendation]?.ic||""}</span> ${esc(it.ai_recommendation)}`,
@@ -849,7 +858,7 @@ function renderTransfers(el,items,k){
    <div class="card" style="margin-bottom:14px"><h3>Transfer Flow Matrix <span class="rt">units source → destination</span></h3>${matrixHtml}</div>
    <div class="card"><h3>Recommended Transfers <span class="rt">${T.length}</span></h3>
    <div class="tbl-wrap"><table><thead><tr><th>Priority</th><th>Item</th><th>From</th><th>To</th><th>Qty</th><th>Dest Demand</th><th>Dest Cover</th><th>Value Moved</th></tr></thead><tbody>
-   ${T.length?T.slice(0,300).map(t=>`<tr><td><span class="pill pr-${t.priority_score>=60?'Critical':t.priority_score>=40?'High':'Medium'}">${t.priority_score}</span></td><td><span class="thumb">💍</span> ${esc(t.item_name)} <span class="tag">${esc(t.sku)}</span></td><td>${esc(t.source_store)}</td><td><b>${esc(t.dest_store)}</b></td><td><b class="tnum">${int(t.suggested_qty)}</b></td><td class="tnum">${dec(t.dest_daily_demand,2)}/d</td><td class="tnum">${dec(t.dest_cover_days,0)}d</td><td>${money(t.expected_value_moved)}</td></tr>`).join(""):`<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">No transfer opportunities — surplus and shortage don't overlap on any SKU.</td></tr>`}
+   ${T.length?T.slice(0,300).map(t=>`<tr><td><span class="pill pr-${t.priority_score>=60?'Critical':t.priority_score>=40?'High':'Medium'}">${t.priority_score}</span></td><td>${thumbHtml(t)} ${esc(t.item_name)} <span class="tag">${esc(t.sku)}</span></td><td>${esc(t.source_store)}</td><td><b>${esc(t.dest_store)}</b></td><td><b class="tnum">${int(t.suggested_qty)}</b></td><td class="tnum">${dec(t.dest_daily_demand,2)}/d</td><td class="tnum">${dec(t.dest_cover_days,0)}d</td><td>${money(t.expected_value_moved)}</td></tr>`).join(""):`<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">No transfer opportunities — surplus and shortage don't overlap on any SKU.</td></tr>`}
    </tbody></table></div></div>`;
 }
 
@@ -909,7 +918,7 @@ function renderForecast(el,items,k){
      ${lineChart([{name:"demand",color:"var(--s2)",points:curve}],760,220,[...Array(30)].map((_,i)=>i%5===0?`+${i+1}d`:""))}</div>
    <div class="card"><h3>Suggested Future Refill <span class="rt">top demand SKUs</span></h3>
      <div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Store</th><th>On-hand</th><th>7d</th><th>15d</th><th>30d</th><th>Suggested Refill</th></tr></thead><tbody>
-     ${topFc.map(x=>`<tr><td><span class="thumb">💍</span> ${esc(x.item_name)} <span class="tag">${esc(x.sku)}</span></td><td>${esc(x.store)}</td><td class="tnum">${int(x.current_stock)}</td><td class="tnum">${int(x.forecast_7d)}</td><td class="tnum">${int(x.forecast_15d)}</td><td class="tnum">${int(x.forecast_30d)}</td><td><b class="tnum">${int(Math.max(0,x.forecast_30d-x.current_stock))}</b></td></tr>`).join("")}
+     ${topFc.map(x=>`<tr><td>${thumbHtml(x)} ${esc(x.item_name)} <span class="tag">${esc(x.sku)}</span></td><td>${esc(x.store)}</td><td class="tnum">${int(x.current_stock)}</td><td class="tnum">${int(x.forecast_7d)}</td><td class="tnum">${int(x.forecast_15d)}</td><td class="tnum">${int(x.forecast_30d)}</td><td><b class="tnum">${int(Math.max(0,x.forecast_30d-x.current_stock))}</b></td></tr>`).join("")}
      </tbody></table></div></div>`;
 }
 
