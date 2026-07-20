@@ -1,0 +1,43 @@
+name: Daily 10 AM data refresh
+
+# Refreshes the dashboard data every morning at 10:00 Asia/Kolkata (04:30 UTC)
+# by calling the Zoho app's token-protected /sync endpoint (Zoho -> BigQuery).
+# The dashboards read BigQuery live, so after this runs the morning link shows
+# fresh 10 AM data. Pure HTTPS call — no gcloud / GCP credentials required.
+#
+# Required GitHub repo secrets (Settings -> Secrets and variables -> Actions):
+#   ZOHO_SERVICE_URL  e.g. https://zoho-login-dashboard-3mvv5mdr2q-el.a.run.app
+#   ZOHO_SYNC_TOKEN   the value of the app's SYNC_TOKEN env var
+
+on:
+  schedule:
+    - cron: "30 4 * * *"     # 10:00 IST daily (UTC+5:30)
+  workflow_dispatch: {}        # lets you also run it on demand from the Actions tab
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Zoho -> BigQuery sync
+        env:
+          URL:   ${{ secrets.ZOHO_SERVICE_URL }}
+          TOKEN: ${{ secrets.ZOHO_SYNC_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "${URL:-}"   || { echo "::error::ZOHO_SERVICE_URL secret is not set"; exit 1; }
+          test -n "${TOKEN:-}" || { echo "::error::ZOHO_SYNC_TOKEN secret is not set"; exit 1; }
+          base="${URL%/}"
+          echo "Calling ${base}/sync ..."
+          code=$(curl -sS --max-time 850 -o /tmp/sync.json -w '%{http_code}' \
+                   -X POST -H "X-Sync-Token: ${TOKEN}" "${base}/sync")
+          echo "HTTP ${code}"
+          echo "----- response -----"; cat /tmp/sync.json 2>/dev/null || true; echo
+          [ "${code}" = "200" ] || { echo "::error::sync failed (HTTP ${code})"; exit 1; }
+          echo "✅ Daily refresh complete."
