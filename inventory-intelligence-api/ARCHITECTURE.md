@@ -98,17 +98,28 @@ run applies them:
 | `DEAD_DAYS` | 180 | dead-stock threshold |
 | `VELOCITY_WINDOW` | 90 | run-rate window |
 
-## 6. Known modelling caveats (documented, not hidden)
-- **Store ↔ sales-code mapping is approximate.** On-hand is per store (from
-  Live_inventory); sales velocity is **network-wide by SKU** because
-  `company_code` does not map 1:1 to `Store_name`. Days-of-cover therefore uses
-  network run-rate against per-store on-hand. The crosswalk lives in the
-  `store_map` CTE — extend it as mappings are confirmed.
-- **Opening inventory** is reconstructed (`on-hand + sold − received`); an exact
-  opening needs a historical snapshot table.
-- **GRN / Inventory_pivot column names** are assumed until `00_introspect.sql`
-  is run; all casts are `SAFE_*` so a mismatch degrades a measure to NULL rather
-  than failing the build.
+## 6. Known modelling caveats (documented, not hidden) — verified on live data 2026-07-20
+- **Sales ↔ inventory key mismatch (the big one).** Live_inventory uses
+  `item_code`/`style_code` (e.g. `ALR-0289`/`0289`); Sales & GRN use a different
+  SKU convention (`Full_sku=LJ-B00002-…`, `style=R00193`). Velocity is joined by
+  `item_code=Full_sku` **OR** `style_code=style` (coalesced) — the best available
+  keys — which matches only **~34 % of items (1,005 / 2,969)**. Items with no
+  match surface as **Never Sold**; some of these genuinely sold under a
+  non-matching code. The dashboard shows a standing insight *"Sales matched on N
+  of M items"* so the number is never hidden. **Fix path:** add a SKU crosswalk
+  table and join on it — the build is structured so only the `item_vel` CTE
+  changes.
+- **Velocity is network-wide, allocated to stores by on-hand share.** On-hand is
+  exact per store (`location_name`); network velocity per item is distributed to
+  its store rows in proportion to on-hand, so KPI sums stay exact and days-of-cover
+  equals the item's network cover. `store_filter` in Live_inventory is uniformly
+  `'Store'` (unusable) — `location_name` is the real store.
+- **Stock is ~82 % in the central "Finish Goods" warehouse**, so store-to-store
+  transfer opportunities are currently sparse (stock isn't distributed to stores).
+- **GRN** (`Lucira_Prod.`\``GRN table`\`` — the name has a space) is HO-only, joined
+  by `style`. **Opening inventory** is reconstructed (`on-hand + sold − received`).
+- **`mrp`** is approximated by `item_rate` (no list-price column in Live_inventory);
+  `gender`/`designer` have no source column (NULL). All casts are `SAFE_*`.
 
 ## 7. Files
 ```
@@ -117,6 +128,9 @@ inventory-intelligence-api/
   sql/10_build_fact.sql            the consolidated fact table (heart)
   sql/20_build_transfers_insights.sql  transfers + insights + meta
   sql/30_reconcile.sql             R1–R7 certification queries
+  sql/40_build_procedure.sql       generated: wraps 10+20 into a stored procedure
+                                   reporting.build_inventory_intelligence() that
+                                   the daily scheduled query CALLs
   main.py                          API (bundle / chat / insights / health)
   deploy.sh                        deploy the Cloud Function
   setup_scheduled_query.sh         create the daily 09:00 IST scheduled query
@@ -127,11 +141,30 @@ dashboard/
   inventory-intelligence.html      the premium command center (14 tabs)
 ```
 
-## 8. Go-live checklist
-1. `bq query < sql/00_introspect.sql` → adjust GRN/Inventory_pivot aliases if needed.
-2. `bq query < sql/10_build_fact.sql` then `20_build_transfers_insights.sql`.
-3. `bq query < sql/30_reconcile.sql` → R1–R7 must pass (scope = 0 silver/coin, no NULL leakage).
-4. `./setup_scheduled_query.sh` (or console: 09:00 IST, GMT+05:30).
-5. `./deploy.sh` → grant the runtime SA `bigquery.jobUser` + `bigquery.dataViewer` + `aiplatform.user`.
-6. Paste the API URL into `CONFIG.API_BASE` in the dashboard (or serve `?api=<url>`).
-7. Status dot turns green *Live · single fact table · as of <refresh_date>*.
+## 8. LIVE STATUS (provisioned 2026-07-20)
+Everything below is **already deployed** in `lucirajewelry-prod`:
+
+| Component | Value |
+|---|---|
+| Fact tables | `reporting.inventory_intelligence_{fact,transfers,insights,meta}` (built) |
+| Build procedure | `reporting.build_inventory_intelligence()` |
+| Scheduled query | `inventory_intelligence_daily_0900_IST` — `every day 03:30` UTC = **09:00 IST** — runs `CALL …build_inventory_intelligence()` |
+| API (Cloud Run gen2) | `inventory-intel-api`, asia-south1 → **https://inventory-intel-api-3mvv5mdr2q-el.a.run.app** |
+| Dashboard | `dashboard/inventory-intelligence.html`, `CONFIG.API_BASE` wired to the URL above |
+| Live snapshot | 2,969 rows · 2,294 items · 8 stores · **₹17.55 Cr** · scope clean (0 silver/coin) |
+
+### Reproduce / update the pipeline
+1. `bq query < sql/00_introspect.sql` — confirm source schemas (already done).
+2. Edit `sql/10_build_fact.sql` / `20_build_transfers_insights.sql` as needed.
+3. Regenerate the procedure: concatenate 10+20 (minus their DECLARE/CREATE SCHEMA
+   lines) into `CREATE OR REPLACE PROCEDURE …build_inventory_intelligence() BEGIN
+   <declares> … END`, then create it. The daily schedule picks up the new logic
+   automatically (it only `CALL`s the procedure).
+4. `bq query "CALL \`lucirajewelry-prod.reporting.build_inventory_intelligence\`()"` to rebuild now.
+5. `bq query < sql/30_reconcile.sql` → R1–R7 must pass.
+6. `./deploy.sh` (or `gcloud functions deploy inventory-intel-api …`) to update the API.
+
+> **Windows/bq note:** the bq CLI's console codec is cp1252. Set
+> `PYTHONUTF8=1` before piping SQL that contains any non-ASCII (the box-drawing
+> comment borders), or the CLI raises a UnicodeEncodeError. The SQL itself is
+> otherwise ASCII (currency rendered as `Rs`, not `₹`).

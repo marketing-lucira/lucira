@@ -72,7 +72,9 @@ agg AS (
     COUNTIF(is_out_of_stock)                                             AS oos_cnt,
     COUNTIF(ai_recommendation='Increase Manufacturing')                 AS scale_up,
     COUNTIF(ai_recommendation='Stop Manufacturing')                     AS stop_mfg,
-    CAST(ROUND(AVG(health_score)) AS INT64)                             AS avg_health
+    CAST(ROUND(AVG(health_score)) AS INT64)                             AS avg_health,
+    COUNTIF(avg_daily_sales > 0 OR total_sold > 0)                      AS vel_items,
+    COUNT(*)                                                            AS all_items
   FROM f
 ),
 ins AS (
@@ -89,7 +91,7 @@ ins AS (
          'Candidates to stop manufacturing and clear.' FROM agg WHERE never_sold > 0
   UNION ALL
   SELECT 'dead', 'critical', 4,
-         CONCAT('₹', CAST(dead_value AS STRING), ' locked in ', CAST(dead_cnt AS STRING), ' dead SKUs'),
+         CONCAT('Rs ', CAST(dead_value AS STRING), ' locked in ', CAST(dead_cnt AS STRING), ' dead SKUs'),
          'High-value dead inventory should be liquidated first.' FROM agg WHERE dead_cnt > 0
   UNION ALL
   SELECT 'refill', 'info', 5,
@@ -107,19 +109,25 @@ ins AS (
   SELECT 'health', 'info', 8,
          CONCAT('Network inventory health score: ', CAST(avg_health AS STRING), '/100'),
          'Average across all in-scope jewelry SKUs.' FROM agg
+  UNION ALL
+  SELECT 'coverage', 'info', 9,
+         CONCAT('Sales matched on ', CAST(vel_items AS STRING), ' of ', CAST(all_items AS STRING),
+                ' items (', CAST(CAST(ROUND(vel_items/all_items*100) AS INT64) AS STRING), '%)'),
+         'Items with no matching sales record show as Never Sold; some may have sold under a different SKU convention (sales vs inventory keys differ). Treat very-low-velocity items as review candidates, not certain dead stock.'
+  FROM agg WHERE all_items > 0
 ),
 -- store-level urgent refill
 store_ins AS (
   SELECT 'store' AS kind, 'warn' AS severity, 20 AS ord,
     CONCAT(store, ' needs urgent refill on ', CAST(COUNT(*) AS STRING), ' SKUs') AS title,
-    CONCAT('₹', CAST(CAST(ROUND(SUM(avg_daily_sales*mrp*21)) AS INT64) AS STRING), ' of demand at risk') AS detail
+    CONCAT('Rs ', CAST(CAST(ROUND(SUM(avg_daily_sales*mrp*21)) AS INT64) AS STRING), ' of demand at risk') AS detail
   FROM f WHERE is_out_of_stock OR is_low_stock GROUP BY store HAVING COUNT(*) >= 3
 ),
 -- category performance
 cat_ins AS (
   SELECT 'category' AS kind, 'good' AS severity, 30 AS ord,
     CONCAT('Best category by sell-through: ', category) AS title,
-    CONCAT(CAST(ROUND(AVG(sell_through)*100) AS STRING), '% sell-through, ₹',
+    CONCAT(CAST(ROUND(AVG(sell_through)*100) AS STRING), '% sell-through, Rs ',
            CAST(CAST(ROUND(SUM(revenue_all)) AS INT64) AS STRING), ' revenue') AS detail
   FROM f WHERE category IS NOT NULL GROUP BY category
   QUALIFY ROW_NUMBER() OVER (ORDER BY AVG(sell_through) DESC) = 1
@@ -128,7 +136,7 @@ cat_ins AS (
 xfer_ins AS (
   SELECT 'transfer' AS kind, 'good' AS severity, 40 AS ord,
     CONCAT(CAST(COUNT(*) AS STRING), ' inter-store transfers can avoid manufacturing') AS title,
-    CONCAT('₹', CAST(CAST(ROUND(SUM(expected_value_moved)) AS INT64) AS STRING), ' can be rebalanced across stores') AS detail
+    CONCAT('Rs ', CAST(CAST(ROUND(SUM(expected_value_moved)) AS INT64) AS STRING), ' can be rebalanced across stores') AS detail
   FROM `lucirajewelry-prod.reporting.inventory_intelligence_transfers`
   WHERE refresh_date = CURRENT_DATE() HAVING COUNT(*) > 0
 )
