@@ -1,39 +1,21 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- ga4_fact_sessions  —  the SINGLE consolidated fact table (session grain)
+-- Backfill ga4_fact_sessions for a DATE RANGE in one job (one-time / re-backfill).
+-- Params: @start, @end as STRING 'YYYYMMDD' (event-table suffixes, inclusive).
+-- Same session logic as fact_sessions.sql, but processes many shards at once and
+-- derives session_date from each event's own shard date.
+--   bq query --location=asia-south1 --use_legacy_sql=false \
+--     --parameter=start:STRING:20260321 --parameter=end:STRING:20260719 " $(cat backfill_range.sql)"
 -- ═══════════════════════════════════════════════════════════════════════════
--- Per the requirement: ONE optimized fact table is the dashboard's only data
--- source. It consolidates the GA4 export daily event shards
--- (`lucirajewelry-prod.analytics_478308692.events_*`) into one row per SESSION,
--- carrying every dimension + funnel counts + revenue + an items[] array. Every
--- KPI, chart, AI insight and recommendation is derived from THIS table alone
--- (GROUP BY a column for a breakdown; UNNEST(items) for product/SKU analytics).
---
--- ⚠ CONFIRM the source: this assumes the GA4 → BigQuery export dataset
---   `analytics_478308692`. If your tables live elsewhere (or you also want
---   Shopify/CRM joined in), change the FROM / add joins below.
---
--- Refresh: register this file as a **BigQuery Scheduled Query** running daily at
--- 09:00 IST (Asia/Kolkata). It rebuilds only the previous day's partition, so
--- cost stays low. `@run_date` is supplied automatically by Scheduled Queries;
--- the DECLARE default (yesterday IST) also lets you run it by hand.
---
--- Destination table (create once with 00_setup_fact.sql, or let the Scheduled
--- Query create it): `lucirajewelry-prod.ga4_dashboard.ga4_fact_sessions`
---   PARTITION BY session_date  CLUSTER BY channel, country, device_category
--- ═══════════════════════════════════════════════════════════════════════════
-DECLARE target_date    DATE          DEFAULT DATE_SUB(COALESCE(@run_date, CURRENT_DATE('Asia/Kolkata')), INTERVAL 1 DAY);
-DECLARE suffix         STRING        DEFAULT FORMAT_DATE('%Y%m%d', target_date);
--- Key events present in THIS property's export (confirm vs GA4 Admin → Key events).
 DECLARE key_events_set ARRAY<STRING> DEFAULT ['purchase','begin_checkout','add_to_cart','signup'];
 
--- idempotent: rebuild just this day's partition
 DELETE FROM `lucirajewelry-prod.ga4_dashboard.ga4_fact_sessions`
-WHERE session_date = target_date;
+WHERE session_date BETWEEN PARSE_DATE('%Y%m%d', @start) AND PARSE_DATE('%Y%m%d', @end);
 
 INSERT INTO `lucirajewelry-prod.ga4_dashboard.ga4_fact_sessions`
 WITH ev AS (
   SELECT
     user_pseudo_id, event_name, event_timestamp, platform, items, ecommerce,
+    PARSE_DATE('%Y%m%d', _TABLE_SUFFIX) AS event_date,
     (SELECT value.int_value    FROM UNNEST(event_params) WHERE key='ga_session_id')       AS session_id,
     (SELECT value.int_value    FROM UNNEST(event_params) WHERE key='ga_session_number')   AS session_number,
     (SELECT value.string_value FROM UNNEST(event_params) WHERE key='session_engaged')     AS session_engaged,
@@ -45,15 +27,11 @@ WITH ev AS (
     COALESCE(collected_traffic_source.manual_medium,        traffic_source.medium) AS med,
     COALESCE(collected_traffic_source.manual_campaign_name, traffic_source.name)   AS camp,
     collected_traffic_source.manual_campaign_id                                    AS camp_id,
-    device.category         AS device_category,
-    device.operating_system AS os,
-    device.web_info.browser AS browser,
-    device.language         AS language,
-    geo.country AS country, geo.region AS region, geo.city AS city
+    device.category AS device_category, device.operating_system AS os, device.web_info.browser AS browser,
+    device.language AS language, geo.country AS country, geo.region AS region, geo.city AS city
   FROM `lucirajewelry-prod.analytics_478308692.events_*`
-  WHERE _TABLE_SUFFIX = suffix
+  WHERE _TABLE_SUFFIX BETWEEN @start AND @end
 ),
--- pick each session's defining traffic source (first real non-direct event)
 src_rank AS (
   SELECT CONCAT(user_pseudo_id,'-',CAST(session_id AS STRING)) AS skey, src, med, camp, camp_id,
     ROW_NUMBER() OVER (PARTITION BY CONCAT(user_pseudo_id,'-',CAST(session_id AS STRING))
@@ -61,14 +39,10 @@ src_rank AS (
   FROM ev WHERE session_id IS NOT NULL
 ),
 sess_src AS (
-  SELECT skey,
-    COALESCE(NULLIF(src,''),'(direct)')  AS source,
-    COALESCE(NULLIF(med,''),'(none)')    AS medium,
-    COALESCE(NULLIF(camp,''),'(not set)') AS campaign,
-    COALESCE(camp_id,'')                  AS campaign_id
+  SELECT skey, COALESCE(NULLIF(src,''),'(direct)') AS source, COALESCE(NULLIF(med,''),'(none)') AS medium,
+    COALESCE(NULLIF(camp,''),'(not set)') AS campaign, COALESCE(camp_id,'') AS campaign_id
   FROM src_rank WHERE rn = 1
 ),
--- session entrance (first page_view) for landing page
 land AS (
   SELECT CONCAT(user_pseudo_id,'-',CAST(session_id AS STRING)) AS skey,
     ARRAY_AGG(IF(event_name IN ('page_view','screen_view'),
@@ -79,26 +53,21 @@ land AS (
     REGEXP_EXTRACT(ANY_VALUE(page_location), r'^https?://([^/]+)') AS hostname
   FROM ev WHERE session_id IS NOT NULL GROUP BY skey
 ),
--- all item rows in the session → one items[] array on the session row
 items_agg AS (
   SELECT CONCAT(user_pseudo_id,'-',CAST(session_id AS STRING)) AS skey,
-    ARRAY_AGG(STRUCT(
-      it.item_id AS item_id, it.item_name AS item_name, it.item_brand AS item_brand,
-      it.item_category AS item_category, it.quantity AS quantity,
-      it.item_revenue AS item_revenue, e.event_name AS event_name)) AS items
+    ARRAY_AGG(STRUCT(it.item_id AS item_id, it.item_name AS item_name, it.item_brand AS item_brand,
+      it.item_category AS item_category, it.quantity AS quantity, it.item_revenue AS item_revenue,
+      e.event_name AS event_name)) AS items
   FROM ev e, UNNEST(e.items) AS it
-  WHERE e.session_id IS NOT NULL
-    AND e.event_name IN ('view_item','add_to_cart','begin_checkout','purchase','refund')
+  WHERE e.session_id IS NOT NULL AND e.event_name IN ('view_item','add_to_cart','begin_checkout','purchase','refund')
   GROUP BY skey
 ),
--- per-session event-name counts → events[] (powers the Events tab)
 events_agg AS (
   SELECT skey, ARRAY_AGG(STRUCT(event_name AS event_name, cnt AS cnt)) AS events FROM (
     SELECT CONCAT(user_pseudo_id,'-',CAST(session_id AS STRING)) AS skey, event_name, COUNT(*) AS cnt
     FROM ev WHERE session_id IS NOT NULL GROUP BY skey, event_name
   ) GROUP BY skey
 ),
--- per-session page counts → pages[] (powers the Pages tab)
 pages_agg AS (
   SELECT skey, ARRAY_AGG(STRUCT(page_path AS page_path, page_title AS page_title, views AS views)) AS pages FROM (
     SELECT CONCAT(user_pseudo_id,'-',CAST(session_id AS STRING)) AS skey,
@@ -109,7 +78,7 @@ pages_agg AS (
   ) GROUP BY skey
 )
 SELECT
-  target_date AS session_date,
+  MIN(s.event_date) AS session_date,
   s.skey AS session_key,
   ANY_VALUE(s.user_pseudo_id) AS user_pseudo_id,
   IF(MAX(IF(s.event_name='first_visit' OR s.session_number=1,1,0))=1, TRUE, FALSE) AS is_new_user,
@@ -131,26 +100,23 @@ SELECT
   COALESCE(NULLIF(l.landing_title,''),'(not set)') AS landing_title,
   COALESCE(NULLIF(l.hostname,''),'(not set)') AS hostname,
   COALESCE(NULLIF(ANY_VALUE(s.content_group),''),'(not set)') AS content_group,
-  COUNTIF(s.event_name='view_item')        AS ev_view_item,
-  COUNTIF(s.event_name='add_to_cart')      AS ev_add_to_cart,
-  COUNTIF(s.event_name='begin_checkout')   AS ev_begin_checkout,
+  COUNTIF(s.event_name='view_item') AS ev_view_item,
+  COUNTIF(s.event_name='add_to_cart') AS ev_add_to_cart,
+  COUNTIF(s.event_name='begin_checkout') AS ev_begin_checkout,
   COUNTIF(s.event_name='add_shipping_info') AS ev_add_shipping,
   COUNTIF(s.event_name='add_payment_info') AS ev_add_payment,
-  COUNTIF(s.event_name='purchase')         AS ev_purchase,
-  COUNTIF(s.event_name='refund')           AS ev_refund,
+  COUNTIF(s.event_name='purchase') AS ev_purchase,
+  COUNTIF(s.event_name='refund') AS ev_refund,
   COUNTIF(s.event_name IN UNNEST(key_events_set)) AS key_events,
-  COUNTIF(s.event_name='purchase')         AS transactions,
+  COUNTIF(s.event_name='purchase') AS transactions,
   SUM(IF(s.event_name='purchase',(SELECT COALESCE(SUM(q.quantity),0) FROM UNNEST(s.items) q),0)) AS items_qty,
   SUM(IF(s.event_name='purchase', COALESCE(s.ecommerce.purchase_revenue,0),0)) AS revenue,
-  SUM(IF(s.event_name='refund',   COALESCE(s.ecommerce.refund_value,0),0))     AS refund_value,
-  ANY_VALUE(i.items)  AS items,
-  ANY_VALUE(ea.events) AS events,
-  ANY_VALUE(pa.pages)  AS pages
+  SUM(IF(s.event_name='refund',   COALESCE(s.ecommerce.refund_value,0),0)) AS refund_value,
+  ANY_VALUE(i.items) AS items, ANY_VALUE(ea.events) AS events, ANY_VALUE(pa.pages) AS pages
 FROM (SELECT *, CONCAT(user_pseudo_id,'-',CAST(session_id AS STRING)) AS skey FROM ev WHERE session_id IS NOT NULL) s
-LEFT JOIN sess_src   a  USING (skey)
-LEFT JOIN land       l  USING (skey)
-LEFT JOIN items_agg  i  USING (skey)
+LEFT JOIN sess_src a USING (skey)
+LEFT JOIN land l USING (skey)
+LEFT JOIN items_agg i USING (skey)
 LEFT JOIN events_agg ea USING (skey)
-LEFT JOIN pages_agg  pa USING (skey)
-GROUP BY s.skey, a.source, a.medium, a.campaign, a.campaign_id,
-         l.landing_page, l.landing_title, l.hostname;
+LEFT JOIN pages_agg pa USING (skey)
+GROUP BY s.skey, a.source, a.medium, a.campaign, a.campaign_id, l.landing_page, l.landing_title, l.hostname;
