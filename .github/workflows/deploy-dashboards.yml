@@ -5,6 +5,7 @@ name: Deploy Dashboards to Pages
 #   /                 → hub landing page (deploy/hub/index.html)
 #   /gcp-cost/        → dashboard/gcp-cost-dashboard.html
 #   /ga4/             → dashboard/ga4-dashboard.html
+#   /sales/           → dashboard/sales-intelligence.html
 #
 # Only these specific files are published — never the repo root — so the rest of
 # this monorepo (CRM data, backend functions, any secrets) is NOT exposed.
@@ -14,7 +15,10 @@ name: Deploy Dashboards to Pages
 #   GCP cost : GCP_COST_API_BASE, GCP_MONTHLY_BUDGET, GCP_BILLING_CURRENCY, GCP_USD_FX
 #   GA4      : GA4_SNAPSHOT_URL (daily static snapshot the dashboard reads), GA4_API_BASE
 #              (optional, for the AI assistant), GA4_CURRENCY
-# Unset → the dashboard uses its built-in defaults (sample data / manual CSV).
+#   Sales    : SALES_SNAPSHOT_URL (daily 10:00 IST reporting-layer snapshot), SALES_API_BASE
+#              (optional, on-demand refresh service), SALES_CURRENCY
+# Unset → the dashboard uses its built-in defaults (already the deployed live URLs for Sales;
+# sample data / manual CSV for the others).
 
 on:
   push:
@@ -22,6 +26,7 @@ on:
     paths:
       - "dashboard/gcp-cost-dashboard.html"
       - "dashboard/ga4-dashboard.html"
+      - "dashboard/sales-intelligence.html"
       - "deploy/hub/index.html"
       - ".github/workflows/deploy-dashboards.yml"
   workflow_dispatch: {}
@@ -52,9 +57,13 @@ jobs:
           GA4_SNAPSHOT_URL:     ${{ vars.GA4_SNAPSHOT_URL }}
           GA4_API_BASE:         ${{ vars.GA4_API_BASE }}
           GA4_CURRENCY:         ${{ vars.GA4_CURRENCY }}
+          # Sales Intelligence (daily 10:00 IST reporting-layer snapshot)
+          SALES_SNAPSHOT_URL:   ${{ vars.SALES_SNAPSHOT_URL }}
+          SALES_API_BASE:       ${{ vars.SALES_API_BASE }}
+          SALES_CURRENCY:       ${{ vars.SALES_CURRENCY }}
         run: |
           set -euo pipefail
-          mkdir -p _site/gcp-cost _site/ga4
+          mkdir -p _site/gcp-cost _site/ga4 _site/sales
           touch _site/.nojekyll
 
           # Copy a dashboard file to dest, replacing its config-marker line with an
@@ -97,13 +106,23 @@ jobs:
           inject dashboard/ga4-dashboard.html _site/ga4/index.html \
                  GA4_CONFIG_INJECT __GA4_CONFIG__ "$GA4_CFG"
 
+          # ---- Sales Intelligence config (daily-snapshot model) ----
+          SALES_CFG="$(jq -nc \
+            --arg snap "${SALES_SNAPSHOT_URL:-}" --arg api "${SALES_API_BASE:-}" --arg cur "${SALES_CURRENCY:-}" '
+            {} | (if $snap!="" then .SNAPSHOT_URL=$snap else . end)
+               | (if $api !="" then .API_BASE=$api else . end)
+               | (if $cur !="" then .CURRENCY=$cur else . end)')"
+          inject dashboard/sales-intelligence.html _site/sales/index.html \
+                 SALES_CONFIG_INJECT __SALES_CONFIG__ "$SALES_CFG"
+
           # ---- hub landing page ----
           if [ -f deploy/hub/index.html ]; then cp deploy/hub/index.html _site/index.html; fi
 
-          echo "GCP cfg: ${GCP_CFG}"; echo "GA4 cfg: ${GA4_CFG}"
+          echo "GCP cfg: ${GCP_CFG}"; echo "GA4 cfg: ${GA4_CFG}"; echo "Sales cfg: ${SALES_CFG}"
           ls -R _site
           grep -q "GCP Cost Command Center" _site/gcp-cost/index.html || { echo "::error::cost dashboard content missing"; exit 1; }
           grep -q "GA4" _site/ga4/index.html || { echo "::error::ga4 dashboard content missing"; exit 1; }
+          grep -q "Sales Intelligence" _site/sales/index.html || { echo "::error::sales dashboard content missing"; exit 1; }
 
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -373,6 +373,7 @@ body.modal-open{overflow:hidden}
 "use strict";
 /* placeholder for lg gradient used by header mono (defined in loader svg too) */
 </script>
+<!-- SALES_CONFIG_INJECT: GitHub Pages CI replaces this line with <script>window.__SALES_CONFIG__ = {...}</script> from repo Variables (SALES_SNAPSHOT_URL / SALES_API_BASE / SALES_CURRENCY). Left as a comment for local/sample use. See .github/workflows/deploy-dashboards.yml -->
 <script>
 /* ═══════════════════════════════════════════════════════════════════════
    LUCIRA SALES INTELLIGENCE — engine
@@ -393,6 +394,8 @@ const CONFIG = {
   VIP_LTV: 500000, HIGHVAL_LTV: 200000, DORMANT_DAYS: 180, LOST_DAYS: 365,
   MOVEMENT: { fastUnits:12, deadDays:120, slowDays:60 }
 };
+/* CI/Pages override: merge injected config (see the HTML-comment marker above the engine script). */
+try{ if(typeof window!=='undefined' && window.__SALES_CONFIG__){ Object.assign(CONFIG, window.__SALES_CONFIG__); } }catch(e){}
 const GST = CONFIG.GST_DIVISOR;
 const PAL = ['#d4af37','#12b886','#8b5cf6','#4d96ff','#e0a899','#f2b13a','#3b5bdb','#ef5350','#4db6ac','#c77dff','#9c8b3e','#20c997'];
 const SALE_TYPE_COLOR = {MTO:'#4d96ff',RTS:'#12b886',TAH:'#8b5cf6',Return:'#ef5350',Exchange:'#f2b13a',Other:'#8a8272'};
