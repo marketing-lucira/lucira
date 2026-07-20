@@ -1141,7 +1141,10 @@ function setStatus(kind,text){const d=$("#statusDot"),t=$("#statusText");t.textC
 function boot(){
   buildNav();
   const h=(location.hash||"").replace("#","");if(TABS.some(t=>t.k===h)){STATE.tab=h;$$("#nav a").forEach(a=>a.classList.toggle("on",a.dataset.tab===h));$$(".page").forEach(p=>p.classList.toggle("on",p.dataset.page===h));}
-  $("#toggleFilters").onclick=()=>document.body.classList.toggle("filters-collapsed");
+  // Advanced Filters hidden by default; ☰ reveals it, and the choice is remembered.
+  document.body.classList.toggle("filters-collapsed", localStorage.getItem("inv_intel_filters")!=="open");
+  $("#toggleFilters").onclick=()=>{const c=document.body.classList.toggle("filters-collapsed");
+    localStorage.setItem("inv_intel_filters", c?"closed":"open");};
   $("#clearFilters").onclick=clearAllFilters;
   $("#themeBtn").onclick=()=>{document.body.classList.toggle("light");localStorage.setItem("inv_intel_theme",document.body.classList.contains("light")?"light":"dark");};
   if(localStorage.getItem("inv_intel_theme")==="light")document.body.classList.add("light");
