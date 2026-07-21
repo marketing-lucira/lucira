@@ -11,8 +11,9 @@
 --  BUSINESS RULES baked in here (locked by the client):
 --    1. Gross Sales   = gross_amount summed directly (Returns are NEGATIVE).
 --    2. Net Sales     = gross / 1.03  (3% GST) — computed, not read.
---    3. Dedup         = drop a row ONLY if gross + date + document_no +
---                       net_weight are ALL identical (QUALIFY below).
+--    3. Dedup         = DISABLED per client request (2026-07-20): keep ALL
+--                       raw rows, duplicates included. (QUALIFY block below is
+--                       commented out; re-enable it to restore dedup.)
 --    4. Sale Type     = normalized to MTO / RTS / TAH / Return / Exchange /
 --                       Other (Online_MTO folds into MTO).
 --    5. Categories    = taken dynamically from the table, never hardcoded.
@@ -29,12 +30,19 @@ CREATE SCHEMA IF NOT EXISTS `lucirajewelry-prod.sales_dashboard`;
 CREATE OR REPLACE TABLE `lucirajewelry-prod.sales_dashboard.sales_reporting`
 PARTITION BY date
 CLUSTER BY sale_type, store, category
-OPTIONS(description="Deduped, GST-adjusted, dashboard-ready sales fact. Rebuilt daily 10:00 IST.") AS
+OPTIONS(description='All records (NO dedup, per client 2026-07-20), mobile-based customer id, GST-adjusted, dashboard-ready sales fact. Rebuilt daily 10:00 IST.') AS
 WITH src AS (
   SELECT
     CAST(`Transaction_Date` AS DATE)                              AS date,
     CAST(`document_no` AS STRING)                                 AS document_no,
-    CAST(`party_id` AS STRING)                                    AS customer_id,
+    -- RULE (client 2026-07-20): customer identity = MOBILE NUMBER (distinct),
+    -- cleaned to last-10 digits; fall back to party_id only when mobile absent.
+    COALESCE(
+      NULLIF(RIGHT(REGEXP_REPLACE(COALESCE(`Cus_mobile`,''), r'[^0-9]', ''), 10), ''),
+      CAST(`party_id` AS STRING)
+    )                                                             AS customer_id,
+    CAST(`party_id` AS STRING)                                    AS customer_pid,
+    NULLIF(RIGHT(REGEXP_REPLACE(COALESCE(`Cus_mobile`,''), r'[^0-9]', ''), 10), '') AS customer_mobile,
     `party_name`                                                  AS customer_name,
     `city_name`                                                   AS city,
     `state_name`                                                  AS state,
@@ -61,19 +69,20 @@ WITH src AS (
   FROM `lucirajewelry-prod.ornaverse_erp_administration.Sales_overview_table`
   WHERE `Transaction_Date` IS NOT NULL
     AND CAST(`Transaction_Date` AS DATE) >= DATE_SUB(CURRENT_DATE('Asia/Kolkata'), INTERVAL 540 DAY)
-  -- RULE 3 — dedup: keep one row per (gross, date, document_no, net_weight).
-  -- NOTE: BigQuery forbids window PARTITION BY on FLOAT64, and NUMERIC equality
-  -- must be exact — so partition on the STRING form of gross & net_weight.
-  QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY CAST(`gross_amount` AS STRING),
-                 CAST(`Transaction_Date` AS DATE),
-                 CAST(`document_no` AS STRING),
-                 CAST(`net_weight` AS STRING)
-    ORDER BY `gross_amount`
-  ) = 1
+  -- RULE 3 — DEDUP DISABLED (client request 2026-07-20: "add all data, ignore
+  -- duplication"). ALL raw rows are now kept — no ROW_NUMBER() filter. Reported
+  -- gross/net therefore include the ~30% previously-dropped duplicate rows.
+  -- To restore dedup, re-enable the QUALIFY block below:
+  --   QUALIFY ROW_NUMBER() OVER (
+  --     PARTITION BY CAST(`gross_amount` AS STRING),
+  --                  CAST(`Transaction_Date` AS DATE),
+  --                  CAST(`document_no` AS STRING),
+  --                  CAST(`net_weight` AS STRING)
+  --     ORDER BY `gross_amount`
+  --   ) = 1
 )
 SELECT
-  date, document_no, customer_id, customer_name, city, state, region,
+  date, document_no, customer_id, customer_pid, customer_mobile, customer_name, city, state, region,
   sku, product_name, style, category, sub_category, collection, metal, purity,
   price_band, INITCAP(customer_type) AS customer_type, store, channel,
   qty,
@@ -112,11 +121,15 @@ GROUP BY style;
 -- ── Aux 2: per-CUSTOMER reference (full history) — CLV / new-vs-repeat ───────
 CREATE OR REPLACE TABLE `lucirajewelry-prod.sales_dashboard.sales_reporting_customer` AS
 SELECT
-  CAST(`party_id` AS STRING)              AS customer_id,
+  -- Same MOBILE-based identity as the fact table (distinct customer = distinct mobile).
+  COALESCE(
+    NULLIF(RIGHT(REGEXP_REPLACE(COALESCE(`Cus_mobile`,''), r'[^0-9]', ''), 10), ''),
+    CAST(`party_id` AS STRING)
+  )                                       AS customer_id,
   MIN(CAST(`Transaction_Date` AS DATE))   AS first_order_date,
   MAX(CAST(`Transaction_Date` AS DATE))   AS last_order_date,
   COUNT(DISTINCT `document_no`)           AS lifetime_orders,
   ROUND(SUM(IFNULL(SAFE_CAST(`gross_amount` AS FLOAT64),0)) / 1.03, 2) AS lifetime_net
 FROM `lucirajewelry-prod.ornaverse_erp_administration.Sales_overview_table`
-WHERE `party_id` IS NOT NULL
+WHERE `Cus_mobile` IS NOT NULL OR `party_id` IS NOT NULL
 GROUP BY customer_id;

@@ -81,7 +81,8 @@ input,select{font-family:inherit}
 .brand .wm{display:flex;flex-direction:column;line-height:1}
 .brand .wm b{font-family:var(--serif);font-size:19px;font-weight:600;letter-spacing:3px;
   background:linear-gradient(100deg,var(--gold-2),var(--gold-deep));-webkit-background-clip:text;background-clip:text;color:transparent}
-.brand .wm span{font-size:8.5px;letter-spacing:3.4px;color:var(--muted);text-transform:uppercase;margin-top:3px}
+.brand .wm span{font-size:8.5px;letter-spacing:3.4px;text-transform:uppercase;margin-top:3px;font-weight:600;
+  background:linear-gradient(100deg,var(--gold-2),var(--gold-deep));-webkit-background-clip:text;background-clip:text;color:transparent}
 
 /* ── App layout ─────────────────────────────────────────────── */
 #app{opacity:0;transition:opacity .6s var(--ease)}
@@ -133,6 +134,7 @@ main{padding:clamp(16px,3vw,30px);max-width:1560px;margin:0 auto}
 .card>.pad{padding:18px}
 .card .ct{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
 .card .ct h3{font-size:16px;letter-spacing:.3px}
+.card .ct .ct-r{display:flex;align-items:center;gap:10px;flex:0 0 auto}
 .card .ct .hint{font-size:11px;color:var(--muted)}
 .grid{display:grid;gap:16px}
 .g-2{grid-template-columns:repeat(2,1fr)}.g-3{grid-template-columns:repeat(3,1fr)}
@@ -192,6 +194,37 @@ table.dt tbody tr:hover{background:var(--surface-2)}
   padding:8px 11px;font-size:11.5px;color:var(--ink);pointer-events:none;opacity:0;transition:opacity .12s;
   box-shadow:var(--shadow);max-width:260px;line-height:1.5}
 .tip.on{opacity:1}
+/* info (ⓘ) button + explainer popover */
+.info-btn{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;flex:0 0 auto;
+  border:1px solid var(--hair);background:var(--surface-2);color:var(--muted);font-size:11px;font-style:normal;
+  font-family:Georgia,'Times New Roman',serif;line-height:1;cursor:pointer;user-select:none;transition:.16s;vertical-align:middle}
+.info-btn:hover,.info-btn:focus-visible{color:var(--gold);border-color:var(--gold);transform:scale(1.14);outline:none;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 22%,transparent)}
+.info-btn.active{background:var(--gold);color:#17140a;border-color:var(--gold);transform:scale(1.1);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 26%,transparent)}
+.kpi{position:relative}
+.kpi>.info-btn{position:absolute;top:10px;right:10px}
+.mini{position:relative}
+.mini>.info-btn{position:absolute;top:9px;right:9px;width:16px;height:16px;font-size:10px}
+.info-pop{position:fixed;z-index:240;width:min(378px,92vw);max-height:min(72vh,540px);overflow-y:auto;overflow-x:hidden;
+  background:var(--surface,#141418);background-color:var(--surface,#141418);backdrop-filter:blur(8px);
+  border:1px solid var(--glass-brd);border-radius:15px;box-shadow:0 20px 55px rgba(0,0,0,.55);
+  padding:16px 17px;opacity:0;transform:translateY(7px) scale(.985);pointer-events:none;
+  transition:opacity .19s cubic-bezier(.2,.8,.2,1),transform .19s cubic-bezier(.2,.8,.2,1)}
+.info-pop.on{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.info-pop h4{font-family:var(--serif);font-size:15px;line-height:1.25;margin:0 0 2px}
+.info-pop .ip-sub{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
+.info-pop section{margin-bottom:10px}
+.info-pop section .k{font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--gold);font-weight:700;margin-bottom:3px}
+.info-pop section .t{font-size:12px;color:var(--ink-2);line-height:1.55}
+.info-pop .gb{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.info-pop .gb>div{border-radius:9px;padding:7px 9px;font-size:11px;color:var(--ink-2);line-height:1.45}
+.info-pop .gb .good{border:1px solid rgba(18,184,134,.32);background:rgba(18,184,134,.08)}
+.info-pop .gb .bad{border:1px solid rgba(239,83,80,.32);background:rgba(239,83,80,.08)}
+.info-pop .gb b{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.info-pop .gb .good b{color:#12b886}.info-pop .gb .bad b{color:#ef5350}
+.info-pop .meta{display:flex;gap:14px;flex-wrap:wrap;border-top:1px solid var(--hair);padding-top:10px;margin-top:6px;font-size:10.5px;color:var(--muted)}
+.info-pop .meta span{display:inline-flex;gap:5px;align-items:baseline}
 .legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;font-size:11.5px;color:var(--ink-2)}
 .legend span{display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:.15s}
 .legend span.off{opacity:.35;text-decoration:line-through}
@@ -269,7 +302,8 @@ table.dt tbody tr:hover{background:var(--surface-2)}
 .hero::after{content:"";position:absolute;right:-60px;top:-60px;width:340px;height:340px;border-radius:50%;
   background:radial-gradient(circle,rgba(212,175,55,.18),transparent 62%);pointer-events:none}
 .hero .eyebrow{margin-bottom:10px}
-.hero h1{font-size:clamp(28px,4.6vw,50px);line-height:1.05;max-width:16ch}
+.hero h1{font-size:clamp(20px,2.8vw,30px);line-height:1.15;max-width:none;white-space:nowrap}
+@media(max-width:680px){.hero h1{white-space:normal;font-size:22px}}
 .hero h1 em{font-style:italic;background:linear-gradient(100deg,var(--gold-2),var(--gold-deep));-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero p{color:var(--ink-2);font-size:14px;margin-top:12px;max-width:60ch}
 .hero .stats{display:flex;flex-wrap:wrap;gap:26px;margin-top:22px}
@@ -322,7 +356,7 @@ body.modal-open{overflow:hidden}
   </div>
   <div style="text-align:center">
     <div class="load-word">Lucira</div>
-    <div class="load-sub">Sales Intelligence</div>
+    <div class="load-sub">Jewelry</div>
   </div>
   <div class="load-bar"><i></i></div>
 </div>
@@ -333,7 +367,7 @@ body.modal-open{overflow:hidden}
     <div class="brand">
       <div class="mono"><svg viewBox="0 0 100 100"><text x="50" y="72" font-family="Georgia,serif" font-size="66" font-weight="700" text-anchor="middle" fill="url(#lg2)">L</text>
         <defs><linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2d888"/><stop offset="1" stop-color="#b8860b"/></linearGradient></defs></svg></div>
-      <div class="wm"><b>LUCIRA</b><span>Sales Intelligence</span></div>
+      <div class="wm"><b>LUCIRA</b><span>Jewelry</span></div>
     </div>
     <div class="src-dot" id="srcDot"><i></i><span id="srcTxt">Sample data</span></div>
     <div class="spacer"></div>
@@ -367,6 +401,7 @@ body.modal-open{overflow:hidden}
 </div>
 
 <div class="tip" id="tip"></div>
+<div class="info-pop" id="infoPop"></div>
 <div id="toast"></div>
 
 <script>
@@ -396,6 +431,15 @@ const CONFIG = {
 };
 /* CI/Pages override: merge injected config (see the HTML-comment marker above the engine script). */
 try{ if(typeof window!=='undefined' && window.__SALES_CONFIG__){ Object.assign(CONFIG, window.__SALES_CONFIG__); } }catch(e){}
+/* Local/dev override (non-destructive; production defaults unchanged):
+   ?api=<url> or ?snapshot=<url> points the dashboard at a local backend and is
+   remembered in localStorage. ?api=reset clears it. */
+try{ const qp=new URLSearchParams(location.search); let ov=qp.get('snapshot')||qp.get('api');
+  if(ov==='reset'){ localStorage.removeItem('lucira_sales_api'); ov=null; }
+  if(!ov){ ov=localStorage.getItem('lucira_sales_api'); }
+  else{ localStorage.setItem('lucira_sales_api',ov); }
+  if(ov){ CONFIG.SNAPSHOT_URL=ov; CONFIG.API_BASE=ov; }
+}catch(e){}
 const GST = CONFIG.GST_DIVISOR;
 const PAL = ['#d4af37','#12b886','#8b5cf6','#4d96ff','#e0a899','#f2b13a','#3b5bdb','#ef5350','#4db6ac','#c77dff','#9c8b3e','#20c997'];
 const SALE_TYPE_COLOR = {MTO:'#4d96ff',RTS:'#12b886',TAH:'#8b5cf6',Return:'#ef5350',Exchange:'#f2b13a',Other:'#8a8272'};
@@ -418,7 +462,7 @@ const STATE = {
   items:[], allItems:[], styleRef:new Map(), custRef:new Map(),
   caps:{margin:false,inventory:false,selling_days:false,customer:true,salesperson:false,sale_type:true,weights:true,price_band:true,customer_type:true},
   validation:null, days:[], now:new Date(), asOf:null, source:'sample', dims:{}, custStats:new Map(),
-  filters:{ range:'12m', from:null, to:null, category:'', collection:'', metal:'', band:'', saletype:'', store:'', ctype:'', channel:'', state:'', search:'' },
+  filters:{ range:'7d', from:null, to:null, category:'', collection:'', metal:'', band:'', saletype:'', store:'', ctype:'', channel:'', state:'', search:'' },
   compare:'prev', gran:'monthly', tab:'home', drill:null
 };
 
@@ -537,9 +581,8 @@ function buildSample(){
       }
     }
   }
-  const custFirstDate=new Map();
-  for(const it of items){ const c=it.customer_id,f=custFirstDate.get(c); if(!f||it.date<f)custFirstDate.set(c,it.date); }
-  for(const it of items){ it.customer_type = it.date===custFirstDate.get(it.customer_id)?'New':'Repeat'; }
+  // (New/Repeat cohort is derived centrally in ingest() by customer identity;
+  //  no per-transaction customer_type override needed here.)
   const dupN=Math.floor(items.length*0.02); const rawLen=items.length;
   for(let i=0;i<dupN;i++){ const src=items[Math.floor(rnd()*rawLen)]; items.push(Object.assign({},src)); }
   const styleRef=new Map(); const firstSale=new Map(),lastSale=new Map(),unitsAll=new Map();
@@ -584,18 +627,32 @@ function dedupe(items){ const seen=new Set(); const out=[]; let removed=0,rawGro
 function ingest(j,source){
   let items=(j.items||[]).map(it=>{ it.net=net(it.gross||0); if(it.sale_type==null||it.sale_type==='') it.sale_type='Other';
     if(!it.price_band) it.price_band=realBand(it.gross); return it; });
-  const dd=dedupe(items); items=dd.out;
+  // CLIENT REQUEST (2026-07-20): include EVERY sales record as-is — NO dedup.
+  // dedupe() runs for STATS ONLY (to count how many exact-duplicate rows exist);
+  // we deliberately keep the full `items` array, duplicates included.
+  const dd=dedupe(items);
+  // Per-transaction COHORT by customer identity's first-ever purchase date.
+  // customer_id is mobile-based (distinct mobile = distinct customer), so a
+  // customer's first-date lines = New, all later lines = Repeat. Used by the
+  // New-vs-Repeat chart & frequency metrics; customer_type stays the ERP type.
+  { const cf=new Map();
+    for(const it of items){ const c=it.customer_id; const f=cf.get(c); if(f==null||it.date<f)cf.set(c,it.date); }
+    for(const it of items){ it.cohort=(it.date===cf.get(it.customer_id))?'New':'Repeat'; } }
   STATE.allItems=items;
   STATE.styleRef=new Map((j.styleRef||[]).map(r=>[r.style,r]));
   STATE.custRef=new Map((j.customerRef||[]).map(r=>[r.customer_id,r]));
   STATE.caps=Object.assign({margin:false,inventory:false,selling_days:false,customer:true,salesperson:false,sale_type:true,weights:true,price_band:true,customer_type:true},j.capabilities||{});
   STATE.source=source; STATE.asOf=j.asOf||maxDate(items); STATE.now=STATE.asOf?parseYmd(STATE.asOf):new Date();
   STATE.days=[...new Set(items.map(i=>i.date))].sort();
-  const dedupGross=items.reduce((s,i)=>s+(i.gross||0),0);
-  STATE.validation = j.validation ? j.validation : {
-    raw_rows:dd.rawRows, deduped_rows:items.length, removed:dd.removed, raw_gross:round3(dd.rawGross),
-    returned_rows:items.length, returned_gross:round3(dedupGross), gst_divisor:GST,
-    dedup_key:'gross + sale_date + document_no + net_weight' };
+  const totalGross=items.reduce((s,i)=>s+(i.gross||0),0);
+  // Merge any snapshot-provided validation, then FORCE the no-dedup facts so the
+  // Reports panel always reflects "all records included" regardless of source.
+  STATE.validation = Object.assign(
+    { raw_rows:dd.rawRows, raw_gross:round3(dd.rawGross), gst_divisor:GST,
+      dedup_key:'gross + sale_date + document_no + net_weight' },
+    (j.validation||{}),
+    { deduped_rows:items.length, total_rows:items.length, duplicate_rows:dd.removed,
+      removed:0, dedup_applied:false, returned_rows:items.length, returned_gross:round3(totalGross) });
   buildDims(); buildCustStats();
 }
 function buildDims(){
@@ -744,11 +801,11 @@ function computeMetrics(items,win){
   }
   const orders=M.orderSet.size, retOrders=M.returnOrderSet.size, exchOrders=M.exchOrderSet.size;
   const active=[...M.custSet]; const cr=STATE.custRef;
-  let newC=0,returningC=0,repeatC=0,clvSum=0,clvN=0;
+  let newC=0,returningC=0,repeatC=0,clvSum=0,clvN=0,newOrd=0,repeatOrd=0;
   for(const id of active){ const ref=cr.get(id);
-    const first=ref?ref.first_order_date:null;
-    if(win&&first&&first>=win.from&&first<=win.to) newC++; else if(win) returningC++;
-    if(ref&&ref.lifetime_orders>1) repeatC++;
+    const first=ref?ref.first_order_date:null; const lo=ref?(ref.lifetime_orders||0):0;
+    if(win&&first&&first>=win.from&&first<=win.to){ newC++; newOrd+=lo; } else if(win) returningC++;
+    if(ref&&ref.lifetime_orders>1){ repeatC++; repeatOrd+=lo; }
     if(ref&&ref.lifetime_net!=null){ clvSum+=ref.lifetime_net; clvN++; } }
   const stores=new Set(items.map(i=>i.store).filter(Boolean)).size;
   const execs=new Set(items.map(i=>i.salesperson).filter(s=>s&&s!=='Online')).size;
@@ -759,6 +816,7 @@ function computeMetrics(items,win){
     aov: orders?M.net/orders:0, asp: M.units?M.net/M.units:0,
     customers: active.length, uniqueCustomers: active.length,
     newCustomers:newC, repeatCustomers:repeatC, returningCustomers:returningC,
+    newCustFreq: newC?newOrd/newC:0, repeatCustFreq: repeatC?repeatOrd/repeatC:0,
     retentionPct: active.length?returningC/active.length*100:0,
     repeatPct: active.length?repeatC/active.length*100:0,
     clv: clvN?clvSum/clvN:0,
@@ -857,6 +915,108 @@ document.addEventListener('mousemove',e=>{
 },{passive:true});
 
 /* ═══════════════════════════════════════════════════════════════════════
+   INFO (ⓘ) EXPLAINER SYSTEM — unique per chart / KPI, hover or click popover
+   ═══════════════════════════════════════════════════════════════════════ */
+const INFO_SRC="BigQuery · sales_dashboard.sales_reporting (rebuilt daily from Sales_overview_table)";
+const INFO_CUST="BigQuery · sales_dashboard.sales_reporting_customer (lifetime, by mobile no.)";
+const INFO_STYLE="BigQuery · sales_dashboard.sales_reporting_style (per-style lifetime)";
+const INFO_REF="Once daily · 10:00 AM IST (no live query on open)";
+function infoSlug(t){ return String(t).toLowerCase().replace(/&amp;/g,' ').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+const INFO={
+ "revenue-trend":{shows:"Net revenue (after 3% GST) across the selected period, bucketed by day, week or month automatically.",why:"Tells leadership at a glance whether sales are growing, flat or slowing so they can react early.",read:"Follow the slope — rising is growth. Each point is labelled with that period's net revenue.",good:"A steady climb or a strong festive spike.",bad:"A sustained slide or a sharp drop with no seasonal reason.",formula:"Σ net (= gross ÷ 1.03) for each time bucket in range.",actions:"If it dips, drill into Stores and Products to find the cause; scale up whatever is lifting it."},
+ "sales-mix-by-type":{shows:"Share of net revenue by fulfilment type — MTO (made-to-order), RTS (ready-to-sell), TAH, Return and Exchange.",why:"Reveals how the money is actually earned and how much returns eat into it.",read:"Bigger slice = bigger revenue share. The centre shows total net; the legend gives ₹ and %.",good:"A healthy RTS/MTO balance with only a small Return slice.",bad:"A large Return/Exchange slice, or dangerous over-reliance on one type.",formula:"Net grouped by sale_type ÷ total net.",actions:"If MTO dominates, protect delivery timelines; if returns are large, open Returns & Exchange."},
+ "category-momentum":{shows:"Top categories by net revenue, with each one's growth vs the comparison period in the label.",why:"Separates the categories pulling the business up from those dragging it down.",read:"Green bars grew, red bars shrank. Longer bar = more revenue. Click a bar to filter the whole dashboard.",good:"Your biggest categories are green.",bad:"A large category is red — money is leaking there.",formula:"Net by category, growth = (current − previous) ÷ previous.",actions:"Push stock and marketing behind green movers; investigate red ones for pricing or supply issues."},
+ "smart-alerts":{shows:"Automatic warnings and wins detected from the current numbers — e.g. high returns, low repeat rate, concentration risk.",why:"Surfaces what needs attention without anyone hunting through every chart.",read:"Red = risk to act on, amber = watch, green = positive signal.",good:"Few or no red alerts.",bad:"Several red alerts stacking up.",formula:"Rule-based checks on the period's metrics vs healthy thresholds.",actions:"Open Alerts & Actions for the full list with owners, deadlines and expected ₹ impact."},
+ "ai-daily-ceo-briefing":{shows:"A plain-language executive summary of the period — revenue, growth, top drivers and the single most important risk.",why:"Gives the CEO the headline story in seconds, grounded only in this data.",read:"Read top to bottom; bold figures are the key numbers.",formula:"Generated from the period's computed metrics — no outside data.",actions:"Use it as your daily stand-up script; click Copy to paste into email or chat."},
+ "customer-segments":{shows:"Customers grouped into value tiers (VIP, Loyal, Promising, At Risk, Lost…) with count, lifetime spend and contribution.",why:"Not all customers are equal — this shows where the revenue concentration and the churn risk sit.",read:"Compare Contribution vs Customers: a few VIPs often drive most revenue.",good:"VIP/Loyal tiers hold a large revenue share.",bad:"Revenue depends on a tiny group, or At Risk/Lost is swelling.",formula:"RFM scoring on lifetime recency, frequency and monetary value (by mobile no.).",actions:"Protect VIPs with concierge care; run win-back offers on At Risk before they become Lost.",src:INFO_CUST},
+ "top-customers":{shows:"Your highest lifetime-value customers with orders, lifetime value, average basket, recency and preferred category/store.",why:"These are the relationships worth protecting — the people who fund the business.",read:"Recency (days since last order) flags who is going quiet despite high value.",good:"Top customers bought recently.",bad:"A high-value name with large recency — a VIP slipping away.",formula:"Ranked by lifetime net spend; identity = distinct mobile no.",actions:"Assign a relationship owner; reach out personally to high-value names with rising recency.",src:INFO_CUST},
+ "segmentation":{shows:"The share of customers in each value segment as a donut.",why:"Shows the shape of the customer base — how many are new, loyal or at risk.",read:"Bigger slice = more customers in that tier; centre shows total customers.",good:"A growing Loyal/Promising middle.",bad:"A large Lost/At Risk share.",formula:"Customer count per RFM segment ÷ total customers.",actions:"Move Promising customers to Loyal with a second-purchase nudge.",src:INFO_CUST},
+ "rfm-matrix":{shows:"A 5×5 grid placing customers by Recency (how recently) and Frequency (how often) they buy; shade = how many.",why:"Pinpoints exactly which behaviour groups to target — recent-frequent vs lapsing.",read:"Top-right = best (recent & frequent). Bottom-left = lapsing. Darker cell = more customers.",good:"Weight concentrated toward the top-right.",bad:"A heavy bottom-left corner (many lapsing customers).",formula:"Customers scored into R and F quintiles; cell = count, tooltip = avg lifetime value.",actions:"Target high-F low-R cells with reactivation; nurture high-R low-F toward loyalty.",src:INFO_CUST},
+ "new-vs-repeat-revenue":{shows:"Net revenue split each period into first-time (New) vs returning (Repeat) customers.",why:"Growth from new buyers vs loyalty from repeat buyers are very different engines — this shows the balance.",read:"Green = New, purple = Repeat, stacked to the period total.",good:"A solid and growing Repeat band — loyalty is compounding.",bad:"Almost all revenue is New every period — no one comes back.",formula:"A customer's first-ever purchase date = New; any later purchase = Repeat. Identity = distinct mobile no.",actions:"If Repeat is thin, launch post-purchase care and a 30/90-day re-engagement flow."},
+ "mto-vs-rts-by-store":{shows:"Each store's revenue split between made-to-order (MTO) and ready-to-sell (RTS), with their shares.",why:"Shows which stores lean on custom orders vs walk-in stock — they need different operations.",read:"Compare MTO% and RTS% across stores.",good:"A mix that matches each store's staffing and delivery capacity.",bad:"A store almost entirely MTO with weak delivery follow-through.",formula:"Net by store × sale_type; % = type net ÷ store net.",actions:"High-MTO stores: tighten delivery SLAs. High-RTS stores: keep fast movers in stock."},
+ "sale-type-contribution":{shows:"Net revenue, order count, average order value and revenue share for each sale type.",why:"Quantifies exactly how much each fulfilment type contributes — beyond just the mix picture.",read:"Compare AOV across types; MTO usually carries a higher basket than RTS.",good:"High-share types also carry healthy AOV.",bad:"A big-share type with very low AOV or negative (returns) weight.",formula:"Grouped by sale_type: Σ net, distinct invoices, net ÷ orders, share of total.",actions:"Grow the high-AOV type; if returns' negative share is large, attack root causes."},
+ "mto-rts-tah-trend":{shows:"How MTO, RTS and TAH revenue each move over time.",why:"Shows whether the shift toward custom or ready stock is a trend, not a one-off.",read:"Compare the lines' directions; each point is labelled.",good:"Your strategic type is trending up.",bad:"Your highest-margin type is fading.",formula:"Net by sale_type per time bucket.",actions:"Align inventory and staffing to the rising type; investigate any declining line."},
+ "fulfilment-mix":{shows:"Overall revenue share by fulfilment type for the selected period.",why:"A quick read on the current balance of custom vs ready-stock business.",read:"Bigger slice = bigger share; centre = total net.",good:"A deliberate, balanced mix.",bad:"Accidental over-concentration in one type.",formula:"Net by sale_type ÷ total net.",actions:"Use alongside the trend to decide where to steer stock and promotions."},
+ "high-return-customers":{shows:"Customers with more than one return, and their lifetime value.",why:"A few customers can drive a disproportionate share of returns and cost.",read:"High returns next to high LTV = coach, not cut; high returns with low LTV = review.",good:"Very few names here.",bad:"High-value customers returning repeatedly.",formula:"Customers with return_count > 1, from lifetime history.",actions:"Call them to understand fit/expectation gaps before the returns turn into churn.",src:INFO_CUST},
+ "high-return-products-style":{shows:"The styles generating the most return lines and return value.",why:"Isolates the specific products causing returns — often a sizing, quality or photo-vs-reality gap.",read:"High return value on a style = a product problem worth fixing.",good:"Return value spread thin, no single style dominating.",bad:"One or two styles driving most returns.",formula:"Return lines and Σ |return net| grouped by style_code.",actions:"Audit the top styles for sizing/quality; fix listings or pause the worst offenders.",src:INFO_STYLE},
+ "ai-recommendations-to-reduce-returns":{shows:"Prioritised, data-driven suggestions to lower the return rate.",why:"Turns the returns analysis into concrete next steps.",read:"Ordered by expected impact — start at the top.",formula:"Generated from return patterns by store, category and product in this period.",actions:"Assign each recommendation an owner and revisit next cycle to confirm returns fell."},
+ "return-by-store":{shows:"Return rate for each store.",why:"Returns often cluster by location — pointing to staff guidance, expectation-setting or handling.",read:"Taller bar = worse. Click a store to filter and dig in.",good:"All stores below your target return rate.",bad:"One store well above the pack.",formula:"Return orders ÷ total orders, per store.",actions:"Coach the highest store on fit advice and expectation-setting at point of sale."},
+ "return-by-category":{shows:"Return rate by product category.",why:"Some categories (e.g. rings needing sizing) naturally return more — this quantifies it.",read:"Taller bar = higher return rate for that category.",good:"Return rates in line with category norms.",bad:"A category spiking above its usual level.",formula:"Return orders ÷ total orders, per category.",actions:"For high-return categories add sizing guides, better photos, or a fit guarantee."},
+ "return-by-collection":{shows:"Return rate by collection.",why:"Flags whether a specific collection has a quality or expectation problem.",read:"Taller bar = that collection is returned more often.",good:"Even, low return rates across collections.",bad:"One collection clearly worse than the rest.",formula:"Return orders ÷ total orders, per collection.",actions:"Review the worst collection's craftsmanship and product descriptions."},
+ "store-revenue":{shows:"Net revenue by store for the period.",why:"The simplest read on which locations carry the business.",read:"Taller bar = more revenue. Click to filter to that store.",good:"Revenue spread across several strong stores.",bad:"Total depends on a single store.",formula:"Σ net grouped by store (company_code).",actions:"Study what top stores do right and transplant it; support the laggards."},
+ "performance-score":{shows:"A 0–100 health score per store blending revenue, growth, repeat rate and returns.",why:"One fair number to compare stores beyond raw revenue alone.",read:"Green ≥70 strong, amber 50–69 mixed, red <50 needs help.",good:"Most stores green.",bad:"Stores in red, especially larger ones.",formula:"Weighted blend of revenue, growth, repeat % and (inverse) return %.",actions:"Put red/amber stores on an improvement plan; reward and replicate the greens."},
+ "store-leaderboard":{shows:"A full ranked table of stores across every key metric.",why:"The detailed backup to the store charts for side-by-side comparison.",read:"Sort any column to rank by that metric.",good:"Leaders strong across several columns, not just revenue.",bad:"A high-revenue store weak on repeat or returns.",formula:"Per-store aggregates of the period's transactions.",actions:"Use it in store reviews to set specific, metric-level targets."},
+ "frequently-bought-together":{shows:"Category pairs that appear on the same invoice most often.",why:"Reveals natural cross-sell and bundling opportunities.",read:"Longer bar = that pair is bought together more.",good:"Clear, actionable pairings emerge.",bad:"Mostly single-category baskets — little cross-sell.",formula:"Count of category pairs co-occurring within the same invoice.",actions:"Build bundles and 'complete the look' prompts around the top pairs."},
+ "movement-mix":{shows:"Products classified as fast, steady, slow or dead movers.",why:"Shows how much of the catalogue is actually selling vs sitting idle.",read:"Bigger fast/steady share is healthier; dead = capital stuck.",good:"Most revenue from fast/steady movers.",bad:"A large dead/slow share.",formula:"Styles bucketed by selling velocity over their lifetime.",actions:"Promote or clear slow/dead stock; keep fast movers always in stock.",src:INFO_STYLE},
+ "abc-pareto-analysis":{shows:"The 80/15/5 rule — which styles (A) drive most revenue vs the long tail (C).",why:"Focuses attention and stock investment on the vital few.",read:"A-items are your revenue core; C-items are the low-impact tail.",good:"A tight A-group reliably producing.",bad:"Revenue spread so thin nothing stands out, or over-dependence on a couple of A-items.",formula:"Styles sorted by net; cumulative share splits A (≤80%), B (≤95%), C (rest).",actions:"Never stock out on A-items; rationalise or clear the C-tail.",src:INFO_STYLE},
+ "top-cities":{shows:"The cities generating the most revenue, with orders, customers and average order value.",why:"Shows where demand physically concentrates — for expansion and targeting.",read:"Compare AOV across cities, not just revenue.",good:"Several strong cities with healthy AOV.",bad:"Everything riding on one city.",formula:"Σ net, orders, distinct customers, net÷orders grouped by city.",actions:"Target marketing to high-AOV cities; consider presence in rising ones."},
+ "revenue-by-region":{shows:"Revenue split across regions/countries.",why:"The macro view of where the business sells.",read:"Bigger slice = bigger region; centre = total net.",good:"Balanced regional spread.",bad:"Heavy single-region dependence.",formula:"Net grouped by region ÷ total net.",actions:"Diversify into under-served regions; defend the core."},
+ "geographic-opportunity":{shows:"A short read on geographic gaps and expansion potential.",why:"Turns the maps and tables into a clear 'where next'.",read:"Plain language — highlights under-penetrated but promising areas.",formula:"Generated from city/state revenue and customer spread this period.",actions:"Pilot targeted campaigns in the flagged high-potential areas."},
+ "state-revenue-heat":{shows:"Revenue by state, shaded so hotter = more.",why:"An instant map of your strongest and weakest states.",read:"Darker/longer = more revenue. Click a state to filter.",good:"Strength across multiple states.",bad:"A single state carrying the total.",formula:"Σ net grouped by state.",actions:"Reinforce strong states and test demand-generation in the cold ones."},
+ "sales-executive-leaderboard":{shows:"Per-executive revenue, orders, customers, repeat %, MTO %, return % and an overall score.",why:"Makes individual performance and coaching needs visible.",read:"A high score needs strength across columns, not just revenue.",good:"Balanced performers.",bad:"High revenue but weak repeat or high returns.",formula:"Per-salesperson aggregates and a weighted score.",actions:"Pair low scorers with top performers; coach on their weakest column. (Needs a salesperson column in the source to populate with live names.)",src:"Needs salesperson field in Sales_overview_table"},
+ "coaching-flags":{shows:"Executives whose scores suggest a specific coaching need.",why:"Points managers straight to who needs help and why.",read:"Each flag names the weak area — repeat rate, returns or revenue.",formula:"Triggered when an executive's score or a sub-metric falls below threshold.",actions:"Hold a focused 1:1 on the flagged area within the fortnight."},
+ "knowledge-base":{shows:"Quick preset questions you can ask the built-in assistant.",why:"Speeds up getting answers without knowing what to type.",read:"Click any chip to run that question instantly.",formula:"Curated prompts grounded only in this dashboard's data.",actions:"Start here, then refine with your own follow-up questions."},
+ "data-validation-reconciliation":{shows:"Proof the numbers tie out — the same total across daily/weekly/monthly/quarterly/yearly views, plus the sale-type breakdown.",why:"Builds trust: every grain must sum to the identical grand total.",read:"All rows should say MATCH. Records-loaded confirms every row is included (no dedup).",good:"All grains MATCH.",bad:"Any DIFF — a data or aggregation issue to investigate.",formula:"Σ gross recomputed at each time grain and compared to the grand total.",actions:"If a DIFF appears, check the source refresh before trusting the day's figures."},
+ "detailed-sales":{shows:"The line-by-line transaction table behind every chart — searchable, sortable and exportable.",why:"Lets analysts verify any headline number down to the individual invoice.",read:"Search or sort to find specific invoices, customers or styles.",formula:"Filtered rows from the reporting fact table for the current selection.",actions:"Export to CSV/Excel for deeper offline analysis or sharing."},
+ "returned-customers-summary":{shows:"Key numbers for one specific group only — customers who have returned at least one product. Shows how many such customers there are, plus their RTS and MTO orders/amounts (what they keep) and their return orders/amount (what they send back).",why:"Return-prone customers behave differently from everyone else. Isolating them shows how much of their spend actually sticks and where the leakage is.",read:"Compare their RTS + MTO amounts (kept revenue) against the Returned Amount (sent back). Counts are unique — each customer once.",good:"Kept revenue (RTS + MTO) is far larger than the returned amount.",bad:"Returned amount is a big share of what this group buys.",formula:"Cohort = unique customers (by mobile no.) with ≥1 return in the current selection. Orders = distinct invoices; amounts = net ₹ (gross ÷ 1.03). Every figure respects the active Date, Store, Channel and Product-Type filters.",actions:"If the returned amount is high, target this cohort with better sizing guidance and an exchange-first (not refund) flow to retain the value.",src:INFO_SRC}
+};
+const KINFO={
+ revenue:{shows:"Total net revenue (after 3% GST) for the period.",why:"The single most important measure of business size.",read:"Compare the arrow vs the previous period.",good:"Growing vs the comparison period.",bad:"Falling for two+ periods.",formula:"Σ gross ÷ 1.03.",actions:"If down, drill into category and store tabs to find the drop."},
+ orders:{shows:"Number of distinct sales invoices in the period.",why:"Volume of transactions, independent of ticket size.",read:"Rising orders with flat revenue means smaller baskets.",good:"Orders rising.",bad:"Orders falling while foot traffic is steady.",formula:"Count of distinct document_no.",actions:"Pair with AOV to see if the lever is traffic or basket size."},
+ net:{shows:"Sales value after removing 3% GST.",why:"The clean, tax-free revenue used across the dashboard.",read:"This is the basis for AOV, CLV and most KPIs.",good:"Trending up.",bad:"Trending down.",formula:"Gross ÷ 1.03.",actions:"Use as the true revenue figure in reports."},
+ gross:{shows:"Raw sales value including returns (negative) before GST removal.",why:"Ties directly to the billed amount in the ERP.",read:"Always a little above net; returns pull it down.",good:"Up, with returns contained.",bad:"Gap to net widening from heavy returns.",formula:"Σ gross_amount (returns negative).",actions:"If gross and net diverge, check the return rate."},
+ aov:{shows:"Average value of an order.",why:"Shows basket size — a key lever for growth without more traffic.",read:"Rising AOV means customers spend more per visit.",good:"Increasing.",bad:"Falling, often from heavy discounting.",formula:"Net ÷ orders.",actions:"Lift with bundling, up-sell and 'complete the look' prompts."},
+ asp:{shows:"Average selling price per piece.",why:"Reveals whether product mix is shifting to higher- or lower-value items.",read:"Falling ASP with steady AOV = customers buying more, cheaper pieces.",good:"Stable or rising.",bad:"Declining — mix drifting cheap.",formula:"Net ÷ pieces sold.",actions:"Feature higher-value lines if ASP is sliding."},
+ customers:{shows:"Distinct customers who bought in the period.",why:"The size of your active buying base.",read:"Counted by distinct mobile number, not party id.",good:"Growing.",bad:"Shrinking.",formula:"Distinct customer identities active in range.",actions:"Grow with acquisition; protect with retention.",src:INFO_CUST},
+ uniqueCustomers:{shows:"Distinct customer identities (by mobile number).",why:"A de-duplicated count so one person isn't counted twice.",read:"Should closely track Total Customers.",good:"Rising.",bad:"Falling.",formula:"Distinct mobile-based customer_id.",actions:"Use as the true unique-customer figure.",src:INFO_CUST},
+ newCustomers:{shows:"Customers making their first-ever purchase in the period.",why:"Measures acquisition — fresh demand entering the business.",read:"For an all-time range everyone counts as new; narrow the range to isolate true new buyers.",good:"A steady inflow.",bad:"Drying up.",formula:"Customers whose first-ever order date falls in range.",actions:"Feed acquisition channels; ensure a strong first-purchase experience.",src:INFO_CUST},
+ repeatCustomers:{shows:"Customers who have bought more than once in their lifetime.",why:"The core of loyalty and durable revenue.",read:"More repeat customers = a stickier business.",good:"Growing repeat base.",bad:"Stagnant while new keeps churning.",formula:"Customers with lifetime orders > 1 (by mobile no.).",actions:"Nurture one-time buyers to a second purchase.",src:INFO_CUST},
+ returningCustomers:{shows:"Active customers who had also purchased before this period.",why:"Shows how many buyers are coming back, not just totals.",read:"Compare against new customers for the balance.",good:"A rising share returning.",bad:"Few returning.",formula:"Active customers with an earlier first-order date.",actions:"Strengthen re-engagement to grow this.",src:INFO_CUST},
+ retentionPct:{shows:"Share of active customers who are returning buyers.",why:"A clean loyalty percentage.",read:"Higher is better; low means you rely on new buyers.",good:"Trending up.",bad:"Low or falling.",formula:"Returning ÷ active customers.",actions:"Improve with loyalty perks and post-purchase care.",src:INFO_CUST},
+ repeatPct:{shows:"Share of active customers who are repeat (multi-order) buyers.",why:"Quick gauge of loyalty depth.",read:"Below ~25% signals weak repeat behaviour.",good:"Rising.",bad:"Under 25%.",formula:"Repeat ÷ active customers.",actions:"Launch a structured 30/90-day re-engagement flow.",src:INFO_CUST},
+ clv:{shows:"Average lifetime net spend per customer.",why:"How much a customer is worth over their whole relationship.",read:"Higher CLV justifies more acquisition spend.",good:"Increasing.",bad:"Flat or falling.",formula:"Mean of each customer's lifetime net (by mobile no.).",actions:"Grow via repeat purchases and higher baskets.",src:INFO_CUST},
+ mtoRev:{shows:"Net revenue from made-to-order sales.",why:"Custom orders are often higher-margin and higher-basket.",read:"Track against RTS for the business balance.",good:"Growing.",bad:"Falling if MTO is your strategy.",formula:"Σ net where sale_type = MTO.",actions:"Protect delivery timelines as MTO grows."},
+ rtsRev:{shows:"Net revenue from ready-to-sell (in-stock) sales.",why:"Reflects walk-in and immediate-purchase demand.",read:"Track against MTO.",good:"Healthy and steady.",bad:"Sliding.",formula:"Σ net where sale_type = RTS.",actions:"Keep fast movers stocked to capture RTS demand."},
+ mtoPct:{shows:"MTO's share of net revenue.",why:"Shows how dependent the business is on custom orders.",read:"Neither extreme is ideal — balance matters.",good:"A deliberate, sustainable share.",bad:"Runaway concentration.",formula:"MTO net ÷ total net.",actions:"Match operations and staffing to this share."},
+ rtsPct:{shows:"RTS's share of net revenue.",why:"Shows reliance on ready stock.",read:"Balance against MTO %.",good:"A stable, planned share.",bad:"Over-dependence.",formula:"RTS net ÷ total net.",actions:"Align inventory planning to this share."},
+ returnPct:{shows:"Share of orders that are returns.",why:"Returns erase revenue and signal fit or quality issues.",read:"Lower is better.",good:"Below your target (e.g. <5%).",bad:"Rising or above target.",formula:"Return orders ÷ total orders.",actions:"Trace spikes by store, category and style in Returns & Exchange."},
+ exchangePct:{shows:"Share of orders that are exchanges.",why:"Exchanges hint at sizing/expectation issues even when revenue is kept.",read:"Lower is better.",good:"Low.",bad:"Climbing.",formula:"Exchange orders ÷ total orders.",actions:"Improve sizing guidance. (Activates when an exchange flag exists in the source.)"},
+ cancellationPct:{shows:"Share of orders cancelled.",why:"Cancellations point to fulfilment or payment friction.",read:"Lower is better.",good:"Low.",bad:"Rising.",formula:"Cancelled orders ÷ total orders.",actions:"Not tracked in the current source — add a cancellation flag to enable."},
+ refundAmt:{shows:"Total value refunded through returns.",why:"The direct cash impact of returns.",read:"Read alongside Return %.",good:"Small and stable.",bad:"Large or growing.",formula:"Σ |gross| of return transactions.",actions:"Reducing return drivers directly shrinks this."},
+ discountPct:{shows:"Discount as a share of sales gross.",why:"Discounting protects volume but erodes margin.",read:"Rising discount with flat revenue is a red flag.",good:"Controlled.",bad:"Creeping up.",formula:"Σ discount ÷ sales gross.",actions:"Tie discounts to clear rules; watch impact on AOV and ASP."},
+ profit:{shows:"Gross profit after cost of goods.",why:"Revenue only matters net of what stock costs.",read:"The true bottom-line contribution.",good:"Growing.",bad:"Falling despite revenue growth.",formula:"Net − COGS.",actions:"Not available — add a COGS/cost column to the source to unlock."},
+ margin:{shows:"Profit as a percentage of revenue.",why:"Efficiency of turning sales into profit.",read:"Higher is healthier.",good:"Stable or rising.",bad:"Compressing.",formula:"(Net − COGS) ÷ net.",actions:"Needs a COGS column in the source to compute."},
+ revPerCustomer:{shows:"Average net revenue per active customer this period.",why:"Shows how hard each customer relationship works.",read:"Rising means deeper wallets or better up-sell.",good:"Increasing.",bad:"Falling.",formula:"Net ÷ active customers.",actions:"Lift with cross-sell and loyalty tiers.",src:INFO_CUST},
+ revPerStore:{shows:"Average net revenue per store.",why:"A productivity check across the store network.",read:"Compare to spot under-performing locations.",good:"Rising.",bad:"Dragged down by weak stores.",formula:"Net ÷ number of active stores.",actions:"Coach low producers using the Stores tab."},
+ revPerExec:{shows:"Average net revenue per sales executive.",why:"Measures sales-team productivity.",read:"Needs per-executive data to be meaningful.",good:"Rising.",bad:"Falling.",formula:"Net ÷ number of executives.",actions:"Not populated — add a salesperson field to the source to enable.",src:"Needs salesperson field in source"}
+};
+for(const k in KINFO) INFO["kpi-"+k]=KINFO[k];
+function infoIcon(slug,title){ if(!slug||!INFO[slug]) return '';
+  return `<i class="info-btn" data-info="${slug}" data-title="${esc(title||'')}" tabindex="0" role="button" aria-label="About this metric — press Enter">ⓘ</i>`; }
+function infoPopHTML(slug,title){ const d=INFO[slug]; if(!d) return '';
+  const S=(k,t)=> t?`<section><div class="k">${k}</div><div class="t">${t}</div></section>`:'';
+  const gb=(d.good||d.bad)?`<section><div class="k">Good vs watch-out</div><div class="gb"><div class="good"><b>Good</b>${d.good||'—'}</div><div class="bad"><b>Watch out</b>${d.bad||'—'}</div></div></section>`:'';
+  return `<h4>${esc(title||slug)}</h4><div class="ip-sub">What it shows · why · how to use</div>`
+    +S('What it shows',d.shows)+S('Why it exists',d.why)+S('How to read it',d.read)+gb
+    +S('How it is calculated',d.formula)+S('What to do',d.actions)
+    +`<div class="meta"><span>📊 ${esc(d.src||INFO_SRC)}</span><span>🕑 ${esc(d.ref||INFO_REF)}</span></div>`; }
+const POP=document.getElementById('infoPop'); let popPin=false, popT=null;
+function placePop(btn){ const r=btn.getBoundingClientRect(), pr=POP.getBoundingClientRect();
+  let x=r.right-pr.width; x=Math.max(10,Math.min(x,innerWidth-pr.width-10));
+  let y=r.bottom+8; if(y+pr.height>innerHeight-10) y=r.top-pr.height-8; y=Math.max(10,y);
+  POP.style.left=x+'px'; POP.style.top=y+'px'; }
+function openPop(btn){ document.querySelectorAll('.info-btn.active').forEach(x=>x.classList.remove('active')); btn.classList.add('active');
+  POP.innerHTML=infoPopHTML(btn.getAttribute('data-info'),btn.getAttribute('data-title')); POP.classList.add('on'); placePop(btn); }
+function closePop(){ POP.classList.remove('on'); popPin=false; document.querySelectorAll('.info-btn.active').forEach(x=>x.classList.remove('active')); }
+document.addEventListener('mouseover',e=>{ const b=e.target.closest('.info-btn'); if(b){ clearTimeout(popT); if(!popPin) openPop(b); } });
+document.addEventListener('mouseout',e=>{ const b=e.target.closest('.info-btn'); if(b&&!popPin){ popT=setTimeout(()=>{ if(!POP.matches(':hover')) closePop(); },200); } });
+POP.addEventListener('mouseenter',()=>clearTimeout(popT));
+POP.addEventListener('mouseleave',()=>{ if(!popPin) closePop(); });
+document.addEventListener('click',e=>{ const b=e.target.closest('.info-btn'); if(b){ e.preventDefault(); e.stopPropagation(); popPin=true; openPop(b); } else if(!e.target.closest('#infoPop')) closePop(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closePop(); return; } if((e.key==='Enter'||e.key===' ')){ const b=document.activeElement; if(b&&b.classList&&b.classList.contains('info-btn')){ e.preventDefault(); popPin=true; openPop(b); } } });
+window.addEventListener('scroll',()=>{ if(POP.classList.contains('on')&&!popPin) closePop(); },{passive:true});
+
+/* ═══════════════════════════════════════════════════════════════════════
    CHART PRIMITIVES  (responsive SVG via viewBox)
    ═══════════════════════════════════════════════════════════════════════ */
 function sparkline(vals,color,h){ h=h||30; const w=120; color=color||'var(--gold)';
@@ -887,7 +1047,9 @@ function lineArea(series,keys,opts){
       paths+=`<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".25"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
         <path d="${line} L${xf(nk-1)} ${P.t+ih} L${xf(0)} ${P.t+ih} Z" fill="url(#${id})"/>`; }
     paths+=`<path d="${line}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
-    pts.forEach((p,i)=>{ paths+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="8" fill="transparent" data-tip="<b>${esc(keys[i])}</b><br>${esc(s.name)}: ${fmt(s.data[i])}"/><circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.6" fill="${col}"/>`; });
+    pts.forEach((p,i)=>{ paths+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="8" fill="transparent" data-tip="<b>${esc(keys[i])}</b><br>${esc(s.name)}: ${fmt(s.data[i])}"/><circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.6" fill="${col}"/>`;
+      if(opts.valueLabels!==false&&si===0&&(i%lstep===0||i===nk-1)){ const ly=Math.max(P.t+8,p[1]-7);
+        paths+=`<text x="${p[0].toFixed(1)}" y="${ly.toFixed(1)}" fill="${C_INK}" font-size="9" font-weight="600" text-anchor="middle">${esc(fmt(s.data[i]))}</text>`; } });
   });
   return `<svg class="chart" viewBox="0 0 ${W} ${H}">${g}${paths}</svg>`+legendFor(series,opts);
 }
@@ -900,6 +1062,8 @@ function bars(data,opts){ opts=opts||{}; const W=760,H=opts.height||240,P={t:14,
   data.forEach((d,i)=>{ const h=Math.abs(d.value)/mx*ih; const x=P.l+gap*i+(gap-bw)/2; const y=P.t+ih-h;
     const col=d.color||palColor(i);
     g+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1,h).toFixed(1)}" rx="4" fill="${col}" ${opts.click?`data-filter="${opts.click}|${esc(d.key||d.label)}" style="cursor:pointer"`:''} data-tip="<b>${esc(d.label)}</b><br>${fmt(d.value)}"/>`;
+    if(opts.valueLabels!==false&&data.length<=18){ const ly=Math.max(P.t+9,y-4);
+      g+=`<text x="${(x+bw/2).toFixed(1)}" y="${ly.toFixed(1)}" fill="${C_INK}" font-size="9.5" font-weight="600" text-anchor="middle">${esc(fmt(d.value))}</text>`; }
     g+=`<text x="${(x+bw/2).toFixed(1)}" y="${H-14}" fill="${C_MUTED}" font-size="9.5" text-anchor="middle" transform="rotate(0)">${esc(trunc(d.label,10))}</text>`; });
   return `<svg class="chart" viewBox="0 0 ${W} ${H}">${g}</svg>`;
 }
@@ -911,6 +1075,8 @@ function stackBars(keys,series,opts){ opts=opts||{}; const W=760,H=opts.height||
   keys.forEach((k,i)=>{ let acc=0; const x=P.l+gap*i+(gap-bw)/2;
     series.forEach((s,si)=>{ const v=Math.max(0,s.data[i]); if(v<=0)return; const h=v/mx*ih; const y=P.t+ih-(acc+v)/mx*ih; acc+=v;
       g+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,h).toFixed(1)}" fill="${s.color||palColor(si)}" data-tip="<b>${esc(k)}</b><br>${esc(s.name)}: ${fmt(v)}"/>`; });
+    if(opts.valueLabels!==false&&keys.length<=18&&totals[i]>0){ const ty=Math.max(P.t+9,P.t+ih-totals[i]/mx*ih-4);
+      g+=`<text x="${(x+bw/2).toFixed(1)}" y="${ty.toFixed(1)}" fill="${C_INK}" font-size="9" font-weight="600" text-anchor="middle">${esc(fmt(totals[i]))}</text>`; }
     g+=`<text x="${(x+bw/2).toFixed(1)}" y="${H-14}" fill="${C_MUTED}" font-size="9.5" text-anchor="middle">${esc(shortKey(k))}</text>`; });
   return `<svg class="chart" viewBox="0 0 ${W} ${H}">${g}</svg>`+legendFor(series,opts);
 }
@@ -925,7 +1091,7 @@ function donut(data,opts){ opts=opts||{}; const total=sum(data,d=>Math.abs(d.val
   const cen=opts.center||money(total);
   g+=`<text x="${cx}" y="${cy-3}" fill="${C_INK}" font-size="18" font-weight="700" text-anchor="middle" font-family="var(--serif)">${esc(cen)}</text><text x="${cx}" y="${cy+15}" fill="${C_MUTED}" font-size="9.5" text-anchor="middle">${esc(opts.centerSub||'TOTAL')}</text>`;
   return `<svg class="chart" viewBox="0 0 200 200" style="max-height:230px">${g}</svg>`+
-    `<div class="legend">`+data.map((d,i)=>`<span data-tip="${fmt(d.value)}"><i style="background:${d.color||palColor(i)}"></i>${esc(d.label)} · ${pctStr(Math.abs(d.value)/total*100)}</span>`).join('')+`</div>`;
+    `<div class="legend">`+data.map((d,i)=>`<span data-tip="${fmt(d.value)}"><i style="background:${d.color||palColor(i)}"></i>${esc(d.label)} · ${fmt(d.value)} · ${pctStr(Math.abs(d.value)/total*100)}</span>`).join('')+`</div>`;
 }
 function funnel(steps,opts){ opts=opts||{}; const W=760,H=Math.max(120,steps.length*54); const mx=Math.max(1,...steps.map(s=>s.value));
   let g=''; steps.forEach((s,i)=>{ const w=s.value/mx*(W-140); const y=i*54+10; const x=(W-w)/2; const col=s.color||palColor(i);
@@ -1069,14 +1235,14 @@ const TABS=[
   {id:'actions',label:'Alerts & Actions',ic:'❢'},
   {id:'reports',label:'Reports & Data',ic:'▤'}
 ];
-function card(title,body,opts){ opts=opts||{}; return `<div class="card ${opts.cls||''}">${opts.bare?'':`<div class="pad">`}
-  ${title?`<div class="ct"><h3>${esc(title)}</h3>${opts.hint?`<span class="hint">${opts.hint}</span>`:''}${opts.head||''}</div>`:''}
+function card(title,body,opts){ opts=opts||{}; const slug=opts.info||(title?infoSlug(title):''); return `<div class="card ${opts.cls||''}">${opts.bare?'':`<div class="pad">`}
+  ${title?`<div class="ct"><h3>${esc(title)}</h3><div class="ct-r">${opts.hint?`<span class="hint">${opts.hint}</span>`:''}${opts.head||''}${infoIcon(slug,title)}</div></div>`:''}
   ${body}${opts.bare?'':`</div>`}</div>`; }
 function secHead(eyebrow,title,sub,right){ return `<div class="sec-head"><div><div class="eyebrow">${esc(eyebrow)}</div><h2>${esc(title)}</h2>${sub?`<div class="sub">${sub}</div>`:''}</div>${right?`<div>${right}</div>`:''}</div>`; }
 function deltaMeta(cur,prev,good){ const g=growth(cur,prev); const sign=g>0.5?1:g<-0.5?-1:0;
   const cls=(good===0||sign===0)?'flat':(sign===(good>0?1:-1)?'up':'down'); const arw=sign>0?'▲':sign<0?'▼':'▬';
   return {g,sign,cls,arw}; }
-function gatedKpi(kpi){ return `<div class="kpi neu"><div class="lab">${esc(kpi.label)} <span class="dot" style="background:var(--muted)" data-tip="${esc(kpi.desc)}"></span></div>
+function gatedKpi(kpi){ return `<div class="kpi neu">${infoIcon('kpi-'+kpi.k,kpi.label)}<div class="lab">${esc(kpi.label)} <span class="dot" style="background:var(--muted)" data-tip="${esc(kpi.desc)}"></span></div>
   <div class="val" style="color:var(--muted);font-size:18px">Not available</div>
   <div class="ai"><span class="sp">ⓘ</span><span>${esc(kpi.desc)} — activates when the column exists in Sales_overview_table.</span></div></div>`; }
 function kpiCard(kpi){
@@ -1086,7 +1252,7 @@ function kpiCard(kpi){
   const spCol=dm.cls==='up'?'var(--good)':dm.cls==='down'?'var(--crit)':'var(--gold)';
   const strip=dm.cls==='up'?'pos':dm.cls==='down'?'neg':'neu';
   const diffStr=isPct?(diff>=0?'+':'')+diff.toFixed(1)+'pp':(diff>=0?'+':'−')+kpi.fmt(Math.abs(diff)).replace('-','');
-  return `<div class="kpi ${strip}" data-kpi="${kpi.k}">
+  return `<div class="kpi ${strip}" data-kpi="${kpi.k}">${infoIcon('kpi-'+kpi.k,kpi.label)}
     <div class="lab">${esc(kpi.label)} <span class="dot" style="background:var(--gold);opacity:.5" data-tip="${esc(kpi.desc)}"></span></div>
     <div class="val">${kpi.fmt(cur)}</div>
     <div class="row"><span class="delta ${dm.cls}">${dm.arw} ${pctStr(Math.abs(dm.g))}</span>
@@ -1134,7 +1300,7 @@ VIEW.home=function(){
   const M=STATE.M,PM=STATE.PM; const movers=topMovers(); const alerts=generateAlerts().slice(0,4);
   const gRev=growth(M.revenue,PM.revenue);
   const hero=`<div class="hero"><div class="eyebrow">Executive Command Center</div>
-    <h1>Lucira <em>Sales Intelligence</em>, at a glance.</h1>
+    <h1>Lucira <em>Jewelry</em>, at a glance.</h1>
     <p>${homeSummary()}</p>
     <div class="stats">
       <div class="s"><b>${money(M.revenue)}</b><span>Net Revenue · ${(gRev>=0?'▲ ':'▼ ')+pctStr(Math.abs(gRev))}</span></div>
@@ -1184,7 +1350,7 @@ VIEW.kpis=function(){
 };
 /* mini stat helper */
 function miniRow(cards){ return `<div class="stat-row" style="margin-bottom:16px">`+cards.map(c=>
-  `<div class="mini"><div class="l">${esc(c.l)}</div><div class="v" style="${c.color?`color:${c.color}`:''}">${c.v}</div>${c.d?`<div class="d" style="color:${c.dc||'var(--muted)'}">${c.d}</div>`:''}</div>`).join('')+`</div>`; }
+  `<div class="mini">${c.info?infoIcon(c.info,c.l):''}<div class="l">${esc(c.l)}</div><div class="v" style="${c.color?`color:${c.color}`:''}">${c.v}</div>${c.d?`<div class="d" style="color:${c.dc||'var(--muted)'}">${c.d}</div>`:''}</div>`).join('')+`</div>`; }
 function deltaTxt(cur,prev,good){ const dm=deltaMeta(cur,prev,good||1); return `<span style="color:${dm.cls==='up'?'var(--good)':dm.cls==='down'?'var(--crit)':'var(--muted)'}">${dm.arw} ${pctStr(Math.abs(dm.g))}</span>`; }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -1199,15 +1365,16 @@ VIEW.customers=function(){
     {l:'Active Customers',v:fmtInt(M.customers),d:deltaTxt(M.customers,PM.customers)},
     {l:'New Customers',v:fmtInt(M.newCustomers),d:deltaTxt(M.newCustomers,PM.newCustomers)},
     {l:'Repeat Customers',v:fmtInt(M.repeatCustomers),d:deltaTxt(M.repeatCustomers,PM.repeatCustomers)},
-    {l:'Retention',v:pctStr(M.retentionPct),d:deltaTxt(M.retentionPct,PM.retentionPct)},
+    {l:'New Cust. Frequency',v:M.newCustFreq.toFixed(2)+'×',d:deltaTxt(M.newCustFreq,PM.newCustFreq)},
+    {l:'Repeat Cust. Frequency',v:M.repeatCustFreq.toFixed(2)+'×',d:deltaTxt(M.repeatCustFreq,PM.repeatCustFreq),color:'var(--gold)'},
     {l:'Repeat %',v:pctStr(M.repeatPct),d:deltaTxt(M.repeatPct,PM.repeatPct)},
     {l:'Avg Lifetime Value',v:money(M.clv),color:'var(--gold)'}
   ]);
   // new vs repeat trend
   const keys=STATE.series.map(s=>s.key);
   const nvr=stackBars(keys,[
-    {name:'New',color:'#20c997',data:STATE.series.map(s=>{ const g=groupAgg(bucketItems(s.key),i=>i.customer_type); const x=g.find(y=>y.key==='New'); return x?x.net:0; })},
-    {name:'Repeat',color:'#8b5cf6',data:STATE.series.map(s=>{ const g=groupAgg(bucketItems(s.key),i=>i.customer_type); const x=g.find(y=>y.key==='Repeat'); return x?x.net:0; })}
+    {name:'New',color:'#20c997',data:STATE.series.map(s=>{ const g=groupAgg(bucketItems(s.key),i=>i.cohort); const x=g.find(y=>y.key==='New'); return x?x.net:0; })},
+    {name:'Repeat',color:'#8b5cf6',data:STATE.series.map(s=>{ const g=groupAgg(bucketItems(s.key),i=>i.cohort); const x=g.find(y=>y.key==='Repeat'); return x?x.net:0; })}
   ],{height:230});
   // RFM grid R(x) x F(y)
   const grid=Array.from({length:5},()=>Array.from({length:5},()=>({n:0,m:0})));
@@ -1233,7 +1400,7 @@ VIEW.customers=function(){
   // at-risk / lost / vip cohorts
   const cohort=(seg,color)=>{ const l=rank(cs.filter(c=>c.seg===seg),'monetary').slice(0,6);
     return card(seg+' Customers',l.length?l.map(c=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--hair);font-size:12px"><span>${esc(c.name)}</span><b style="color:${color}">${money(c.monetary)} · ${c.recency}d</b></div>`).join(''):`<div class="empty">None</div>`,{hint:seg==='Lost'?'>365d inactive':seg==='At Risk'?'declining':'≥₹5L LTV'}); };
-  return secHead('Customer 360','Customer Intelligence','RFM, lifetime value, segmentation, VIP & churn — lifetime view over all history')+
+  return secHead('Customer 360','Customer Intelligence','RFM, lifetime value, segmentation, VIP & churn — lifetime view over all history · unique customer = distinct mobile no.')+
     mini+
     `<div class="grid g-2" style="margin-bottom:16px">${card('Segmentation',donut(segData,{center:fmtInt(cs.length),centerSub:'CUSTOMERS',fmt:fmtInt}),{})}${card('RFM Matrix',rfm,{hint:'5×5 quintiles'})}</div>`+
     `<div class="grid g-2" style="margin-bottom:16px">${card('New vs Repeat Revenue',nvr,{})}${segTable}</div>`+
@@ -1313,8 +1480,23 @@ VIEW.returns=function(){
   ].filter(Boolean);
   const aiCard=card('✦ AI Recommendations to Reduce Returns',`<ol style="margin-left:16px;font-size:12.8px;line-height:1.7;color:var(--ink-2)">`+recs.map(r=>`<li style="margin-bottom:7px">${r}</li>`).join('')+`</ol>`,{});
   const exNote=STATE.caps.exchange?'':`<div class="banner">ⓘ Exchange & return-reason fields are not present in Sales_overview_table. Return orders, value, refund and rate breakdowns are exact; exchange analytics activate when the source exposes them.</div>`;
+  // ── Returned Customers Summary — cohort = customers with ≥1 return, filter-aware ──
+  const retCustSet=new Set(rits.map(i=>i.customer_id).filter(v=>v!=null&&v!=='-'&&v!==''));
+  const cohortItems=STATE.items.filter(i=>retCustSet.has(i.customer_id));
+  const docCount=arr=>{ const s=new Set(); for(const i of arr){ if(i.document_no)s.add(i.document_no); } return s.size; };
+  const cRTS=cohortItems.filter(i=>i.sale_type==='RTS'), cMTO=cohortItems.filter(i=>i.sale_type==='MTO'), cRET=cohortItems.filter(i=>i.sale_type==='Return');
+  const rcCards=[
+    {l:'Returned Customers',v:fmtInt(retCustSet.size),s:'unique buyers with ≥1 return',strip:'neu'},
+    {l:'RTS Orders',v:fmtInt(docCount(cRTS)),s:'ready-to-sell invoices',strip:'neu'},
+    {l:'RTS Amount',v:money(sum(cRTS,i=>i.net)),s:'net RTS revenue kept',strip:'pos'},
+    {l:'MTO Orders',v:fmtInt(docCount(cMTO)),s:'made-to-order invoices',strip:'neu'},
+    {l:'MTO Amount',v:money(sum(cMTO,i=>i.net)),s:'net MTO revenue kept',strip:'pos'},
+    {l:'Returned Orders',v:fmtInt(docCount(cRET)),s:'return invoices',strip:'neg'},
+    {l:'Returned Amount',v:money(Math.abs(sum(cRET,i=>i.net))),s:'net value sent back',strip:'neg'}
+  ].map(c=>`<div class="kpi ${c.strip}"><div class="lab">${esc(c.l)}</div><div class="val">${c.v}</div><div class="ai"><span class="sp">✦</span><span>${esc(c.s)}</span></div></div>`).join('');
+  const rcSection=card('Returned Customers Summary',`<div class="grid g-4" style="gap:14px">${rcCards}</div>`,{hint:retCustSet.size?`${fmtInt(retCustSet.size)} customers · respects all filters`:'no returns in selection'});
   return secHead('Post-Purchase','Return &amp; Exchange Intelligence','Return volume, value, rate and drivers — with AI mitigation')+
-    mini+exNote+
+    mini+exNote+rcSection+
     `<div class="grid g-3" style="margin-bottom:16px">${card('Return % by Store',rrBars(byStore,'store'),{hint:'click to drill'})}${card('Return % by Category',rrBars(byCat,'category'),{})}${card('Return % by Collection',rrBars(byColl,'collection'),{})}</div>`+
     `<div class="grid g-2" style="margin-bottom:16px">${hrcCard}${hrpCard}</div>`+
     aiCard;
@@ -1612,19 +1794,20 @@ VIEW.reports=function(){
   // reconciliation across granularities
   const granTot=(g)=>{ const kf=bucketKeyFn(g); const m=new Map(); STATE.items.forEach(i=>m.set(kf(i.date),(m.get(kf(i.date))||0)+i.gross)); return sum([...m.values()]); };
   const grand=sum(STATE.items,i=>i.gross);
+  const GRAIN_LABEL={day:'Daily',week:'Weekly',month:'Monthly',quarter:'Quarterly',year:'Yearly'};
   const recon=['day','week','month','quarter','year'].map(g=>{ const t=granTot(g); const ok=Math.abs(t-grand)<=Math.max(1,Math.abs(grand)*1e-6);
-    return `<tr><td>${titleCase(g)}ly</td><td class="num">${moneyFull(t)}</td><td>${ok?'<span class="pill ok">MATCH</span>':'<span class="pill bad">DIFF</span>'}</td></tr>`; }).join('');
+    return `<tr><td>${GRAIN_LABEL[g]}</td><td class="num">${moneyFull(t)}</td><td>${ok?'<span class="pill ok">MATCH</span>':'<span class="pill bad">DIFF</span>'}</td></tr>`; }).join('');
   const stRecon=CONFIG.SALE_TYPES.map(t=>{ const v=sum(STATE.items.filter(i=>i.sale_type===t),i=>i.gross); return `<tr><td><span class="dot" style="background:${saleColor(t)}"></span> ${t}</td><td class="num">${moneyFull(v)}</td></tr>`; }).join('');
   const valCard=card('Data Validation &amp; Reconciliation',`
     <div class="stat-row" style="margin-bottom:14px">
       <div class="mini"><div class="l">Raw Rows</div><div class="v">${fmtInt(V.raw_rows)}</div></div>
-      <div class="mini"><div class="l">Deduped Rows</div><div class="v">${fmtInt(V.deduped_rows)}</div><div class="d">${fmtInt(V.raw_rows-V.deduped_rows)} exact dupes removed</div></div>
-      <div class="mini"><div class="l">Gross (deduped)</div><div class="v">${money(V.returned_gross)}</div></div>
+      <div class="mini"><div class="l">Records Loaded</div><div class="v">${fmtInt(V.total_rows||V.deduped_rows)}</div><div class="d">all records included · ${fmtInt(V.duplicate_rows||0)} exact-duplicate rows kept</div></div>
+      <div class="mini"><div class="l">Gross (all records)</div><div class="v">${money(V.returned_gross)}</div></div>
       <div class="mini"><div class="l">Net = Gross ÷ ${GST}</div><div class="v">${money(V.returned_gross/GST)}</div></div>
     </div>
     <div class="grid g-2">
       <div><div class="ct"><h3 style="font-size:14px">Granularity Reconciliation</h3></div><table class="dt"><thead><tr><th>Grain</th><th class="num">Σ Gross</th><th>Status</th></tr></thead><tbody>${recon}</tbody></table><p style="font-size:10.5px;color:var(--muted);margin-top:8px">Every grain must sum to the grand total ${moneyFull(grand)}.</p></div>
-      <div><div class="ct"><h3 style="font-size:14px">Sale-Type Reconciliation</h3></div><table class="dt"><thead><tr><th>Type</th><th class="num">Σ Gross</th></tr></thead><tbody>${stRecon}</tbody></table><p style="font-size:10.5px;color:var(--muted);margin-top:8px">Dedup key: ${esc(V.dedup_key)}. Returns are negative gross.</p></div>
+      <div><div class="ct"><h3 style="font-size:14px">Sale-Type Reconciliation</h3></div><table class="dt"><thead><tr><th>Type</th><th class="num">Σ Gross</th></tr></thead><tbody>${stRecon}</tbody></table><p style="font-size:10.5px;color:var(--muted);margin-top:8px">No dedup — every record included as-is. Match key: ${esc(V.dedup_key)}. Returns are negative gross.</p></div>
     </div>`,{hint:'single source of truth: Sales_overview_table'});
   // detail table
   const rows=detailRows(); const total=rows.length; const pages=Math.max(1,Math.ceil(total/TBL.size));
@@ -1734,7 +1917,7 @@ function readDrawer(){ const g=id=>document.getElementById(id); const f=STATE.fi
 }
 function openDrawer(){ buildDrawer(); document.getElementById('drawer').classList.add('on'); document.getElementById('scrim').classList.add('on'); }
 function closeDrawer(){ document.getElementById('drawer').classList.remove('on'); document.getElementById('scrim').classList.remove('on'); }
-function resetFilters(){ STATE.filters={range:'12m',from:null,to:null,category:'',collection:'',metal:'',band:'',saletype:'',store:'',ctype:'',channel:'',state:'',search:''}; STATE.compare='prev'; STATE.drill=null; buildDrawer(); render(); }
+function resetFilters(){ STATE.filters={range:'7d',from:null,to:null,category:'',collection:'',metal:'',band:'',saletype:'',store:'',ctype:'',channel:'',state:'',search:''}; STATE.compare='prev'; STATE.drill=null; buildDrawer(); render(); }
 
 /* ═══════════════════════════════════════════════════════════════════════
    SORT + TOAST + THEME + CLOCK
