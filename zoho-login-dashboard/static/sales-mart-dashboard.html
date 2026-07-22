@@ -1,0 +1,506 @@
+<meta charset="utf-8">
+<title>Lucira · Sales Intelligence</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+  --bg:#0b0f17;--panel:#111826;--panel2:#0e1420;--card:rgba(255,255,255,.03);--border:rgba(255,255,255,.09);
+  --ink:#eef2f9;--ink2:#9aa7bd;--ink3:#6b7788;--accent:#c98500;--accent2:#3987e5;--grid:rgba(255,255,255,.05);
+  --pos:#199e70;--neg:#e05b5b;
+  --s1:#3987e5;--s2:#199e70;--s3:#d55181;--s4:#c98500;--s5:#9085e9;--s6:#d95926;--s7:#2bb1c4;--s8:#e6a817;
+}
+:root[data-theme=light]{
+  --bg:#f4f6fb;--panel:#ffffff;--panel2:#ffffff;--card:rgba(15,23,42,.02);--border:rgba(15,23,42,.10);
+  --ink:#101828;--ink2:#516078;--ink3:#8a97ab;--grid:rgba(15,23,42,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+body{min-height:100vh}
+.wrap{max-width:1360px;margin:0 auto;padding:0 20px 60px}
+a{color:inherit}
+/* header */
+header{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+.hd{max-width:1360px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#c98500,#e6a817);display:grid;place-items:center;font-weight:800;color:#1a1205;font-size:17px}
+.brand h1{font-size:15px;font-weight:700;letter-spacing:.2px}
+.brand p{font-size:11.5px;color:var(--ink2);font-weight:500}
+.hd .sp{flex:1}
+.ctrl{display:flex;align-items:center;gap:8px}
+select,.btn{background:var(--panel);color:var(--ink);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s}
+select:hover,.btn:hover{border-color:var(--accent)}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink2);background:var(--panel);border:1px solid var(--border);padding:7px 11px;border-radius:20px;font-weight:600}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ink3)}
+.dot.live{background:var(--pos);box-shadow:0 0 0 3px color-mix(in srgb,var(--pos) 25%,transparent)}
+/* tabs */
+.tabs{display:flex;gap:4px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{white-space:nowrap;background:transparent;border:0;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer;transition:.15s}
+.tabs button:hover{color:var(--ink);background:var(--card)}
+.tabs button.on{color:var(--ink);background:var(--panel);border:1px solid var(--border)}
+/* layout */
+.cap{font-size:12px;color:var(--ink3);margin:2px 0 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grid{display:grid;gap:14px}
+.k4{grid-template-columns:repeat(4,1fr)}
+.k3{grid-template-columns:repeat(3,1fr)}
+.k2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:1000px){.k4{grid-template-columns:repeat(2,1fr)}.k3{grid-template-columns:1fr}.k2{grid-template-columns:1fr}}
+@media(max-width:560px){.k4{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 17px;position:relative;overflow:hidden}
+.card.pad0{padding:0}
+.tile .lbl{font-size:12px;color:var(--ink2);font-weight:600;display:flex;align-items:center;gap:6px}
+.tile .val{font-size:26px;font-weight:800;letter-spacing:-.5px;margin-top:7px}
+.tile .sub{font-size:11.5px;color:var(--ink3);margin-top:3px;font-weight:500}
+.tile .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:15px;position:absolute;top:14px;right:14px;opacity:.85}
+h2.sec{font-size:15px;font-weight:700;margin:26px 0 12px;display:flex;align-items:center;gap:9px}
+h2.sec .tag{font-size:10.5px;font-weight:700;color:var(--ink3);background:var(--card);border:1px solid var(--border);padding:2px 8px;border-radius:20px}
+.ch-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.ch-h b{font-size:13.5px;font-weight:700}
+.ch-h span{font-size:11px;color:var(--ink3)}
+svg{display:block;width:100%;overflow:visible}
+.axl{fill:var(--ink3);font-size:10px}
+.gl{stroke:var(--grid);stroke-width:1}
+/* table */
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:right;padding:9px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--ink3);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none}
+tbody tr:hover{background:var(--card)}
+td.name{font-weight:600;color:var(--ink);max-width:280px;overflow:hidden;text-overflow:ellipsis}
+.barcell{position:relative}
+.barcell .bar{position:absolute;left:0;top:0;bottom:0;background:color-mix(in srgb,var(--accent2) 16%,transparent);border-radius:0}
+.barcell span{position:relative}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.pill.hi{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}
+.pill.mid{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--accent)}
+.pill.lo{background:color-mix(in srgb,var(--neg) 16%,transparent);color:var(--neg)}
+.scroll{overflow-x:auto}
+/* product cards */
+.prod{display:flex;gap:12px;align-items:center;padding:11px;border:1px solid var(--border);border-radius:12px;background:var(--card)}
+.prod img{width:52px;height:52px;border-radius:9px;object-fit:cover;background:var(--panel2);flex:none}
+.prod .t{font-weight:700;font-size:12.5px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.prod .m{font-size:11px;color:var(--ink3);margin-top:2px}
+.prod .r{margin-left:auto;text-align:right;flex:none}
+.prod .r b{font-size:13px}
+.muted{color:var(--ink3)}
+.skel{background:linear-gradient(90deg,var(--grid) 25%,var(--border) 37%,var(--grid) 63%);background-size:400% 100%;animation:sh 1.4s infinite;border-radius:8px}
+@keyframes sh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+.foot{margin-top:34px;padding-top:16px;border-top:1px solid var(--border);font-size:11.5px;color:var(--ink3);line-height:1.7}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--ink2);margin-top:8px}
+.legend i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle}
+</style>
+
+<header>
+  <div class="hd">
+    <div class="brand"><div class="logo">L</div><div><h1>Lucira · Sales Intelligence</h1><p>Marketing × Product performance</p></div></div>
+    <div class="sp"></div>
+    <div class="ctrl">
+      <span class="chip"><span class="dot" id="dot"></span><span id="chip">Loading…</span></span>
+      <select id="range" title="Date range">
+        <option value="7">Last 7 days</option>
+        <option value="30">Last 30 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+      <button class="btn" id="theme" title="Toggle theme">◐</button>
+      <button class="btn" id="refresh" title="Reload snapshot">⟳</button>
+    </div>
+  </div>
+  <div class="hd" style="padding-top:0">
+    <div class="tabs" id="tabs"></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="cap" id="cap"></div>
+  <div id="view"></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<!-- MART_CONFIG_INJECT (CI overrides via window.__MART_CONFIG__) -->
+<script>
+const CONFIG = {
+  SNAPSHOT_URL: "https://storage.googleapis.com/lucirajewelry-prod-dashboards/ga4/mart-latest-000000000000.json",
+  CURRENCY: "INR",
+  REFRESH_HOUR_IST: 9,
+};
+try{ if(window.__MART_CONFIG__) Object.assign(CONFIG, window.__MART_CONFIG__); }catch(e){}
+
+/* ---------- helpers ---------- */
+const n = v => { const x = typeof v==='string'?parseFloat(v):v; return Number.isFinite(x)?x:0; };
+const $ = s => document.querySelector(s);
+function fmtInt(v){v=n(v);return v.toLocaleString('en-IN',{maximumFractionDigits:0});}
+function fmtNum(v){v=n(v);const a=Math.abs(v);
+  if(a>=1e7)return (v/1e7).toFixed(a>=1e8?0:2)+'Cr';
+  if(a>=1e5)return (v/1e5).toFixed(a>=1e6?0:2)+'L';
+  if(a>=1e3)return (v/1e3).toFixed(a>=1e4?0:1)+'K';
+  return fmtInt(v);}
+function fmtMoney(v){return '₹'+fmtNum(v);}
+function fmtMoneyFull(v){return '₹'+fmtInt(Math.round(n(v)));}
+function fmtPct(v,d){return n(v).toFixed(d==null?1:d)+'%';}
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const SC = i => `var(--s${(i%8)+1})`;
+
+/* ---------- state ---------- */
+let DATA=null, STATE={tab:'overview', range:'7', theme:'dark', sort:{}};
+
+/* ---------- date range over daily[] ---------- */
+function dailySorted(){ return (DATA.daily||[]).slice().sort((a,b)=>a.date<b.date?-1:1); }
+function dailyInRange(){
+  const d = dailySorted(); if(!d.length) return [];
+  const days = +STATE.range;
+  return d.slice(Math.max(0, d.length-days));
+}
+function sumDaily(rows){
+  const keys=['sessions','plpImpressions','plpClicks','pdpViews','addToCart','beginCheckout','addShippingInfo','purchases','revenue'];
+  const o={}; keys.forEach(k=>o[k]=0);
+  rows.forEach(r=>keys.forEach(k=>o[k]+=n(r[k])));
+  o.aov = o.purchases? o.revenue/o.purchases : 0;
+  o.convRate = o.sessions? o.purchases/o.sessions*100 : 0;
+  o.plpCtr = o.plpImpressions? o.plpClicks/o.plpImpressions*100 : 0;
+  o.pdpToCart = o.pdpViews? o.addToCart/o.pdpViews*100 : 0;
+  o.checkoutRate = o.beginCheckout? o.purchases/o.beginCheckout*100 : 0;
+  return o;
+}
+function rangeLabel(){ const m={'7':'Last 7 days','30':'Last 30 days','90':'Last 90 days'}; return m[STATE.range]||STATE.range+'d'; }
+
+/* ---------- SVG charts ---------- */
+function lineChart(series, labels, opts={}){
+  const W=opts.w||760, H=opts.h||210, PL=48, PR=14, PT=12, PB=26;
+  let max=0; series.forEach(s=>s.data.forEach(v=>{if(v>max)max=v;})); max=max||1;
+  const nice=Math.pow(10,Math.floor(Math.log10(max))); max=Math.ceil(max/nice)*nice;
+  const N=labels.length||1;
+  const x=i=>PL+(N<=1?0:(W-PL-PR)*i/(N-1));
+  const y=v=>PT+(H-PT-PB)*(1-v/max);
+  let g='';
+  for(let t=0;t<=4;t++){const v=max*t/4,yy=y(v);g+=`<line class="gl" x1="${PL}" y1="${yy}" x2="${W-PR}" y2="${yy}"/><text class="axl" x="${PL-7}" y="${yy+3}" text-anchor="end">${opts.money?fmtNum(v):fmtNum(v)}</text>`;}
+  const step=Math.ceil(N/8);
+  let xl=''; labels.forEach((l,i)=>{if(i%step===0||i===N-1)xl+=`<text class="axl" x="${x(i)}" y="${H-8}" text-anchor="middle">${esc(l)}</text>`;});
+  let paths='';
+  series.forEach((s,si)=>{
+    let d=''; s.data.forEach((v,i)=>d+=(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)+' ');
+    const col=s.color||SC(si);
+    let area=d+`L${x(N-1)} ${y(0)} L${x(0)} ${y(0)} Z`;
+    paths+=`<path d="${area}" fill="${col}" opacity=".08"/><path d="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>`;
+    if(N<=32) s.data.forEach((v,i)=>paths+=`<circle cx="${x(i)}" cy="${y(v)}" r="2.3" fill="${col}"/>`);
+  });
+  return `<svg viewBox="0 0 ${W} ${H}">${g}${xl}${paths}</svg>`;
+}
+function funnelChart(steps){
+  const W=760,rowH=44,H=steps.length*rowH+8,PL=150;
+  const max=Math.max(1,...steps.map(s=>n(s.count)));
+  let out='';
+  steps.forEach((s,i)=>{
+    const v=n(s.count), w=Math.max(3,(v/max)*(W-PL-90)), yy=i*rowH+4, col=SC(i);
+    const prev=i?n(steps[i-1].count):v;
+    const drop=prev? (1-v/prev)*100 : 0;
+    out+=`<text class="axl" x="0" y="${yy+rowH/2+2}" style="font-size:12px;fill:var(--ink)">${esc(s.label||s.name)}</text>`;
+    out+=`<rect x="${PL}" y="${yy+6}" width="${w}" height="${rowH-16}" rx="5" fill="${col}" opacity=".85"/>`;
+    out+=`<text class="axl" x="${PL+w+8}" y="${yy+rowH/2+2}" style="font-size:11.5px;fill:var(--ink)">${fmtNum(v)}</text>`;
+    if(i)out+=`<text class="axl" x="${W}" y="${yy+rowH/2+2}" text-anchor="end" style="fill:var(--neg)">▼ ${drop.toFixed(1)}%</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}">${out}</svg>`;
+}
+function donut(rows, key, opts={}){
+  const data=rows.map((r,i)=>({name:r.name,v:n(r[key]),c:SC(i)})).filter(d=>d.v>0).slice(0,8);
+  const total=data.reduce((a,d)=>a+d.v,0)||1, R=64,C=80,sw=22;
+  let a=-Math.PI/2,seg='';
+  data.forEach(d=>{const f=d.v/total,a2=a+f*2*Math.PI;const x1=C+R*Math.cos(a),y1=C+R*Math.sin(a),x2=C+R*Math.cos(a2),y2=C+R*Math.sin(a2);const lg=f>.5?1:0;seg+=`<path d="M${x1} ${y1} A${R} ${R} 0 ${lg} 1 ${x2} ${y2}" fill="none" stroke="${d.c}" stroke-width="${sw}"/>`;a=a2;});
+  const leg=data.map(d=>`<div><i style="background:${d.c}"></i>${esc(d.name)} · <b>${(d.v/total*100).toFixed(1)}%</b></div>`).join('');
+  return `<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><svg viewBox="0 0 160 160" style="width:160px;flex:none">${seg}<text x="80" y="76" text-anchor="middle" style="fill:var(--ink);font-size:13px;font-weight:800">${opts.money?fmtMoney(total):fmtNum(total)}</text><text x="80" y="93" text-anchor="middle" class="axl">${esc(opts.center||'total')}</text></svg><div class="legend" style="flex-direction:column;gap:6px">${leg}</div></div>`;
+}
+
+/* ---------- generic table ---------- */
+function dataTable(id, rows, cols, opts={}){
+  const s=STATE.sort[id]; let R=rows.slice();
+  if(s){R.sort((a,b)=>{const av=a[s.k],bv=b[s.k];const na=typeof av==='number',nb=typeof bv==='number';let c=(na&&nb)?av-bv:String(av).localeCompare(String(bv));return s.dir?c:-c;});}
+  else if(opts.sortKey){R.sort((a,b)=>n(b[opts.sortKey])-n(a[opts.sortKey]));}
+  if(opts.limit)R=R.slice(0,opts.limit);
+  const maxes={}; cols.forEach(c=>{if(c.bar)maxes[c.k]=Math.max(1,...R.map(r=>n(r[c.k])));});
+  const head=cols.map(c=>`<th data-k="${c.k}">${esc(c.h)}</th>`).join('');
+  const body=R.map(r=>'<tr>'+cols.map(c=>{
+    let v=r[c.k]; const disp=c.fmt?c.fmt(v,r):esc(v);
+    if(c.bar){const w=(n(v)/maxes[c.k]*100).toFixed(1);return `<td class="barcell"><div class="bar" style="width:${w}%"></div><span>${disp}</span></td>`;}
+    return `<td class="${c.cls||''}">${disp}</td>`;
+  }).join('')+'</tr>').join('');
+  return `<div class="scroll"><table data-tbl="${id}"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+function marginPill(v){v=n(v);const c=v>=45?'hi':v>=20?'mid':'lo';return `<span class="pill ${c}">${v.toFixed(0)}%</span>`;}
+
+/* ---------- KPI tiles ---------- */
+function tile(lbl,val,sub,ic,col){
+  return `<div class="card tile"><div class="lbl">${esc(lbl)}</div><div class="ic" style="background:color-mix(in srgb,${col||'var(--accent)'} 18%,transparent)">${ic||''}</div><div class="val">${val}</div><div class="sub">${sub||''}</div></div>`;
+}
+
+/* ---------- merge sessions into a breakdown ---------- */
+function withSessions(arr, sessArr){
+  const m={}; (sessArr||[]).forEach(s=>m[s.name]=n(s.sessions));
+  return (arr||[]).map(r=>({...r, sessions: m[r.name]!=null?m[r.name]:null}));
+}
+
+/* ---------- TABS ---------- */
+const TABS=[
+  ['overview','Overview'],['marketing','Marketing'],['funnel','Funnel'],
+  ['products','Products'],['merch','Merchandising'],['geo','Geography'],
+  ['devices','Devices'],['explorer','Explorer']
+];
+
+function render(){
+  const v=$('#view');
+  if(!DATA){v.innerHTML=skeleton();return;}
+  $('#cap').innerHTML = capText();
+  v.innerHTML = ({
+    overview:tabOverview, marketing:tabMarketing, funnel:tabFunnel, products:tabProducts,
+    merch:tabMerch, geo:tabGeo, devices:tabDevices, explorer:tabExplorer
+  }[STATE.tab]||tabOverview)();
+  wireTables();
+  $('#foot').innerHTML = footText();
+}
+function capText(){
+  const w=DATA.window||{};
+  return `<span>📅 <b style="color:var(--ink2)">${rangeLabel()}</b> for KPIs, trend &amp; funnel</span>
+    <span>·</span><span>🗂 Breakdowns reflect the full window <b style="color:var(--ink2)">${esc(w.from)} → ${esc(w.to)}</b></span>
+    <span>·</span><span class="muted">sessions = attributed, de-duplicated (est.)</span>`;
+}
+function footText(){
+  const w=DATA.window||{};
+  return `Source: <b>ga4_data.ga4_data</b> (partitioned copy) · snapshot ${esc((DATA.window||{}).to||'')} · generated ${esc(DATA.generated_at||'')}.
+    Item metrics (PDP views, cart, checkout, purchases, revenue) are exact sums. Sessions are de-duplicated per traffic group (source×medium×campaign×geo) and are an estimate — this mart has no session ID.
+    Attribution leads on source/medium (channel_type is ~99% unclassified). No user-level, page, or engagement-time data exists in this mart.`;
+}
+function skeleton(){return `<div class="grid k4">${Array(4).fill('<div class="card"><div class="skel" style="height:64px"></div></div>').join('')}</div><div class="card" style="margin-top:14px"><div class="skel" style="height:220px"></div></div>`;}
+
+/* --- Overview --- */
+function tabOverview(){
+  const t=sumDaily(dailyInRange());
+  const rows=dailyInRange(), labels=rows.map(r=>r.date.slice(5));
+  const kpis=`<div class="grid k4">
+    ${tile('Revenue',fmtMoney(t.revenue),fmtMoneyFull(t.revenue),'💰','var(--s4)')}
+    ${tile('Purchases',fmtInt(t.purchases),'AOV '+fmtMoney(t.aov),'🛍️','var(--s2)')}
+    ${tile('Attributed sessions',fmtNum(t.sessions),'est. · '+fmtPct(t.convRate,2)+' CVR','👣','var(--s1)')}
+    ${tile('PDP views',fmtNum(t.pdpViews),fmtPct(t.pdpToCart)+' → cart','👁️','var(--s3)')}
+  </div>
+  <div class="grid k4" style="margin-top:14px">
+    ${tile('PLP impressions',fmtNum(t.plpImpressions),fmtPct(t.plpCtr)+' CTR','📋','var(--s7)')}
+    ${tile('Add to cart',fmtInt(t.addToCart),'','🛒','var(--s5)')}
+    ${tile('Begin checkout',fmtInt(t.beginCheckout),fmtPct(t.checkoutRate)+' → buy','💳','var(--s6)')}
+    ${tile('Add shipping',fmtInt(t.addShippingInfo),'','🚚','var(--s8)')}
+  </div>`;
+  const trend=`<div class="card" style="margin-top:14px"><div class="ch-h"><b>Revenue &amp; sessions trend</b><span>${esc(labels[0]||'')} → ${esc(labels[labels.length-1]||'')}</span></div>
+    ${lineChart([{name:'Revenue',data:rows.map(r=>n(r.revenue)),color:'var(--s4)'}],labels,{money:true})}
+    <div class="legend"><div><i style="background:var(--s4)"></i>Revenue</div></div>
+    <div style="height:10px"></div>
+    ${lineChart([{name:'Sessions',data:rows.map(r=>n(r.sessions)),color:'var(--s1)'},{name:'PDP views',data:rows.map(r=>n(r.pdpViews)),color:'var(--s3)'}],labels)}
+    <div class="legend"><div><i style="background:var(--s1)"></i>Sessions (est.)</div><div><i style="background:var(--s3)"></i>PDP views</div></div></div>`;
+  const funnel=`<div class="grid k2" style="margin-top:14px">
+    <div class="card"><div class="ch-h"><b>Conversion funnel</b><span>${rangeLabel()}</span></div>${funnelChart(funnelSteps(t))}</div>
+    <div class="card"><div class="ch-h"><b>Revenue by product category</b><span>window</span></div>${donut(DATA.productTypes,'revenue',{money:true,center:'revenue'})}</div>
+  </div>`;
+  return kpis+trend+funnel;
+}
+function funnelSteps(t){
+  return [
+    {label:'PLP impressions',count:t.plpImpressions},
+    {label:'PLP clicks',count:t.plpClicks},
+    {label:'PDP views',count:t.pdpViews},
+    {label:'Add to cart',count:t.addToCart},
+    {label:'Begin checkout',count:t.beginCheckout},
+    {label:'Add shipping',count:t.addShippingInfo},
+    {label:'Purchase',count:t.purchases},
+  ];
+}
+
+/* --- Marketing --- */
+function tabMarketing(){
+  const src=withSessions(DATA.sources, DATA.sources_sess);
+  const metricCols=[
+    {h:'Sessions',k:'sessions',bar:true,fmt:v=>v==null?'<span class="muted">—</span>':fmtNum(v)},
+    {h:'PDP views',k:'pdpViews',fmt:fmtNum},
+    {h:'Add cart',k:'addToCart',fmt:fmtInt},
+    {h:'Checkout',k:'beginCheckout',fmt:fmtInt},
+    {h:'Purchases',k:'purchases',fmt:fmtInt},
+    {h:'Revenue',k:'revenue',bar:true,fmt:fmtMoney},
+  ];
+  return `<h2 class="sec">Traffic sources <span class="tag">by revenue · window</span></h2>
+    <div class="card pad0">${dataTable('src',src.map(norm),[{h:'Source',k:'name',cls:'name'},...metricCols],{sortKey:'revenue',limit:30})}</div>
+    <div class="grid k2" style="margin-top:14px">
+      <div class="card"><div class="ch-h"><b>Revenue by medium</b><span>window</span></div>${donut(DATA.mediums,'revenue',{money:true,center:'revenue'})}</div>
+      <div class="card"><div class="ch-h"><b>Revenue by channel type</b><span>mostly unclassified</span></div>${donut(DATA.channels.map(c=>({name:c.name,sessions:c.sessions})),'sessions',{center:'sessions'})}</div>
+    </div>
+    <h2 class="sec">Source / Medium <span class="tag">window</span></h2>
+    <div class="card pad0">${dataTable('sm',DATA.sourceMedium.map(norm),[{h:'Source / Medium',k:'name',cls:'name'},...metricCols.filter(c=>c.k!=='sessions')],{sortKey:'revenue',limit:30})}</div>
+    <h2 class="sec">Campaigns <span class="tag">window</span></h2>
+    <div class="card pad0">${dataTable('camp',DATA.campaigns.map(norm),[{h:'Campaign',k:'name',cls:'name'},...metricCols.filter(c=>c.k!=='sessions')],{sortKey:'revenue',limit:30})}</div>`;
+}
+function norm(r){return {...r,pdpViews:n(r.pdpViews),addToCart:n(r.addToCart),beginCheckout:n(r.beginCheckout),purchases:n(r.purchases),revenue:n(r.revenue),sessions:r.sessions==null?null:n(r.sessions)};}
+
+/* --- Funnel --- */
+function tabFunnel(){
+  const t=sumDaily(dailyInRange());
+  const steps=funnelSteps(t);
+  const rows=steps.map((s,i)=>{const prev=i?n(steps[i-1].count):n(s.count);return{name:s.label,count:n(s.count),drop:i?(1-n(s.count)/(prev||1))*100:0,fromTop:n(s.count)/(n(steps[0].count)||1)*100};});
+  return `<h2 class="sec">Purchase funnel <span class="tag">${rangeLabel()}</span></h2>
+    <div class="card">${funnelChart(steps)}</div>
+    <div class="card pad0" style="margin-top:14px">${dataTable('fn',rows,[
+      {h:'Stage',k:'name',cls:'name'},
+      {h:'Count',k:'count',bar:true,fmt:fmtInt},
+      {h:'% of top',k:'fromTop',fmt:v=>fmtPct(v)},
+      {h:'Drop from prev',k:'drop',fmt:v=>v?`<span class="pill lo">▼ ${fmtPct(v)}</span>`:'<span class="muted">—</span>'},
+    ])}</div>
+    <div class="grid k3" style="margin-top:14px">
+      ${tile('PLP → PDP',fmtPct(t.plpImpressions?t.pdpViews/t.plpImpressions*100:0),'impressions to views','🔎','var(--s1)')}
+      ${tile('PDP → Cart',fmtPct(t.pdpToCart),'view to add-to-cart','🛒','var(--s3)')}
+      ${tile('Checkout → Buy',fmtPct(t.checkoutRate),'checkout to purchase','✅','var(--s2)')}
+    </div>`;
+}
+
+/* --- Products --- */
+function tabProducts(){
+  const cols=[
+    {h:'PDP views',k:'pdpViews',bar:true,fmt:fmtNum},
+    {h:'Add cart',k:'addToCart',fmt:fmtInt},
+    {h:'Checkout',k:'beginCheckout',fmt:fmtInt},
+    {h:'Purchases',k:'purchases',fmt:fmtInt},
+    {h:'Revenue',k:'revenue',bar:true,fmt:fmtMoney},
+  ];
+  const top=(DATA.products||[]).map(p=>({...p,revenue:n(p.revenue),pdpViews:n(p.pdpViews),purchases:n(p.purchases),margin:n(p.margin)}));
+  const cards=top.slice(0,12).map(p=>`<div class="prod">
+     ${p.image?`<img src="${esc(p.image)}" loading="lazy" onerror="this.style.visibility='hidden'">`:'<div class="skel" style="width:52px;height:52px"></div>'}
+     <div style="min-width:0"><div class="t">${esc(p.title||p.itemId)}</div><div class="m">${esc(p.productType||'')} · ${esc(p.collection||'')} · ${p.price?fmtMoney(p.price):''}</div></div>
+     <div class="r"><b>${fmtMoney(p.revenue)}</b><div class="m">${fmtInt(p.purchases)} sold · ${marginPill(p.margin)}</div></div></div>`).join('');
+  return `<h2 class="sec">Product category <span class="tag">window</span></h2>
+    <div class="card pad0">${dataTable('pt',DATA.productTypes.map(norm),[{h:'Category',k:'name',cls:'name'},...cols],{sortKey:'revenue'})}</div>
+    <h2 class="sec">Top products <span class="tag">by revenue · window</span></h2>
+    <div class="grid k2">${cards}</div>
+    <h2 class="sec">Collections &amp; price bands <span class="tag">window</span></h2>
+    <div class="grid k2">
+      <div class="card pad0">${dataTable('coll',DATA.collections.map(norm),[{h:'Collection',k:'name',cls:'name'},{h:'PDP views',k:'pdpViews',bar:true,fmt:fmtNum},{h:'Purch.',k:'purchases',fmt:fmtInt},{h:'Revenue',k:'revenue',bar:true,fmt:fmtMoney}],{sortKey:'revenue',limit:15})}</div>
+      <div class="card pad0">${dataTable('pr',DATA.priceRanges.map(norm),[{h:'Price band',k:'name',cls:'name'},{h:'PDP views',k:'pdpViews',bar:true,fmt:fmtNum},{h:'Purch.',k:'purchases',fmt:fmtInt},{h:'Revenue',k:'revenue',bar:true,fmt:fmtMoney}],{sortKey:'revenue'})}</div>
+    </div>`;
+}
+
+/* --- Merchandising --- */
+function tabMerch(){
+  const mr=(DATA.marginRanges||[]).map(r=>({...r,revenue:n(r.revenue),purchases:n(r.purchases),avgMargin:n(r.avgMargin)}));
+  return `<h2 class="sec">Margin mix <span class="tag">window</span></h2>
+    <div class="grid k3">
+      ${mr.map((r,i)=>tile(r.name,fmtMoney(r.revenue),fmtInt(r.purchases)+' sold · avg '+(r.avgMargin>-1000?r.avgMargin.toFixed(0)+'%':'—'),'📊',SC(i))).join('')}
+    </div>
+    <div class="grid k2" style="margin-top:14px">
+      <div class="card"><div class="ch-h"><b>Revenue by margin band</b><span>window</span></div>${donut(mr,'revenue',{money:true,center:'revenue'})}</div>
+      <div class="card"><div class="ch-h"><b>Revenue by gender</b><span>window</span></div>${donut(DATA.genders,'revenue',{money:true,center:'revenue'})}</div>
+    </div>
+    <h2 class="sec">Material type <span class="tag">window</span></h2>
+    <div class="card pad0">${dataTable('mat',DATA.materials.map(norm),[{h:'Material',k:'name',cls:'name'},{h:'PDP views',k:'pdpViews',bar:true,fmt:fmtNum},{h:'Add cart',k:'addToCart',fmt:fmtInt},{h:'Purch.',k:'purchases',fmt:fmtInt},{h:'Revenue',k:'revenue',bar:true,fmt:fmtMoney}],{sortKey:'revenue'})}</div>
+    <h2 class="sec">Highest-margin products <span class="tag">top revenue set</span></h2>
+    <div class="card pad0">${dataTable('hm',(DATA.products||[]).map(p=>({name:p.title||p.itemId,productType:p.productType,margin:n(p.margin),price:n(p.price),ageing:n(p.ageing),revenue:n(p.revenue)})),[
+      {h:'Product',k:'name',cls:'name'},{h:'Type',k:'productType'},{h:'Price',k:'price',fmt:fmtMoney},
+      {h:'Ageing (d)',k:'ageing',fmt:fmtInt},{h:'Revenue',k:'revenue',bar:true,fmt:fmtMoney},{h:'Margin',k:'margin',fmt:v=>marginPill(v)}
+    ],{sortKey:'margin',limit:25})}</div>`;
+}
+
+/* --- Geo --- */
+function tabGeo(){
+  const c=[{h:'PDP views',k:'pdpViews',bar:true,fmt:fmtNum},{h:'Purchases',k:'purchases',fmt:fmtInt},{h:'Revenue',k:'revenue',bar:true,fmt:fmtMoney}];
+  return `<div class="grid k2">
+    <div class="card"><div class="ch-h"><b>Revenue by state</b><span>window</span></div>${donut(DATA.states,'revenue',{money:true,center:'revenue'})}</div>
+    <div class="card"><div class="ch-h"><b>Revenue by country</b><span>window</span></div>${donut(DATA.countries,'revenue',{money:true,center:'revenue'})}</div>
+  </div>
+  <h2 class="sec">States <span class="tag">window</span></h2>
+  <div class="card pad0">${dataTable('st',DATA.states.map(norm),[{h:'State',k:'name',cls:'name'},...c],{sortKey:'revenue'})}</div>
+  <h2 class="sec">Cities <span class="tag">window</span></h2>
+  <div class="card pad0">${dataTable('ci',DATA.cities.map(norm),[{h:'City',k:'name',cls:'name'},...c],{sortKey:'revenue',limit:40})}</div>`;
+}
+
+/* --- Devices --- */
+function tabDevices(){
+  const c=[{h:'PDP views',k:'pdpViews',bar:true,fmt:fmtNum},{h:'Add cart',k:'addToCart',fmt:fmtInt},{h:'Checkout',k:'beginCheckout',fmt:fmtInt},{h:'Purchases',k:'purchases',fmt:fmtInt},{h:'Revenue',k:'revenue',bar:true,fmt:fmtMoney}];
+  return `<div class="grid k2">
+    <div class="card"><div class="ch-h"><b>Revenue by device</b><span>window</span></div>${donut(DATA.devices,'revenue',{money:true,center:'revenue'})}</div>
+    <div class="card"><div class="ch-h"><b>PDP views by device</b><span>window</span></div>${donut(DATA.devices,'pdpViews',{center:'views'})}</div>
+  </div>
+  <h2 class="sec">Device category <span class="tag">window · no browser/OS in this mart</span></h2>
+  <div class="card pad0">${dataTable('dv',DATA.devices.map(norm),[{h:'Device',k:'name',cls:'name'},...c],{sortKey:'revenue'})}</div>`;
+}
+
+/* --- Explorer --- */
+const EXPLORE=[['sources','Source'],['mediums','Medium'],['sourceMedium','Source / Medium'],['campaigns','Campaign'],['productTypes','Product category'],['collections','Collection'],['priceRanges','Price band'],['marginRanges','Margin band'],['genders','Gender'],['materials','Material'],['devices','Device'],['countries','Country'],['states','State'],['cities','City']];
+function tabExplorer(){
+  const dim=STATE.exploreDim||'productTypes';
+  const rows=(DATA[dim]||[]).map(norm);
+  const opts=EXPLORE.map(e=>`<option value="${e[0]}"${e[0]===dim?' selected':''}>${e[1]}</option>`).join('');
+  const cols=[{h:(EXPLORE.find(e=>e[0]===dim)||[])[1]||'Name',k:'name',cls:'name'},
+    {h:'PDP views',k:'pdpViews',bar:true,fmt:fmtNum},{h:'Add cart',k:'addToCart',fmt:fmtInt},
+    {h:'Purchases',k:'purchases',fmt:fmtInt},{h:'Revenue',k:'revenue',bar:true,fmt:fmtMoney}];
+  return `<h2 class="sec">Data explorer <span class="tag">window</span></h2>
+    <div class="card" style="margin-bottom:14px;display:flex;gap:10px;align-items:center"><span class="muted">Break down by</span>
+      <select id="exdim">${opts}</select></div>
+    <div class="card pad0">${dataTable('ex',rows,cols,{sortKey:'revenue',limit:100})}</div>`;
+}
+
+/* ---------- wiring ---------- */
+function wireTables(){
+  document.querySelectorAll('table[data-tbl]').forEach(tb=>{
+    const id=tb.dataset.tbl;
+    tb.querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{
+      const k=th.dataset.k, cur=STATE.sort[id];
+      STATE.sort[id]=cur&&cur.k===k?{k,dir:!cur.dir}:{k,dir:false};
+      render();
+    });
+  });
+  const ex=$('#exdim'); if(ex)ex.onchange=e=>{STATE.exploreDim=e.target.value;render();};
+}
+function buildTabs(){
+  $('#tabs').innerHTML=TABS.map(t=>`<button data-t="${t[0]}" class="${t[0]===STATE.tab?'on':''}">${t[1]}</button>`).join('');
+  $('#tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{STATE.tab=b.dataset.t;location.hash=b.dataset.t;buildTabs();render();window.scrollTo({top:0,behavior:'smooth'});});
+}
+function setChip(live,txt){$('#dot').className='dot'+(live?' live':'');$('#chip').textContent=txt;}
+function setTheme(t){STATE.theme=t;document.documentElement.setAttribute('data-theme',t);try{localStorage.setItem('marttheme',t);}catch(e){}}
+
+async function load(force){
+  try{
+    const url=CONFIG.SNAPSHOT_URL; if(!url)throw new Error('no url');
+    const key=new Date().toISOString().slice(0,10);
+    const res=await fetch(url+(url.includes('?')?'&':'?')+'d='+key,{cache:force?'reload':'default'});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    DATA=await res.json();
+    setChip(true,'Live · '+((DATA.window||{}).to||key));
+    return true;
+  }catch(e){
+    console.warn('snapshot load failed:',e.message);
+    if(!DATA){DATA=SAMPLE;setChip(false,'Sample data');}
+    return false;
+  }
+}
+
+/* ---------- boot ---------- */
+function boot(){
+  try{const t=localStorage.getItem('marttheme');if(t)setTheme(t);else setTheme('dark');}catch(e){setTheme('dark');}
+  const h=(location.hash||'').replace('#','');if(TABS.some(t=>t[0]===h))STATE.tab=h;
+  const rp=new URLSearchParams(location.search).get('range');if(['7','30','90'].includes(rp))STATE.range=rp;
+  buildTabs(); render();
+  $('#range').value=STATE.range;
+  $('#range').onchange=e=>{STATE.range=e.target.value;render();};
+  $('#theme').onclick=()=>{setTheme(STATE.theme==='dark'?'light':'dark');render();};
+  $('#refresh').onclick=async()=>{$('#refresh').style.transform='rotate(360deg)';await load(true);render();setTimeout(()=>$('#refresh').style.transform='',400);};
+  load(false).then(ok=>render());
+}
+
+/* ---------- tiny sample fallback (same contract) ---------- */
+const SAMPLE=(()=>{
+  const days=[],today=new Date('2026-07-20');
+  for(let i=89;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);const s=Math.round(3000+Math.random()*1500);
+    days.push({date:d.toISOString().slice(0,10),sessions:s,plpImpressions:s*18,plpClicks:s*0.3|0,pdpViews:s*3.7|0,addToCart:s*0.09|0,beginCheckout:s*0.035|0,addShippingInfo:s*0.016|0,purchases:Math.round(1+Math.random()*3),revenue:Math.round(20000+Math.random()*40000)});}
+  const bd=(names,mul)=>names.map((nm,i)=>({name:nm,pdpViews:(10-i)*8000*mul|0,addToCart:(10-i)*300|0,beginCheckout:(10-i)*120|0,purchases:(10-i)*4|0,revenue:(10-i)*120000*mul|0}));
+  return {generated_at:'sample',source:'sample',currency:'INR',window:{from:days[0].date,to:days[89].date,days:90},
+    totals:{},daily:days,funnel:[],
+    sources:bd(['google','(direct)','meta','instagram','bing'],1),sources_sess:[{name:'google',sessions:120000},{name:'(direct)',sessions:60000}],
+    mediums:bd(['cpc','organic','none','referral','email'],1),sourceMedium:bd(['google / cpc','(direct) / none','meta / paid'],1),
+    campaigns:bd(['Diwali','Valentine','Always-on','Retargeting'],1),channels:[{name:'Others',sessions:300000},{name:'Meta',sessions:2000},{name:'Search',sessions:2000}],
+    countries:bd(['India','US','UAE'],1),states:bd(['Maharashtra','Delhi','Karnataka','Gujarat'],1),cities:bd(['Mumbai','Delhi','Bengaluru','Pune'],1),
+    devices:bd(['mobile','desktop','tablet'],1),genders:bd(['Women','Men','Kids','Unisex'],1),materials:bd(['Gold & Diamond','Gold','Platinum'],1),
+    productTypes:bd(['Rings','Earrings','Bracelets','Necklaces','Chain'],1),collections:bd(['Hexora','Fusion','Portuguese'],1),
+    priceRanges:bd(['0 to 10k','10k to 20k','50k to 75k','100k to 150k'],1),
+    marginRanges:[{name:'High Margin',pdpViews:500000,purchases:100,revenue:1700000,avgMargin:61},{name:'Mid Margin',pdpViews:300000,purchases:60,revenue:500000,avgMargin:28},{name:'Low Margin',pdpViews:200000,purchases:30,revenue:190000,avgMargin:14}],
+    products:Array.from({length:12},(_,i)=>({itemId:'x'+i,title:'Sample Diamond Piece '+(i+1),productType:['Rings','Earrings','Bracelets'][i%3],collection:'Hexora',priceRange:'50k to 75k',price:60000-i*2000,margin:70-i*4,marginRange:'High Margin',ageing:30+i*5,revenue:300000-i*20000,pdpViews:40000-i*3000,addToCart:800-i*40,beginCheckout:200-i*10,purchases:20-i,image:''}))};
+})();
+boot();
+</script>
