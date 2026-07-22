@@ -372,6 +372,7 @@ body.modal-open{overflow:hidden}
     <div class="src-dot" id="srcDot"><i></i><span id="srcTxt">Sample data</span></div>
     <div class="spacer"></div>
     <div class="clock"><div id="clkDate">—</div><b id="clkTime">—</b></div>
+    <select id="hdrRange" title="Date range — applies to every tab" style="background:var(--surface,#141418);color:var(--ink);border:1px solid var(--glass-brd,rgba(212,175,55,.22));border-radius:10px;padding:8px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer"></select>
     <button class="iconbtn" id="btnCompare" title="Comparison period">⇄</button>
     <button class="iconbtn" id="btnTheme" title="Toggle theme">◐</button>
     <button class="iconbtn" id="btnFull" title="Fullscreen">⛶</button>
@@ -1271,6 +1272,7 @@ function render(){
   document.getElementById('srcTxt').textContent = STATE.source==='live'
     ? `Live · reporting layer · as of ${STATE.asOf}` : `Sample data · as of ${STATE.asOf}`;
   document.getElementById('srcDot').classList.toggle('live',STATE.source==='live');
+  const hr=document.getElementById('hdrRange'); if(hr&&hr.options.length&&hr.value!==STATE.filters.range) hr.value=STATE.filters.range;
 }
 function activeChips(){ const f=STATE.filters; const chips=[];
   const add=(k,lab)=>{ if(f[k])chips.push(`<span class="chip">${esc(lab)}: ${esc(f[k])} <b data-clear="${k}">✕</b></span>`); };
@@ -1588,25 +1590,30 @@ VIEW.products=function(){
   const stMap=new Map(); const typesSeen=new Set();
   const stype=i=>CONFIG.SALE_TYPES.includes(i.sale_type)?i.sale_type:'Other';
   STATE.items.forEach(i=>{ let g=stMap.get(i.style);
-    if(!g){ g={style:i.style,category:i.category,units:0,net:0,orders:new Set(),t:{}}; stMap.set(i.style,g); }
-    g.units+=Math.abs(i.qty); g.net+=i.net; g.orders.add(i.document_no);
-    const t=stype(i); g.t[t]=(g.t[t]||0)+i.net; typesSeen.add(t); });
-  const styleRows=[...stMap.values()].map(g=>({...g,orders:g.orders.size})).sort((a,b)=>b.net-a.net);
+    if(!g){ g={style:i.style,category:i.category,net:0,tOrd:{},store:new Set(),online:new Set()}; stMap.set(i.style,g); }
+    g.net+=i.net;                                    // kept for sorting only (not shown)
+    const t=stype(i); (g.tOrd[t]||(g.tOrd[t]=new Set())).add(i.document_no); typesSeen.add(t);
+    (i.channel==='Online'?g.online:g.store).add(i.document_no); });
+  const styleRows=[...stMap.values()].map(g=>{ const o={style:g.style,category:g.category,net:g.net,store:g.store.size,online:g.online.size};
+    Object.keys(g.tOrd).forEach(t=>o['c_'+t]=g.tOrd[t].size); return o; }).sort((a,b)=>b.net-a.net);
   const fTypes=CONFIG.SALE_TYPES.filter(t=>typesSeen.has(t));
-  const styleLedger=card('All Styles — Sales, Qty & Fulfillment',
-    `<div class="scroll-x" style="max-height:460px;overflow-y:auto"><table class="dt"><thead><tr><th>Style</th><th>Category</th><th class="num">Units</th><th class="num">Net Sale</th>`+
-     fTypes.map(t=>`<th class="num" style="color:${saleColor(t)}">${esc(t)}</th>`).join('')+`<th class="num">Orders</th></tr></thead><tbody>`+
-     styleRows.map(s=>`<tr><td>${esc(s.style)}</td><td>${esc(s.category||'—')}</td><td class="num">${fmtInt(s.units)}</td><td class="num"><b>${money(s.net)}</b></td>`+
-       fTypes.map(t=>`<td class="num">${s.t[t]?money(s.t[t]):'<span style="color:var(--muted)">—</span>'}</td>`).join('')+`<td class="num">${fmtInt(s.orders)}</td></tr>`).join('')+
-     `</tbody></table></div>`,{hint:fmtInt(styleRows.length)+' styles · net sale split by fulfillment type'});
+  const cCell=v=>v?fmtInt(v):'<span style="color:var(--muted)">—</span>';
+  const styleLedger=card('All Styles — Orders by Fulfillment & Channel',
+    `<div class="scroll-x" style="max-height:460px;overflow-y:auto"><table class="dt"><thead><tr><th>Style</th><th>Category</th>`+
+     fTypes.map(t=>`<th class="num" style="color:${saleColor(t)}">${esc(t)}</th>`).join('')+`<th class="num">Store</th><th class="num">Online</th></tr></thead><tbody>`+
+     styleRows.map(s=>`<tr><td>${esc(s.style)}</td><td>${esc(s.category||'—')}</td>`+
+       fTypes.map(t=>`<td class="num">${cCell(s['c_'+t])}</td>`).join('')+`<td class="num">${cCell(s.store)}</td><td class="num">${cCell(s.online)}</td></tr>`).join('')+
+     `</tbody></table></div>`,{hint:fmtInt(styleRows.length)+' styles · order counts by fulfillment type & channel'});
   const ful=fTypes.map(t=>{ const its=STATE.items.filter(i=>stype(i)===t);
-    return {t,styles:new Set(its.map(i=>i.style)).size,units:sum(its,i=>Math.abs(i.qty)),net:sum(its,i=>i.net),orders:distinct(its,i=>i.document_no)}; });
-  const fulTot=sum(ful,r=>r.net)||1;
+    return {t,styles:new Set(its.map(i=>i.style)).size,orders:distinct(its,i=>i.document_no),
+      store:distinct(its.filter(i=>i.channel!=='Online'),i=>i.document_no),
+      online:distinct(its.filter(i=>i.channel==='Online'),i=>i.document_no)}; });
+  const fulTot=sum(ful,r=>r.orders)||1;
   const fulTable=card('Fulfillment Type Summary',
-    `<table class="dt"><thead><tr><th>Type</th><th class="num">Styles</th><th class="num">Units</th><th class="num">Net Sale</th><th class="num">Orders</th><th class="num">Share</th></tr></thead><tbody>`+
-     rank(ful,'net').map(r=>`<tr><td><span class="pill" style="background:${saleColor(r.t)}22;color:${saleColor(r.t)}">${esc(r.t)}</span></td><td class="num">${fmtInt(r.styles)}</td><td class="num">${fmtInt(r.units)}</td><td class="num">${money(r.net)}</td><td class="num">${fmtInt(r.orders)}</td><td class="num">${pctStr(r.net/fulTot*100)}</td></tr>`).join('')+
-     `<tr style="border-top:2px solid var(--hair);font-weight:700"><td>Total</td><td class="num">${fmtInt(styleRows.length)}</td><td class="num">${fmtInt(sum(ful,r=>r.units))}</td><td class="num">${money(sum(ful,r=>r.net))}</td><td class="num">${fmtInt(distinct(STATE.items,i=>i.document_no))}</td><td class="num">100%</td></tr>`+
-     `</tbody></table>`,{hint:'RTS / MTO / TAH / Return split across the current selection'});
+    `<table class="dt"><thead><tr><th>Type</th><th class="num">Styles</th><th class="num">Orders</th><th class="num">Store</th><th class="num">Online</th><th class="num">Share</th></tr></thead><tbody>`+
+     rank(ful,'orders').map(r=>`<tr><td><span class="pill" style="background:${saleColor(r.t)}22;color:${saleColor(r.t)}">${esc(r.t)}</span></td><td class="num">${fmtInt(r.styles)}</td><td class="num"><b>${fmtInt(r.orders)}</b></td><td class="num">${fmtInt(r.store)}</td><td class="num">${fmtInt(r.online)}</td><td class="num">${pctStr(r.orders/fulTot*100)}</td></tr>`).join('')+
+     `<tr style="border-top:2px solid var(--hair);font-weight:700"><td>Total</td><td class="num">${fmtInt(styleRows.length)}</td><td class="num">${fmtInt(sum(ful,r=>r.orders))}</td><td class="num">${fmtInt(sum(ful,r=>r.store))}</td><td class="num">${fmtInt(sum(ful,r=>r.online))}</td><td class="num">100%</td></tr>`+
+     `</tbody></table>`,{hint:'order counts by fulfillment type & channel · current selection'});
   const deadNote=STATE.caps.inventory?'':`<div class="banner">ⓘ Movement is velocity-based (units sold & days since last sale). True dead-stock / overstock / sell-through activate when the reporting layer joins an inventory stock column.</div>`;
   return secHead('Merchandising','Product Intelligence','Top & bottom sellers, movement, ABC/Pareto, collection & cross-sell')+
     deadNote+
@@ -1966,6 +1973,10 @@ function bindEvents(){
   document.getElementById('btnReset').onclick=resetFilters;
   document.getElementById('btnTheme').onclick=()=>setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
   document.getElementById('btnCompare').onclick=cycleCompare;
+  // Persistent header date-range dropdown — applies across EVERY tab (mirrors the drawer's f_range)
+  const hr=document.getElementById('hdrRange');
+  if(hr){ hr.innerHTML=RANGES.map(r=>`<option value="${r[0]}">${esc(r[1])}</option>`).join(''); hr.value=STATE.filters.range;
+    hr.onchange=()=>{ STATE.filters.range=hr.value; if(hr.value==='custom')openDrawer(); render(); }; }
   document.getElementById('btnFull').onclick=()=>{ if(!document.fullscreenElement)document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); else document.exitFullscreen&&document.exitFullscreen(); };
   document.getElementById('fab').onclick=()=>{ const c=document.getElementById('copilot'); c.classList.toggle('on'); if(c.classList.contains('on')&&!c.dataset.init){ initCopilot(); c.dataset.init=1; } };
   document.getElementById('cpClose').onclick=()=>document.getElementById('copilot').classList.remove('on');
