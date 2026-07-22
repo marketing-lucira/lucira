@@ -627,7 +627,12 @@ function dedupe(items){ const seen=new Set(); const out=[]; let removed=0,rawGro
   return {out,removed,rawRows:items.length,rawGross}; }
 function ingest(j,source){
   let items=(j.items||[]).map(it=>{ it.net=net(it.gross||0); if(it.sale_type==null||it.sale_type==='') it.sale_type='Other';
-    if(!it.price_band) it.price_band=realBand(it.gross); return it; });
+    if(!it.price_band) it.price_band=realBand(it.gross);
+    // half_sku = the design part of Full_sku (LJ-<half_sku>-<metal>[-size]); it is the
+    // real source column and is populated even when style_code is NULL. Derived from
+    // sku so no snapshot change is needed; falls back to style/sku for non-LJ skus.
+    it.half_sku = /^LJ-/.test(it.sku||'') ? (it.sku.split('-')[1]||it.style||it.sku) : (it.style||it.sku||'—');
+    return it; });
   // CLIENT REQUEST (2026-07-20): include EVERY sales record as-is — NO dedup.
   // dedupe() runs for STATS ONLY (to count how many exact-duplicate rows exist);
   // we deliberately keep the full `items` array, duplicates included.
@@ -1589,28 +1594,28 @@ VIEW.products=function(){
   // ── ALL-STYLES fulfillment ledger + type rollup (respects active filters + date range) ──
   const stMap=new Map(); const typesSeen=new Set();
   const stype=i=>CONFIG.SALE_TYPES.includes(i.sale_type)?i.sale_type:'Other';
-  STATE.items.forEach(i=>{ let g=stMap.get(i.style);
-    if(!g){ g={style:i.style,category:i.category,net:0,tOrd:{},store:new Set(),online:new Set()}; stMap.set(i.style,g); }
+  STATE.items.forEach(i=>{ const key=i.half_sku||i.style||'—'; let g=stMap.get(key);
+    if(!g){ g={half_sku:key,category:i.category,net:0,tOrd:{},store:new Set(),online:new Set()}; stMap.set(key,g); }
     g.net+=i.net;                                    // kept for sorting only (not shown)
     const t=stype(i); (g.tOrd[t]||(g.tOrd[t]=new Set())).add(i.document_no); typesSeen.add(t);
     (i.channel==='Online'?g.online:g.store).add(i.document_no); });
-  const styleRows=[...stMap.values()].map(g=>{ const o={style:g.style,category:g.category,net:g.net,store:g.store.size,online:g.online.size};
+  const styleRows=[...stMap.values()].map(g=>{ const o={half_sku:g.half_sku,category:g.category,net:g.net,store:g.store.size,online:g.online.size};
     Object.keys(g.tOrd).forEach(t=>o['c_'+t]=g.tOrd[t].size); return o; }).sort((a,b)=>b.net-a.net);
   const fTypes=CONFIG.SALE_TYPES.filter(t=>typesSeen.has(t));
   const cCell=v=>v?fmtInt(v):'<span style="color:var(--muted)">—</span>';
-  const styleLedger=card('All Styles — Orders by Fulfillment & Channel',
-    `<div class="scroll-x" style="max-height:460px;overflow-y:auto"><table class="dt"><thead><tr><th>Style</th><th>Category</th>`+
+  const styleLedger=card('All Half-SKUs — Orders by Fulfillment & Channel',
+    `<div class="scroll-x" style="max-height:460px;overflow-y:auto"><table class="dt"><thead><tr><th>Half SKU</th><th>Category</th>`+
      fTypes.map(t=>`<th class="num" style="color:${saleColor(t)}">${esc(t)}</th>`).join('')+`<th class="num">Store</th><th class="num">Online</th></tr></thead><tbody>`+
-     styleRows.map(s=>`<tr><td>${esc(s.style)}</td><td>${esc(s.category||'—')}</td>`+
+     styleRows.map(s=>`<tr><td>${esc(s.half_sku)}</td><td>${esc(s.category||'—')}</td>`+
        fTypes.map(t=>`<td class="num">${cCell(s['c_'+t])}</td>`).join('')+`<td class="num">${cCell(s.store)}</td><td class="num">${cCell(s.online)}</td></tr>`).join('')+
-     `</tbody></table></div>`,{hint:fmtInt(styleRows.length)+' styles · order counts by fulfillment type & channel'});
+     `</tbody></table></div>`,{hint:fmtInt(styleRows.length)+' half-SKUs · order counts by fulfillment type & channel'});
   const ful=fTypes.map(t=>{ const its=STATE.items.filter(i=>stype(i)===t);
-    return {t,styles:new Set(its.map(i=>i.style)).size,orders:distinct(its,i=>i.document_no),
+    return {t,styles:new Set(its.map(i=>i.half_sku)).size,orders:distinct(its,i=>i.document_no),
       store:distinct(its.filter(i=>i.channel!=='Online'),i=>i.document_no),
       online:distinct(its.filter(i=>i.channel==='Online'),i=>i.document_no)}; });
   const fulTot=sum(ful,r=>r.orders)||1;
   const fulTable=card('Fulfillment Type Summary',
-    `<table class="dt"><thead><tr><th>Type</th><th class="num">Styles</th><th class="num">Orders</th><th class="num">Store</th><th class="num">Online</th><th class="num">Share</th></tr></thead><tbody>`+
+    `<table class="dt"><thead><tr><th>Type</th><th class="num">Half SKUs</th><th class="num">Orders</th><th class="num">Store</th><th class="num">Online</th><th class="num">Share</th></tr></thead><tbody>`+
      rank(ful,'orders').map(r=>`<tr><td><span class="pill" style="background:${saleColor(r.t)}22;color:${saleColor(r.t)}">${esc(r.t)}</span></td><td class="num">${fmtInt(r.styles)}</td><td class="num"><b>${fmtInt(r.orders)}</b></td><td class="num">${fmtInt(r.store)}</td><td class="num">${fmtInt(r.online)}</td><td class="num">${pctStr(r.orders/fulTot*100)}</td></tr>`).join('')+
      `<tr style="border-top:2px solid var(--hair);font-weight:700"><td>Total</td><td class="num">${fmtInt(styleRows.length)}</td><td class="num">${fmtInt(sum(ful,r=>r.orders))}</td><td class="num">${fmtInt(sum(ful,r=>r.store))}</td><td class="num">${fmtInt(sum(ful,r=>r.online))}</td><td class="num">100%</td></tr>`+
      `</tbody></table>`,{hint:'order counts by fulfillment type & channel · current selection'});
