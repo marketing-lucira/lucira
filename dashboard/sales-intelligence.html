@@ -1584,11 +1584,36 @@ VIEW.products=function(){
   const fbtCard=card('Frequently Bought Together',fbt.length?hbars(fbt.map(f=>({label:f.key,value:f.value})),{fmt:fmtInt}):`<div class="empty">Mostly single-category baskets</div>`,{hint:'category pairs per invoice'});
   const topTable=(title,data)=>card(title,`<table class="dt"><thead><tr><th>Style</th><th>Category</th><th class="num">Revenue</th><th class="num">Units</th><th>Movement</th></tr></thead><tbody>`+
     data.map(s=>`<tr><td>${esc(s.style)}</td><td>${esc(s.category)}</td><td class="num">${money(s.net)}</td><td class="num">${fmtInt(s.units)}</td><td><span class="pill ${s.cls==='Fast'?'ok':s.cls==='Dead'?'bad':s.cls==='Slow'?'warn':''}">${s.cls}</span></td></tr>`).join('')+`</tbody></table>`,{});
+  // ── ALL-STYLES fulfillment ledger + type rollup (respects active filters + date range) ──
+  const stMap=new Map(); const typesSeen=new Set();
+  const stype=i=>CONFIG.SALE_TYPES.includes(i.sale_type)?i.sale_type:'Other';
+  STATE.items.forEach(i=>{ let g=stMap.get(i.style);
+    if(!g){ g={style:i.style,category:i.category,units:0,net:0,orders:new Set(),t:{}}; stMap.set(i.style,g); }
+    g.units+=Math.abs(i.qty); g.net+=i.net; g.orders.add(i.document_no);
+    const t=stype(i); g.t[t]=(g.t[t]||0)+i.net; typesSeen.add(t); });
+  const styleRows=[...stMap.values()].map(g=>({...g,orders:g.orders.size})).sort((a,b)=>b.net-a.net);
+  const fTypes=CONFIG.SALE_TYPES.filter(t=>typesSeen.has(t));
+  const styleLedger=card('All Styles — Sales, Qty & Fulfillment',
+    `<div class="scroll-x" style="max-height:460px;overflow-y:auto"><table class="dt"><thead><tr><th>Style</th><th>Category</th><th class="num">Units</th><th class="num">Net Sale</th>`+
+     fTypes.map(t=>`<th class="num" style="color:${saleColor(t)}">${esc(t)}</th>`).join('')+`<th class="num">Orders</th></tr></thead><tbody>`+
+     styleRows.map(s=>`<tr><td>${esc(s.style)}</td><td>${esc(s.category||'—')}</td><td class="num">${fmtInt(s.units)}</td><td class="num"><b>${money(s.net)}</b></td>`+
+       fTypes.map(t=>`<td class="num">${s.t[t]?money(s.t[t]):'<span style="color:var(--muted)">—</span>'}</td>`).join('')+`<td class="num">${fmtInt(s.orders)}</td></tr>`).join('')+
+     `</tbody></table></div>`,{hint:fmtInt(styleRows.length)+' styles · net sale split by fulfillment type'});
+  const ful=fTypes.map(t=>{ const its=STATE.items.filter(i=>stype(i)===t);
+    return {t,styles:new Set(its.map(i=>i.style)).size,units:sum(its,i=>Math.abs(i.qty)),net:sum(its,i=>i.net),orders:distinct(its,i=>i.document_no)}; });
+  const fulTot=sum(ful,r=>r.net)||1;
+  const fulTable=card('Fulfillment Type Summary',
+    `<table class="dt"><thead><tr><th>Type</th><th class="num">Styles</th><th class="num">Units</th><th class="num">Net Sale</th><th class="num">Orders</th><th class="num">Share</th></tr></thead><tbody>`+
+     rank(ful,'net').map(r=>`<tr><td><span class="pill" style="background:${saleColor(r.t)}22;color:${saleColor(r.t)}">${esc(r.t)}</span></td><td class="num">${fmtInt(r.styles)}</td><td class="num">${fmtInt(r.units)}</td><td class="num">${money(r.net)}</td><td class="num">${fmtInt(r.orders)}</td><td class="num">${pctStr(r.net/fulTot*100)}</td></tr>`).join('')+
+     `<tr style="border-top:2px solid var(--hair);font-weight:700"><td>Total</td><td class="num">${fmtInt(styleRows.length)}</td><td class="num">${fmtInt(sum(ful,r=>r.units))}</td><td class="num">${money(sum(ful,r=>r.net))}</td><td class="num">${fmtInt(distinct(STATE.items,i=>i.document_no))}</td><td class="num">100%</td></tr>`+
+     `</tbody></table>`,{hint:'RTS / MTO / TAH / Return split across the current selection'});
   const deadNote=STATE.caps.inventory?'':`<div class="banner">ⓘ Movement is velocity-based (units sold & days since last sale). True dead-stock / overstock / sell-through activate when the reporting layer joins an inventory stock column.</div>`;
   return secHead('Merchandising','Product Intelligence','Top & bottom sellers, movement, ABC/Pareto, collection & cross-sell')+
     deadNote+
     `<div class="grid g-2" style="margin-bottom:16px">${card('Movement Mix',mvDonut,{hint:'fast/steady/slow/dead'})}${card('ABC / Pareto Analysis',abcTable,{hint:'80/15/5 revenue rule'})}</div>`+
     `<div class="grid g-2" style="margin-bottom:16px">${topTable('Top 10 Styles',top)}${topTable('Bottom 10 Styles',bottom)}</div>`+
+    `<div style="margin-bottom:16px">${styleLedger}</div>`+
+    `<div style="margin-bottom:16px">${fulTable}</div>`+
     `<div class="grid g-3" style="margin-bottom:16px">${dimCard('Category Performance',STATE.byCat,'category')}${dimCard('Collection Performance',STATE.byColl,'collection')}${dimCard('Metal Performance',groupAgg(STATE.items,i=>i.metal),'metal')}</div>`+
     `<div class="grid g-2">${dimCard('Price-Band Performance',groupAgg(STATE.items,i=>i.price_band),'band')}${fbtCard}</div>`;
 };
