@@ -87,7 +87,7 @@ input,select{font-family:inherit}
 /* ── App layout ─────────────────────────────────────────────── */
 #app{opacity:0;transition:opacity .6s var(--ease)}
 #app.ready{opacity:1}
-header.top{position:sticky;top:0;z-index:60;backdrop-filter:blur(18px) saturate(1.3);
+header.top{position:relative;z-index:60;backdrop-filter:blur(18px) saturate(1.3);
   background:linear-gradient(180deg,var(--glass),transparent);border-bottom:1px solid var(--hair);
   padding:11px clamp(14px,3vw,30px);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .top .spacer{flex:1}
@@ -107,7 +107,7 @@ header.top{position:sticky;top:0;z-index:60;backdrop-filter:blur(18px) saturate(
 .btn.gold:hover{filter:brightness(1.06)}
 
 /* nav */
-nav.tabs{position:sticky;top:60px;z-index:55;display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;
+nav.tabs{position:relative;z-index:55;display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;
   padding:9px clamp(14px,3vw,30px);backdrop-filter:blur(18px);background:linear-gradient(180deg,var(--glass),transparent);
   border-bottom:1px solid var(--hair)}
 nav.tabs::-webkit-scrollbar{display:none}
@@ -181,6 +181,15 @@ table.dt th.num,table.dt td.num{text-align:right;font-variant-numeric:tabular-nu
 table.dt td{padding:9px 11px;border-bottom:1px solid var(--hair)}
 table.dt tbody tr{transition:.12s}
 table.dt tbody tr:hover{background:var(--surface-2)}
+table.dt th:hover{color:var(--ink-2)}
+table.dt th[data-sa]:not([data-sa=""])::after{content:" " attr(data-sa);color:var(--gold);font-size:9px;font-weight:700}
+/* card ⋮ export menu */
+.cmenu-btn{width:26px;height:26px;border-radius:8px;border:1px solid var(--hair);background:var(--surface-2);color:var(--ink-2);font-size:17px;line-height:1;display:grid;place-items:center;cursor:pointer;transition:.15s}
+.cmenu-btn:hover{color:var(--gold);border-color:var(--glass-brd);transform:translateY(-1px)}
+.cmenu{position:fixed;z-index:200;background:var(--surface);border:1px solid var(--glass-brd);border-radius:12px;box-shadow:var(--shadow);padding:6px;min-width:180px;display:none}
+.cmenu.on{display:block}
+.cmenu button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:9px 11px;border-radius:8px;background:none;border:none;color:var(--ink);font-size:12.5px;font-weight:500;cursor:pointer}
+.cmenu button:hover{background:var(--surface-2);color:var(--gold)}
 .rank{width:24px;height:24px;border-radius:7px;display:inline-grid;place-items:center;font-size:11px;font-weight:700;
   background:var(--surface-3);color:var(--ink-2)}
 .rank.r1{background:linear-gradient(135deg,var(--gold-2),var(--gold-deep));color:#160f00}
@@ -694,7 +703,7 @@ function dateRange(range){
     case 'ytd': from=yearStart(now); break;
     case '12m': from=addDays(now,-364); break;
     case 'all': from=parseYmd(STATE.days[0]||ymd(now)); break;
-    case 'custom': from=parseYmd(f.from)||addDays(now,-364); to=parseYmd(f.to)||now; break;
+    case 'custom': from=parseYmd(f.from)||addDays(now,-364); to=parseYmd(f.to)||now; if(to>now)to=now; if(from>now)from=now; break;
     default: from=addDays(now,-364);
   }
   return {from:ymd(from),to:ymd(to)};
@@ -1242,7 +1251,7 @@ const TABS=[
   {id:'reports',label:'Reports & Data',ic:'▤'}
 ];
 function card(title,body,opts){ opts=opts||{}; const slug=opts.info||(title?infoSlug(title):''); return `<div class="card ${opts.cls||''}">${opts.bare?'':`<div class="pad">`}
-  ${title?`<div class="ct"><h3>${esc(title)}</h3><div class="ct-r">${opts.hint?`<span class="hint">${opts.hint}</span>`:''}${opts.head||''}${infoIcon(slug,title)}</div></div>`:''}
+  ${title?`<div class="ct"><h3>${esc(title)}</h3><div class="ct-r">${opts.hint?`<span class="hint">${opts.hint}</span>`:''}${opts.head||''}${(/<table|<svg/i.test(body))?`<button class="cmenu-btn" data-cmenu title="Export / options">⋮</button>`:''}${infoIcon(slug,title)}</div></div>`:''}
   ${body}${opts.bare?'':`</div>`}</div>`; }
 function secHead(eyebrow,title,sub,right){ return `<div class="sec-head"><div><div class="eyebrow">${esc(eyebrow)}</div><h2>${esc(title)}</h2>${sub?`<div class="sub">${sub}</div>`:''}</div>${right?`<div>${right}</div>`:''}</div>`; }
 function deltaMeta(cur,prev,good){ const g=growth(cur,prev); const sign=g>0.5?1:g<-0.5?-1:0;
@@ -1929,8 +1938,9 @@ function buildDrawer(){
   document.getElementById('drawerBody').innerHTML=`
     <div class="fld"><label>Date Range</label><select class="inp" id="f_range">${RANGES.map(r=>`<option value="${r[0]}" ${f.range===r[0]?'selected':''}>${r[1]}</option>`).join('')}</select></div>
     <div class="two" id="customWrap" style="display:${f.range==='custom'?'grid':'none'}">
-      <div class="fld"><label>From</label><input type="date" class="inp" id="f_from" value="${f.from||''}"></div>
-      <div class="fld"><label>To</label><input type="date" class="inp" id="f_to" value="${f.to||''}"></div></div>
+      <div class="fld"><label>From</label><input type="date" class="inp" id="f_from" max="${esc(STATE.asOf||'')}" value="${f.from||''}"></div>
+      <div class="fld"><label>To</label><input type="date" class="inp" id="f_to" max="${esc(STATE.asOf||'')}" value="${f.to||STATE.asOf||''}"></div></div>
+    <div class="fld" style="margin-top:-4px"><span style="font-size:11px;color:var(--muted)">Data available through <b style="color:var(--ink-2)">${esc(STATE.asOf||'—')}</b> (sales load one day behind — no same-day data).</span></div>
     <div class="fld"><label>Compare Against</label><select class="inp" id="f_compare">${Object.keys(COMPARE_LABEL).map(k=>`<option value="${k}" ${STATE.compare===k?'selected':''}>${COMPARE_LABEL[k]}</option>`).join('')}</select></div>
     ${sel('f_category','Category',STATE.dims.category,f.category)}
     ${sel('f_collection','Collection',STATE.dims.collection,f.collection)}
@@ -1960,6 +1970,39 @@ function resetFilters(){ STATE.filters={range:'7d',from:null,to:null,category:''
    SORT + TOAST + THEME + CLOCK
    ═══════════════════════════════════════════════════════════════════════ */
 function sortTable(th){ const c=th.getAttribute('data-sortcol'); if(TBL.sort===c)TBL.dir*=-1; else{TBL.sort=c;TBL.dir=-1;} TBL.page=0; render(); }
+
+/* ── Generic: EVERY .dt table is click-to-sort + each card gets a ⋮ export menu ── */
+function _numSort(t){ t=(t||'').replace(/[₹,\s]/g,''); const m=t.match(/^(-?[\d.]+)(cr|l|k|%)?$/i); if(!m) return null; let v=parseFloat(m[1]); if(isNaN(v)) return null; const s=(m[2]||'').toLowerCase(); if(s==='cr')v*=1e7; else if(s==='l')v*=1e5; else if(s==='k')v*=1e3; return v; }
+function sortDt(th){
+  const table=th.closest('table.dt'); if(!table) return; const tbody=table.querySelector('tbody'); if(!tbody) return;
+  const ths=[...th.parentNode.children], idx=ths.indexOf(th);
+  const dir=(table.__sc===idx)?-(table.__sd||1):1; table.__sc=idx; table.__sd=dir;
+  ths.forEach(h=>h.setAttribute('data-sa','')); th.setAttribute('data-sa',dir>0?'▲':'▼');
+  const rows=[...tbody.querySelectorAll(':scope>tr')].filter(r=>!r.querySelector('[colspan]'));
+  rows.sort((a,b)=>{ const A=a.children[idx],B=b.children[idx]; if(!A||!B) return 0;
+    const at=A.textContent.trim(), bt=B.textContent.trim(), an=_numSort(at), bn=_numSort(bt);
+    if(an!=null&&bn!=null) return (an-bn)*dir; return at.localeCompare(bt)*dir; });
+  rows.forEach(r=>tbody.appendChild(r));
+}
+function _tableRows(t){ return [...t.querySelectorAll('tr')].map(tr=>[...tr.children].map(c=>c.textContent.replace(/\s+/g,' ').trim())); }
+function _csvCell(v){ return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function cardExportCSV(card,name){ const t=card&&card.querySelector('table.dt'); if(!t){toast('No table to export');return;} dl(name+'.csv',_tableRows(t).map(r=>r.map(_csvCell).join(',')).join('\n'),'text/csv'); }
+function cardExportXLS(card,name){ const t=card&&card.querySelector('table.dt'); if(!t){toast('No table to export');return;}
+  const cell=v=>{ const clean=v.replace(/[₹,]/g,''); const num=clean!==''&&/^-?[\d.]+$/.test(clean); return `<Cell><Data ss:Type="${num?'Number':'String'}">${esc(num?clean:v)}</Data></Cell>`; };
+  const xml=`<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Export"><Table>`+_tableRows(t).map(r=>`<Row>${r.map(cell).join('')}</Row>`).join('')+`</Table></Worksheet></Workbook>`;
+  dl(name+'.xls',xml,'application/vnd.ms-excel'); }
+function cardExportSVG(card,name){ const s=card&&card.querySelector('svg'); if(!s){toast('No chart to export');return;} dl(name+'.svg','<?xml version="1.0" encoding="UTF-8"?>\n'+new XMLSerializer().serializeToString(s),'image/svg+xml'); }
+let _menuCard=null;
+function openCardMenu(btn){
+  const card=btn.closest('.card'); _menuCard=card;
+  const h=card.querySelector('.ct h3'); const title=((h&&h.textContent)||'card').replace(/[^\w]+/g,'-').replace(/^-|-$/g,'').toLowerCase().slice(0,40)||'export';
+  const hasT=!!card.querySelector('table.dt'), hasS=!!card.querySelector('svg');
+  let m=document.getElementById('cardMenu'); if(!m){ m=document.createElement('div'); m.id='cardMenu'; m.className='cmenu'; document.body.appendChild(m); }
+  m.dataset.name='lucira-'+title;
+  m.innerHTML=(hasT?`<button data-cm="xls">⬇ Export to Excel</button><button data-cm="csv">⬇ Export to CSV</button>`:'')+(hasS?`<button data-cm="svg">⬇ Download chart (SVG)</button>`:'');
+  const r=btn.getBoundingClientRect(); m.style.top=(r.bottom+6)+'px'; m.style.left=Math.max(8,Math.min(r.right-184,window.innerWidth-192))+'px'; m.classList.add('on');
+}
+function closeCardMenu(){ const m=document.getElementById('cardMenu'); if(m)m.classList.remove('on'); }
 let toastT; function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2200); }
 function setTheme(t){ document.documentElement.setAttribute('data-theme',t); try{localStorage.setItem('lucira_theme',t);}catch(e){} refreshThemeColors(); if(STATE.items.length)render(); }
 function tickClock(){ const d=new Date();
@@ -1999,6 +2042,17 @@ function bindEvents(){
     if(e.target.id==='tblSearch'){ TBL.q=e.target.value; TBL.page=0; const cur=e.target.selectionStart; render();
       const s=document.getElementById('tblSearch'); if(s){ s.focus(); s.setSelectionRange(cur,cur); } } });
   document.querySelectorAll('#tabs').forEach(n=>n.addEventListener('click',e=>{ const t=e.target.closest('[data-tab]'); if(t)setTab(t.getAttribute('data-tab')); }));
+  // generic table sort (any .dt header) + per-card ⋮ export menu
+  document.getElementById('main').addEventListener('click',e=>{
+    const cmb=e.target.closest('[data-cmenu]'); if(cmb){ e.stopPropagation(); openCardMenu(cmb); return; }
+    const th=e.target.closest('table.dt th'); if(th && !th.hasAttribute('data-sortcol')){ sortDt(th); }
+  });
+  document.addEventListener('click',e=>{
+    const opt=e.target.closest('#cardMenu [data-cm]');
+    if(opt){ const m=document.getElementById('cardMenu'); const nm=(m&&m.dataset.name)||'lucira-export'; const a=opt.getAttribute('data-cm');
+      if(a==='xls')cardExportXLS(_menuCard,nm); else if(a==='csv')cardExportCSV(_menuCard,nm); else if(a==='svg')cardExportSVG(_menuCard,nm); closeCardMenu(); return; }
+    if(!e.target.closest('#cardMenu')&&!e.target.closest('[data-cmenu]')) closeCardMenu();
+  });
   window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(h&&TABS.find(t=>t.id===h)&&h!==STATE.tab){ STATE.tab=h; render(); } });
   document.addEventListener('keydown',e=>{ if(e.target.matches('input,select,textarea'))return;
     if(e.key==='f'){ e.preventDefault(); openDrawer(); } else if(e.key==='t'){ setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'); }
