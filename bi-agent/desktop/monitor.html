@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Business Monitor — Lucira</title>
+<style>
+  :root{
+    --bg:#0b0d10; --bg2:#0f1216; --card:#151a20; --card2:#1b222b; --line:#28313d;
+    --text:#eef2f7; --muted:#95a1b2; --faint:#5f6b7b;
+    --green:#2fbf71; --yellow:#e0a13c; --red:#e0574c; --blue:#3b82f6; --gold:#c9a24b;
+    --shadow:0 10px 34px rgba(0,0,0,.45);
+  }
+  :root[data-theme="light"]{
+    --bg:#eef1f5; --bg2:#e6eaef; --card:#ffffff; --card2:#f4f6f9; --line:#dbe1e9;
+    --text:#141a22; --muted:#5a6675; --faint:#8894a4; --shadow:0 8px 24px rgba(30,40,60,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-height:100vh}
+  .mono{font-family:ui-monospace,"Cascadia Code","Consolas",monospace}
+  .wrap{max-width:1280px;margin:0 auto;padding:20px}
+
+  header{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+  .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--gold),var(--green));
+    display:flex;align-items:center;justify-content:center;color:#0b0d10;font-family:Georgia,serif;font-weight:700;font-size:22px}
+  h1{font-size:19px;margin:0;font-weight:700}
+  .role{font-size:11.5px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;margin-top:2px}
+  .spacer{flex:1}
+  .syspill{display:inline-flex;align-items:center;gap:9px;padding:8px 15px;border-radius:22px;
+    background:var(--card);border:1px solid var(--line);font-weight:600;font-size:13px}
+  .beacon{width:11px;height:11px;border-radius:50%}
+  .g{background:var(--green);box-shadow:0 0 11px var(--green)} .y{background:var(--yellow);box-shadow:0 0 11px var(--yellow)}
+  .r{background:var(--red);box-shadow:0 0 11px var(--red)} .off{background:var(--faint)}
+  @keyframes bl{50%{opacity:.35}} .live{animation:bl 1.6s infinite}
+  .btn{cursor:pointer;background:var(--card2);border:1px solid var(--line);color:var(--text);
+    border-radius:10px;padding:8px 13px;font-size:12.5px;font-weight:600}
+  .btn:hover{border-color:var(--gold)}
+  .btn.primary{background:linear-gradient(135deg,var(--gold),var(--green));color:#0b0d10;border:none}
+
+  .subbar{display:flex;flex-wrap:wrap;gap:16px;color:var(--muted);font-size:12.5px;margin:12px 0 20px}
+  .subbar b{color:var(--text)}
+
+  .grid{display:grid;gap:16px}
+  .cols{grid-template-columns:340px 1fr}
+  @media(max-width:960px){.cols{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+  .card h2{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:0 0 14px;font-weight:700}
+
+  /* health gauge */
+  .gauge{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .score{font-size:64px;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .score small{font-size:22px;color:var(--faint);font-weight:600}
+  .scorelabel{font-size:13px;color:var(--muted)}
+  .domains{display:flex;flex-direction:column;gap:9px;margin-top:16px}
+  .drow{display:flex;align-items:center;gap:11px}
+  .drow .nm{width:92px;font-size:13px;flex:none}
+  .bararea{flex:1;height:8px;background:var(--card2);border-radius:6px;overflow:hidden}
+  .barfill{height:100%;border-radius:6px}
+  .drow .sc{width:34px;text-align:right;font-size:12.5px;font-variant-numeric:tabular-nums;flex:none}
+  .drow .rs{font-size:11px;color:var(--faint);margin-top:2px}
+
+  /* stat tiles */
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:720px){.tiles{grid-template-columns:repeat(2,1fr)}}
+  .tile{background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:14px}
+  .tile .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  .tile .v{font-size:26px;font-weight:800;margin-top:5px}
+  .tile .v small{font-size:12px;color:var(--faint);font-weight:600}
+
+  /* lists */
+  .row{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .tag{font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;text-transform:uppercase;white-space:nowrap;height:fit-content}
+  .t-red{background:color-mix(in srgb,var(--red) 22%,transparent);color:var(--red)}
+  .t-yel{background:color-mix(in srgb,var(--yellow) 22%,transparent);color:var(--yellow)}
+  .t-grn{background:color-mix(in srgb,var(--green) 22%,transparent);color:var(--green)}
+  .t-blu{background:color-mix(in srgb,var(--blue) 22%,transparent);color:#8fb4ff}
+  .row .msg{font-size:13.5px;line-height:1.5} .row .meta{font-size:11.5px;color:var(--faint);margin-top:3px}
+
+  .dash{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .dash:last-child{border-bottom:none}
+  .dash a{color:var(--gold);text-decoration:none;margin-left:auto;font-size:12px}
+  .dash a:hover{text-decoration:underline}
+
+  table.log{width:100%;border-collapse:collapse;font-size:12.5px}
+  table.log th,table.log td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+  table.log th{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
+  .logscroll{overflow-x:auto}
+  .st{font-weight:700;font-size:11px}
+  .st.ok{color:var(--green)} .st.fail{color:var(--red)} .st.retry{color:var(--yellow)}
+
+  /* recommendations */
+  .rec{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
+  .rec .act{font-size:14px;font-weight:600;line-height:1.45}
+  .rec .attrs{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .pillsm{font-size:11px;padding:3px 9px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--muted)}
+  .pillsm b{color:var(--text)}
+  .empty{color:var(--faint);font-size:13px;padding:16px;text-align:center}
+  footer{color:var(--faint);font-size:11.5px;text-align:center;padding:22px 0 10px}
+  .flash{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);
+    padding:10px 16px;border-radius:10px;font-size:13px;box-shadow:var(--shadow);opacity:0;transition:opacity .3s}
+  .flash.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">L</div>
+    <div>
+      <h1>AI Business Monitor</h1>
+      <div class="role">Lucira · AI Chief Business Officer</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="syspill"><span class="beacon" id="sysdot"></span><span id="systxt">Checking…</span></div>
+    <button class="btn" id="refresh">↻ Refresh</button>
+    <a class="btn" href="../dashboard/bi-copilot.html#focus" target="_blank" style="text-decoration:none">⚡ Yesterday &amp; Focus</a>
+    <a class="btn primary" href="../dashboard/decision-book.html" target="_blank" style="text-decoration:none">📖 Decision Book</a>
+    <button class="btn" id="runnow">▶ Run Now</button>
+    <button class="btn" id="theme">◐</button>
+  </header>
+
+  <div class="subbar">
+    <span>Last run: <b id="lastrun">—</b></span>
+    <span>Next scheduled: <b id="nextrun">—</b> (10:00 IST daily)</span>
+    <span>Run ID: <b class="mono" id="runid">—</b></span>
+    <span>Duration: <b id="duration">—</b></span>
+    <span>Source: <b id="source">—</b></span>
+  </div>
+
+  <div class="grid cols">
+    <!-- LEFT: health -->
+    <div class="card">
+      <h2>Business Health Score</h2>
+      <div class="gauge">
+        <div class="score" id="overall">—<small>/100</small></div>
+        <div class="scorelabel" id="overalllabel"></div>
+      </div>
+      <div class="domains" id="domains"></div>
+    </div>
+
+    <!-- RIGHT: operations -->
+    <div class="grid">
+      <div class="card">
+        <h2>Automation Status</h2>
+        <div class="tiles" id="tiles"></div>
+      </div>
+      <div class="grid cols" style="grid-template-columns:1fr 1fr">
+        <div class="card">
+          <h2>Critical Alerts</h2>
+          <div id="alerts"></div>
+        </div>
+        <div class="card">
+          <h2>Connected Dashboards</h2>
+          <div id="dashboards"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid cols" style="margin-top:16px;grid-template-columns:1fr 1fr">
+    <div class="card">
+      <h2>Top AI Recommendations</h2>
+      <div id="recs"></div>
+    </div>
+    <div class="card">
+      <h2>Today's Insights</h2>
+      <div id="insights"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2>Execution Log</h2>
+    <div class="logscroll">
+      <table class="log" id="log"></table>
+    </div>
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+<div class="flash" id="flash"></div>
+
+<script>
+/* ---- config: reads the local status.json the daily run writes; falls back to sample ---- */
+const CONFIG = { STATUS_URL: "status.json",
+  STATUS_FALLBACK: "https://storage.googleapis.com/lucira-dashboards/bi/status.json",  // public, works from file://
+  DASHBOARD_URL: "../dashboard/bi-copilot.html" };
+if (window.__MONITOR_CONFIG__) Object.assign(CONFIG, window.__MONITOR_CONFIG__);
+
+const RANK = s => s==="red"?2 : s==="yellow"?1 : 0;
+const cls = s => s==="red"?"r":s==="yellow"?"y":s==="green"?"g":"off";
+const tagcls = s => s==="red"||s==="critical"?"t-red":s==="yellow"||s==="warn"?"t-yel":s==="info"?"t-blu":"t-grn";
+const col = s => s==="red"?"var(--red)":s==="yellow"?"var(--yellow)":s==="off"?"var(--faint)":"var(--green)";
+const fmtINR = v => v==null?"—":(Math.abs(v)>=1e7?"₹"+(v/1e7).toFixed(2)+"Cr":Math.abs(v)>=1e5?"₹"+(v/1e5).toFixed(2)+"L":"₹"+Math.round(v).toLocaleString("en-IN"));
+const esc = s => (s==null?"":String(s)).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+function sampleStatus(){
+  const now=new Date();
+  const next=new Date(now); next.setHours(10,0,0,0); if(next<now) next.setDate(next.getDate()+1);
+  return {
+    meta:{generated_at:now.toISOString(),period:"Last 7 days",source:"sample"},
+    system:{status:"yellow",last_run:now.toISOString(),next_run:next.toISOString(),
+      run_id:"sample-0001",duration_sec:184},
+    health:{overall:74,domains:[
+      {name:"Sales",score:62,status:"red",reason:"Revenue −13.7% w/w; two stores under target."},
+      {name:"Marketing",score:70,status:"yellow",reason:"ROAS 2.7× below 4× target; spend +12%."},
+      {name:"CRM",score:66,status:"yellow",reason:"Contact rate 63% vs 80% SLA; 79 deals uncontacted."},
+      {name:"Inventory",score:68,status:"yellow",reason:"Health 68/100; dead-stock 21.5%; 63 low-stock."},
+      {name:"Customer",score:81,status:"green",reason:"New customers +9.9%; repeat cohort steady."},
+      {name:"Operations",score:72,status:"yellow",reason:"Avg dispatch 8.4d vs 7d SLA; 57 MTO open."},
+      {name:"Finance",score:88,status:"green",reason:"Margin stable; GCP cost within budget."}]},
+    automation:{email_sent:1,whatsapp_sent:1,insights_generated:4,dashboards_ok:4,dashboards_failed:1,
+      failed_jobs:1,retries:2},
+    dashboards:[
+      {name:"Sales Intelligence",status:"green",url:"#"},
+      {name:"GA4 Analytics",status:"green",url:"#"},
+      {name:"Inventory Intelligence",status:"green",url:"#"},
+      {name:"Deals vs Call (CRM)",status:"green",url:"#"},
+      {name:"GCP Cost",status:"red",url:"#"}],
+    alerts:[
+      {severity:"critical",domain:"sales",message:"Net revenue down 13.7% vs prior week (₹84.2L).",owner:"CEO"},
+      {severity:"critical",domain:"sales",message:"South Plaza 58% & Flagship 62% of target (<70%).",owner:"Store Head"},
+      {severity:"warn",domain:"crm",message:"Deal contact rate 63% (SLA 80%) — 79 uncontacted.",owner:"Sales Manager"},
+      {severity:"warn",domain:"marketing",message:"Meta Ads ROAS 2.7× below 3× on rising spend.",owner:"Marketing Head"}],
+    insights:[
+      {what:"Revenue fell 13.7% to ₹84.2L, led by two under-target flagship stores.",confidence:"high"},
+      {what:"Contact rate slipped to 63% — 79 deals with no call in 30 min.",confidence:"high"},
+      {what:"Dead-stock rose to 21.5% while 63 fast movers went low-stock.",confidence:"medium"}],
+    recommendations:[
+      {action:"Call the 79 un-contacted deals today, starting with the two owners' afternoon queues.",
+       priority:"P1",owner:"Sales Manager",eta_days:1,est_value_inr:350000,difficulty:"Low",confidence:82},
+      {action:"Target-recovery push at South Plaza & Flagship (staffing + top-SKU focus).",
+       priority:"P1",owner:"Store Head",eta_days:2,est_value_inr:800000,difficulty:"Medium",confidence:71},
+      {action:"Rebalance Meta Ads budget from <3× ROAS sets to 3×+ campaigns.",
+       priority:"P2",owner:"Marketing Head",eta_days:3,est_value_inr:260000,difficulty:"Low",confidence:76}],
+    steps:[
+      {name:"BigQuery connect",status:"ok",duration_sec:1.2,retry_count:0,error:""},
+      {name:"Collect · sales",status:"ok",duration_sec:2.1,retry_count:0,error:""},
+      {name:"Collect · marketing",status:"ok",duration_sec:3.4,retry_count:0,error:""},
+      {name:"Collect · crm",status:"ok",duration_sec:2.8,retry_count:0,error:""},
+      {name:"Collect · inventory",status:"ok",duration_sec:1.9,retry_count:0,error:""},
+      {name:"KPI + rules",status:"ok",duration_sec:0.6,retry_count:0,error:""},
+      {name:"AI insights",status:"retry",duration_sec:4.0,retry_count:1,error:"LLM timeout (recovered)"},
+      {name:"Publish snapshot",status:"ok",duration_sec:1.1,retry_count:0,error:""},
+      {name:"Email report",status:"ok",duration_sec:2.2,retry_count:0,error:""},
+      {name:"WhatsApp summary",status:"ok",duration_sec:1.5,retry_count:0,error:""},
+      {name:"Dashboard · GCP Cost",status:"fail",duration_sec:15.0,retry_count:3,error:"Source URL not configured"}]
+  };
+}
+
+let S=null;
+async function load(){
+  for(const url of [CONFIG.STATUS_URL, CONFIG.STATUS_FALLBACK].filter(Boolean)){
+    try{
+      const r=await fetch(url,{cache:"no-store"});
+      if(r.ok){ S=await r.json(); S.meta=S.meta||{}; S.meta.source=S.meta.source||"live"; return; }
+    }catch(e){}
+  }
+  S=sampleStatus();
+}
+
+function render(){
+  const sys=S.system||{}, h=S.health||{domains:[]};
+  // system pill
+  document.getElementById("sysdot").className="beacon live "+cls(sys.status);
+  document.getElementById("systxt").textContent =
+    sys.status==="green"?"All systems operational":sys.status==="red"?"Attention required":"Watch";
+  const dt=t=>t?new Date(t).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"}):"—";
+  document.getElementById("lastrun").textContent=dt(sys.last_run);
+  document.getElementById("nextrun").textContent=dt(sys.next_run);
+  document.getElementById("runid").textContent=sys.run_id||"—";
+  document.getElementById("duration").textContent=sys.duration_sec!=null?sys.duration_sec.toFixed(0)+"s":"—";
+  document.getElementById("source").textContent=(S.meta.source||"—")+" · "+(S.meta.period||"");
+
+  // health
+  document.getElementById("overall").innerHTML=(h.overall!=null?h.overall:"—")+"<small>/100</small>";
+  const os=h.overall>=80?"green":h.overall>=60?"yellow":"red";
+  document.getElementById("overall").style.color=col(os);
+  document.getElementById("overalllabel").textContent=
+    h.overall>=80?"Healthy":h.overall>=60?"Needs attention":"Critical";
+  document.getElementById("domains").innerHTML=(h.domains||[]).map(d=>`
+    <div>
+      <div class="drow"><span class="nm">${esc(d.name)}</span>
+        <span class="bararea"><span class="barfill" style="width:${d.score==null?0:d.score}%;background:${col(d.status)}"></span></span>
+        <span class="sc" style="color:${col(d.status)}">${d.score==null?"—":d.score}</span></div>
+      <div class="rs">${esc(d.reason||"")}</div>
+    </div>`).join("");
+
+  // automation tiles
+  const a=S.automation||{};
+  const tiles=[["Emails Sent",a.email_sent||0],["WhatsApp Sent",a.whatsapp_sent||0],
+    ["Insights",a.insights_generated||0],["Dashboards OK",`${a.dashboards_ok||0}<small>/${(a.dashboards_ok||0)+(a.dashboards_failed||0)}</small>`],
+    ["Failed Jobs",a.failed_jobs||0],["Retries",a.retries||0],
+    ["Alerts",(S.alerts||[]).length],["Recommendations",(S.recommendations||[]).length]];
+  document.getElementById("tiles").innerHTML=tiles.map(([k,v])=>`
+    <div class="tile"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+
+  // alerts
+  const al=(S.alerts||[]).slice().sort((x,y)=>RANK(y.severity==="critical"?"red":y.severity==="warn"?"yellow":"green")-RANK(x.severity==="critical"?"red":x.severity==="warn"?"yellow":"green"));
+  document.getElementById("alerts").innerHTML=al.length?al.slice(0,6).map(x=>`
+    <div class="row"><span class="tag ${tagcls(x.severity)}">${esc(x.severity)}</span>
+      <div><div class="msg">${esc(x.message)}</div><div class="meta">${esc(x.domain)} · ${esc(x.owner||"")}</div></div></div>`).join("")
+    :`<div class="empty">No alerts. All clear. ✅</div>`;
+
+  // dashboards
+  document.getElementById("dashboards").innerHTML=(S.dashboards||[]).map(d=>`
+    <div class="dash"><span class="beacon ${cls(d.status)}"></span>${esc(d.name)}
+      ${d.url&&d.url!=="#"?`<a href="${esc(d.url)}" target="_blank">open ↗</a>`:`<span style="margin-left:auto;color:var(--faint);font-size:12px">${d.status==="red"?"not connected":"—"}</span>`}</div>`).join("");
+
+  // recommendations
+  document.getElementById("recs").innerHTML=(S.recommendations||[]).length?(S.recommendations||[]).slice(0,5).map(r=>`
+    <div class="rec"><div class="act">${esc(r.action)}</div>
+      <div class="attrs">
+        <span class="pillsm"><b>${esc(r.priority||"P3")}</b></span>
+        <span class="pillsm">Owner: <b>${esc(r.owner||"—")}</b></span>
+        <span class="pillsm">Due: <b>${r.eta_days!=null?r.eta_days+"d":"—"}</b></span>
+        ${r.est_value_inr?`<span class="pillsm">Impact: <b>${fmtINR(r.est_value_inr)}</b></span>`:""}
+        ${r.difficulty?`<span class="pillsm">Effort: <b>${esc(r.difficulty)}</b></span>`:""}
+        ${r.confidence!=null?`<span class="pillsm">Confidence: <b>${r.confidence}%</b></span>`:""}
+      </div></div>`).join("")
+    :`<div class="empty">No open recommendations.</div>`;
+
+  // insights
+  document.getElementById("insights").innerHTML=(S.insights||[]).length?(S.insights||[]).slice(0,6).map(i=>`
+    <div class="row"><span class="tag t-blu">${esc(i.confidence||"med")}</span>
+      <div class="msg">${esc(i.what)}</div></div>`).join("")
+    :`<div class="empty">No insights yet.</div>`;
+
+  // exec log
+  const steps=S.steps||[];
+  document.getElementById("log").innerHTML=
+    `<tr><th>Step</th><th>Status</th><th>Duration</th><th>Retries</th><th>Error</th></tr>`+
+    steps.map(s=>`<tr>
+      <td>${esc(s.name)}</td>
+      <td><span class="st ${s.status==="ok"?"ok":s.status==="retry"?"retry":"fail"}">${s.status==="ok"?"● SUCCESS":s.status==="retry"?"● RETRY":"● FAILED"}</span></td>
+      <td class="mono">${s.duration_sec!=null?s.duration_sec.toFixed(1)+"s":"—"}</td>
+      <td class="mono">${s.retry_count||0}</td>
+      <td style="color:var(--faint);white-space:normal">${esc(s.error||"")}</td></tr>`).join("");
+
+  document.getElementById("foot").innerHTML=
+    `AI Business Monitor · reads <span class="mono">status.json</span> · daily 10:00 IST · `+
+    `${S.meta.source==="sample"?"showing sample (run the agent to populate live status)":"live status"} · `+
+    `generated ${dt(S.meta.generated_at)}`;
+}
+
+function flash(m){const f=document.getElementById("flash");f.textContent=m;f.classList.add("show");
+  setTimeout(()=>f.classList.remove("show"),2600);}
+
+async function boot(){
+  const th=localStorage.getItem("mon_theme"); if(th) document.documentElement.dataset.theme=th;
+  document.getElementById("theme").onclick=()=>{const t=document.documentElement.dataset.theme==="dark"?"light":"dark";
+    document.documentElement.dataset.theme=t;localStorage.setItem("mon_theme",t);};
+  document.getElementById("refresh").onclick=async()=>{await load();render();flash("Status refreshed.");};
+  document.getElementById("runnow").onclick=()=>flash("To trigger a run now: run  python -m bi_agent run  (or the daily 10:00 IST job fires automatically).");
+  window.open;
+  await load(); render();
+  // auto-refresh the panel every 60s so it stays current through the morning run
+  setInterval(async()=>{await load();render();},60000);
+}
+boot();
+</script>
+</body>
+</html>

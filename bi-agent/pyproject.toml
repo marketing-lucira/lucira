@@ -1,0 +1,12 @@
+[project]
+name = "lucira-bi-agent"
+version = "0.1.0"
+description = "Lucira BI Copilot — enterprise AI Business Intelligence (MIS automation) agent"
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

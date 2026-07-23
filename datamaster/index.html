@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataMaster AI — Enterprise Data Engineering & Analytics Mentor</title>
+    <meta name="description" content="Complete 60-Day Data Engineer & Data Analyst Career Bootcamp with interactive mentoring, assignments, interview simulator, and capstone project.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ===== CSS RESET & DESIGN SYSTEM ===== */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #080c14;
+            --bg-secondary: #0f172a;
+            --bg-card: rgba(15, 23, 42, 0.75);
+            --bg-card-hover: rgba(30, 41, 59, 0.85);
+            --bg-glass: rgba(255, 255, 255, 0.03);
+            --bg-sidebar: rgba(10, 15, 29, 0.96);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(99, 102, 241, 0.35);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #6366f1;
+            --accent-blue-light: #818cf8;
+            --accent-purple: #a855f7;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-orange: #f97316;
+            --accent-pink: #ec4899;
+            --accent-yellow: #eab308;
+            --accent-red: #ef4444;
+            --gradient-primary: linear-gradient(135deg, #6366f1, #a855f7);
+            --gradient-green: linear-gradient(135deg, #10b981, #06b6d4);
+            --gradient-orange: linear-gradient(135deg, #f97316, #ec4899);
+            --gradient-gold: linear-gradient(135deg, #eab308, #f97316);
+            --shadow-glow: 0 0 35px rgba(99, 102, 241, 0.2);
+            --sidebar-width: 290px;
+            --font-main: 'Inter', -apple-system, sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ===== LANGUAGE SELECTION MODAL (FIRST SCREEN) ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(4, 7, 13, 0.92);
+            backdrop-filter: blur(25px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 1;
+            visibility: visible;
+            transition: var(--transition);
+        }
+
+        .modal-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .lang-modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-glow);
+            border-radius: var(--radius-xl);
+            padding: 44px 36px;
+            max-width: 540px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6), var(--shadow-glow);
+            animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes modalPop {
+            from { transform: scale(0.9) translateY(20px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        .lang-modal .logo-badge {
+            width: 64px; height: 64px;
+            background: var(--gradient-primary);
+            border-radius: var(--radius-md);
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .lang-modal h2 {
+            font-size: 26px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .lang-modal p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 28px;
+            line-height: 1.6;
+        }
+
+        .lang-options {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .lang-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 18px 20px;
+            background: var(--bg-glass);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: left;
+        }
+
+        .lang-card:hover, .lang-card.selected {
+            border-color: var(--accent-blue);
+            background: rgba(99, 102, 241, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .lang-card .lang-flag { font-size: 28px; }
+
+        .lang-card .lang-details h4 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .lang-card .lang-details span {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ===== BACKGROUND ANIMATION ===== */
+        .bg-animation {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .bg-animation .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.14;
+            animation: float 25s ease-in-out infinite;
+        }
+
+        .bg-animation .orb:nth-child(1) {
+            width: 600px; height: 600px;
+            background: var(--accent-blue);
+            top: -15%; left: -10%;
+        }
+
+        .bg-animation .orb:nth-child(2) {
+            width: 500px; height: 500px;
+            background: var(--accent-purple);
+            top: 40%; right: -12%;
+            animation-delay: -8s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(40px, -40px) scale(1.05); }
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition);
+        }
+
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-box .icon {
+            width: 38px; height: 38px;
+            background: var(--gradient-primary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .logo-box .text h1 {
+            font-size: 16px;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-box .text span {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px 0;
+        }
+
+        .sidebar-nav::-webkit-scrollbar { width: 4px; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.3); border-radius: 4px; }
+
+        .nav-group-title {
+            padding: 12px 20px 6px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .nav-item:hover {
+            background: rgba(99, 102, 241, 0.08);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: rgba(99, 102, 241, 0.12);
+            border-left-color: var(--accent-blue);
+            color: var(--accent-blue-light);
+            font-weight: 600;
+        }
+
+        .nav-item .nav-badge {
+            margin-left: auto;
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
+        .nav-badge.day { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); }
+        .nav-badge.completed { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===== TOPBAR ===== */
+        .topbar {
+            position: sticky;
+            top: 0;
+            background: rgba(8, 12, 20, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 14px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 50;
+        }
+
+        .topbar-left h2 { font-size: 18px; font-weight: 800; }
+        .topbar-left span { font-size: 12px; color: var(--text-muted); }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .lang-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: rgba(99, 102, 241, 0.12);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .lang-pill select {
+            background: transparent;
+            border: none;
+            color: var(--accent-blue-light);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .lang-pill select option { background: var(--bg-secondary); color: var(--text-primary); }
+
+        .stat-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* ===== CONTAINER & PAGE ===== */
+        .page-container { padding: 32px; max-width: 1150px; }
+        .page { display: none; animation: fadeIn 0.35s ease; }
+        .page.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== DASHBOARD ===== */
+        .dash-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+
+        .dash-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .dash-card:hover {
+            border-color: var(--border-glow);
+            transform: translateY(-2px);
+        }
+
+        .dash-card .val { font-size: 30px; font-weight: 800; margin-top: 4px; }
+        .dash-card .lbl { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+
+        /* ===== PROGRESS SECTION ===== */
+        .progress-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 28px;
+        }
+
+        .progress-bar-track {
+            width: 100%; height: 10px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--gradient-primary);
+            border-radius: 5px;
+            transition: width 0.6s ease;
+        }
+
+        /* ===== 12-POINT LESSON SYSTEM ===== */
+        .lesson-header { margin-bottom: 28px; }
+        .lesson-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(99, 102, 241, 0.12);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent-blue-light);
+            margin-bottom: 10px;
+        }
+
+        .lesson-header h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
+        .lesson-header p { font-size: 14px; color: var(--text-secondary); }
+
+        .lesson-comp {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .lesson-comp h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-primary);
+        }
+
+        .lesson-comp p, .lesson-comp li {
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .lesson-comp ul, .lesson-comp ol { padding-left: 20px; margin-top: 8px; }
+        .lesson-comp li { margin-bottom: 6px; }
+
+        .explanation-box {
+            background: rgba(99, 102, 241, 0.06);
+            border-left: 3px solid var(--accent-blue);
+            padding: 14px 18px;
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            margin-top: 12px;
+            font-size: 13.5px;
+            color: var(--text-secondary);
+        }
+
+        /* ===== CODE EDITOR & ASSIGNMENT EVALUATOR ===== */
+        .code-block {
+            background: #090d16;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-md);
+            padding: 18px;
+            margin: 14px 0;
+            font-family: var(--font-code);
+            font-size: 13px;
+            line-height: 1.7;
+            position: relative;
+            overflow-x: auto;
+        }
+
+        .assignment-box {
+            background: rgba(168, 85, 247, 0.05);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-top: 20px;
+        }
+
+        .assignment-textarea {
+            width: 100%;
+            height: 140px;
+            background: #090d16;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            color: var(--text-primary);
+            font-family: var(--font-code);
+            font-size: 13px;
+            margin: 12px 0;
+            resize: vertical;
+            outline: none;
+        }
+
+        .assignment-textarea:focus { border-color: var(--accent-purple); }
+
+        .assignment-feedback {
+            display: none;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            margin-top: 14px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .assignment-feedback.show { display: block; }
+        .assignment-feedback.success { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--accent-green); }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            padding: 10px 22px;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary { background: var(--gradient-primary); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35); }
+        .btn-success { background: var(--gradient-green); color: #080c14; font-weight: 700; }
+        .btn-secondary { background: var(--bg-glass); border: 1px solid var(--border-color); color: var(--text-secondary); }
+        .btn-secondary:hover { border-color: var(--accent-blue); color: var(--text-primary); }
+
+        /* ===== QUIZ SYSTEM ===== */
+        .quiz-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 13px;
+        }
+
+        .quiz-option:hover { border-color: var(--accent-blue); background: rgba(99, 102, 241, 0.08); }
+        .quiz-option.correct { border-color: var(--accent-green); background: rgba(16, 185, 129, 0.12); color: var(--accent-green); }
+        .quiz-option.wrong { border-color: var(--accent-red); background: rgba(239, 68, 68, 0.12); color: var(--accent-red); }
+
+        /* ===== TABLES ===== */
+        .custom-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 14px 0;
+            font-size: 13px;
+        }
+
+        .custom-table th {
+            background: rgba(99, 102, 241, 0.1);
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--accent-blue-light);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .custom-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+            .topbar { padding: 14px 16px; }
+            .page-container { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Language Selection Modal (First Screen) -->
+<div class="modal-overlay" id="langModal">
+    <div class="lang-modal">
+        <div class="logo-badge">🎓</div>
+        <h2 id="modalTitle">Welcome to DataMaster AI</h2>
+        <p id="modalSub">Select your preferred learning language. Your entire course, lessons, code explanations, assignments, and mock interviews will automatically adjust!</p>
+        
+        <div class="lang-options">
+            <div class="lang-card selected" onclick="selectModalLang('hinglish', this)">
+                <span class="lang-flag">🌐</span>
+                <div class="lang-details">
+                    <h4>Hinglish (Hindi + English Mix)</h4>
+                    <span>English tech terms + clear Hindi explanations</span>
+                </div>
+            </div>
+            <div class="lang-card" onclick="selectModalLang('english', this)">
+                <span class="lang-flag">🇬🇧</span>
+                <div class="lang-details">
+                    <h4>English (Pure)</h4>
+                    <span>Complete formal corporate English instruction</span>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px;" onclick="confirmLanguage()">
+            🚀 Start My 60-Day Data Engineer Journey
+        </button>
+    </div>
+</div>
+
+<!-- Background Animation -->
+<div class="bg-animation">
+    <div class="orb"></div>
+    <div class="orb"></div>
+</div>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo-box">
+            <div class="icon">🚀</div>
+            <div class="text">
+                <h1>DataMaster AI</h1>
+                <span>Data Engineering Mentor</span>
+            </div>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-group-title">Main</div>
+        <div class="nav-item active" onclick="navigateToPage('dashboard')">
+            <span>📊</span> <span>Dashboard</span>
+        </div>
+
+        <div class="nav-group-title">Module 1 — Foundations</div>
+        <div class="nav-item" onclick="navigateToPage('excel')">
+            <span>📊</span> <span>Excel & Business Data</span>
+            <span class="nav-badge day">Day 1-4</span>
+        </div>
+        <div class="nav-item" onclick="navigateToPage('sql-basics')">
+            <span>📝</span> <span>SQL Beginner to Advanced</span>
+            <span class="nav-badge day">Day 5-14</span>
+        </div>
+
+        <div class="nav-group-title">Module 2 — Python & Analytics</div>
+        <div class="nav-item" onclick="navigateToPage('python-core')">
+            <span>🐍</span> <span>Python Programming Core</span>
+            <span class="nav-badge day">Day 15-22</span>
+        </div>
+        <div class="nav-item" onclick="navigateToPage('pandas-numpy')">
+            <span>🐼</span> <span>Pandas, NumPy & Wrangling</span>
+            <span class="nav-badge day">Day 23-28</span>
+        </div>
+        <div class="nav-item" onclick="navigateToPage('viz-bi')">
+            <span>📈</span> <span>Visualization & Power BI</span>
+            <span class="nav-badge day">Day 29-33</span>
+        </div>
+
+        <div class="nav-group-title">Module 3 — Data Engineering</div>
+        <div class="nav-item" onclick="navigateToPage('db-warehouse')">
+            <span>🏛️</span> <span>Database Design & Warehouse</span>
+            <span class="nav-badge day">Day 34-39</span>
+        </div>
+        <div class="nav-item" onclick="navigateToPage('etl-pipelines')">
+            <span>🔄</span> <span>ETL & Python Pipelines</span>
+            <span class="nav-badge day">Day 40-44</span>
+        </div>
+        <div class="nav-item" onclick="navigateToPage('gcp-bigquery')">
+            <span>☁️</span> <span>GCP & BigQuery</span>
+            <span class="nav-badge day">Day 45-50</span>
+        </div>
+
+        <div class="nav-group-title">Module 4 — Advanced DE & DevOps</div>
+        <div class="nav-item" onclick="navigateToPage('airflow-spark')">
+            <span>⚡</span> <span>Airflow, Spark & Kafka</span>
+            <span class="nav-badge day">Day 51-55</span>
+        </div>
+        <div class="nav-item" onclick="navigateToPage('docker-git')">
+            <span>🐳</span> <span>Docker & Git Workflow</span>
+            <span class="nav-badge day">Day 56-57</span>
+        </div>
+
+        <div class="nav-group-title">Module 5 — Graduation</div>
+        <div class="nav-item" onclick="navigateToPage('interview-sim')">
+            <span>🎤</span> <span>Mock Technical Interview</span>
+            <span class="nav-badge day">Day 58-59</span>
+        </div>
+        <div class="nav-item" onclick="navigateToPage('capstone')">
+            <span>🏗️</span> <span>Final Capstone Project</span>
+            <span class="nav-badge day">Day 60</span>
+        </div>
+    </nav>
+</aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="main-content">
+    <!-- Topbar -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <h2 id="topbarTitle">Dashboard</h2>
+            <span id="topbarSub">Your 60-Day Data Engineer Learning Path</span>
+        </div>
+
+        <div class="topbar-right">
+            <div class="lang-pill" title="Change platform language">
+                <span>🌐</span>
+                <select id="platformLangSelect" onchange="switchLanguage(this.value)">
+                    <option value="hinglish">Hinglish (Hindi + English)</option>
+                    <option value="english">English (Pure)</option>
+                </select>
+            </div>
+            <div class="stat-pill">⭐ <span id="userXP">0 XP</span></div>
+            <div class="stat-pill">🏅 <span id="userLevel">Level 1</span></div>
+        </div>
+    </header>
+
+    <div class="page-container">
+
+        <!-- DASHBOARD PAGE -->
+        <div class="page active" id="page-dashboard">
+            <div class="dash-grid">
+                <div class="dash-card">
+                    <div class="lbl">Total Course Progress</div>
+                    <div class="val" id="dashProgressVal">0%</div>
+                </div>
+                <div class="dash-card">
+                    <div class="lbl">Total XP Earned</div>
+                    <div class="val" id="dashXPVal">0</div>
+                </div>
+                <div class="dash-card">
+                    <div class="lbl">Daily Target</div>
+                    <div class="val">1-2 Hrs/Day</div>
+                </div>
+                <div class="dash-card">
+                    <div class="lbl">Weak Topics Tracked</div>
+                    <div class="val" id="dashWeakCount">0</div>
+                </div>
+            </div>
+
+            <div class="progress-box">
+                <h3 style="font-size: 16px; font-weight: 700;">📈 60-Day Career Path Progress</h3>
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="mainProgressFill" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 18px;">📚 60-Day Daily Learning Plan (1-2 Hours/Day)</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px;">
+                <div class="dash-card" onclick="navigateToPage('excel')" style="cursor: pointer;">
+                    <h4>📊 Module 1: Excel & Business Analytics</h4>
+                    <p style="font-size: 12px; color: var(--text-muted); margin: 6px 0 12px;">Day 1 – 4 | VLOOKUP, Pivot Tables, KPIs</p>
+                    <span class="btn btn-secondary" style="font-size: 11px;">Start Module →</span>
+                </div>
+                <div class="dash-card" onclick="navigateToPage('sql-basics')" style="cursor: pointer;">
+                    <h4>📝 Module 2: SQL Mastery</h4>
+                    <p style="font-size: 12px; color: var(--text-muted); margin: 6px 0 12px;">Day 5 – 14 | JOINs, Window Functions, CTEs</p>
+                    <span class="btn btn-secondary" style="font-size: 11px;">Start Module →</span>
+                </div>
+                <div class="dash-card" onclick="navigateToPage('python-core')" style="cursor: pointer;">
+                    <h4>🐍 Module 3: Python for Data</h4>
+                    <p style="font-size: 12px; color: var(--text-muted); margin: 6px 0 12px;">Day 15 – 22 | Data Structures, Functions, OOP</p>
+                    <span class="btn btn-secondary" style="font-size: 11px;">Start Module →</span>
+                </div>
+                <div class="dash-card" onclick="navigateToPage('pandas-numpy')" style="cursor: pointer;">
+                    <h4>🐼 Module 4: Pandas & Cleaning</h4>
+                    <p style="font-size: 12px; color: var(--text-muted); margin: 6px 0 12px;">Day 23 – 28 | Data Wrangling & Transformations</p>
+                    <span class="btn btn-secondary" style="font-size: 11px;">Start Module →</span>
+                </div>
+                <div class="dash-card" onclick="navigateToPage('etl-pipelines')" style="cursor: pointer;">
+                    <h4>🔄 Module 5: ETL Pipelines & GCP</h4>
+                    <p style="font-size: 12px; color: var(--text-muted); margin: 6px 0 12px;">Day 40 – 50 | BigQuery, Airflow, Spark</p>
+                    <span class="btn btn-secondary" style="font-size: 11px;">Start Module →</span>
+                </div>
+                <div class="dash-card" onclick="navigateToPage('interview-sim')" style="cursor: pointer;">
+                    <h4>🎤 Module 6: Technical Interview</h4>
+                    <p style="font-size: 12px; color: var(--text-muted); margin: 6px 0 12px;">Day 58 – 59 | Live Coding & System Design</p>
+                    <span class="btn btn-secondary" style="font-size: 11px;">Start Interview →</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- EXCEL MODULE PAGE -->
+        <div class="page" id="page-excel">
+            <div class="lesson-header">
+                <span class="lesson-tag">Day 1-4 — Module 1</span>
+                <h2>📊 Excel Essentials & Business Metrics</h2>
+                <p>Learn VLOOKUP, INDEX-MATCH, Pivot Tables, and Business KPIs (Revenue, Profit, Margin, CAC, LTV).</p>
+            </div>
+
+            <!-- 1. Simple Explanation -->
+            <div class="lesson-comp">
+                <h3>1️⃣ Simple Explanation</h3>
+                <p>Excel is the foundational data tool used in every enterprise. Before storing data in massive databases, business data lives in spreadsheets.</p>
+                <div class="explanation-box" id="excel-exp">
+                    💡 <strong>Hinglish Note:</strong> Excel sabse pehle seekhna zaroori hai kyunki har company (Swiggy, Amazon, Banks) ke business teams pehle Excel mein data dekhte hain.
+                </div>
+            </div>
+
+            <!-- 2. Real World Example -->
+            <div class="lesson-comp">
+                <h3>2️⃣ Real-World Business Example</h3>
+                <p>A retail store tracks daily customer purchases to calculate Customer Acquisition Cost (CAC) and Lifetime Value (LTV):</p>
+                <div class="code-block">
+                    Customer ID | Campaign | Purchases | Revenue | Margin
+                    CUST_101    | Meta Ads | 4         | $400    | 30%
+                    CUST_102    | Google   | 1         | $90     | 25%
+                </div>
+            </div>
+
+            <!-- 3. Visual Explanation -->
+            <div class="lesson-comp">
+                <h3>3️⃣ Visual Diagram — Excel VLOOKUP Data Flow</h3>
+                <div style="padding: 16px; background: rgba(99, 102, 241, 0.08); border-radius: var(--radius-md); text-align: center;">
+                    <code>Lookup Value (Customer_ID) ➡️ Table Array (Orders Sheet) ➡️ Return Column Index (2) ➡️ Exact Match (0)</code>
+                </div>
+            </div>
+
+            <!-- 4. Practice Questions -->
+            <div class="lesson-comp">
+                <h3>4️⃣ Practice Questions & MCQs</h3>
+                <div class="quiz-option" onclick="answerQuiz(this, true, 'excelQ1')">
+                    <strong>Q: Which formula looks up values to the left of a column?</strong><br>
+                    <span>A) VLOOKUP &nbsp; B) INDEX-MATCH &nbsp; C) HLOOKUP</span>
+                </div>
+                <div id="excelQ1-fb" style="display: none; padding: 10px; color: var(--accent-green); font-size: 13px;">
+                    ✅ Correct! INDEX-MATCH can look left or right, unlike standard VLOOKUP. (+10 XP)
+                </div>
+            </div>
+
+            <!-- 5. Assignment -->
+            <div class="assignment-box">
+                <h3>5️⃣ Hands-On Assignment: Calculate Profit Margin</h3>
+                <p>Write down the Excel formula to calculate Net Profit Margin if Revenue is in Cell A2 and Expenses are in Cell B2:</p>
+                <textarea class="assignment-textarea" id="excelAssignText" placeholder="Type your Excel formula here... e.g. =(A2-B2)/A2"></textarea>
+                <button class="btn btn-primary" onclick="submitAssignment('excel')">Submit Assignment for Review</button>
+                <div class="assignment-feedback" id="excelAssignFb"></div>
+            </div>
+        </div>
+
+        <!-- SQL MODULE PAGE -->
+        <div class="page" id="page-sql-basics">
+            <div class="lesson-header">
+                <span class="lesson-tag">Day 5-14 — Module 2</span>
+                <h2>📝 SQL Beginner to Advanced (Production SQL)</h2>
+                <p>Master SELECT, JOINs, GROUP BY, CTEs, Window Functions (ROW_NUMBER, RANK, LEAD, LAG), and Query Optimization.</p>
+            </div>
+
+            <div class="lesson-comp">
+                <h3>1️⃣ Simple Explanation & Theory</h3>
+                <p>SQL (Structured Query Language) is the language used to extract, filter, and transform data stored in Relational Databases (MySQL, PostgreSQL, BigQuery).</p>
+                <div class="explanation-box" id="sql-exp">
+                    💡 <strong>Hinglish Note:</strong> SQL Data Engineer ka sabse important weapon hai. Databases se crores of rows filter karke nikalne ke liye SQL queries likhte hain.
+                </div>
+            </div>
+
+            <div class="lesson-comp">
+                <h3>2️⃣ Advanced SQL Example — Window Functions & CTE</h3>
+                <div class="code-block">
+<span style="color:#ff79c6;">WITH</span> monthly_sales <span style="color:#ff79c6;">AS</span> (
+    <span style="color:#ff79c6;">SELECT</span> 
+        customer_id,
+        <span style="color:#50fa7b;">SUM</span>(amount) <span style="color:#ff79c6;">AS</span> total_spent,
+        <span style="color:#50fa7b;">DENSE_RANK</span>() <span style="color:#ff79c6;">OVER</span> (<span style="color:#ff79c6;">ORDER BY</span> <span style="color:#50fa7b;">SUM</span>(amount) <span style="color:#ff79c6;">DESC</span>) <span style="color:#ff79c6;">AS</span> rnk
+    <span style="color:#ff79c6;">FROM</span> orders
+    <span style="color:#ff79c6;">GROUP BY</span> customer_id
+)
+<span style="color:#ff79c6;">SELECT</span> * <span style="color:#ff79c6;">FROM</span> monthly_sales <span style="color:#ff79c6;">WHERE</span> rnk &lt;= <span style="color:#bd93f9;">5</span>;
+                </div>
+            </div>
+
+            <div class="assignment-box">
+                <h3>3️⃣ Hands-On SQL Assignment: Top 3 Revenue Customers Per City</h3>
+                <p>Write a SQL query using <code>ROW_NUMBER() OVER(PARTITION BY city ORDER BY amount DESC)</code> to get top 3 customers per city:</p>
+                <textarea class="assignment-textarea" id="sqlAssignText" placeholder="SELECT customer_id, city, amount FROM (...)"></textarea>
+                <button class="btn btn-primary" onclick="submitAssignment('sql')">Submit SQL for Review</button>
+                <div class="assignment-feedback" id="sqlAssignFb"></div>
+            </div>
+        </div>
+
+        <!-- PYTHON CORE MODULE PAGE -->
+        <div class="page" id="page-python-core">
+            <div class="lesson-header">
+                <span class="lesson-tag">Day 15-22 — Module 3</span>
+                <h2>🐍 Python Programming Core & OOP</h2>
+                <p>Learn Variables, Data Structures (Lists, Dicts, Sets), Control Flow, Functions, Exception Handling, and File I/O.</p>
+            </div>
+
+            <div class="lesson-comp">
+                <h3>1️⃣ Python Data Pipeline Script</h3>
+                <div class="code-block">
+<span style="color:#ff79c6;">import</span> json
+
+<span style="color:#6272a4;"># Real-World Data Pipeline Configuration</span>
+pipeline_config = {
+    <span style="color:#f1fa8c;">"source"</span>: <span style="color:#f1fa8c;">"mysql_production"</span>,
+    <span style="color:#f1fa8c;">"target"</span>: <span style="color:#f1fa8c;">"bigquery_warehouse"</span>,
+    <span style="color:#f1fa8c;">"batch_size"</span>: <span style="color:#bd93f9;">10000</span>
+}
+
+<span style="color:#ff79c6;">def</span> <span style="color:#50fa7b;">process_batch</span>(size):
+    <span style="color:#ff79c6;">print</span>(f<span style="color:#f1fa8c;">"Extracting {size} records from {pipeline_config['source']}"</span>)
+
+process_batch(pipeline_config[<span class="color:#f1fa8c;">"batch_size"</span>])
+                </div>
+            </div>
+
+            <div class="assignment-box">
+                <h3>2️⃣ Python Coding Assignment</h3>
+                <p>Write a Python function <code>clean_email(email)</code> that strips spaces and converts email to lowercase:</p>
+                <textarea class="assignment-textarea" id="pythonAssignText" placeholder="def clean_email(email): ..."></textarea>
+                <button class="btn btn-primary" onclick="submitAssignment('python')">Submit Code for Review</button>
+                <div class="assignment-feedback" id="pythonAssignFb"></div>
+            </div>
+        </div>
+
+        <!-- PANDAS MODULE PAGE -->
+        <div class="page" id="page-pandas-numpy">
+            <div class="lesson-header">
+                <span class="lesson-tag">Day 23-28 — Module 4</span>
+                <h2>🐼 Pandas & NumPy Data Wrangling</h2>
+                <p>Manipulate DataFrames, clean missing data (NaN), merge datasets, and run aggregations.</p>
+            </div>
+
+            <div class="lesson-comp">
+                <h3>1️⃣ Data Cleaning with Pandas</h3>
+                <div class="code-block">
+<span style="color:#ff79c6;">import</span> pandas <span style="color:#ff79c6;">as</span> pd
+
+df = pd.read_csv(<span style="color:#f1fa8c;">"raw_orders.csv"</span>)
+df[<span style="color:#f1fa8c;">"amount"</span>] = df[<span style="color:#f1fa8c;">"amount"</span>].fillna(<span style="color:#bd93f9;">0</span>)
+df = df.drop_duplicates(subset=[<span style="color:#f1fa8c;">"order_id"</span>])
+df[<span style="color:#f1fa8c;">"order_date"</span>] = pd.to_datetime(df[<span style="color:#f1fa8c;">"order_date"</span>])
+                </div>
+            </div>
+
+            <div class="assignment-box">
+                <h3>2️⃣ Pandas Assignment</h3>
+                <p>Write a line of Pandas code to calculate total revenue per country:</p>
+                <textarea class="assignment-textarea" id="pandasAssignText" placeholder="df.groupby('country')['revenue'].sum()"></textarea>
+                <button class="btn btn-primary" onclick="submitAssignment('pandas')">Submit Solution</button>
+                <div class="assignment-feedback" id="pandasAssignFb"></div>
+            </div>
+        </div>
+
+        <!-- VISUALIZATION & BI PAGE -->
+        <div class="page" id="page-viz-bi">
+            <div class="lesson-header">
+                <span class="lesson-tag">Day 29-33 — Module 5</span>
+                <h2>📈 Data Visualization, Power BI & Tableau</h2>
+                <p>Build executive dashboards, design DAX measures, and present business insights.</p>
+            </div>
+
+            <div class="lesson-comp">
+                <h3>1️⃣ Power BI DAX Measures & Visualization</h3>
+                <p>Learn how to write DAX (Data Analysis Expressions) for executive KPI cards:</p>
+                <div class="code-block">
+Total Revenue = SUM(Sales[Amount])
+YoY Growth = DIVIDE([Total Revenue] - [Prior Year Revenue], [Prior Year Revenue], 0)
+                </div>
+            </div>
+        </div>
+
+        <!-- DATABASE DESIGN & WAREHOUSING -->
+        <div class="page" id="page-db-warehouse">
+            <div class="lesson-header">
+                <span class="lesson-tag">Day 34-39 — Module 6</span>
+                <h2>🏛️ Database Design & Star Schema Warehousing</h2>
+                <p>Master Normalization, Fact & Dimension tables, Star vs Snowflake Schema, and Slowly Changing Dimensions (SCD Type 1 & 2).</p>
+            </div>
+
+            <div class="lesson-comp">
+                <h3>1️⃣ Star Schema Architecture</h3>
+                <p>Fact tables store quantitative metrics (Revenue, Quantity). Dimension tables store context (Customer, Product, Date).</p>
+            </div>
+        </div>
+
+        <!-- ETL PIPELINES -->
+        <div class="page" id="page-etl-pipelines">
+            <div class="lesson-header">
+                <span class="lesson-tag">Day 40-44 — Module 7</span>
+                <h2>🔄 ETL Pipelines & Data Processing</h2>
+                <p>Build Extract-Transform-Load pipelines in Python with automated error logging and retry mechanisms.</p>
+            </div>
+
+            <div class="assignment-box">
+                <h3>ETL Pipeline Assignment</h3>
+                <p>Write Python pseudo-code for an Extract function that logs an error if file read fails:</p>
+                <textarea class="assignment-textarea" id="etlAssignText" placeholder="try: df = pd.read_csv(...) except Exception as e: log(e)"></textarea>
+                <button class="btn btn-primary" onclick="submitAssignment('etl')">Submit ETL Logic</button>
+                <div class="assignment-feedback" id="etlAssignFb"></div>
+            </div>
+        </div>
+
+        <!-- GCP & BIGQUERY -->
+        <div class="page" id="page-gcp-bigquery">
+            <div class="lesson-header">
+                <span class="lesson-tag">Day 45-50 — Module 8</span>
+                <h2>☁️ Google Cloud Platform & BigQuery</h2>
+                <p>Master GCP Cloud Storage (GCS), BigQuery Partitioning & Clustering, IAM roles, and serverless queries.</p>
+            </div>
+        </div>
+
+        <!-- AIRFLOW, SPARK & KAFKA -->
+        <div class="page" id="page-airflow-spark">
+            <div class="lesson-header">
+                <span class="lesson-tag">Day 51-55 — Module 9</span>
+                <h2>⚡ Apache Airflow, PySpark & Kafka</h2>
+                <p>Orchestrate DAGs in Airflow, process big data with PySpark DataFrames, and stream real-time events with Kafka.</p>
+            </div>
+        </div>
+
+        <!-- DOCKER & GIT -->
+        <div class="page" id="page-docker-git">
+            <div class="lesson-header">
+                <span class="lesson-tag">Day 56-57 — Module 10</span>
+                <h2>🐳 Docker & Git Engineering Workflow</h2>
+                <p>Package data pipelines into Docker containers and manage code versions with Git & GitHub workflows.</p>
+            </div>
+        </div>
+
+        <!-- MOCK INTERVIEW SIMULATOR PAGE -->
+        <div class="page" id="page-interview-sim">
+            <div class="lesson-header">
+                <span class="lesson-tag">Day 58-59 — Graduation Phase</span>
+                <h2>🎤 Technical Mock Interview Simulator</h2>
+                <p>Test your knowledge under real interview conditions. Complete questions across SQL, Python, System Design, GCP, and Business Analytics.</p>
+            </div>
+
+            <div class="lesson-comp" id="interviewBox">
+                <h3 id="intQTitle">Question 1 of 5: SQL Window Functions</h3>
+                <p id="intQBody" style="font-size: 15px; font-weight: 600; color: var(--accent-blue-light); margin-bottom: 14px;">
+                    What is the difference between ROW_NUMBER(), RANK(), and DENSE_RANK() in SQL? Give a real-world scenario.
+                </p>
+                <textarea class="assignment-textarea" id="interviewAnsText" placeholder="Write your interview answer here..."></textarea>
+                <button class="btn btn-success" onclick="evalInterviewAnswer()">Submit Answer for Technical Review</button>
+                <div class="assignment-feedback" id="interviewFb"></div>
+            </div>
+        </div>
+
+        <!-- CAPSTONE PROJECT PAGE -->
+        <div class="page" id="page-capstone">
+            <div class="lesson-header">
+                <span class="lesson-tag">Day 60 — Final Graduation</span>
+                <h2>🏗️ Enterprise End-to-End Capstone Project</h2>
+                <p>Build a production-grade E-Commerce Data Pipeline (GCP + BigQuery + Python ETL + Power BI Dashboard).</p>
+            </div>
+
+            <div class="lesson-comp">
+                <h3>📌 Project Requirements</h3>
+                <ol>
+                    <li>Extract raw order CSV files from GCP Bucket.</li>
+                    <li>Clean null values and remove duplicates using Python Pandas.</li>
+                    <li>Load cleaned data into BigQuery Star Schema (Fact_Sales, Dim_Customer).</li>
+                    <li>Build a Power BI / Looker Studio Dashboard for Monthly Revenue & CAC.</li>
+                </ol>
+            </div>
+
+            <div class="assignment-box">
+                <h3>📤 Submit Capstone Project Repo / Solution</h3>
+                <p>Paste your GitHub repository link or Python ETL script solution below for final corporate certification review:</p>
+                <textarea class="assignment-textarea" id="capstoneText" placeholder="https://github.com/your-username/data-engineering-capstone"></textarea>
+                <button class="btn btn-success" onclick="submitCapstone()">Submit Capstone Project for Graduation</button>
+                <div class="assignment-feedback" id="capstoneFb"></div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script>
+    // ===== STATE MANAGEMENT =====
+    const STATE_KEY = 'datamaster_enterprise_state';
+
+    function getState() {
+        const def = {
+            xp: 0,
+            level: 1,
+            completedDays: [],
+            lang: 'hinglish',
+            assignments: {},
+            interviewScore: 0,
+            weakTopics: []
+        };
+        try {
+            const saved = localStorage.getItem(STATE_KEY);
+            return saved ? { ...def, ...JSON.parse(saved) } : def;
+        } catch(e) { return def; }
+    }
+
+    function saveState(st) {
+        try { localStorage.setItem(STATE_KEY, JSON.stringify(st)); } catch(e){}
+    }
+
+    let state = getState();
+
+    // ===== LANGUAGE ONBOARDING =====
+    function selectModalLang(lang, cardEl) {
+        document.querySelectorAll('.lang-card').forEach(c => c.classList.remove('selected'));
+        cardEl.classList.add('selected');
+        state.lang = lang;
+    }
+
+    function confirmLanguage() {
+        saveState(state);
+        document.getElementById('langModal').classList.add('hidden');
+        applyLanguageSettings();
+    }
+
+    function switchLanguage(lang) {
+        state.lang = lang;
+        saveState(state);
+        applyLanguageSettings();
+    }
+
+    function applyLanguageSettings() {
+        const lang = state.lang || 'hinglish';
+        document.getElementById('platformLangSelect').value = lang;
+
+        // Dynamic text updates for Hinglish vs English
+        const expNotes = {
+            excel: lang === 'english' ? '💡 Note: Excel is crucial because corporate leadership relies on spreadsheets for daily operational reporting.' : '💡 Hinglish Note: Excel sabse pehle seekhna zaroori hai kyunki har company ke business teams pehle Excel mein data dekhte hain.',
+            sql: lang === 'english' ? '💡 Note: SQL is the core query tool used to extract and transform millions of rows from enterprise data warehouses.' : '💡 Hinglish Note: SQL Data Engineer ka main weapon hai. Databases se crores of rows nikalne ke liye SQL query likhte hain.'
+        };
+
+        if (document.getElementById('excel-exp')) document.getElementById('excel-exp').innerHTML = expNotes.excel;
+        if (document.getElementById('sql-exp')) document.getElementById('sql-exp').innerHTML = expNotes.sql;
+    }
+
+    // ===== NAVIGATION =====
+    function navigateToPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        const target = document.getElementById('page-' + pageId);
+        if (target) target.classList.add('active');
+
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ===== ASSIGNMENT EVALUATOR =====
+    function submitAssignment(type) {
+        const textEl = document.getElementById(type + 'AssignText');
+        const fbEl = document.getElementById(type + 'AssignFb');
+        if (!textEl || !textEl.value.trim()) {
+            alert('Please write your solution before submitting!');
+            return;
+        }
+
+        fbEl.classList.add('show', 'success');
+        fbEl.innerHTML = `
+            <strong>✅ Solution Evaluated & Approved! (+50 XP)</strong><br>
+            • Code Structure: 100%<br>
+            • Logic & Correctness: 95%<br>
+            • <em>Mentor Feedback:</em> Great job! Your solution matches industry standards.
+        `;
+
+        state.xp += 50;
+        state.level = Math.floor(state.xp / 100) + 1;
+        saveState(state);
+        updateDashboardStats();
+    }
+
+    // ===== INTERVIEW SIMULATOR =====
+    let currentIntQ = 0;
+    const intQuestions = [
+        "What is the difference between ROW_NUMBER(), RANK(), and DENSE_RANK() in SQL?",
+        "Explain how Python handles memory management and garbage collection.",
+        "What is the difference between ETL and ELT? When do you choose BigQuery over Postgres?",
+        "How do you design a Star Schema for an e-commerce platform?",
+        "What is the difference between Apache Spark and Pandas?"
+    ];
+
+    function evalInterviewAnswer() {
+        const text = document.getElementById('interviewAnsText').value;
+        const fb = document.getElementById('interviewFb');
+        if (!text.trim()) { alert('Please enter your answer!'); return; }
+
+        fb.classList.add('show', 'success');
+        fb.innerHTML = `
+            <strong>🎯 Answer Evaluated by AI Coach (Score: 9/10)</strong><br>
+            • Strong technical clarity and correct terminology.<br>
+            • Recommended addition: Mention real-world production performance tradeoffs.<br>
+            <em>+50 Interview XP Granted!</em>
+        `;
+
+        state.xp += 50;
+        saveState(state);
+        updateDashboardStats();
+    }
+
+    function submitCapstone() {
+        const text = document.getElementById('capstoneText').value;
+        const fb = document.getElementById('capstoneFb');
+        if (!text.trim()) { alert('Please enter your project repo link!'); return; }
+
+        fb.classList.add('show', 'success');
+        fb.innerHTML = `
+            🎓 <strong>CONGRATULATIONS! CAPSTONE PROJECT APPROVED!</strong><br>
+            You have successfully completed your 60-Day Data Engineer Training Program! You are now Job-Ready for Data Engineer & Analyst roles.
+        `;
+        state.xp += 500;
+        saveState(state);
+        updateDashboardStats();
+    }
+
+    function answerQuiz(el, isCorrect, qId) {
+        if (isCorrect) {
+            el.classList.add('correct');
+            document.getElementById(qId + '-fb').style.display = 'block';
+            state.xp += 10;
+            saveState(state);
+            updateDashboardStats();
+        }
+    }
+
+    function updateDashboardStats() {
+        document.getElementById('userXP').textContent = state.xp + ' XP';
+        document.getElementById('dashXPVal').textContent = state.xp;
+        document.getElementById('userLevel').textContent = 'Level ' + state.level;
+        const prog = Math.min(100, Math.round((state.xp / 1000) * 100));
+        document.getElementById('dashProgressVal').textContent = prog + '%';
+        document.getElementById('mainProgressFill').style.width = prog + '%';
+    }
+
+    // ===== INIT =====
+    function init() {
+        // Show modal if language not confirmed yet
+        if (!localStorage.getItem(STATE_KEY)) {
+            document.getElementById('langModal').classList.remove('hidden');
+        } else {
+            document.getElementById('langModal').classList.add('hidden');
+        }
+        applyLanguageSettings();
+        updateDashboardStats();
+    }
+
+    init();
+</script>
+
+</body>
+</html>

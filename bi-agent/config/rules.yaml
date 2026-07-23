@@ -1,0 +1,134 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# RULE ENGINE — configurable business rules. Each rule is evaluated every run
+# against KPI values + row-level context. Fires an Alert -> bi.alerts_log ->
+# grounds the AI Insight/Recommendation engines.
+#
+# evaluator options:
+#   threshold_below / threshold_above   value vs threshold
+#   pct_drop / pct_spike                Δ% vs prior period vs threshold
+#   staleness                           time since an event exceeds threshold (minutes)
+#   missing_attribute                   count of records missing mandatory fields
+#   ratio_below / ratio_above           computed ratio vs threshold
+#   zscore_anomaly                      |z| over trailing window exceeds threshold
+#
+# severity: info | warn | critical      group_by: optional dimension to fire per-entity
+# ─────────────────────────────────────────────────────────────────────────────
+rules:
+
+  # 1. Deal created but no call within 30 minutes  (the brief's flagship rule)
+  - id: deal_no_call_30m
+    domain: crm
+    evaluator: staleness
+    event: deal_created
+    followup: first_call
+    threshold_minutes: 30
+    severity: warn
+    group_by: owner
+    message: "{count} deals created with no call within 30 min (owner: {owner})."
+    owner: Sales Manager
+
+  # 2. Store target attainment below 70%
+  - id: store_target_below_70
+    domain: sales
+    evaluator: threshold_below
+    kpi: store_target_attainment
+    threshold: 70
+    severity: critical
+    group_by: store
+    message: "{store} at {value:.0f}% of target (below 70%)."
+    owner: Store Head
+
+  # 3. Revenue drops more than 15% vs prior period
+  - id: revenue_drop_15
+    domain: sales
+    evaluator: pct_drop
+    kpi: revenue
+    threshold: 15
+    severity: critical
+    message: "Net revenue down {delta_pct:.1f}% vs prior period (₹{value:,.0f})."
+    owner: CEO
+
+  # 4. Inventory below threshold (low-stock SKUs spike)
+  - id: low_stock_threshold
+    domain: inventory
+    evaluator: threshold_above
+    kpi: low_stock_skus
+    threshold: 50
+    severity: warn
+    group_by: category
+    message: "{count} low-stock SKUs in {category} need refill."
+    owner: Inventory Manager
+
+  # 5. High return percentage
+  - id: high_return_rate
+    domain: sales
+    evaluator: threshold_above
+    kpi: return_rate
+    threshold: 12
+    severity: warn
+    group_by: store
+    message: "{store} return rate {value:.1f}% (above 12%)."
+    owner: Store Head
+
+  # 6. Product missing mandatory attributes
+  - id: product_missing_attrs
+    domain: product
+    evaluator: threshold_above
+    kpi: products_missing_attrs
+    threshold: 0
+    severity: info
+    message: "{value:.0f} active products missing mandatory attributes."
+    owner: Catalog Team
+
+  # 7. Marketing ROI collapse
+  - id: roas_below_target
+    domain: marketing
+    evaluator: threshold_below
+    kpi: marketing_roi
+    threshold: 3
+    severity: warn
+    group_by: channel
+    message: "{channel} ROAS {value:.1f}x (below 3x target)."
+    owner: Marketing Head
+
+  # 8. Contact-rate SLA breach
+  - id: contact_rate_low
+    domain: crm
+    evaluator: threshold_below
+    kpi: contact_rate
+    threshold: 70
+    severity: warn
+    message: "Deal contact rate {value:.0f}% (SLA 80%)."
+    owner: Sales Manager
+
+  # 9. Dead-stock creeping up
+  - id: dead_stock_high
+    domain: inventory
+    evaluator: threshold_above
+    kpi: dead_stock_pct
+    threshold: 25
+    severity: warn
+    group_by: category
+    message: "{category} dead-stock at {value:.1f}% of value (>25%)."
+    owner: Inventory Manager
+
+  # 10. Dispatch backlog / SLA
+  - id: dispatch_slow
+    domain: ops
+    evaluator: threshold_above
+    kpi: avg_dispatch_days
+    threshold: 10
+    severity: warn
+    message: "Avg dispatch {value:.1f} days (SLA 7)."
+    owner: Operations Head
+
+  # 11. Statistical anomaly guard (catches what fixed thresholds miss)
+  - id: revenue_anomaly
+    domain: sales
+    evaluator: zscore_anomaly
+    kpi: revenue
+    window_days: 30
+    threshold: 2.5
+    severity: info
+    message: "Revenue is a statistical outlier (z={zscore:.1f}) vs last 30 days."
+    owner: CEO

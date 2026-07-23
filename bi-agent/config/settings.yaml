@@ -1,0 +1,67 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Lucira BI Copilot — global settings.  Wiring lives here; secrets in Secret Manager.
+# ─────────────────────────────────────────────────────────────────────────────
+project: lucirajewelry-prod
+location: asia-south1
+timezone: Asia/Kolkata
+
+bigquery:
+  bi_dataset: bi                      # the semantic layer this agent owns
+  max_bytes_billed: 5000000000        # 5 GB hard cap per query (cost guard)
+
+storage:
+  snapshot_bucket: lucira-dashboards
+  snapshot_path: bi/latest.json       # dashboard reads this
+  reports_prefix: bi/reports          # PDFs/Excel archived here by date
+
+schedule:
+  run_at: "0 10 * * *"                # 10:00 local (IST) daily — the AI CBO's autonomous run
+  window_days_trend: 400              # long window for sparklines/trends
+  window_days_delta: 2                # yesterday vs day-before for the daily delta
+
+# The single AI Chief Business Officer identity (this agent REPLACES any prior BI agent).
+agent:
+  name: "AI Business Monitor"
+  role: "AI Chief Business Officer (AI CBO)"
+  status_file: status.json            # local operational state the desktop panel reads
+
+# Data sources / dashboards the CBO monitors. Add a URL here and it's included automatically.
+dashboards:
+  - {name: "Sales Intelligence", key: sales,     url: "https://storage.googleapis.com/lucira-dashboards/sales/latest.json"}
+  - {name: "GA4 Analytics",      key: marketing,  url: "https://storage.googleapis.com/lucirajewelry-prod-dashboards/ga4/latest-000000000000.json"}
+  - {name: "Inventory Intelligence", key: inventory, url: "https://inventory-intel-api-3mvv5mdr2q-el.a.run.app/?action=app"}
+  - {name: "Deals vs Call (CRM)", key: crm,       url: "https://zoho-login-dashboard-385594025448.asia-south1.run.app/dashboard"}
+  - {name: "GCP Cost",           key: finance,    url: ""}
+
+llm:
+  provider: gemini                    # gemini | claude | none(rule-based fallback)
+  model: gemini-2.0-flash
+  temperature: 0.2
+  max_output_tokens: 2048
+  prompt_dir: config/prompts
+  # api key injected as env LLM_API_KEY (Secret Manager). If absent -> rule-based narrative.
+
+reports:
+  formats: [pdf, excel, summary]
+  brand:
+    name: Lucira Jewelry
+    primary: "#C9A24B"                # gold
+    accent:  "#0B6E4F"                # emerald
+    currency: INR
+
+notifications:
+  email:
+    enabled: true
+    provider: smtp                    # smtp | sendgrid
+    from: "bi-copilot@lucirajewelry.com"
+    recipients: ["ceo@lucirajewelry.com", "marketing@lucirajewelry.com"]
+    attach: [pdf, excel]
+  whatsapp:
+    enabled: false                    # flip on after vendor onboarding
+    provider: cloud_api               # cloud_api | gupshup | interakt
+    template: daily_mis_summary
+    recipients: ["+9198XXXXXXXX"]
+
+logging:
+  level: INFO
+  json: true                          # structured logs for Cloud Logging

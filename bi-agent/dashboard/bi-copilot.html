@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucira BI Copilot — Executive Command Center</title>
+<!-- BI_CONFIG_INJECT (Pages CI injects window.__BI_CONFIG__ before this marker) -->
+<style>
+  :root{
+    --gold:#C9A24B; --gold-soft:#e6c976; --emerald:#0B6E4F; --royal:#3b5bdb; --rose:#c96b7a;
+    --bg:#0c0d11; --bg2:#121319; --surface:#161822; --surface2:#1d2030; --line:#2a2e3f;
+    --text:#eef0f6; --muted:#9aa1b5; --faint:#6b7185;
+    --good:#2fbf71; --watch:#e0a13c; --risk:#e0574c;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --bg:#f4f2ec; --bg2:#eceae2; --surface:#ffffff; --surface2:#f7f5ef; --line:#e2ddd0;
+    --text:#20232c; --muted:#5c6270; --faint:#8b90a0; --shadow:0 8px 24px rgba(60,50,20,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;min-height:100vh}
+  a{color:inherit}
+  .serif{font-family:"Iowan Old Style",Georgia,"Times New Roman",serif}
+
+  /* ---- loading splash ---- */
+  #splash{position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:18px;background:var(--bg);transition:opacity .5s}
+  #splash.hide{opacity:0;pointer-events:none}
+  .mono{width:74px;height:74px;border-radius:20px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--gold),var(--emerald));box-shadow:var(--shadow);
+    font-family:Georgia,serif;font-size:42px;font-weight:700;color:#0c0d11;animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .splash-t{letter-spacing:.28em;text-transform:uppercase;font-size:12px;color:var(--muted)}
+
+  /* ---- header ---- */
+  header{position:sticky;top:0;z-index:20;backdrop-filter:blur(14px);
+    background:color-mix(in srgb,var(--surface) 82%,transparent);border-bottom:1px solid var(--line)}
+  .hwrap{max-width:1320px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;gap:16px}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:700;font-size:17px}
+  .blogo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--emerald));
+    display:flex;align-items:center;justify-content:center;color:#0c0d11;font-family:Georgia,serif;font-weight:700}
+  .brand b{color:var(--gold)} .brand span{color:var(--text);font-weight:600}
+  .htag{font-size:11px;color:var(--faint);font-weight:500;margin-top:1px}
+  .spacer{flex:1}
+  .pill{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:20px;
+    background:var(--surface2);border:1px solid var(--line);font-size:12px;color:var(--muted)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 8px var(--good)}
+  .dot.sample{background:var(--watch);box-shadow:0 0 8px var(--watch)}
+  .iconbtn{cursor:pointer;background:var(--surface2);border:1px solid var(--line);color:var(--text);
+    width:38px;height:38px;border-radius:10px;font-size:16px;display:flex;align-items:center;justify-content:center}
+  .iconbtn:hover{border-color:var(--gold)}
+  .clock{font-variant-numeric:tabular-nums;font-size:12px;color:var(--muted)}
+
+  /* ---- nav ---- */
+  nav{max-width:1320px;margin:0 auto;padding:8px 22px 0;display:flex;gap:6px;flex-wrap:wrap}
+  .tab{cursor:pointer;padding:9px 15px;border-radius:10px 10px 0 0;font-size:13.5px;font-weight:600;
+    color:var(--muted);border:1px solid transparent;border-bottom:none;white-space:nowrap}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--gold);background:var(--surface);border-color:var(--line)}
+
+  main{max-width:1320px;margin:0 auto;padding:22px}
+  .view{display:none;animation:fade .35s} .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* ---- primitives ---- */
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:1080px){.g4{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr}}
+  @media(max-width:680px){.g4,.g2{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+  .card h3{margin:0 0 3px;font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+  .sec-title{display:flex;align-items:center;gap:10px;margin:26px 0 12px;font-size:15px;font-weight:700}
+  .sec-title:first-child{margin-top:4px}
+  .sec-title .bar{width:4px;height:18px;border-radius:2px;background:var(--gold)}
+
+  /* KPI card */
+  .kpi{position:relative;overflow:hidden}
+  .kpi .val{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-top:6px}
+  .kpi .row{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:6px}
+  .delta{font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:3px}
+  .delta.up{color:var(--good)} .delta.down{color:var(--risk)}
+  .spark{width:100%;height:34px;margin-top:10px;display:block}
+  .statusbar{position:absolute;left:0;top:0;bottom:0;width:4px}
+  .s-good{background:var(--good)} .s-watch{background:var(--watch)} .s-risk{background:var(--risk)}
+  .sub{font-size:11.5px;color:var(--faint);margin-top:4px}
+
+  .headline{font-size:22px;font-weight:700;line-height:1.35;margin:2px 0 4px}
+  .heroband{background:linear-gradient(120deg,color-mix(in srgb,var(--gold) 16%,var(--surface)),var(--surface));
+    border:1px solid var(--line);border-radius:20px;padding:24px;margin-bottom:18px;box-shadow:var(--shadow)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .chip{font-size:12px;padding:5px 11px;border-radius:16px;background:var(--surface2);border:1px solid var(--line);color:var(--muted)}
+
+  /* lists */
+  .item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .item:last-child{border-bottom:none}
+  .badge{font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;height:fit-content}
+  .b-critical{background:color-mix(in srgb,var(--risk) 22%,transparent);color:var(--risk)}
+  .b-warn{background:color-mix(in srgb,var(--watch) 22%,transparent);color:var(--watch)}
+  .b-info{background:color-mix(in srgb,var(--royal) 22%,transparent);color:#8ea2ff}
+  .b-p1{background:color-mix(in srgb,var(--risk) 22%,transparent);color:var(--risk)}
+  .b-p2{background:color-mix(in srgb,var(--watch) 22%,transparent);color:var(--watch)}
+  .b-p3{background:color-mix(in srgb,var(--emerald) 26%,transparent);color:#4fd6a0}
+  .item .msg{font-size:13.5px;line-height:1.5} .item .meta{font-size:11.5px;color:var(--faint);margin-top:3px}
+  .conf{font-size:10.5px;color:var(--faint);border:1px solid var(--line);border-radius:12px;padding:1px 7px}
+
+  .why{font-size:13px;color:var(--muted);line-height:1.55;margin-top:6px}
+  .why b{color:var(--text)}
+  .empty{color:var(--faint);font-size:13px;padding:20px;text-align:center}
+
+  /* Ask-AI FAB */
+  #fab{position:fixed;right:22px;bottom:22px;z-index:40;width:56px;height:56px;border-radius:50%;
+    background:linear-gradient(135deg,var(--gold),var(--emerald));color:#0c0d11;border:none;cursor:pointer;
+    font-size:24px;box-shadow:var(--shadow)}
+  #ask{position:fixed;right:22px;bottom:88px;z-index:40;width:min(390px,92vw);max-height:70vh;display:none;
+    flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    box-shadow:var(--shadow);overflow:hidden}
+  #ask.open{display:flex}
+  .ask-h{padding:13px 15px;border-bottom:1px solid var(--line);font-weight:700;display:flex;align-items:center;gap:8px}
+  .ask-body{padding:14px;overflow:auto;flex:1;font-size:13.5px;line-height:1.6}
+  .ask-in{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+  .ask-in input{flex:1;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--text);font-size:13px}
+  .ask-in button{background:var(--gold);border:none;border-radius:10px;padding:0 15px;font-weight:700;cursor:pointer;color:#0c0d11}
+  .qchip{display:inline-block;font-size:12px;padding:5px 10px;margin:3px 4px 3px 0;border-radius:14px;
+    background:var(--surface2);border:1px solid var(--line);cursor:pointer;color:var(--muted)}
+  .qchip:hover{border-color:var(--gold);color:var(--text)}
+  .amsg{margin:8px 0;padding:10px 12px;border-radius:10px;background:var(--surface2)}
+  .amsg.u{background:color-mix(in srgb,var(--gold) 14%,var(--surface2));text-align:right}
+  table.dt{width:100%;border-collapse:collapse;font-size:13px}
+  table.dt th,table.dt td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  table.dt th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
+  .num{font-variant-numeric:tabular-nums;text-align:right}
+  footer{max-width:1320px;margin:10px auto 40px;padding:0 22px;color:var(--faint);font-size:11.5px}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="mono">L</div>
+  <div class="splash-t">Lucira BI Copilot</div>
+</div>
+
+<header>
+  <div class="hwrap">
+    <div class="brand">
+      <div class="blogo">L</div>
+      <div>
+        <div><b>Lucira</b> <span>BI Copilot</span></div>
+        <div class="htag">Executive Command Center · MIS Automation</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="pill"><span class="dot" id="srcdot"></span><span id="srctxt">Loading…</span></div>
+    <div class="clock" id="clock"></div>
+    <button class="iconbtn" id="themebtn" title="Toggle theme">◐</button>
+  </div>
+  <nav id="nav"></nav>
+</header>
+
+<main id="main"></main>
+<footer id="foot"></footer>
+
+<button id="fab" title="Ask the Copilot">✨</button>
+<div id="ask">
+  <div class="ask-h">✨ Ask the Copilot <span class="spacer" style="flex:1"></span>
+    <span class="iconbtn" id="askclose" style="width:28px;height:28px;font-size:14px">✕</span></div>
+  <div class="ask-body" id="askbody"></div>
+  <div class="ask-in"><input id="askin" placeholder="Ask about revenue, alerts, stores…"><button id="asksend">Ask</button></div>
+</div>
+
+<script>
+/* ============================================================================
+   CONFIG — snapshot-first (house pattern). Empty SNAPSHOT_URL => sample data.
+   ========================================================================== */
+const CONFIG = {
+  SNAPSHOT_URL: "https://storage.googleapis.com/lucira-dashboards/bi/latest.json",  // LIVE
+  ASK_API: "",        // optional POST /ask endpoint for generative answers
+  CURRENCY: "INR"
+};
+if (window.__BI_CONFIG__) Object.assign(CONFIG, window.__BI_CONFIG__);
+
+/* ============================================================================
+   FORMAT HELPERS
+   ========================================================================== */
+const fmtINR = v => {
+  const n = Math.abs(v);
+  if (n >= 1e7) return "₹" + (v/1e7).toFixed(2) + " Cr";
+  if (n >= 1e5) return "₹" + (v/1e5).toFixed(2) + " L";
+  if (n >= 1e3) return "₹" + (v/1e3).toFixed(1) + "K";
+  return "₹" + Math.round(v).toLocaleString("en-IN");
+};
+const fmtVal = (v, unit) => {
+  if (v == null || isNaN(v)) return "—";
+  if (unit === "INR") return fmtINR(v);
+  if (unit === "pct") return v.toFixed(1) + "%";
+  if (unit === "days") return v.toFixed(1) + "d";
+  if (unit === "ratio") return v.toFixed(2) + "×";
+  return Math.round(v).toLocaleString("en-IN");
+};
+const pct = v => (v==null||isNaN(v)) ? "" : (v>=0?"+":"") + v.toFixed(1) + "%";
+const cap = s => s ? s[0].toUpperCase()+s.slice(1) : s;
+
+/* ============================================================================
+   DETERMINISTIC SAMPLE (mulberry32) — matches the bi/latest.json contract
+   ========================================================================== */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function spark(seed, base, drift){const r=mulberry32(seed);const out=[];let v=base;for(let i=0;i<30;i++){v=Math.max(base*.4, v*(1+(r()-.5)*.18)+drift);out.push(+v.toFixed(2))}return out}
+
+function sampleData(){
+  const stores=["Flagship","Park Ave","City Centre","North Mall","South Plaza","Riverside","Old Town"];
+  const cats=["Gold","Diamond","Platinum","Bridal","Daily Wear"];
+  const channels=["Direct","Organic","Meta Ads","Google Ads","Referral"];
+  const owners=["Aarav","Diya","Kabir","Meera","Rohan"];
+  let s=101;
+  const K=(key,label,domain,unit,value,prev,target,st)=>{
+    const sp=spark(s+=7,value,(value-prev)/30);
+    return {key,label,domain,unit,dimension:null,dim_value:null,value,prev,
+      delta_pct:prev?((value-prev)/prev*100):null,target,
+      attainment_pct:target?(value/target*100):null,status:st,sparkline:sp};
+  };
+  const kpis=[
+    // sales
+    K("revenue","Net Revenue","sales","INR",8420000,9760000,null,"risk"),
+    K("orders","Orders","sales","count",412,455,null,"watch"),
+    K("aov","Average Order Value","sales","INR",20437,21450,null,"good"),
+    K("new_customers","New Customers","sales","count",188,171,null,"good"),
+    K("repeat_customers","Repeat Customers","sales","count",121,133,null,"watch"),
+    K("returns_value","Returns Value","sales","INR",512000,388000,null,"watch"),
+    K("return_rate","Return Rate","sales","pct",6.1,4.0,5,"risk"),
+    // ops
+    K("pending_mto","Pending MTO","ops","count",57,44,null,"watch"),
+    K("dispatch","Dispatched Orders","ops","count",389,401,null,"good"),
+    K("avg_dispatch_days","Avg Days to Dispatch","ops","days",8.4,7.1,7,"watch"),
+    // crm
+    K("deals","Deals Created","crm","count",214,198,null,"good"),
+    K("calls","Calls","crm","count",603,640,null,"watch"),
+    K("contact_rate","Deal Contact Rate","crm","pct",63,71,80,"risk"),
+    K("conversion","Conversion Rate","crm","pct",22.4,24.9,25,"watch"),
+    // marketing
+    K("sessions","Sessions","marketing","count",41200,38900,null,"good"),
+    K("marketing_conversion","Site Conversion","marketing","pct",1.28,1.41,1.5,"watch"),
+    K("ad_spend","Ad Spend","marketing","INR",1180000,1050000,null,"watch"),
+    K("marketing_roi","Marketing ROI (ROAS)","marketing","ratio",2.7,3.6,4,"risk"),
+    // inventory
+    K("inventory_value","Inventory Value","inventory","INR",176500000,178200000,null,"good"),
+    K("inventory_health","Inventory Health Score","inventory","pct",68,74,75,"watch"),
+    K("low_stock_skus","Low-Stock SKUs","inventory","count",63,41,null,"risk"),
+    K("dead_stock_pct","Dead-Stock %","inventory","pct",21.5,18.2,10,"watch"),
+    // product
+    K("products_missing_attrs","Products Missing Attributes","product","count",34,41,null,"watch"),
+  ];
+  // a few sliced KPIs (store target attainment)
+  const r=mulberry32(9);
+  stores.forEach((st,i)=>{
+    const att=[62,88,71,95,58,80,104][i];
+    kpis.push({key:"store_target_attainment",label:"Store Target Attainment",domain:"sales",
+      unit:"pct",dimension:"store",dim_value:st,value:att,prev:att+ (r()-.5)*10,
+      delta_pct:(r()-.5)*12,target:100,attainment_pct:att,
+      status:att<70?"risk":att<85?"watch":"good",sparkline:spark(200+i,att,0)});
+  });
+  cats.forEach((c,i)=>{
+    const rr=[9.8,4.1,3.2,7.6,5.0][i];
+    kpis.push({key:"return_rate",label:"Return Rate",domain:"sales",unit:"pct",dimension:"category",
+      dim_value:c,value:rr,prev:rr-1,delta_pct:8,target:5,attainment_pct:null,
+      status:rr>8?"risk":rr>6?"watch":"good",sparkline:spark(300+i,rr,0)});
+  });
+
+  const alerts=[
+    {rule_id:"revenue_drop_15",severity:"critical",domain:"sales",owner:"CEO",
+     message:"Net revenue down 13.7% vs prior period (₹84.2L) — approaching the 15% alert threshold."},
+    {rule_id:"store_target_below_70",severity:"critical",domain:"sales",owner:"Store Head",
+     message:"South Plaza at 58% of target; Flagship at 62% — both below 70%."},
+    {rule_id:"contact_rate_low",severity:"warn",domain:"crm",owner:"Sales Manager",
+     message:"Deal contact rate 63% (SLA 80%) — 79 deals uncontacted."},
+    {rule_id:"roas_below_target",severity:"warn",domain:"marketing",owner:"Marketing Head",
+     message:"Meta Ads ROAS 2.7× (below 3× target) while spend rose 12%."},
+    {rule_id:"low_stock_threshold",severity:"warn",domain:"inventory",owner:"Inventory Manager",
+     message:"63 low-stock SKUs need refill — 19 are in Bridal ahead of season."},
+    {rule_id:"high_return_rate",severity:"warn",domain:"sales",owner:"Store Head",
+     message:"Gold category return rate 9.8% (above 12%… trending up)."},
+    {rule_id:"dispatch_slow",severity:"warn",domain:"ops",owner:"Operations Head",
+     message:"Avg dispatch 8.4 days (SLA 7); MTO backlog at 57 open jobs."},
+    {rule_id:"product_missing_attrs",severity:"info",domain:"product",owner:"Catalog Team",
+     message:"34 active products missing mandatory attributes (metal/weight/image)."},
+  ];
+  const insights=[
+    {kpi:"revenue",domain:"sales",confidence:"high",
+     what:"Net revenue fell 13.7% to ₹84.2L vs the prior week.",
+     why:"Two flagship-tier stores (South Plaza, Flagship) missed target by 30–40%, and Meta Ads ROAS dropped to 2.7×, cutting paid-driven orders.",
+     impact:"≈₹13.4L of revenue at risk if the store + ROAS trend holds through the week."},
+    {kpi:"contact_rate",domain:"crm",confidence:"high",
+     what:"Deal contact rate slipped to 63%, 17 points under the 80% SLA.",
+     why:"79 deals had no call logged within 30 minutes; concentrated in two owners' queues on high-traffic afternoons.",
+     impact:"Historically ~22% of contacted deals convert — 79 uncontacted ≈ ₹3.5L unrealised pipeline."},
+    {kpi:"dead_stock_pct",domain:"inventory",confidence:"medium",
+     what:"Dead-stock rose to 21.5% of inventory value while health dipped to 68.",
+     why:"Aged Daily-Wear and Gold styles with no movement in 180+ days, even as 63 fast movers went low-stock — a mix imbalance.",
+     impact:"₹37.9L of capital is locked in non-moving stock that could fund refills."},
+    {kpi:"return_rate",domain:"sales",confidence:"medium",
+     what:"Return rate climbed to 6.1%, led by Gold at 9.8%.",
+     why:"Gold returns cluster around sizing/finish complaints at two stores — a quality or fitting-process signal.",
+     impact:"₹5.1L in returns this period, up ₹1.2L; erodes the AOV gain."},
+  ];
+  const recommendations=[
+    {action:"Call the 79 un-contacted deals today, starting with the two owners' afternoon queues.",
+     rationale:"Contact rate 63% vs 80% SLA; contacted deals convert ~22%.",priority:"P1",owner:"Sales Manager",eta_days:1,est_value_inr:350000},
+    {action:"Run a target-recovery push at South Plaza & Flagship (staffing + top-SKU focus).",
+     rationale:"Both <70% of target and driving most of the revenue drop.",priority:"P1",owner:"Store Head",eta_days:2,est_value_inr:800000},
+    {action:"Pause/rebalance the underperforming Meta Ads sets; shift budget to 3×+ ROAS campaigns.",
+     rationale:"Meta ROAS 2.7× on rising spend.",priority:"P2",owner:"Marketing Head",eta_days:3,est_value_inr:260000},
+    {action:"Trigger refill POs for the 63 low-stock SKUs (prioritise the 19 Bridal styles pre-season).",
+     rationale:"Low-stock spike ahead of Bridal demand.",priority:"P2",owner:"Inventory Manager",eta_days:5,est_value_inr:null},
+    {action:"Launch a clearance on 180-day dead-stock to release ₹37.9L of locked capital.",
+     rationale:"Dead-stock 21.5% vs 10% target.",priority:"P3",owner:"Inventory Manager",eta_days:14,est_value_inr:1200000},
+    {action:"Complete mandatory attributes on the 34 flagged products to restore catalog/feed health.",
+     rationale:"Missing metal/weight/image blocks ad feeds & search.",priority:"P3",owner:"Catalog Team",eta_days:4,est_value_inr:null},
+  ];
+  const today=new Date();
+  return {
+    meta:{run_id:"sample",run_date:today.toISOString().slice(0,10),
+      period:"Last 7 days", generated_at:today.toISOString(),
+      headline:"Revenue is down 13.7% this week — driven by two under-target flagship stores and a Meta Ads ROAS slide; CRM follow-up is the fastest recovery lever."},
+    kpis, alerts, insights, recommendations, exec_summary:"",
+    deal_followup:{ meta:{sla_min:30,window_days:7}, available:true,
+      today:{deals:262,attended:167,not_attended:95,sla_breaches:90,avg_first_response_min:141},
+      agents:[
+        {agent:"Shamwail Ansari",deals:269,attended:194,not_attended:75,attend_rate:72.1,avg_first_response_min:564,sla_breaches:146,calls:565,avg_call_sec:27,status:"red"},
+        {agent:"Sheetal Parve",deals:333,attended:263,not_attended:70,attend_rate:79.0,avg_first_response_min:940,sla_breaches:165,calls:591,avg_call_sec:23,status:"red"},
+        {agent:"Chembur Store",deals:104,attended:40,not_attended:64,attend_rate:38.5,avg_first_response_min:537,sla_breaches:36,calls:78,avg_call_sec:18,status:"red"},
+        {agent:"Shreekant Balwat",deals:334,attended:282,not_attended:52,attend_rate:84.4,avg_first_response_min:296,sla_breaches:183,calls:1056,avg_call_sec:21,status:"red"},
+        {agent:"Noida Store",deals:225,attended:177,not_attended:48,attend_rate:78.7,avg_first_response_min:592,sla_breaches:149,calls:697,avg_call_sec:21,status:"red"},
+        {agent:"Farha Ansari",deals:139,attended:100,not_attended:39,attend_rate:71.9,avg_first_response_min:454,sla_breaches:43,calls:172,avg_call_sec:16,status:"red"}],
+      actions:[
+        {priority:"P1",agent:"Shamwail Ansari",action:"Shamwail Ansari: 75 deals un-attended in 7d — call them today.",owner:"Sales Manager"},
+        {priority:"P2",agent:"Sheetal Parve",action:"Coach Sheetal Parve on first response — avg 940 min vs 30 min SLA.",owner:"Sales Manager"}]}
+  };
+}
+
+/* ============================================================================
+   STATE + LOADER
+   ========================================================================== */
+let DATA = null, LIVE = false;
+
+async function loadData(){
+  if (CONFIG.SNAPSHOT_URL){
+    try{
+      const r = await fetch(CONFIG.SNAPSHOT_URL, {cache:"no-store"});
+      if (r.ok){ DATA = await r.json(); LIVE = true; return; }
+    }catch(e){ console.warn("snapshot fetch failed, using sample", e); }
+  }
+  DATA = sampleData(); LIVE = false;
+}
+
+const kByKey = k => DATA.kpis.find(x=>x.key===k && x.dimension==null);
+const kByDomain = d => DATA.kpis.filter(x=>x.domain===d && x.dimension==null);
+const slices = k => DATA.kpis.filter(x=>x.key===k && x.dimension!=null);
+
+/* ============================================================================
+   SVG CHARTS (hand-rolled, theme-aware)
+   ========================================================================== */
+function sparkSVG(pts, status){
+  if(!pts||!pts.length) return "";
+  if(pts.length===1) pts=[pts[0],pts[0]];   // a single point → flat line (avoid /0 → NaN)
+  const w=220,h=34,mn=Math.min(...pts),mx=Math.max(...pts),rg=(mx-mn)||1;
+  const col= status==="risk"?"var(--risk)":status==="watch"?"var(--watch)":"var(--good)";
+  const X=i=>i/(pts.length-1)*w, Y=v=>h-2-((v-mn)/rg)*(h-6);
+  const d=pts.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
+  const area=d+`L${w} ${h} L0 ${h} Z`;
+  const id="g"+Math.random().toString(36).slice(2,7);
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="${col}" stop-opacity=".28"/><stop offset="1" stop-color="${col}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#${id})"/><path d="${d}" fill="none" stroke="${col}" stroke-width="2"/></svg>`;
+}
+function barSVG(rows, unit){ // rows: [{label,value,status}]
+  const w=520,bh=26,gap=10,h=rows.length*(bh+gap);
+  const mx=Math.max(...rows.map(r=>r.value),1);
+  let out=`<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">`;
+  rows.forEach((r,i)=>{
+    const y=i*(bh+gap), bw=Math.max(2,(r.value/mx)*(w-190));
+    const col=r.status==="risk"?"var(--risk)":r.status==="watch"?"var(--watch)":"var(--good)";
+    out+=`<text x="0" y="${y+bh/2+4}" font-size="12" fill="var(--muted)">${r.label}</text>
+      <rect x="120" y="${y}" width="${bw}" height="${bh}" rx="6" fill="${col}" opacity=".85"/>
+      <text x="${120+bw+8}" y="${y+bh/2+4}" font-size="12" fill="var(--text)">${fmtVal(r.value,unit)}</text>`;
+  });
+  return out+`</svg>`;
+}
+function donutSVG(rows){ // rows:[{label,value,color}]
+  const tot=rows.reduce((a,b)=>a+b.value,0)||1;let a=-Math.PI/2;const R=64,r=40,C=80;
+  let out=`<svg viewBox="0 0 260 160" width="100%" height="160">`;
+  rows.forEach(s=>{
+    const frac=s.value/tot,a2=a+frac*2*Math.PI;
+    const x1=C+R*Math.cos(a),y1=C+R*Math.sin(a),x2=C+R*Math.cos(a2),y2=C+R*Math.sin(a2);
+    const xi2=C+r*Math.cos(a2),yi2=C+r*Math.sin(a2),xi1=C+r*Math.cos(a),yi1=C+r*Math.sin(a);
+    const large=frac>.5?1:0;
+    out+=`<path d="M${x1} ${y1} A${R} ${R} 0 ${large} 1 ${x2} ${y2} L${xi2} ${yi2} A${r} ${r} 0 ${large} 0 ${xi1} ${yi1} Z" fill="${s.color}"/>`;
+    a=a2;
+  });
+  rows.forEach((s,i)=>{out+=`<rect x="170" y="${20+i*24}" width="12" height="12" rx="3" fill="${s.color}"/>
+    <text x="188" y="${30+i*24}" font-size="12" fill="var(--muted)">${s.label} · ${s.value}</text>`});
+  return out+`</svg>`;
+}
+
+/* ============================================================================
+   RENDER: KPI card
+   ========================================================================== */
+function kpiCard(k){
+  const good = k.delta_pct==null ? true :
+    (["return_rate","returns_value","ad_spend","avg_dispatch_days","pending_mto","low_stock_skus","dead_stock_pct","products_missing_attrs"].includes(k.key)
+      ? k.delta_pct<=0 : k.delta_pct>=0);
+  const arrow = k.delta_pct==null?"" : good?"▲":"▼";
+  const att = k.attainment_pct!=null ? `<div class="sub">${k.attainment_pct.toFixed(0)}% of target</div>` : "";
+  return `<div class="card kpi">
+    <div class="statusbar s-${k.status}"></div>
+    <h3>${k.label}</h3>
+    <div class="val">${fmtVal(k.value,k.unit)}</div>
+    <div class="row">
+      <span class="delta ${good?"up":"down"}">${arrow} ${pct(k.delta_pct)}</span>
+      <span class="sub">prev ${fmtVal(k.prev,k.unit)}</span>
+    </div>
+    ${att}
+    ${sparkSVG(k.sparkline,k.status)}
+  </div>`;
+}
+
+/* ============================================================================
+   VIEWS
+   ========================================================================== */
+const TABS = [
+  ["home","Executive Summary"],["focus","⚡ Yesterday & Focus"],["deals","📞 Deal Follow-up"],["sales","Sales"],["marketing","Marketing"],["crm","CRM"],
+  ["inventory","Inventory"],["product","Product"],["ops","Operations"],
+  ["insights","AI Insights"],["alerts","Alerts"],["reco","Recommendations"]
+];
+
+function domainView(domain, extra=""){
+  const cards = kByDomain(domain).map(kpiCard).join("");
+  return `<div class="grid g4">${cards||`<div class="empty">No KPIs for this domain.</div>`}</div>${extra}`;
+}
+
+function viewHome(){
+  const m=DATA.meta;
+  const strip=["revenue","orders","aov","conversion","inventory_health"]
+    .map(kByKey).filter(Boolean).map(kpiCard).join("");
+  const crit=DATA.alerts.filter(a=>a.severity==="critical");
+  const wins=DATA.kpis.filter(k=>k.dimension==null&&k.status==="good").slice(0,4);
+  const acts=DATA.recommendations.slice(0,3);
+  return `
+  <div class="heroband">
+    <div class="chip" style="background:color-mix(in srgb,var(--gold) 20%,transparent);color:var(--gold);border-color:transparent">${m.period}</div>
+    <div class="headline serif">${m.headline}</div>
+    <div class="chips">
+      <span class="chip">${DATA.alerts.length} alerts · ${crit.length} critical</span>
+      <span class="chip">${DATA.insights.length} AI insights</span>
+      <span class="chip">${DATA.recommendations.length} recommendations</span>
+      <span class="chip">Generated ${new Date(m.generated_at).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"})} IST</span>
+    </div>
+  </div>
+  <div class="sec-title"><span class="bar"></span>Headline KPIs</div>
+  <div class="grid" style="grid-template-columns:repeat(5,1fr)">${strip}</div>
+  <div class="grid g2" style="margin-top:20px">
+    <div class="card">
+      <div class="sec-title" style="margin:0 0 6px"><span class="bar" style="background:var(--risk)"></span>Critical Watch</div>
+      ${crit.length?crit.map(a=>`<div class="item"><span class="badge b-${a.severity}">${a.severity}</span>
+        <div><div class="msg">${a.message}</div><div class="meta">${cap(a.domain)} · owner: ${a.owner}</div></div></div>`).join("")
+        :`<div class="empty">No critical alerts. 🎉</div>`}
+    </div>
+    <div class="card">
+      <div class="sec-title" style="margin:0 0 6px"><span class="bar" style="background:var(--good)"></span>What's Working</div>
+      ${wins.length?wins.map(k=>`<div class="item"><span class="badge b-p3">good</span>
+        <div><div class="msg">${k.label} at ${fmtVal(k.value,k.unit)} <span class="delta up">▲ ${pct(k.delta_pct)}</span></div>
+        <div class="meta">${cap(k.domain)}</div></div></div>`).join("")
+        :`<div class="empty">—</div>`}
+    </div>
+  </div>
+  <div class="card" style="margin-top:20px">
+    <div class="sec-title" style="margin:0 0 6px"><span class="bar"></span>Top Actions Today</div>
+    ${acts.map(r=>`<div class="item"><span class="badge b-${r.priority.toLowerCase()}">${r.priority}</span>
+      <div><div class="msg">${r.action}</div>
+      <div class="meta">${r.owner} · ${r.eta_days}d${r.est_value_inr?" · ~"+fmtINR(r.est_value_inr)+" impact":""}</div></div></div>`).join("")}
+  </div>`;
+}
+
+function viewSales(){
+  const st=slices("store_target_attainment").map(s=>({label:s.dim_value,value:s.value,status:s.status}))
+    .sort((a,b)=>a.value-b.value);
+  const rr=slices("return_rate").map(s=>({label:s.dim_value,value:s.value,status:s.status}));
+  const extra=`<div class="grid g2" style="margin-top:18px">
+    <div class="card"><div class="sec-title" style="margin:0 0 10px"><span class="bar"></span>Store Target Attainment</div>${barSVG(st,"pct")}</div>
+    <div class="card"><div class="sec-title" style="margin:0 0 10px"><span class="bar"></span>Return Rate by Category</div>${barSVG(rr,"pct")}</div>
+  </div>`;
+  return domainView("sales", extra);
+}
+function viewMarketing(){
+  const roas=kByKey("marketing_roi"),spend=kByKey("ad_spend"),sess=kByKey("sessions");
+  const donut=donutSVG([
+    {label:"Meta Ads",value:48,color:"var(--royal)"},{label:"Google",value:31,color:"var(--gold)"},
+    {label:"Organic",value:14,color:"var(--emerald)"},{label:"Referral",value:7,color:"var(--rose)"}]);
+  const extra=`<div class="grid g2" style="margin-top:18px">
+    <div class="card"><div class="sec-title" style="margin:0 0 10px"><span class="bar"></span>Spend Mix by Channel</div>${donut}</div>
+    <div class="card"><div class="sec-title" style="margin:0 0 10px"><span class="bar"></span>Efficiency</div>
+      <div class="why"><b>ROAS ${roas?roas.value.toFixed(1):"—"}×</b> against a 4× target on ${spend?fmtINR(spend.value):"—"} spend and ${sess?sess.value.toLocaleString("en-IN"):"—"} sessions. Rebalancing toward 3×+ campaigns is the P2 lever.</div></div>
+  </div>`;
+  return domainView("marketing", extra);
+}
+function viewInventory(){
+  const donut=donutSVG([
+    {label:"Healthy",value:62,color:"var(--good)"},{label:"Low-stock",value:16,color:"var(--watch)"},
+    {label:"Dead-stock",value:22,color:"var(--risk)"}]);
+  const extra=`<div class="grid g2" style="margin-top:18px">
+    <div class="card"><div class="sec-title" style="margin:0 0 10px"><span class="bar"></span>Stock Composition</div>${donut}</div>
+    <div class="card"><div class="sec-title" style="margin:0 0 10px"><span class="bar"></span>Read</div>
+      <div class="why">Health at <b>68/100</b>: 63 fast-movers went low-stock while dead-stock climbed to 21.5% of value. The mix is imbalanced — refill the movers, clear the aged.</div></div>
+  </div>`;
+  return domainView("inventory", extra);
+}
+
+function viewInsights(){
+  return `<div class="grid g2">${DATA.insights.map(i=>`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div class="sec-title" style="margin:0"><span class="bar"></span>${cap(i.domain||"")}</div>
+        <span class="conf">confidence: ${i.confidence}</span>
+      </div>
+      <div class="msg serif" style="font-size:15px;margin-top:8px">${i.what}</div>
+      <div class="why"><b>Why:</b> ${i.why}</div>
+      <div class="why"><b>Impact:</b> ${i.impact}</div>
+    </div>`).join("")}</div>`;
+}
+function viewAlerts(){
+  if(!DATA.alerts.length) return `<div class="empty">No alerts fired. All rules within thresholds. 🎉</div>`;
+  return `<div class="card">${DATA.alerts.map(a=>`<div class="item">
+    <span class="badge b-${a.severity}">${a.severity}</span>
+    <div style="flex:1"><div class="msg">${a.message}</div>
+      <div class="meta">${cap(a.domain)} · rule <code>${a.rule_id}</code> · owner: ${a.owner}</div></div>
+  </div>`).join("")}</div>`;
+}
+function viewReco(){
+  return `<div class="card"><table class="dt">
+    <tr><th>Priority</th><th>Action</th><th>Owner</th><th>ETA</th><th class="num">Est. impact</th></tr>
+    ${DATA.recommendations.map(r=>`<tr>
+      <td><span class="badge b-${r.priority.toLowerCase()}">${r.priority}</span></td>
+      <td><div class="msg">${r.action}</div><div class="meta">${r.rationale}</div></td>
+      <td>${r.owner}</td><td>${r.eta_days}d</td>
+      <td class="num">${r.est_value_inr?fmtINR(r.est_value_inr):"—"}</td></tr>`).join("")}
+  </table></div>`;
+}
+
+/* ---- Yesterday & Focus ---- */
+const ADVERSE = ["return_rate","returns_value","ad_spend","avg_dispatch_days","pending_mto","low_stock_skus","dead_stock_pct","products_missing_attrs"];
+const RATIO_KEYS = new Set(["aov","conversion","return_rate","marketing_conversion","marketing_roi","contact_rate","dead_stock_pct","inventory_health","store_target_attainment"]);
+function ystVal(k){ if(RATIO_KEYS.has(k.key)||k.unit==="pct"||k.unit==="ratio") return k.value;
+  const sp=k.sparkline||[]; return sp.length?sp[sp.length-1]:k.value; }
+function base7Val(k){ if(RATIO_KEYS.has(k.key)||k.unit==="pct"||k.unit==="ratio") return k.prev;
+  const sp=k.sparkline||[]; if(sp.length){const l=sp.slice(-7);return l.reduce((a,b)=>a+b,0)/l.length;} return k.prev; }
+function yCard(k){
+  const y=ystVal(k), b=base7Val(k);
+  const ch = (b&&isFinite(b)&&b!==0) ? (y-b)/b*100 : null;
+  const fav = ch==null?true : (ADVERSE.includes(k.key) ? ch<=0 : ch>=0);
+  const arrow = ch==null?"" : fav?"▲":"▼";
+  return `<div class="card kpi">
+    <div class="statusbar s-${k.status}"></div>
+    <h3>${k.label}</h3>
+    <div class="val">${fmtVal(y,k.unit)}</div>
+    <div class="row">
+      <span class="delta ${fav?"up":"down"}">${arrow} ${pct(ch)}</span>
+      <span class="sub">7-day avg ${fmtVal(b,k.unit)}</span>
+    </div>
+    ${sparkSVG(k.sparkline,k.status)}
+  </div>`;
+}
+function viewFocus(){
+  const keys=["revenue","orders","aov","sessions","marketing_conversion","deals","calls","contact_rate","new_customers","repeat_customers","inventory_health","low_stock_skus"];
+  const cards=keys.map(kByKey).filter(Boolean).map(yCard).join("");
+  const crit=DATA.alerts.filter(a=>a.severity==="critical");
+  const warn=DATA.alerts.filter(a=>a.severity==="warn");
+  const p12=DATA.recommendations.filter(r=>r.priority==="P1"||r.priority==="P2");
+  const alertItem=a=>`<div class="item"><span class="badge b-${a.severity}">${a.severity}</span>
+    <div><div class="msg">${a.message}</div><div class="meta">${cap(a.domain)} · owner: ${a.owner}</div></div></div>`;
+  const recItem=r=>`<div class="item"><span class="badge b-${r.priority.toLowerCase()}">${r.priority}</span>
+    <div><div class="msg">${r.action}</div><div class="meta">${r.owner} · ${r.eta_days}d${r.est_value_inr?" · ~"+fmtINR(r.est_value_inr)+" impact":""}</div></div></div>`;
+  return `
+  <div class="heroband">
+    <div class="chip" style="background:color-mix(in srgb,var(--gold) 20%,transparent);color:var(--gold);border-color:transparent">Yesterday · ${DATA.meta.run_date}</div>
+    <div class="headline serif">${DATA.meta.headline}</div>
+    <div class="chips">
+      <span class="chip">${crit.length} critical</span>
+      <span class="chip">${warn.length} to watch</span>
+      <span class="chip">${p12.length} priority actions</span>
+    </div>
+  </div>
+  <div class="sec-title"><span class="bar"></span>Yesterday at a Glance <span style="font-weight:400;color:var(--faint);font-size:12px">· each vs its 7-day average</span></div>
+  <div class="grid g4">${cards||`<div class="empty">No KPIs available.</div>`}</div>
+  <div class="sec-title"><span class="bar" style="background:var(--risk)"></span>🔴 Critical Focus — Act First</div>
+  <div class="card">
+    ${crit.length?crit.map(alertItem).join(""):`<div class="empty">No critical alerts yesterday. 🎉</div>`}
+    ${warn.length?warn.map(alertItem).join(""):""}
+  </div>
+  <div class="sec-title"><span class="bar"></span>Do These First</div>
+  <div class="card">
+    ${p12.length?p12.map(recItem).join(""):`<div class="empty">No priority actions.</div>`}
+  </div>`;
+}
+
+/* ---- Deal Follow-up (calls & deals: attendance + first response, agent-wise, daily) ---- */
+function fmtMin(m){ if(m==null) return "—"; return m>=60?(m/60).toFixed(1)+" h":Math.round(m)+" m"; }
+function fmtDur(s){ if(s==null) return "—"; return s>=60?(s/60).toFixed(1)+" m":Math.round(s)+" s"; }
+function dfStatusBadge(st){ const m={green:"b-p3",amber:"b-warn",red:"b-critical"}; const t={green:"good",amber:"watch",red:"risk"};
+  return `<span class="badge ${m[st]||'b-info'}">${t[st]||st}</span>`; }
+function viewDeals(){
+  const df=DATA.deal_followup;
+  if(!df || df.available===false || !(df.agents||[]).length)
+    return `<div class="card"><div class="empty">📞 Deal Follow-up generates on the next authenticated run.<br>
+      It tracks, per agent per day: deals not attended, first-response time (SLA ${df&&df.meta?df.meta.sla_min:30} min), and average call duration.</div></div>`;
+  const t=df.today||{}, sla=(df.meta&&df.meta.sla_min)||30, win=(df.meta&&df.meta.window_days)||7;
+  const attPct = t.deals? (t.attended/t.deals*100):0;
+  const tile=(k,v,sub,cls)=>`<div class="card kpi"><h3>${k}</h3><div class="val" ${cls?`style="color:var(--${cls})"`:""}>${v}</div><div class="sub">${sub||""}</div></div>`;
+  const tiles = [
+    tile("Deals Created (today)", t.deals||0, ""),
+    tile("Attended", t.attended||0, attPct.toFixed(0)+"% of deals", "good"),
+    tile("Not Attended", t.not_attended||0, "no call logged", (t.not_attended||0)>0?"risk":"good"),
+    tile("First-Response SLA Breaches", t.sla_breaches||0, "> "+sla+" min", (t.sla_breaches||0)>0?"risk":"good"),
+    tile("Avg First Response", fmtMin(t.avg_first_response_min), "SLA "+sla+" min", (t.avg_first_response_min>sla)?"risk":"good"),
+  ].join("");
+  const rows = df.agents.map(a=>`<tr>
+    <td>${dfStatusBadge(a.status)} ${a.agent}</td>
+    <td class="num">${a.deals}</td>
+    <td class="num">${a.attended}</td>
+    <td class="num" style="color:${a.not_attended>0?'var(--risk)':'inherit'};font-weight:${a.not_attended>0?700:400}">${a.not_attended}</td>
+    <td class="num">${a.attend_rate!=null?a.attend_rate.toFixed(0)+'%':'—'}</td>
+    <td class="num" style="color:${(a.avg_first_response_min>sla)?'var(--risk)':'inherit'}">${fmtMin(a.avg_first_response_min)}</td>
+    <td class="num">${a.sla_breaches}</td>
+    <td class="num">${a.calls}</td>
+    <td class="num">${fmtDur(a.avg_call_sec)}</td>
+  </tr>`).join("");
+  const acts=(df.actions||[]).map(x=>`<div class="item"><span class="badge b-${(x.priority||'p2').toLowerCase()}">${x.priority}</span>
+    <div><div class="msg">${x.action}</div><div class="meta">owner: ${x.owner||'Sales Manager'}</div></div></div>`).join("");
+  return `
+  <div class="heroband">
+    <div class="chip" style="background:color-mix(in srgb,var(--gold) 20%,transparent);color:var(--gold);border-color:transparent">Calls & Deals · ${DATA.meta.run_date} · last ${win} days</div>
+    <div class="headline serif">${t.not_attended||0} deals went un-attended today · avg first response ${fmtMin(t.avg_first_response_min)} (SLA ${sla} min)</div>
+    <div class="chips"><span class="chip">${t.deals||0} deals</span><span class="chip">${t.sla_breaches||0} SLA breaches</span><span class="chip">${df.agents.length} agents</span></div>
+  </div>
+  <div class="sec-title"><span class="bar"></span>Today at a Glance</div>
+  <div class="grid" style="grid-template-columns:repeat(5,1fr)">${tiles}</div>
+  <div class="sec-title"><span class="bar"></span>Agent Scorecard <span style="font-weight:400;color:var(--faint);font-size:12px">· last ${win} days · sorted by un-attended deals</span></div>
+  <div class="card"><div style="overflow-x:auto"><table class="dt">
+    <tr><th>Agent</th><th class="num">Deals</th><th class="num">Attended</th><th class="num">Not Attended</th><th class="num">Attend %</th><th class="num">Avg 1st Response</th><th class="num">SLA Breaches</th><th class="num">Calls</th><th class="num">Avg Call</th></tr>
+    ${rows}
+  </table></div></div>
+  <div class="sec-title"><span class="bar" style="background:var(--risk)"></span>Recommended Actions</div>
+  <div class="card">${acts||`<div class="empty">All agents within SLA. 🎉</div>`}</div>`;
+}
+
+const RENDER = {
+  home:viewHome, focus:viewFocus, deals:viewDeals, sales:viewSales, marketing:viewMarketing,
+  crm:()=>domainView("crm"), inventory:viewInventory,
+  product:()=>domainView("product"), ops:()=>domainView("ops"),
+  insights:viewInsights, alerts:viewAlerts, reco:viewReco
+};
+
+/* ============================================================================
+   SHELL
+   ========================================================================== */
+function activeTab(){ const h=location.hash.slice(1); return TABS.some(t=>t[0]===h)?h:"home"; }
+function renderNav(){
+  document.getElementById("nav").innerHTML = TABS.map(([id,label])=>{
+    const badge = id==="alerts"&&DATA.alerts.length ? ` (${DATA.alerts.length})` : "";
+    return `<div class="tab ${id===activeTab()?"active":""}" data-tab="${id}">${label}${badge}</div>`;
+  }).join("");
+  document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{location.hash=t.dataset.tab});
+}
+function renderMain(){
+  const t=activeTab();
+  document.getElementById("main").innerHTML = `<div class="view active">${RENDER[t]()}</div>`;
+  renderNav();
+}
+function renderSource(){
+  const dot=document.getElementById("srcdot"), txt=document.getElementById("srctxt");
+  if(LIVE){ dot.className="dot"; txt.textContent=`Live · ${DATA.meta.period} · as of ${DATA.meta.run_date}`; }
+  else { dot.className="dot sample"; txt.textContent="Sample data · wire CONFIG.SNAPSHOT_URL to go live"; }
+}
+function tickClock(){
+  const now=new Date().toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});
+  document.getElementById("clock").textContent = now+" IST";
+}
+
+/* ---- Ask-AI (local grounded) ---- */
+function askLocal(q){
+  q=q.toLowerCase();
+  const money=k=>{const x=kByKey(k);return x?fmtVal(x.value,x.unit)+" ("+pct(x.delta_pct)+")":"—"};
+  if(/revenue|sales/.test(q)) return `Net revenue is <b>${money("revenue")}</b> vs prior period. ${DATA.meta.headline}`;
+  if(/alert|issue|problem|wrong/.test(q)){
+    const c=DATA.alerts.filter(a=>a.severity==="critical");
+    return `${DATA.alerts.length} alerts fired, ${c.length} critical.<br>`+DATA.alerts.slice(0,4).map(a=>`• <b>${a.severity}</b>: ${a.message}`).join("<br>");}
+  if(/store|target/.test(q)){const s=slices("store_target_attainment").sort((a,b)=>a.value-b.value);
+    return "Store target attainment (lowest first):<br>"+s.map(x=>`• ${x.dim_value}: <b>${x.value}%</b>`).join("<br>");}
+  if(/recommend|action|do|fix/.test(q))
+    return "Top actions:<br>"+DATA.recommendations.slice(0,3).map(r=>`• <b>${r.priority}</b> (${r.owner}): ${r.action}`).join("<br>");
+  if(/roas|marketing|ad/.test(q)) return `Marketing ROI is <b>${money("marketing_roi")}</b>; ad spend ${money("ad_spend")}, sessions ${money("sessions")}.`;
+  if(/inventory|stock/.test(q)) return `Inventory health <b>${money("inventory_health")}</b>; low-stock ${money("low_stock_skus")} SKUs, dead-stock ${money("dead_stock_pct")}.`;
+  if(/crm|deal|call|contact/.test(q)) return `Deals ${money("deals")}, calls ${money("calls")}, contact rate <b>${money("contact_rate")}</b>, conversion ${money("conversion")}.`;
+  if(/return/.test(q)) return `Return rate <b>${money("return_rate")}</b>, returns value ${money("returns_value")}.`;
+  return `I can answer on revenue, alerts, stores, marketing/ROAS, inventory, CRM, returns, and recommended actions — grounded in the current ${DATA.meta.period} data.`;
+}
+function askAdd(text,cls){const b=document.getElementById("askbody");
+  b.insertAdjacentHTML("beforeend",`<div class="amsg ${cls||""}">${text}</div>`);b.scrollTop=b.scrollHeight;}
+async function askSend(){
+  const inp=document.getElementById("askin");const q=inp.value.trim();if(!q)return;
+  askAdd(q,"u");inp.value="";
+  if(CONFIG.ASK_API){
+    try{const r=await fetch(CONFIG.ASK_API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({question:q})});
+      const j=await r.json();askAdd(j.answer||askLocal(q));return;}catch(e){}
+  }
+  askAdd(askLocal(q));
+}
+
+/* ---- boot ---- */
+function initAsk(){
+  document.getElementById("askbody").innerHTML =
+    `<div class="amsg">Ask me anything about today's numbers. Try:</div>
+     <div>${["Why is revenue down?","Which stores missed target?","What should we do today?","How's marketing ROAS?","Any inventory risks?"]
+       .map(q=>`<span class="qchip">${q}</span>`).join("")}</div>`;
+  document.querySelectorAll(".qchip").forEach(c=>c.onclick=()=>{document.getElementById("askin").value=c.textContent;askSend();});
+}
+async function boot(){
+  // theme
+  const saved=localStorage.getItem("bi_theme"); if(saved) document.documentElement.dataset.theme=saved;
+  document.getElementById("themebtn").onclick=()=>{
+    const t=document.documentElement.dataset.theme==="dark"?"light":"dark";
+    document.documentElement.dataset.theme=t; localStorage.setItem("bi_theme",t);
+  };
+  // fab
+  document.getElementById("fab").onclick=()=>document.getElementById("ask").classList.toggle("open");
+  document.getElementById("askclose").onclick=()=>document.getElementById("ask").classList.remove("open");
+  document.getElementById("asksend").onclick=askSend;
+  document.getElementById("askin").addEventListener("keydown",e=>{if(e.key==="Enter")askSend();});
+
+  await loadData();
+  renderSource(); renderMain(); initAsk();
+  document.getElementById("foot").innerHTML =
+    `Lucira BI Copilot · reads <code>bi/latest.json</code> · daily 09:00 IST refresh · ${LIVE?"live snapshot":"sample data"} · run ${DATA.meta.run_id}`;
+  window.addEventListener("hashchange", renderMain);
+  tickClock(); setInterval(tickClock,1000);
+  setTimeout(()=>document.getElementById("splash").classList.add("hide"),450);
+}
+boot();
+</script>
+</body>
+</html>

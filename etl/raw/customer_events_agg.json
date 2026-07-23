@@ -1,0 +1,43 @@
+{
+  "total": 107523,
+  "owner_note": "All Customer_Events are owned by the 'Tech' integration user (system-ingested storefront events, not agent-attributed).",
+  "by_type_raw": {
+    "ProductView": 42380,
+    "Login": 31743,
+    "NitroProductView": 11241,
+    "signup": 10577,
+    "Checkout": 4472,
+    "ATC": 3455,
+    "WhatsApp": 1770,
+    "Payment": 873,
+    "Purchase": 755,
+    "Add Payment Info": 65,
+    "Schemes": 53,
+    "AbandonedCart": 52,
+    "singup": 5,
+    "Form Submission": 4,
+    "Purchased": 2,
+    "Prospect": 2,
+    "Add to Cart": 1,
+    "chat": 1
+  },
+  "by_channel_raw": {
+    "website": 105527,
+    "WhatsApp": 1770,
+    "web": 96,
+    "social": 59,
+    "chat": 1
+  },
+  "monthly": [
+    {"m": "2026-02", "count": 54},
+    {"m": "2026-03", "count": 95},
+    {"m": "2026-04", "count": 19332},
+    {"m": "2026-05", "count": 39266},
+    {"m": "2026-06", "count": 30886},
+    {"m": "2026-07", "count": 17968}
+  ],
+  "july_by_type": {
+    "ProductView": 8048, "NitroProductView": 5545, "Checkout": 1113, "ATC": 1047,
+    "WhatsApp": 1066, "Signup": 802, "Payment": 230, "Purchase": 114, "login": 3
+  }
+}

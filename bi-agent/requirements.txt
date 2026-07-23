@@ -1,0 +1,18 @@
+# Runtime
+Flask==3.0.3
+gunicorn==22.0.0
+PyYAML==6.0.2
+pandas==2.2.2
+requests==2.32.3
+google-cloud-bigquery==3.25.0
+google-cloud-storage==2.18.2
+db-dtypes==1.3.0          # bigquery -> pandas
+openpyxl==3.1.5           # Excel reports
+
+# Optional (feature-gated; import lazily so absence never breaks the core)
+# google-generativeai==0.8.3   # LLM provider: gemini
+# anthropic==0.39.0            # LLM provider: claude
+# weasyprint==62.3            # PDF reports (needs system cairo/pango)
+
+# Dev / test
+pytest==8.3.3

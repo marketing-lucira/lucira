@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucira Jewelry — Sales Analytics Dashboard</title>
+<style>
+:root{
+  color-scheme: dark;
+  --plane:#0d0d0d; --surface:#1a1a19; --surface-2:#222220; --surface-3:#2a2a28;
+  --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+  --s1:#3987e5; --s2:#199e70; --s3:#d55181; --s4:#c98500;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --gold:#d9a441;
+  --radius:14px; --radius-sm:9px;
+  --font:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+body.light{
+  color-scheme: light;
+  --plane:#f4f4f1; --surface:#ffffff; --surface-2:#f2f1ec; --surface-3:#e8e7e0;
+  --ink:#1b1b18; --ink-2:#4c4b44; --muted:#7a786f;
+  --grid:#e6e5df; --axis:#d3d2ca; --border:rgba(0,0,0,0.12);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--plane); color:var(--ink); font-family:var(--font); font-size:14px; line-height:1.45; -webkit-font-smoothing:antialiased;}
+a{color:var(--s1)}
+.tnum{font-variant-numeric:tabular-nums}
+header.app{position:sticky; top:0; z-index:40; background:color-mix(in srgb, var(--plane) 92%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); padding:12px 22px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+.brand{display:flex; align-items:center; gap:11px; margin-right:auto}
+.brand .mark{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#d9a441,#b5732a);color:#1a1200;font-weight:800;font-size:15px;box-shadow:0 2px 10px rgba(217,164,65,.3)}
+.brand h1{font-size:15px;margin:0;font-weight:700;letter-spacing:.2px}
+.brand small{display:block;color:var(--muted);font-size:11px;font-weight:500;letter-spacing:.3px}
+.hdr-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px rgba(12,163,12,.18)}
+.dot.demo{background:var(--warn);box-shadow:0 0 0 3px rgba(250,178,25,.18)}
+.btn{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:9px;padding:7px 13px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:var(--font)}
+.btn:hover{background:var(--surface-3)}
+.btn.primary{background:var(--s1);border-color:transparent;color:#fff}
+.btn.ghost{background:transparent}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:3px}
+.seg button{background:transparent;border:0;color:var(--ink-2);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)}
+.seg button.on{background:var(--gold);color:#1a1200}
+.wrap{display:flex;min-height:calc(100vh - 60px)}
+nav.tabs{width:224px;flex:0 0 224px;border-right:1px solid var(--border);padding:16px 12px;position:sticky;top:60px;height:calc(100vh - 60px);overflow:auto}
+nav.tabs .grp{color:var(--muted);font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin:14px 10px 6px}
+nav.tabs a{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;color:var(--ink-2);text-decoration:none;font-size:13.5px;font-weight:600;cursor:pointer;margin-bottom:2px}
+nav.tabs a:hover{background:var(--surface-2);color:var(--ink)}
+nav.tabs a.on{background:var(--surface-2);color:var(--ink)}
+nav.tabs a.on .ic{color:var(--gold)}
+nav.tabs a .ic{width:17px;text-align:center;opacity:.9}
+main{flex:1;min-width:0;padding:20px 24px 60px}
+.filters{display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.filters .fl{display:flex;flex-direction:column;gap:3px}
+.filters label{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding-left:2px}
+.filters select,.filters input[type=date],.filters input[type=text]{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:12.5px;font-family:var(--font);min-width:118px;max-width:190px}
+.filters .spacer{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface-3);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11.5px;color:var(--ink-2);cursor:pointer}
+.chip b{color:var(--ink)}
+.chip .x{color:var(--crit);font-weight:800}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 15px;position:relative;overflow:hidden}
+.kpi .lab{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.3px;display:flex;align-items:center;gap:6px}
+.kpi .val{font-size:24px;font-weight:750;margin-top:6px;letter-spacing:-.5px;line-height:1.05}
+.kpi .sub{font-size:11px;color:var(--ink-2);margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.kpi .accent{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold)}
+.delta{font-weight:700;font-size:12px}
+.grid{display:grid;gap:15px;margin-bottom:15px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px 12px;min-width:0}
+.card.wide{grid-column:1/-1}
+.card h3{margin:0 0 2px;font-size:13.5px;font-weight:700}
+.card .hint{color:var(--muted);font-size:11px;margin-bottom:10px}
+.card .head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.card .head .tools{display:flex;gap:5px;flex-wrap:wrap}
+.mini{background:var(--surface-2);border:1px solid var(--border);color:var(--ink-2);border-radius:7px;font-size:11px;font-weight:600;padding:4px 8px;cursor:pointer;font-family:var(--font)}
+.mini.on{background:var(--s1);color:#fff;border-color:transparent}
+.chart-wrap{width:100%;overflow-x:auto}
+svg.chart{display:block;width:100%;height:auto;font-family:var(--font)}
+table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+table.tbl th,table.tbl td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.tbl th{color:var(--muted);font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;position:sticky;top:0;background:var(--surface);cursor:pointer;user-select:none}
+table.tbl th.sorted{color:var(--gold)}
+table.tbl td.num,table.tbl th.num{text-align:right;font-variant-numeric:tabular-nums}
+table.tbl tr:hover td{background:var(--surface-2)}
+.tbl-wrap{max-height:520px;overflow:auto;border:1px solid var(--border);border-radius:10px}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:700}
+.pill.fast{background:rgba(12,163,12,.16);color:#37c837}
+.pill.slow{background:rgba(250,178,25,.16);color:#e0a020}
+.pill.dead{background:rgba(208,59,59,.16);color:#e46464}
+.pill.new{background:rgba(57,135,229,.16);color:#5aa0ee}
+.pill.rep{background:rgba(144,133,233,.16);color:#a99ff0}
+.pill.MTO{background:rgba(57,135,229,.16);color:#5aa0ee}
+.pill.RTS{background:rgba(38,194,129,.16);color:#3ad39a}
+.pill.Return{background:rgba(208,59,59,.16);color:#e46464}
+.pill.Exchange{background:rgba(201,133,0,.18);color:#e0a83a}
+.pill.Other{background:var(--surface-3);color:var(--ink-2)}
+.bar-inline{height:7px;border-radius:4px;background:var(--s1);display:inline-block;vertical-align:middle}
+.insight{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:13px 15px;margin-bottom:11px}
+.insight .t{font-weight:700;font-size:13.5px;margin-bottom:3px;display:flex;align-items:center;gap:8px}
+.insight .b{color:var(--ink-2);font-size:12.5px}
+.insight.op{border-left-color:var(--good)} .insight.risk{border-left-color:var(--crit)} .insight.act{border-left-color:var(--s1)}
+.tag{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:5px;background:var(--surface-3);color:var(--ink-2)}
+.banner{background:linear-gradient(90deg,rgba(217,164,65,.14),transparent);border:1px solid rgba(217,164,65,.3);border-radius:10px;padding:9px 14px;margin-bottom:16px;font-size:12.5px;color:var(--ink-2);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.banner.ok{background:linear-gradient(90deg,rgba(12,163,12,.14),transparent);border-color:rgba(12,163,12,.3)}
+.empty{color:var(--muted);font-size:12.5px;padding:22px;text-align:center}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+h2.sec{font-size:17px;margin:0 0 3px;font-weight:750}
+p.secsub{color:var(--muted);font-size:12.5px;margin:0 0 16px}
+.tabhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.dt-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.dt-toolbar input[type=text]{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12.5px;font-family:var(--font);min-width:220px}
+.dt-toolbar select{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:12px}
+.dt-pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:10px;font-size:12px;color:var(--ink-2)}
+.match{color:var(--good);font-weight:700} .nomatch{color:var(--crit);font-weight:700}
+@media(max-width:1100px){.g4{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr}.g2{grid-template-columns:1fr}nav.tabs{display:none}}
+@media print{nav.tabs,header.app,.filters .spacer,.mini,.dt-pager{display:none}main{padding:0}.card{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header class="app">
+  <div class="brand">
+    <div class="mark">L</div>
+    <div><h1>Sales Analytics</h1><small>Lucira Jewelry · Sales_Overview (BigQuery)</small></div>
+  </div>
+  <div class="hdr-status"><span class="dot demo" id="srcDot"></span><span id="srcLabel">Sample data</span></div>
+  <span class="mini" id="refreshTag" title="Next auto-refresh">⟳ —</span>
+  <div class="seg" id="themeSeg"><button data-th="dark" class="on">Dark</button><button data-th="light">Light</button></div>
+  <button class="btn ghost" id="csvImportBtn" title="Load a Sales_Overview CSV/JSON export">⤒ Import</button>
+  <input type="file" id="fileInput" accept=".csv,.json" style="display:none">
+  <button class="btn ghost" id="exportBtn" title="Export current view">⭳ Export</button>
+  <button class="btn" id="refreshBtn">⟳ Refresh</button>
+</header>
+<div class="wrap">
+  <nav class="tabs" id="nav"></nav>
+  <main id="main"></main>
+</div>
+<script>
+"use strict";
+/* ═══════════════════════════════════════════════════════════════════
+   CONFIG  — single source of truth is the Sales_Overview BigQuery table.
+   ═══════════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  API_BASE: "",                 // paste the deployed sales-data URL for LIVE data; "" = sample
+  WINDOW_DAYS: 540,
+  REFRESH_MS: 60 * 60 * 1000,
+  CURRENCY: "INR",
+  GST_DIVISOR: 1.03,            // rule 2: Net Sales = Gross Sales / 1.03
+  SALE_TYPES: ["MTO","RTS","TAH","Return","Other"],   // real Fullfillment buckets (Online_MTO folds into MTO)
+  PRICE_BANDS: [
+    {label:"< ₹25K", max:25000}, {label:"₹25K–50K", max:50000}, {label:"₹50K–1L", max:100000},
+    {label:"₹1L–2.5L", max:250000}, {label:"₹2.5L–5L", max:500000}, {label:"₹5L+", max:Infinity}
+  ],
+  MOVEMENT: { fastUnits:12, deadDays:120, slowDays:60, overstockTurns:0.4, lowStock:3 }
+};
+const GST = CONFIG.GST_DIVISOR;
+
+const PAL = ['#3987e5','#199e70','#d55181','#c98500','#26c281','#d95926','#9085e9','#e66767','#4db6ac','#ba68c8','#8d9440','#a56a4a'];
+const GOLD = '#d9a441';
+const SALE_TYPE_COLOR = {MTO:'#3987e5',RTS:'#26c281',TAH:'#9085e9',Return:'#d03b3b',Exchange:'#c98500',Other:'#898781'};
+const PRICE_BAND_ORDER = ['0 - 10K','10K - 20K','20K - 30K','30K - 40K','40K - 50K','50K - 75K','75K - 100K','100K - 150K','150K - 200K','200K+'];
+function realBand(g){ g=Math.abs(g||0);
+  if(g<10000)return'0 - 10K'; if(g<20000)return'10K - 20K'; if(g<30000)return'20K - 30K'; if(g<40000)return'30K - 40K';
+  if(g<50000)return'40K - 50K'; if(g<75000)return'50K - 75K'; if(g<100000)return'75K - 100K';
+  if(g<150000)return'100K - 150K'; if(g<200000)return'150K - 200K'; return'200K+'; }
+let C_INK='#ffffff', C_INK2='#c3c2b7', C_MUTED='#898781', C_GRID='#2c2c2a', C_AXIS='#383835', C_SURF='#1a1a19';
+const C_GOOD='#0ca30c', C_WARN='#fab219', C_CRIT='#d03b3b';
+function refreshThemeColors(){ const s=getComputedStyle(document.body);
+  C_INK=s.getPropertyValue('--ink').trim(); C_INK2=s.getPropertyValue('--ink-2').trim();
+  C_MUTED=s.getPropertyValue('--muted').trim(); C_GRID=s.getPropertyValue('--grid').trim();
+  C_AXIS=s.getPropertyValue('--axis').trim(); C_SURF=s.getPropertyValue('--surface').trim(); }
+const METAL_COLOR={'Gold 22K':'#d9a441','Gold 24K':'#e5b93f','Gold 18K':'#e0b968','Silver 925':'#9aa4ad','Platinum':'#7fb0c4','Diamond':'#8fd3e8'};
+function palColor(i){ return PAL[i%PAL.length]; }
+function metalColor(m,i){ return METAL_COLOR[m]||palColor(i||0); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════════════ */
+const STATE = {
+  items:[], styleRef:new Map(), custRef:new Map(),
+  caps:{margin:true,inventory:true,selling_days:true,customer:true,salesperson:true,sale_type:true,weights:true},
+  validation:null, days:[], now:new Date(), asOf:null, source:'sample', dims:{},
+  filters:{ range:'12m', from:null, to:null, category:'', product:'', collection:'', metal:'', band:'', saletype:'', store:'', person:'', ctype:'', channel:'', style:'', customer:'', priceMin:'', priceMax:'', grossMin:'', grossMax:'', netMin:'', netMax:'' },
+  gran:'monthly', tab:'overview'
+};
+
+/* ── helpers ───────────────────────────────────────────────── */
+const NA='—';
+function ymd(d){ return d? d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0') : null; }
+function parseYmd(s){ if(!s) return null; const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function diffDays(a,b){ return Math.round((parseYmd(a)-parseYmd(b))/86400000); }
+function monthKey(s){ return s.slice(0,7); }
+function weekKey(s){ const d=parseYmd(s); const dow=(d.getDay()+6)%7; return ymd(addDays(d,-dow)); }
+function quarterKey(s){ const d=parseYmd(s); return d.getFullYear()+'-Q'+(Math.floor(d.getMonth()/3)+1); }
+function yearKey(s){ return s.slice(0,4); }
+function fmtInt(n){ if(n==null||isNaN(n)) return NA; return Math.round(n).toLocaleString('en-IN'); }
+function fmtNum(n,dp){ if(n==null||isNaN(n)) return NA; return Number(n).toLocaleString('en-IN',{maximumFractionDigits:dp==null?0:dp}); }
+function pctStr(x,dp){ return (x==null||isNaN(x))?NA:x.toFixed(dp==null?1:dp)+'%'; }
+function ratio(a,b){ return b?a/b:0; }
+function money(n){ if(n==null||isNaN(n)) return NA; const s=n<0?'-':''; n=Math.abs(n);
+  if(n>=1e7) return s+'₹'+(n/1e7).toFixed(n>=1e8?1:2)+'Cr';
+  if(n>=1e5) return s+'₹'+(n/1e5).toFixed(n>=1e6?1:2)+'L';
+  if(n>=1e3) return s+'₹'+(n/1e3).toFixed(1)+'K';
+  return s+'₹'+Math.round(n).toLocaleString('en-IN'); }
+function moneyFull(n){ if(n==null||isNaN(n)) return NA; const s=n<0?'-':''; return s+'₹'+Math.round(Math.abs(n)).toLocaleString('en-IN'); }
+function grams(n){ return (n==null||isNaN(n))?NA:fmtNum(n,2)+'g'; }
+function net(g){ return g/GST; }   // rule 2
+
+function mulberry32(a){ return function(){ a|=0;a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+let RNG = mulberry32(20260716);
+function rnd(){ return RNG(); }
+function pick(arr){ return arr[Math.floor(rnd()*arr.length)]; }
+function pickW(arr,weights){ let s=weights.reduce((a,b)=>a+b,0)*rnd(); for(let i=0;i<arr.length;i++){ s-=weights[i]; if(s<=0) return arr[i]; } return arr[arr.length-1]; }
+function gauss(mean,sd){ let u=0,v=0; while(!u)u=rnd(); while(!v)v=rnd(); return mean+sd*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   SAMPLE DATA — jewelry ERP shaped to the real Sales_Overview schema
+   (material categories, sale types, weights; Gross authoritative; +dupes)
+   ═══════════════════════════════════════════════════════════════════ */
+const CATS=[  // dynamic in production; sample mirrors the real taxonomy
+  {c:'Gold Jewellery',   w:40, rate:6800, prods:['Ring','Necklace','Bangle','Earrings','Chain','Mangalsutra','Pendant'], metal:['Gold 22K','Gold 18K'], nwt:[3,55]},
+  {c:'Diamond Jewellery',w:27, rate:16500,prods:['Ring','Earrings','Pendant','Necklace','Bracelet'], metal:['Gold 18K','Platinum'], nwt:[2,18]},
+  {c:'Gold Coin',        w:12, rate:6850, prods:['Coin'], metal:['Gold 24K'], nwt:[2,50], coin:true},
+  {c:'Platinum',         w:7,  rate:3200, prods:['Ring','Chain','Bracelet','Band'], metal:['Platinum'], nwt:[3,22]},
+  {c:'Silver',           w:8,  rate:95,   prods:['Idol','Coin','Payal','Bracelet','Utensil'], metal:['Silver 925'], nwt:[20,260]},
+  {c:'Others',           w:6,  rate:900,  prods:['Gift','Repair','Polish'], metal:['Silver 925','Gold 18K'], nwt:[1,15]}
+];
+const COLLECTIONS=['Aurelia','Celeste','Solitaire','Heritage','Everyday','Bridal Radiance','Zodiac','Minima','—'];
+const STORES=[
+  {s:'Bandra',city:'Mumbai',state:'Maharashtra',region:'West'},
+  {s:'Borivali',city:'Mumbai',state:'Maharashtra',region:'West'},
+  {s:'Chembur',city:'Mumbai',state:'Maharashtra',region:'West'},
+  {s:'Pune FC Road',city:'Pune',state:'Maharashtra',region:'West'},
+  {s:'Pashchim Vihar',city:'Delhi',state:'Delhi',region:'North'},
+  {s:'Noida DLF',city:'Noida',state:'Uttar Pradesh',region:'North'},
+  {s:'Online',city:'—',state:'—',region:'Online'}
+];
+const PEOPLE=['Farha Ansari','Shreekant Balwat','Vishal Thapa','Shamwail Ansari','Raymon I.','Sheetal Parve','Bhav Nahar','Devjeet Bagchi'];
+
+let SAMPLE=null;
+function buildSample(){
+  RNG=mulberry32(20260716);
+  const today=new Date(STATE.now); today.setHours(0,0,0,0);
+  const N=CONFIG.WINDOW_DAYS;
+  // styles catalogue
+  const styles=[]; const nStyles=260;
+  for(let i=0;i<nStyles;i++){
+    const cat=CATS[pickW(CATS.map((_,i)=>i),CATS.map(x=>x.w))];
+    const prod=pick(cat.prods); const metal=pick(cat.metal); const coll=cat.c==='Others'?'—':pick(COLLECTIONS);
+    const netW=Math.max(0.5,gauss((cat.nwt[0]+cat.nwt[1])/2,(cat.nwt[1]-cat.nwt[0])/4));
+    styles.push({style:'ST-'+(1000+i),cat:cat.c,prod,metal,coll,rate:cat.rate,coin:!!cat.coin,baseNetW:netW,
+      pop:Math.max(.05,gauss(1,.7)),trend:(rnd()*2-1)*0.5,
+      invDate:ymd(addDays(today,-Math.floor(rnd()*(N+260))-5)),stock:Math.max(0,Math.round(gauss(9,7)))});
+  }
+  const customers=[]; const nCust=1500;
+  for(let i=0;i<nCust;i++){ const seg=pickW(['one','repeat','vip'],[62,30,8]);
+    customers.push({id:'C-'+(40000+i),name:'Customer '+(40000+i),seg,city:null,state:null,region:null,
+      firstSeed:ymd(addDays(today,-Math.floor(rnd()*(N+400))))}); }
+  const items=[]; const festival={9:1.6,10:2.2,3:1.5,4:1.7,1:1.35}; let docn=100000;
+  for(let k=N-1;k>=0;k--){
+    const d=addDays(today,-k); const dk=ymd(d); const dow=d.getDay(); const mon=d.getMonth();
+    const isWknd=(dow===0||dow===6);
+    const seas=(festival[mon]||1)*(isWknd?1.35:1)*(1+0.18*Math.sin(k/34));
+    const nOrders=Math.max(0,Math.round(gauss(11*seas,3)));
+    for(let o=0;o<nOrders;o++){
+      docn++; const store=pickW(STORES,[20,14,12,14,13,11,16]); const person=store.s==='Online'?'Online':pick(PEOPLE);
+      let cust; if(rnd()<0.42){ const pool=customers.filter(c=>c.seg!=='one'); cust=pool[Math.floor(rnd()*pool.length)]||pick(customers); } else cust=pick(customers);
+      if(!cust.city){ cust.city=store.city; cust.state=store.state; cust.region=store.region; }
+      const saleType=pickW(CONFIG.SALE_TYPES,[30,55,8,5,2]);
+      const doc='INV-'+docn; const nLines=saleType==='Return'||saleType==='Exchange'?1:pickW([1,2,3,4],[70,20,7,3]);
+      for(let l=0;l<nLines;l++){
+        const st=pickW(styles,styles.map(s=>s.pop*(1+s.trend*((N-k)/365))));
+        const qty=st.coin?pickW([1,2,3,5],[60,20,12,8]):pickW([1,2],[92,8]);
+        const netW=Math.max(0.3,st.baseNetW*Math.max(.5,gauss(1,.14)))*qty;
+        const grossW=st.coin?netW*(1+rnd()*0.01):netW*(1+0.02+rnd()*0.14); // stones/findings
+        const making=st.coin?netW*st.rate*(0.005+rnd()*0.01):netW*st.rate*(0.08+rnd()*0.18);
+        const stone=st.cat==='Diamond Jewellery'?netW*st.rate*(0.6+rnd()*1.4):0;
+        let gross=Math.round(netW*st.rate+making+stone);           // GROSS incl 3% GST (authoritative)
+        gross=Math.round(gross*Math.max(.6,gauss(1,.08)));
+        let sign=1; if(saleType==='Return') sign=-1; if(saleType==='Exchange') gross=Math.round(gross*0.4);
+        gross*=sign;
+        const discPct=st.coin?pickW([0,0.005,0.01],[70,20,10]):pickW([0,0.03,0.06,0.1,0.15,0.22],[34,20,18,14,9,5]);
+        const discount=Math.round(Math.abs(gross)*discPct);
+        items.push({date:dk,document_no:doc,order_id:doc,customer_id:cust.id,customer_name:cust.name,
+          city:cust.city,state:cust.state,region:cust.region,sku:st.style+'-'+String.fromCharCode(65+l),
+          product_name:st.prod,style:st.style,category:st.cat,collection:st.coll,metal:st.metal,sale_type:saleType,
+          price_band:realBand(gross),customer_type:'',
+          qty,gross,net:net(gross),discount,gross_weight:round3(grossW),net_weight:round3(netW),cogs:null,
+          store:store.s,salesperson:person,channel:store.s==='Online'?'Online':'Store'});
+      }
+    }
+  }
+  // customer_type New/Repeat — same rule as the DDL: New = line on the customer's first-ever purchase date
+  const custFirstDate=new Map();
+  for(const it of items){ const c=it.customer_id,f=custFirstDate.get(c); if(!f||it.date<f)custFirstDate.set(c,it.date); }
+  for(const it of items){ it.customer_type = it.date===custFirstDate.get(it.customer_id)?'New':'Repeat'; }
+  // inject ~2% EXACT duplicates (same gross+date+doc+net_weight) to exercise dedup
+  const dupN=Math.floor(items.length*0.02); const rawLen=items.length;
+  for(let i=0;i<dupN;i++){ const src=items[Math.floor(rnd()*rawLen)]; items.push(Object.assign({},src)); }
+  // refs
+  const styleRef=new Map(),custRef=new Map(); const firstSale=new Map(),lastSale=new Map(),unitsAll=new Map();
+  for(const it of items){ const s=it.style; if(!firstSale.has(s)||it.date<firstSale.get(s))firstSale.set(s,it.date);
+    if(!lastSale.has(s)||it.date>lastSale.get(s))lastSale.set(s,it.date); unitsAll.set(s,(unitsAll.get(s)||0)+Math.abs(it.qty)); }
+  for(const st of styles){ if(!firstSale.has(st.style)) continue; let invD=st.invDate;
+    if(invD>firstSale.get(st.style)) invD=ymd(addDays(parseYmd(firstSale.get(st.style)),-Math.floor(rnd()*40)-2));
+    styleRef.set(st.style,{style:st.style,category:st.cat,metal:st.metal,collection:st.coll,
+      first_sale_date:firstSale.get(st.style),last_sale_date:lastSale.get(st.style),
+      units_all_time:unitsAll.get(st.style)||0,first_inventory_date:invD,stock_qty:st.stock}); }
+  const custFirst=new Map(),custNet=new Map(),custOrders=new Map();
+  for(const it of items){ const c=it.customer_id; const fs=custFirst.get(c); if(!fs||it.date<fs)custFirst.set(c,it.date);
+    custNet.set(c,(custNet.get(c)||0)+it.net); if(!custOrders.has(c))custOrders.set(c,new Set()); custOrders.get(c).add(it.document_no); }
+  for(const c of customers){ if(!custFirst.has(c.id)) continue; let fo=custFirst.get(c.id);
+    if(c.firstSeed<fo&&rnd()<0.5) fo=c.firstSeed;
+    custRef.set(c.id,{customer_id:c.id,first_order_date:fo,last_order_date:custFirst.get(c.id),
+      lifetime_orders:(custOrders.get(c.id)||new Set()).size,lifetime_net:Math.round(custNet.get(c.id)||0)}); }
+  return {items,styleRef,custRef,rawLen:items.length};
+}
+function round3(n){ return Math.round(n*1000)/1000; }
+function bandFor(unit){ unit=Math.abs(unit); for(const b of CONFIG.PRICE_BANDS) if(unit<b.max) return b.label; return CONFIG.PRICE_BANDS[CONFIG.PRICE_BANDS.length-1].label; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   DATA LOADING + DEDUP + VALIDATION
+   ═══════════════════════════════════════════════════════════════════ */
+async function loadData(){
+  if(CONFIG.API_BASE){
+    try{ const u=new URL(CONFIG.API_BASE); u.searchParams.set('days',CONFIG.WINDOW_DAYS);
+      const res=await fetch(u,{cache:'no-store'}); if(!res.ok) throw new Error('HTTP '+res.status);
+      const j=await res.json(); if(j.error) throw new Error(j.detail||j.error); ingest(j,'live'); return;
+    }catch(e){ console.warn('API load failed, using sample:',e.message); }
+  }
+  if(!SAMPLE) SAMPLE=buildSample();
+  ingest({items:SAMPLE.items,styleRef:[...SAMPLE.styleRef.values()],customerRef:[...SAMPLE.custRef.values()],
+    asOf:maxDate(SAMPLE.items),currency:'INR',gst_divisor:GST,
+    // sample capabilities mirror the REAL Sales_overview_table: no salesperson column; price_band & customer_type are pre-computed
+    capabilities:{margin:false,inventory:false,selling_days:false,customer:true,salesperson:false,sale_type:true,weights:true,price_band:true,customer_type:true}},'sample');
+}
+function maxDate(items){ let m=null; for(const it of items) if(!m||it.date>m) m=it.date; return m; }
+function dedupKey(it){ return it.gross+'|'+it.date+'|'+it.document_no+'|'+it.net_weight; }
+function dedupe(items){
+  const seen=new Set(); const out=[]; let removed=0, rawGross=0;
+  for(const it of items){ rawGross+=(it.gross||0); const k=dedupKey(it);
+    if(seen.has(k)){ removed++; continue; } seen.add(k); out.push(it); }
+  return {out,removed,rawRows:items.length,rawGross};
+}
+function ingest(j,source){
+  let items=(j.items||[]).map(it=>{ // enforce rule 2 (Net = Gross/1.03) regardless of source
+    it.net=net(it.gross||0); if(it.sale_type==null||it.sale_type==='') it.sale_type='Other'; return it; });
+  const dd=dedupe(items); items=dd.out;
+  STATE.items=items;
+  STATE.styleRef=new Map((j.styleRef||[]).map(r=>[r.style,r]));
+  STATE.custRef=new Map((j.customerRef||[]).map(r=>[r.customer_id,r]));
+  STATE.caps=Object.assign({margin:false,inventory:false,selling_days:false,customer:true,salesperson:true,sale_type:true,weights:true},j.capabilities||{});
+  STATE.source=source; STATE.asOf=j.asOf||maxDate(items); STATE.now=STATE.asOf?parseYmd(STATE.asOf):new Date();
+  STATE.days=[...new Set(items.map(i=>i.date))].sort();
+  // validation block: prefer API's server-side counts, else our client dedup
+  const dedupGross=items.reduce((s,i)=>s+(i.gross||0),0);
+  STATE.validation = j.validation ? {
+      raw:j.validation.raw_rows, deduped:j.validation.deduped_rows, removed:(j.validation.raw_rows-j.validation.deduped_rows),
+      rawGross:j.validation.raw_gross, dedupGross:j.validation.returned_gross!=null?j.validation.returned_gross:dedupGross, gst:j.gst_divisor||GST
+    } : { raw:dd.rawRows, deduped:items.length, removed:dd.removed, rawGross:dd.rawGross, dedupGross, gst:GST };
+  buildDims();
+  const dot=document.getElementById('srcDot'), lab=document.getElementById('srcLabel');
+  if(source==='live'){ dot.className='dot'; lab.textContent='Live · Sales_Overview · as of '+STATE.asOf; }
+  else if(source==='import'){ dot.className='dot'; lab.textContent='Imported file · as of '+STATE.asOf; }
+  else { dot.className='dot demo'; lab.textContent='Sample data · '+fmtInt(items.length)+' rows · as of '+STATE.asOf; }
+}
+function buildDims(){ const uniq=k=>[...new Set(STATE.items.map(i=>i[k]).filter(Boolean))].sort();
+  const presentBands=new Set(STATE.items.map(itemBand));
+  STATE.dims={category:uniq('category'),product:uniq('product_name'),style:uniq('style'),collection:uniq('collection'),metal:uniq('metal'),
+    saletype:CONFIG.SALE_TYPES.filter(t=>STATE.items.some(i=>i.sale_type===t)),
+    band:PRICE_BAND_ORDER.filter(b=>presentBands.has(b)),store:uniq('store'),person:uniq('salesperson'),channel:uniq('channel')}; }
+
+/* ── filter engine ─────────────────────────────────────────── */
+function rangeBounds(){ const now=STATE.now, f=STATE.filters; let from,to=ymd(now);
+  switch(f.range){
+    case 'today': from=ymd(now); break;
+    case 'yesterday': from=ymd(addDays(now,-1)); to=ymd(addDays(now,-1)); break;
+    case 'wtd': { const dow=(now.getDay()+6)%7; from=ymd(addDays(now,-dow)); break; }
+    case '7d': from=ymd(addDays(now,-6)); break;
+    case '30d': from=ymd(addDays(now,-29)); break;
+    case '90d': from=ymd(addDays(now,-89)); break;
+    case 'mtd': from=ymd(new Date(now.getFullYear(),now.getMonth(),1)); break;
+    case 'qtd': from=ymd(new Date(now.getFullYear(),Math.floor(now.getMonth()/3)*3,1)); break;
+    case 'ytd': from=ymd(new Date(now.getFullYear(),0,1)); break;
+    case '12m': from=ymd(addDays(now,-364)); break;
+    case 'all': from=STATE.days[0]||ymd(now); break;
+    case 'custom': from=f.from||STATE.days[0]; to=f.to||ymd(now); break;
+    default: from=ymd(addDays(now,-364));
+  } return [from,to]; }
+function prevBounds(from,to){ const days=diffDays(to,from)+1; return [ymd(addDays(parseYmd(from),-days)),ymd(addDays(parseYmd(from),-1))]; }
+function custType(id){ const r=STATE.custRef.get(id); return r?r.first_order_date:null; }
+function itemBand(it){ return it.price_band || realBand(it.gross); }   // prefer table's Price_Range (bucketed by line gross)
+function lineIsNew(it){ if(it.customer_type) return it.customer_type==='New';   // table's own New/Repeat (first purchase per party)
+  const fo=custType(it.customer_id); return !!(fo && fo>=rangeBounds()[0]); }
+function passes(it,ignore){ const f=STATE.filters; ignore=ignore||{};
+  if(!ignore.date){ const [a,b]=rangeBounds(); if(it.date<a||it.date>b) return false; }
+  if(!ignore.category && f.category && it.category!==f.category) return false;
+  if(!ignore.product && f.product && it.product_name!==f.product) return false;
+  if(!ignore.collection && f.collection && it.collection!==f.collection) return false;
+  if(!ignore.metal && f.metal && it.metal!==f.metal) return false;
+  if(!ignore.saletype && f.saletype && it.sale_type!==f.saletype) return false;
+  if(!ignore.band && f.band && itemBand(it)!==f.band) return false;
+  if(!ignore.store && f.store && it.store!==f.store) return false;
+  if(!ignore.person && f.person && it.salesperson!==f.person) return false;
+  if(!ignore.channel && f.channel && it.channel!==f.channel) return false;
+  if(!ignore.style && f.style && it.style!==f.style) return false;
+  if(!ignore.customer && f.customer){ const q=f.customer.toLowerCase();
+    if(!((it.customer_id||'').toLowerCase().includes(q)||(it.customer_name||'').toLowerCase().includes(q))) return false; }
+  if(!ignore.ranges){ const price=ratio(it.gross,it.qty||1);
+    if(f.priceMin!==''&&price<+f.priceMin) return false; if(f.priceMax!==''&&price>+f.priceMax) return false;
+    if(f.grossMin!==''&&it.gross<+f.grossMin) return false; if(f.grossMax!==''&&it.gross>+f.grossMax) return false;
+    if(f.netMin!==''&&it.net<+f.netMin) return false; if(f.netMax!==''&&it.net>+f.netMax) return false; }
+  if(!ignore.ctype && f.ctype){ const isNew=lineIsNew(it);
+    if(f.ctype==='new'&&!isNew) return false; if(f.ctype==='repeat'&&isNew) return false; }
+  return true; }
+function fItems(ignore){ return STATE.items.filter(i=>passes(i,ignore)); }
+
+/* ── aggregation ───────────────────────────────────────────── */
+function distinct(items,k){ const s=new Set(); for(const it of items) s.add(it[k]); return s.size; }
+function sum(items,k){ let s=0; for(const it of items) s+=(it[k]||0); return s; }
+function grossSum(items){ let s=0; for(const it of items) s+=(it.gross||0); return s; }   // rule 1
+function groupAgg(items,keyFn,valFn){ const m=new Map(); for(const it of items){ const k=keyFn(it); if(k==null||k==='') continue; m.set(k,(m.get(k)||0)+valFn(it)); } return m; }
+function groupObj(items,keyFn,init,acc){ const m=new Map(); for(const it of items){ const k=keyFn(it); if(k==null||k==='') continue; if(!m.has(k)) m.set(k,init()); acc(m.get(k),it); } return m; }
+function topN(map,n){ return [...map.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n); }
+
+function metrics(items){
+  const gross=grossSum(items);                    // rule 1: direct from table
+  const netSales=gross/GST;                        // rule 2: Gross / 1.03 (exact)
+  const orders=distinct(items,'document_no'), units=sum(items,'qty'), disc=sum(items,'discount'),
+        custs=distinct(items,'customer_id');
+  const grossByType={}; CONFIG.SALE_TYPES.forEach(t=>grossByType[t]=0);
+  for(const it of items){ const t=CONFIG.SALE_TYPES.includes(it.sale_type)?it.sale_type:'Other'; grossByType[t]+=it.gross||0; }
+  let newC=new Set(),repC=new Set(),active=new Set(); const cutActive=ymd(addDays(STATE.now,-90));
+  for(const it of items){ if(lineIsNew(it))newC.add(it.customer_id); else repC.add(it.customer_id); if(it.date>=cutActive)active.add(it.customer_id); }
+  return {gross,net:netSales,orders,units,disc,custs,grossByType,
+    aov:ratio(netSales,orders),asp:ratio(netSales,units),appo:ratio(units,orders),
+    newC:newC.size,repC:repC.size,repPct:custs?repC.size/custs*100:0,active:active.size,
+    rpc:ratio(netSales,custs),rps:ratio(netSales,distinct(items,'style')),
+    discPct:gross?disc/Math.abs(gross)*100:0}; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   SVG PRIMITIVES
+   ═══════════════════════════════════════════════════════════════════ */
+const SVGNS='http://www.w3.org/2000/svg';
+function svgEl(t,a){ const e=document.createElementNS(SVGNS,t); for(const k in a) e.setAttribute(k,a[k]); return e; }
+function svgText(x,y,s,a){ const t=svgEl('text',Object.assign({x,y},a||{})); t.textContent=s; return t; }
+function chartSvg(w,h){ const s=svgEl('svg',{viewBox:`0 0 ${w} ${h}`,class:'chart',preserveAspectRatio:'xMinYMid meet'}); s.style.maxHeight=(h+4)+'px'; return s; }
+function el(tag,cls,html){ const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; }
+function barsH(rows,opts={}){ rows=rows.filter(r=>r); const w=opts.w||520,rh=opts.rh||26,pad=opts.pad||4,lw=opts.lw||150;
+  const h=Math.max(30,rows.length*rh+pad*2+4); const s=chartSvg(w,h); const max=Math.max(1,...rows.map(r=>Math.abs(r.value)));
+  rows.forEach((r,i)=>{ const y=pad+i*rh; const bw=(w-lw-70)*Math.abs(r.value)/max;
+    s.appendChild(svgText(lw-8,y+rh/2+4,truncate(r.label,24),{'text-anchor':'end',fill:C_INK2,'font-size':11.5}));
+    const rect=svgEl('rect',{x:lw,y:y+3,width:Math.max(1,bw),height:rh-9,rx:4,fill:r.color||GOLD});
+    if(opts.onClick){ rect.style.cursor='pointer'; rect.addEventListener('click',()=>opts.onClick(r)); } s.appendChild(rect);
+    s.appendChild(svgText(lw+bw+6,y+rh/2+4,opts.fmt?opts.fmt(r.value):fmtInt(r.value),{fill:C_INK,'font-size':11,'font-weight':600})); });
+  return wrapChart(s); }
+function barsV(labels,series,opts={}){ const w=opts.w||640,h=opts.h||220,padL=44,padB=34,padT=10;
+  const s=chartSvg(w,h); const n=labels.length; const gw=(w-padL-8)/Math.max(1,n);
+  const all=series.flatMap(se=>se.values); const max=Math.max(1,...all.map(Math.abs));
+  gridY(s,padL,padT,w-8,h-padB,max,opts.fmt); const bw=gw/(series.length)*0.74;
+  labels.forEach((lb,i)=>{ series.forEach((se,si)=>{ const v=se.values[i]||0; const bh=(h-padB-padT)*Math.abs(v)/max;
+      const x=padL+i*gw+gw*0.13+si*bw*1.05; const y=h-padB-bh;
+      const rect=svgEl('rect',{x,y,width:Math.max(1,bw),height:Math.max(0,bh),rx:3,fill:se.color||palColor(si)});
+      if(opts.onClick){ rect.style.cursor='pointer'; rect.addEventListener('click',()=>opts.onClick(lb,i)); } s.appendChild(rect); });
+    if(n<=24||i%Math.ceil(n/16)===0) s.appendChild(svgText(padL+i*gw+gw/2,h-padB+13,shortLabel(lb),{'text-anchor':'middle',fill:C_MUTED,'font-size':9.5})); });
+  return wrapChart(s); }
+function lineChart(labels,series,opts={}){ const w=opts.w||660,h=opts.h||230,padL=48,padB=30,padT=12,padR=10;
+  const s=chartSvg(w,h); const n=labels.length; if(n===0) return wrapChart(s);
+  const all=series.flatMap(se=>se.values); const max=Math.max(1,...all),min=opts.min0?0:Math.min(0,...all);
+  gridY(s,padL,padT,w-padR,h-padB,max,opts.fmt,min);
+  const xx=i=>padL+(w-padL-padR)*(n===1?0.5:i/(n-1)); const yy=v=>(h-padB)-(h-padB-padT)*(v-min)/(max-min||1);
+  series.forEach((se,si)=>{ let dpath=''; se.values.forEach((v,i)=>{ dpath+=(i?'L':'M')+xx(i).toFixed(1)+','+yy(v).toFixed(1); });
+    if(se.area){ const ar=dpath+`L${xx(n-1)},${yy(min)}L${xx(0)},${yy(min)}Z`; s.appendChild(svgEl('path',{d:ar,fill:se.color||palColor(si),opacity:0.12})); }
+    s.appendChild(svgEl('path',{d:dpath,fill:'none',stroke:se.color||palColor(si),'stroke-width':se.dash?1.6:2.2,'stroke-dasharray':se.dash?'5 4':'','stroke-linejoin':'round'})); });
+  labels.forEach((lb,i)=>{ if(n<=18||i%Math.ceil(n/12)===0) s.appendChild(svgText(xx(i),h-padB+13,shortLabel(lb),{'text-anchor':'middle',fill:C_MUTED,'font-size':9.5})); });
+  return wrapChart(s); }
+function donut(rows,opts={}){ rows=rows.filter(r=>r.value>0); const size=opts.size||190,r=size/2-6,cx=size/2,cy=size/2,thick=opts.thick||30;
+  const total=rows.reduce((a,b)=>a+b.value,0)||1; const s=chartSvg(size+180,size); let a0=-Math.PI/2;
+  rows.forEach((row,i)=>{ const frac=row.value/total; const a1=a0+frac*2*Math.PI;
+    const x0=cx+r*Math.cos(a0),y0=cy+r*Math.sin(a0),x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1); const large=frac>0.5?1:0;
+    const path=svgEl('path',{d:`M${x0},${y0}A${r},${r} 0 ${large} 1 ${x1},${y1}`,fill:'none',stroke:row.color||palColor(i),'stroke-width':thick});
+    if(opts.onClick){ path.style.cursor='pointer'; path.addEventListener('click',()=>opts.onClick(row)); } s.appendChild(path); a0=a1; });
+  s.appendChild(svgText(cx,cy-2,opts.center||fmtInt(total),{'text-anchor':'middle',fill:C_INK,'font-size':16,'font-weight':700}));
+  if(opts.centerSub) s.appendChild(svgText(cx,cy+15,opts.centerSub,{'text-anchor':'middle',fill:C_MUTED,'font-size':10.5}));
+  rows.slice(0,8).forEach((row,i)=>{ const ly=14+i*20; s.appendChild(svgEl('rect',{x:size+6,y:ly-9,width:10,height:10,rx:2,fill:row.color||palColor(i)}));
+    s.appendChild(svgText(size+22,ly,truncate(row.label,16),{fill:C_INK2,'font-size':11}));
+    s.appendChild(svgText(size+174,ly,pctStr(row.value/total*100),{'text-anchor':'end',fill:C_MUTED,'font-size':10.5})); });
+  return wrapChart(s); }
+function pareto(rows,opts={}){ rows=rows.slice(0,opts.n||12); const w=opts.w||660,h=opts.h||240,padL=46,padB=52,padT=12,padR=40;
+  const s=chartSvg(w,h); const max=Math.max(1,...rows.map(r=>r.value)); const total=rows.reduce((a,b)=>a+b.value,0)||1;
+  gridY(s,padL,padT,w-padR,h-padB,max,opts.fmt); const gw=(w-padL-padR)/rows.length; let cum=0; const pts=[];
+  rows.forEach((r,i)=>{ const bh=(h-padB-padT)*r.value/max; const x=padL+i*gw+gw*0.16; const bw=gw*0.68;
+    s.appendChild(svgEl('rect',{x,y:h-padB-bh,width:bw,height:bh,rx:3,fill:r.color||GOLD}));
+    cum+=r.value; pts.push([padL+i*gw+gw/2,(h-padB)-(h-padB-padT)*(cum/total)]);
+    s.appendChild(svgText(padL+i*gw+gw/2,h-padB+12,shortLabel(r.label),{'text-anchor':'end',fill:C_MUTED,'font-size':9,transform:`rotate(-38 ${padL+i*gw+gw/2} ${h-padB+12})`})); });
+  let dp=''; pts.forEach((p,i)=>dp+=(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1));
+  s.appendChild(svgEl('path',{d:dp,fill:'none',stroke:C_CRIT,'stroke-width':2})); pts.forEach(p=>s.appendChild(svgEl('circle',{cx:p[0],cy:p[1],r:2.6,fill:C_CRIT})));
+  return wrapChart(s); }
+function heatmap(rowLabels,colLabels,matrix,opts={}){ const cell=opts.cell||26,lw=opts.lw||96,th=18;
+  const w=lw+colLabels.length*cell+8,h=th+rowLabels.length*cell+6; const s=chartSvg(w,h);
+  let max=0; matrix.forEach(r=>r.forEach(v=>{ if(v>max)max=v; })); max=max||1;
+  colLabels.forEach((c,j)=>s.appendChild(svgText(lw+j*cell+cell/2,th-6,shortLabel(c),{'text-anchor':'middle',fill:C_MUTED,'font-size':9})));
+  rowLabels.forEach((rl,i)=>{ s.appendChild(svgText(lw-6,th+i*cell+cell/2+3,truncate(rl,14),{'text-anchor':'end',fill:C_INK2,'font-size':10}));
+    colLabels.forEach((c,j)=>{ const v=matrix[i][j]||0; s.appendChild(svgEl('rect',{x:lw+j*cell,y:th+i*cell,width:cell-2,height:cell-2,rx:3,fill:heatColor(v/max),stroke:C_SURF,'stroke-width':1})); }); });
+  return wrapChart(s); }
+function heatColor(t){ t=Math.max(0,Math.min(1,t)); if(t<0.001) return C_GRID;
+  const stops=[[26,26,25],[42,54,90],[57,135,229],[217,164,65],[208,59,59]]; const seg=t*(stops.length-1); const i=Math.floor(seg),f=seg-i; const a=stops[i],b=stops[Math.min(i+1,stops.length-1)];
+  return `rgb(${Math.round(a[0]+(b[0]-a[0])*f)},${Math.round(a[1]+(b[1]-a[1])*f)},${Math.round(a[2]+(b[2]-a[2])*f)})`; }
+function scatter(points,opts={}){ const w=opts.w||660,h=opts.h||280,padL=52,padB=36,padT=12,padR=14; const s=chartSvg(w,h);
+  const xs=points.map(p=>p.x),ys=points.map(p=>p.y); const xmax=Math.max(1,...xs),ymax=Math.max(1,...ys);
+  gridY(s,padL,padT,w-padR,h-padB,ymax,opts.fmtY); const xx=v=>padL+(w-padL-padR)*v/xmax,yy=v=>(h-padB)-(h-padB-padT)*v/ymax;
+  points.forEach((p,i)=>{ const c=svgEl('circle',{cx:xx(p.x),cy:yy(p.y),r:p.r||5,fill:p.color||palColor(i),opacity:.72,stroke:C_SURF,'stroke-width':1});
+    if(p.title){ const t=svgEl('title'); t.textContent=p.title; c.appendChild(t); } s.appendChild(c); });
+  if(opts.xlab) s.appendChild(svgText((w+padL)/2,h-4,opts.xlab,{'text-anchor':'middle',fill:C_MUTED,'font-size':10}));
+  if(opts.ylab) s.appendChild(svgText(12,padT+4,opts.ylab,{fill:C_MUTED,'font-size':10})); return wrapChart(s); }
+function gridY(s,x0,y0,x1,y1,max,fmt,min){ min=min||0; const lines=4; for(let i=0;i<=lines;i++){ const v=min+(max-min)*i/lines; const y=y1-(y1-y0)*i/lines;
+    s.appendChild(svgEl('line',{x1:x0,y1:y,x2:x1,y2:y,stroke:C_GRID,'stroke-width':1}));
+    s.appendChild(svgText(x0-6,y+3,fmt?fmt(v):shortNum(v),{'text-anchor':'end',fill:C_MUTED,'font-size':9})); } }
+function wrapChart(svg){ const d=el('div','chart-wrap'); d.appendChild(svg); return d; }
+function shortNum(v){ const s=v<0?'-':''; v=Math.abs(v); if(v>=1e7)return s+(v/1e7).toFixed(1)+'Cr'; if(v>=1e5)return s+(v/1e5).toFixed(1)+'L'; if(v>=1e3)return s+(v/1e3).toFixed(0)+'K'; return s+Math.round(v); }
+function moneyAxis(v){ return '₹'+shortNum(v); }
+function truncate(s,n){ s=String(s); return s.length>n?s.slice(0,n-1)+'…':s; }
+function shortLabel(s){ s=String(s); if(/^\d{4}-\d{2}$/.test(s)){ const [y,m]=s.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]+" '"+y.slice(2); } return truncate(s,10); }
+
+/* ── UI builders ───────────────────────────────────────────── */
+function kpi(lab,val,sub,accent){ const d=el('div','kpi');
+  d.innerHTML=`<div class="accent" style="background:${accent||GOLD}"></div><div class="lab">${lab}</div><div class="val tnum">${val}</div>`+(sub?`<div class="sub">${sub}</div>`:''); return d; }
+function deltaHtml(cur,prev,invert){ if(prev==null||prev===0) return '<span class="delta" style="color:'+C_MUTED+'">·</span>';
+  const g=(cur-prev)/Math.abs(prev)*100; const up=g>=0; const good=invert?!up:up;
+  return `<span class="delta" style="color:${good?C_GOOD:C_CRIT}">${up?'▲':'▼'} ${Math.abs(g).toFixed(1)}%</span>`; }
+function card(title,hint,body,tools){ const c=el('div','card'); const head=el('div','head');
+  head.appendChild(el('div',null,`<h3>${title}</h3>${hint?`<div class="hint">${hint}</div>`:''}`));
+  if(tools){ const t=el('div','tools'); tools.forEach(x=>t.appendChild(x)); head.appendChild(t); }
+  c.appendChild(head); if(body) c.appendChild(body); return c; }
+function miniBtn(label,fn){ const b=el('button','mini',label); b.addEventListener('click',fn); return b; }
+function exportMini(name,cols,rowsFn){ return miniBtn('⭳ CSV',()=>downloadRows(name,cols,rowsFn(),'csv')); }
+function simpleTable(cols,rows,opts={}){ const wrap=el('div','tbl-wrap'); const t=el('table','tbl'); const thead=el('thead'); const tr=el('tr');
+  cols.forEach(c=>{ const th=el('th',c.num?'num':null,c.label); tr.appendChild(th); }); thead.appendChild(tr); t.appendChild(thead);
+  const tb=el('tbody'); rows.slice(0,opts.limit||200).forEach(r=>{ const row=el('tr');
+    cols.forEach(c=>{ const td=el('td',c.num?'num':null); const v=c.get(r); td.innerHTML=(v==null?NA:v); row.appendChild(td); }); tb.appendChild(row); });
+  t.appendChild(tb); wrap.appendChild(t); return wrap; }
+function inlineBar(v,max,color){ const w=Math.round(60*Math.min(1,Math.abs(v)/(max||1))); return `<span class="bar-inline" style="width:${w}px;background:${color||GOLD}"></span>`; }
+function legend(pairs){ const d=el('div','legend'); pairs.forEach(([l,c])=>{ const s=el('span'); s.innerHTML=`<i style="background:${c}"></i>${l}`; d.appendChild(s); }); return d; }
+
+/* Full data-table: search + sortable + pagination + CSV/Excel export */
+function dataTable(cols,rows,opts={}){
+  const wrap=el('div'); let q='', sortKey=opts.sortKey||null, sortDir=opts.sortDir||-1, page=1, pageSize=opts.pageSize||25;
+  const toolbar=el('div','dt-toolbar');
+  const search=el('input'); search.type='text'; search.placeholder=opts.searchPlaceholder||'Search…';
+  const count=el('span',null,''); count.style.color='var(--muted)'; count.style.fontSize='12px';
+  const psSel=el('select'); [25,50,100,250].forEach(n=>{ const o=el('option',null,n+' / page'); o.value=n; if(n===pageSize)o.selected=true; psSel.appendChild(o); });
+  const csvBtn=miniBtn('⭳ CSV',()=>downloadRows(opts.name||'sales',cols,filtered(),'csv'));
+  const xlsBtn=miniBtn('⭳ Excel',()=>downloadRows(opts.name||'sales',cols,filtered(),'xls'));
+  toolbar.append(search,psSel,count,el('span','spacer'),csvBtn,xlsBtn); toolbar.querySelector('.spacer').style.flex='1';
+  const tblWrap=el('div','tbl-wrap'); const pager=el('div','dt-pager');
+  wrap.append(toolbar,tblWrap,pager);
+  function filtered(){ let r=rows; if(q){ const t=q.toLowerCase(); r=r.filter(row=>cols.some(c=>String((c.raw?c.raw(row):c.get(row))??'').toLowerCase().includes(t))); }
+    if(sortKey){ const c=cols.find(x=>x.key===sortKey); if(c){ r=[...r].sort((a,b)=>{ let va=c.sort?c.sort(a):(c.raw?c.raw(a):c.get(a)), vb=c.sort?c.sort(b):(c.raw?c.raw(b):c.get(b));
+      if(typeof va==='number'&&typeof vb==='number') return (va-vb)*sortDir; return String(va).localeCompare(String(vb))*sortDir; }); } } return r; }
+  function draw(){ const all=filtered(); const pages=Math.max(1,Math.ceil(all.length/pageSize)); if(page>pages)page=pages;
+    const slice=all.slice((page-1)*pageSize,page*pageSize);
+    tblWrap.innerHTML=''; const t=el('table','tbl'); const thead=el('thead'); const tr=el('tr');
+    cols.forEach(c=>{ const th=el('th',(c.num?'num ':'')+(c.key===sortKey?'sorted':''),c.label+(c.key===sortKey?(sortDir<0?' ▾':' ▴'):''));
+      if(c.key){ th.addEventListener('click',()=>{ if(sortKey===c.key)sortDir*=-1; else {sortKey=c.key;sortDir=c.num?-1:1;} draw(); }); } tr.appendChild(th); });
+    thead.appendChild(tr); t.appendChild(thead); const tb=el('tbody');
+    slice.forEach(r=>{ const row=el('tr'); cols.forEach(c=>{ const td=el('td',c.num?'num':null); const v=c.get(r); td.innerHTML=(v==null?NA:v); row.appendChild(td); }); tb.appendChild(row); });
+    t.appendChild(tb); tblWrap.appendChild(t);
+    count.textContent=fmtInt(all.length)+' rows'+(all.length!==rows.length?' (of '+fmtInt(rows.length)+')':'');
+    pager.innerHTML=''; const info=el('span',null,`Page ${page} / ${pages}`);
+    const prev=miniBtn('‹ Prev',()=>{ if(page>1){page--;draw();} }); const next=miniBtn('Next ›',()=>{ if(page<pages){page++;draw();} });
+    pager.append(prev,info,next); }
+  search.addEventListener('input',()=>{ q=search.value; page=1; draw(); });
+  psSel.addEventListener('change',()=>{ pageSize=+psSel.value; page=1; draw(); });
+  draw(); return wrap;
+}
+
+/* ── nav + routing ─────────────────────────────────────────── */
+const TABS=[
+  {g:'Overview',items:[['overview','Executive Summary','◆'],['saletype','Sale Types','🧾']]},
+  {g:'Sales',items:[['trends','Sales Trends','📈'],['category','Category','🏷'],['pricing','Pricing','💰'],['time','Time Patterns','🕑']]},
+  {g:'Products',items:[['products','Product Performance','💍'],['styles','Style Performance','✦'],['inventory','Inventory Movement','📦'],['basket','Combinations','🔗']]},
+  {g:'Customers',items:[['customers','Customer Analytics','👤'],['repeat','Repeat & Retention','🔁']]},
+  {g:'Reach',items:[['geo','Geographic','🌐'],['team','Sales Team','🏅']]},
+  {g:'Data',items:[['dump','Detailed Sales','📋'],['validation','Validation','✅']]},
+  {g:'Intelligence',items:[['insights','Business Insights','✨']]}
+];
+function buildNav(){ const nav=document.getElementById('nav'); nav.innerHTML='';
+  TABS.forEach(grp=>{ nav.appendChild(el('div','grp',grp.g));
+    grp.items.forEach(([id,label,ic])=>{ const a=el('a',null,`<span class="ic">${ic}</span><span>${label}</span>`); a.dataset.tab=id;
+      a.addEventListener('click',()=>{ location.hash=id; }); nav.appendChild(a); }); }); }
+function setActiveNav(){ document.querySelectorAll('nav.tabs a').forEach(a=>a.classList.toggle('on',a.dataset.tab===STATE.tab)); }
+function route(){ const h=(location.hash||'#overview').slice(1); const valid=TABS.flatMap(g=>g.items.map(i=>i[0]));
+  STATE.tab=valid.includes(h)?h:'overview'; setActiveNav(); render(); window.scrollTo(0,0); }
+
+/* ── filter bar ────────────────────────────────────────────── */
+function filterBar(){ const bar=el('div','filters'); const f=STATE.filters;
+  const sel=(key,label,options,allLabel)=>{ const fl=el('div','fl'); fl.appendChild(el('label',null,label));
+    const s=el('select'); s.innerHTML=`<option value="">${allLabel||'All'}</option>`+(options||[]).map(o=>`<option ${f[key]===o?'selected':''}>${o}</option>`).join('');
+    s.value=f[key]||''; s.addEventListener('change',()=>{ f[key]=s.value; render(); }); fl.appendChild(s); return fl; };
+  const rfl=el('div','fl'); rfl.appendChild(el('label',null,'Period')); const rs=el('select');
+  const ranges=[['today','Today'],['yesterday','Yesterday'],['7d','Last 7 days'],['30d','Last 30 days'],['wtd','This week'],['mtd','This month'],['qtd','This quarter'],['ytd','This year'],['12m','Last 12 months'],['all','All time'],['custom','Custom…']];
+  rs.innerHTML=ranges.map(([v,l])=>`<option value="${v}" ${f.range===v?'selected':''}>${l}</option>`).join('');
+  rs.addEventListener('change',()=>{ f.range=rs.value; render(); }); rfl.appendChild(rs); bar.appendChild(rfl);
+  if(f.range==='custom'){ ['from','to'].forEach(k=>{ const fl=el('div','fl'); fl.appendChild(el('label',null,k==='from'?'From':'To'));
+    const inp=el('input'); inp.type='date'; inp.value=f[k]||''; inp.min=STATE.days[0]; inp.max=ymd(STATE.now);
+    inp.addEventListener('change',()=>{ f[k]=inp.value; render(); }); fl.appendChild(inp); bar.appendChild(fl); }); }
+  bar.appendChild(sel('category','Category',STATE.dims.category));
+  bar.appendChild(sel('product','Product',STATE.dims.product));
+  bar.appendChild(sel('collection','Collection',STATE.dims.collection));
+  bar.appendChild(sel('metal','Metal',STATE.dims.metal));
+  if(STATE.caps.sale_type) bar.appendChild(sel('saletype','Sale Type',STATE.dims.saletype));
+  bar.appendChild(sel('store','Store',STATE.dims.store));
+  bar.appendChild(sel('style','Style',STATE.dims.style));
+  if(STATE.caps.salesperson) bar.appendChild(sel('person','Sales Person',STATE.dims.person));
+  if(STATE.caps.customer) bar.appendChild(sel('ctype','Cust. Type',['new','repeat'],'All'));
+  if(STATE.caps.customer){ const cfl=el('div','fl'); cfl.appendChild(el('label',null,'Customer'));
+    const cin=el('input'); cin.type='text'; cin.placeholder='id / name'; cin.value=f.customer||''; cin.style.minWidth='110px';
+    cin.addEventListener('change',()=>{ f.customer=cin.value.trim(); render(); }); cfl.appendChild(cin); bar.appendChild(cfl); }
+  const rangePair=(minK,maxK,label)=>{ const fl=el('div','fl'); fl.appendChild(el('label',null,label));
+    const wrap=el('div'); wrap.style.display='flex'; wrap.style.gap='4px';
+    [[minK,'Min'],[maxK,'Max']].forEach(([key,ph])=>{ const inp=el('input'); inp.type='number'; inp.placeholder=ph; inp.value=f[key]; inp.style.width='70px';
+      inp.style.cssText='width:70px;background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 6px;font-size:12px;font-family:var(--font)';
+      inp.addEventListener('change',()=>{ f[key]=inp.value; render(); }); wrap.appendChild(inp); }); fl.appendChild(wrap); return fl; };
+  bar.appendChild(rangePair('priceMin','priceMax','Unit Price ₹'));
+  bar.appendChild(rangePair('grossMin','grossMax','Gross Sale ₹'));
+  bar.appendChild(rangePair('netMin','netMax','Net Sale ₹'));
+  bar.appendChild(el('div','spacer'));
+  if(f.style){ const c=el('button','chip',`Style <b>${f.style}</b> <span class="x">✕</span>`); c.addEventListener('click',()=>{ f.style=''; render(); }); bar.appendChild(c); }
+  if(anyFilter()){ const clr=el('button','chip','<span class="x">✕</span> Clear all'); clr.addEventListener('click',clearFilters); bar.appendChild(clr); }
+  return bar; }
+function anyFilter(){ const f=STATE.filters; return f.category||f.product||f.collection||f.metal||f.saletype||f.band||f.store||f.person||f.ctype||f.channel||f.style||f.customer||f.priceMin!==''||f.priceMax!==''||f.grossMin!==''||f.grossMax!==''||f.netMin!==''||f.netMax!==''; }
+function clearFilters(){ Object.assign(STATE.filters,{category:'',product:'',collection:'',metal:'',saletype:'',band:'',store:'',person:'',ctype:'',channel:'',style:'',customer:'',priceMin:'',priceMax:'',grossMin:'',grossMax:'',netMin:'',netMax:''}); render(); }
+function crossFilter(dim,val){ if(STATE.filters[dim]===val) STATE.filters[dim]=''; else STATE.filters[dim]=val; render(); }
+function granToggle(){ const wrap=el('div','tools'); [['daily','Day'],['weekly','Week'],['monthly','Month'],['quarterly','Qtr'],['yearly','Year']].forEach(([v,l])=>{
+  const b=el('button','mini'+(STATE.gran===v?' on':''),l); b.addEventListener('click',()=>{ STATE.gran=v; render(); }); wrap.appendChild(b); }); return wrap; }
+function granKeyFn(g){ g=g||STATE.gran; return {daily:it=>it.date,weekly:it=>weekKey(it.date),monthly:it=>monthKey(it.date),quarterly:it=>quarterKey(it.date),yearly:it=>yearKey(it.date)}[g]; }
+
+/* ── render router ─────────────────────────────────────────── */
+function render(){ const m=document.getElementById('main'); m.innerHTML=''; refreshThemeColors();
+  const R={overview:renderOverview,saletype:renderSaleType,trends:renderTrends,category:renderCategory,pricing:renderPricing,time:renderTime,
+    products:renderProducts,styles:renderStyles,inventory:renderInventory,basket:renderBasket,
+    customers:renderCustomers,repeat:renderRepeat,geo:renderGeo,team:renderTeam,dump:renderDump,validation:renderValidation,insights:renderInsights};
+  (R[STATE.tab]||renderOverview)(m); }
+function secHead(title,sub){ const d=el('div','tabhead'); d.appendChild(el('div',null,`<h2 class="sec">${title}</h2><p class="secsub">${sub||''}</p>`)); return d; }
+function mount(m,head){ m.appendChild(head); m.appendChild(filterBar()); }
+function scopeLine(){ const [a,b]=rangeBounds(); const F=STATE.filters; const parts=[];
+  ['category','product','collection','metal','saletype','store','person','channel'].forEach(k=>{ if(F[k]) parts.push(F[k]); });
+  if(F.ctype) parts.push(F.ctype+' customers'); if(F.style) parts.push('style '+F.style);
+  return `${a} → ${b}`+(parts.length?' · '+parts.join(' · '):''); }
+
+/* ─────────  1. EXECUTIVE SUMMARY  ───────── */
+function renderOverview(m){
+  mount(m,secHead('Executive Summary','Gross straight from Sales_Overview · Net = Gross ÷ '+GST+' · '+scopeLine()));
+  const items=fItems(); const cur=metrics(items);
+  const [pf,pt]=prevBounds(...rangeBounds()); const prev=metrics(STATE.items.filter(i=>i.date>=pf&&i.date<=pt&&passes(i,{date:true})));
+  const kwrap=el('div','kpis'); const K=(l,v,d,ac)=>kwrap.appendChild(kpi(l,v,d,ac));
+  K('Gross Sales',money(cur.gross),deltaHtml(cur.gross,prev.gross)+' vs prev',GOLD);
+  K('Net Sales',money(cur.net),'Gross ÷ '+GST,'#26c281');
+  K('Total Revenue',money(cur.net),'net of '+Math.round((GST-1)*100)+'% GST','#199e70');
+  K('Total Orders',fmtInt(cur.orders),deltaHtml(cur.orders,prev.orders),'#3987e5');
+  K('Total Quantity Sold',fmtInt(cur.units),deltaHtml(cur.units,prev.units),'#199e70');
+  K('Avg Selling Price',moneyFull(cur.asp),'net ÷ units','#d55181');
+  K('Avg Order Value',moneyFull(cur.aov),'net ÷ orders','#9085e9');
+  K('Total Customers',fmtInt(cur.custs),deltaHtml(cur.custs,prev.custs),'#4db6ac');
+  if(STATE.caps.customer){ K('New Customers',fmtInt(cur.newC),pctStr(ratio(cur.newC,cur.custs)*100)+' of buyers','#3987e5');
+    K('Repeat Customers',fmtInt(cur.repC),pctStr(cur.repPct)+' repeat','#9085e9');
+    K('Repeat %',pctStr(cur.repPct),'repeat ÷ total buyers','#9085e9'); }
+  K('Total Styles Sold',fmtInt(distinct(items,'style')),'distinct designs','#c98500');
+  K('Total Products Sold',fmtInt(distinct(items,'sku')),'distinct SKUs','#4db6ac');
+  K('Total Categories',fmtInt(distinct(items,'category')),'dynamic from table','#d55181');
+  if(STATE.caps.sale_type){ K('MTO Sales',money(cur.grossByType.MTO||0),pctStr(ratio(cur.grossByType.MTO||0,cur.gross)*100)+' of gross',SALE_TYPE_COLOR.MTO);
+    K('RTS Sales',money(cur.grossByType.RTS||0),pctStr(ratio(cur.grossByType.RTS||0,cur.gross)*100)+' of gross',SALE_TYPE_COLOR.RTS); }
+  K('Total Discount',money(cur.disc),pctStr(cur.discPct)+' of gross','#d03b3b');
+  K('Revenue / Customer',moneyFull(cur.rpc),'net','#d95926');
+  m.appendChild(kwrap);
+  // sale-type strip
+  if(STATE.caps.sale_type){ const st=el('div','kpis');
+    CONFIG.SALE_TYPES.forEach(t=>{ if(Math.abs(cur.grossByType[t])>0.5||['MTO','RTS'].includes(t))
+      st.appendChild(kpi(t+' Gross',money(cur.grossByType[t]),pctStr(ratio(cur.grossByType[t],cur.gross)*100)+' of gross',SALE_TYPE_COLOR[t])); });
+    m.appendChild(card('Gross Sales by Sale Type','MTO / RTS / Return / Exchange — each independent',st)); }
+  const g=el('div','grid g2');
+  const byM=groupObj(items,it=>monthKey(it.date),()=>({gross:0,orders:new Set()}),(a,it)=>{a.gross+=it.gross;a.orders.add(it.document_no);});
+  const mk=[...byM.keys()].sort();
+  g.appendChild(card('Monthly Gross Sales & Orders','Gross bars · orders line',(()=>{ const box=el('div');
+    box.appendChild(barsV(mk,[{values:mk.map(k=>byM.get(k).gross),color:GOLD}],{fmt:moneyAxis,h:200}));
+    box.appendChild(lineChart(mk,[{values:mk.map(k=>byM.get(k).orders.size),color:'#3987e5'}],{fmt:v=>fmtInt(v),h:120,min0:true}));
+    box.appendChild(legend([['Gross Sales',GOLD],['Orders','#3987e5']])); return box; })()));
+  const byCat=groupAgg(items,it=>it.category,it=>it.gross);
+  g.appendChild(card('Gross by Category','Click a slice to filter · dynamic categories',donut([...byCat.entries()].sort((a,b)=>b[1]-a[1]).map(([k,v],i)=>({label:k,value:Math.max(0,v),color:palColor(i)})),{center:money(cur.gross),centerSub:'gross',onClick:r=>crossFilter('category',r.label)})));
+  m.appendChild(g);
+  const g2=el('div','grid g2');
+  const byMetal=groupAgg(items,it=>it.metal,it=>it.gross);
+  g2.appendChild(card('Gross by Metal','',donut([...byMetal.entries()].sort((a,b)=>b[1]-a[1]).map(([k,v])=>({label:k,value:Math.max(0,v),color:metalColor(k)})),{center:'',onClick:r=>crossFilter('metal',r.label)})));
+  const topStyles=topN(groupAgg(items,it=>it.style,it=>it.gross),10).map(([k])=>k);
+  const sg=groupAgg(items,it=>it.style,it=>it.gross);
+  g2.appendChild(card('Top 10 Styles by Gross','',barsH(topStyles.map(k=>({label:k+' · '+(STATE.styleRef.get(k)?.category||''),value:sg.get(k),color:GOLD})),{fmt:money,lw:170,onClick:r=>crossFilter('style',r.label.split(' · ')[0])})));
+  m.appendChild(g2);
+}
+
+/* ─────────  1b. SALE TYPES  ───────── */
+function renderSaleType(m){
+  mount(m,secHead('Sale Type Analysis','MTO / RTS / Return / Exchange — computed independently, straight from the table · '+scopeLine()));
+  if(!STATE.caps.sale_type){ m.appendChild(el('div','banner','⚠️ No <code>sale_type</code> column mapped in the API COLMAP — sale-type split unavailable.')); return; }
+  const items=fItems();
+  const by=groupObj(items,it=>CONFIG.SALE_TYPES.includes(it.sale_type)?it.sale_type:'Other',()=>({gross:0,orders:new Set(),units:0,disc:0}),(a,it)=>{a.gross+=it.gross;a.orders.add(it.document_no);a.units+=it.qty;a.disc+=it.discount;});
+  const rows=CONFIG.SALE_TYPES.filter(t=>by.has(t)).map(t=>({type:t,...by.get(t),orders:by.get(t).orders.size}));
+  const grand=grossSum(items);
+  const kw=el('div','kpis'); rows.forEach(r=>kw.appendChild(kpi(r.type+' — Gross',money(r.gross),`${pctStr(ratio(r.gross,grand)*100)} · ${fmtInt(r.orders)} orders`,SALE_TYPE_COLOR[r.type]))); m.appendChild(kw);
+  const g=el('div','grid g2');
+  g.appendChild(card('Gross Sales by Sale Type','',donut(rows.filter(r=>r.gross>0).map(r=>({label:r.type,value:r.gross,color:SALE_TYPE_COLOR[r.type]})),{center:money(grand),centerSub:'gross'})));
+  // monthly stacked-ish (grouped) by type
+  const byM=groupObj(items,it=>monthKey(it.date),()=>{const o={}; CONFIG.SALE_TYPES.forEach(t=>o[t]=0); return o;},(a,it)=>{ const t=CONFIG.SALE_TYPES.includes(it.sale_type)?it.sale_type:'Other'; a[t]+=it.gross; });
+  const mk=[...byM.keys()].sort();
+  g.appendChild(card('Monthly Gross by Sale Type','',(()=>{ const box=el('div'); const series=rows.map(r=>({values:mk.map(k=>byM.get(k)[r.type]),color:SALE_TYPE_COLOR[r.type]}));
+    box.appendChild(barsV(mk,series,{fmt:moneyAxis,h:230})); box.appendChild(legend(rows.map(r=>[r.type,SALE_TYPE_COLOR[r.type]]))); return box; })()));
+  m.appendChild(g);
+  const cols=[{label:'Sale Type',get:r=>`<span class="pill ${r.type}">${r.type}</span>`},{label:'Gross Sales',num:true,get:r=>moneyFull(r.gross)},
+    {label:'Net Sales',num:true,get:r=>moneyFull(r.gross/GST)},{label:'Orders',num:true,get:r=>fmtInt(r.orders)},{label:'Units',num:true,get:r=>fmtInt(r.units)},
+    {label:'Discount',num:true,get:r=>moneyFull(r.disc)},{label:'% of Gross',num:true,get:r=>pctStr(ratio(r.gross,grand)*100)}];
+  m.appendChild(card('Sale Type Breakdown','Each independent · reconciles to total gross',simpleTable(cols,rows),
+    [exportMini('sale_types',[{label:'SaleType',get:r=>r.type},{label:'Gross',get:r=>Math.round(r.gross)},{label:'Net',get:r=>Math.round(r.gross/GST)},{label:'Orders',get:r=>r.orders}],()=>rows)]));
+}
+
+/* ─────────  2. SALES TRENDS  ───────── */
+function renderTrends(m){
+  mount(m,secHead('Sales Trend Analysis','Gross & Net over time · daily → yearly · totals reconcile to the source · '+scopeLine()));
+  const items=fItems(); const kf=granKeyFn();
+  const by=groupObj(items,kf,()=>({gross:0,orders:new Set(),units:0,cust:new Set()}),(a,it)=>{a.gross+=it.gross;a.orders.add(it.document_no);a.units+=it.qty;a.cust.add(it.customer_id);});
+  const keys=[...by.keys()].sort();
+  const series={Gross:keys.map(k=>by.get(k).gross),Net:keys.map(k=>by.get(k).gross/GST),Orders:keys.map(k=>by.get(k).orders.size),Units:keys.map(k=>by.get(k).units),Customers:keys.map(k=>by.get(k).cust.size)};
+  const grand=grossSum(items);
+  const c=card('Sales Trend — '+STATE.gran,'Bars scale to the chosen granularity; the sum across all buckets equals the grand total',null,[granToggle()]);
+  const metricSeg=el('div','tools'); let metric='Gross'; const box=el('div');
+  const draw=(mtr)=>{ box.innerHTML=''; const vals=series[mtr]; const isMoney=(mtr==='Gross'||mtr==='Net');
+    box.appendChild(lineChart(keys,[{values:vals,color:mtr==='Net'?'#26c281':GOLD,area:true}],{fmt:isMoney?moneyAxis:(v=>fmtInt(v)),h:250,min0:!vals.some(v=>v<0)}));
+    const total=vals.reduce((a,b)=>a+b,0);
+    const recon=el('div','banner ok'); recon.innerHTML=`✅ <b>${mtr}</b> summed over ${keys.length} ${STATE.gran} buckets = <b>${isMoney?moneyFull(total):fmtInt(total)}</b>${(mtr==='Gross')?` — equals filtered Gross Sales ${moneyFull(grand)}`:''}`;
+    box.appendChild(recon);
+    const rows=keys.map((k,i)=>({k,v:vals[i],prev:i?vals[i-1]:null})).reverse();
+    box.appendChild(simpleTable([{label:STATE.gran+' period',get:r=>r.k},{label:mtr,num:true,get:r=>isMoney?moneyFull(r.v):fmtInt(r.v)},
+      {label:'Prev',num:true,get:r=>r.prev==null?NA:(isMoney?moneyFull(r.prev):fmtInt(r.prev))},
+      {label:'Growth %',num:true,get:r=>r.prev==null?NA:deltaHtml(r.v,r.prev)},
+      {label:'Variance',num:true,get:r=>r.prev==null?NA:(isMoney?moneyFull(r.v-r.prev):fmtInt(r.v-r.prev))}],rows,{limit:48})); };
+  ['Gross','Net','Orders','Units','Customers'].forEach(mt=>{ const b=el('button','mini'+(mt===metric?' on':''),mt);
+    b.addEventListener('click',()=>{ metric=mt; [...metricSeg.children].forEach(x=>x.classList.toggle('on',x.textContent===mt)); draw(mt); }); metricSeg.appendChild(b); });
+  c.querySelector('.tools').prepend(metricSeg); draw('Gross'); c.appendChild(box); m.appendChild(c);
+  const [a,b]=rangeBounds(); const [pa,pb]=prevBounds(a,b);
+  const curM=metrics(items); const prevM=metrics(STATE.items.filter(i=>i.date>=pa&&i.date<=pb&&passes(i,{date:true})));
+  const g=el('div','grid g4');
+  [['Gross Sales','gross',money],['Net Sales','net',money],['Orders','orders',fmtInt],['Units','units',fmtInt]].forEach(([l,k,fm])=>{
+    g.appendChild(kpi(l+' vs prev period',fm(curM[k]),deltaHtml(curM[k],prevM[k])+` · prev ${fm(prevM[k])}`)); });
+  m.appendChild(g);
+}
+
+/* ─────────  3. PRODUCT PERFORMANCE  ───────── */
+function renderProducts(m){
+  mount(m,secHead('Product Performance','Every SKU/style ranked by Gross · '+scopeLine()));
+  const items=fItems();
+  const by=groupObj(items,it=>it.sku,()=>({sku:'',name:'',style:'',cat:'',coll:'',metal:'',units:0,gross:0,disc:0,orders:new Set(),nw:0}),
+    (a,it)=>{a.sku=it.sku;a.name=it.product_name;a.style=it.style;a.cat=it.category;a.coll=it.collection;a.metal=it.metal;a.units+=it.qty;a.gross+=it.gross;a.disc+=it.discount;a.orders.add(it.document_no);a.nw+=it.net_weight;});
+  const totGross=grossSum(items);
+  const rows=[...by.values()].map(r=>({...r,orders:r.orders.size,net:r.gross/GST,asp:ratio(r.gross,r.units),discPct:r.gross?r.disc/Math.abs(r.gross)*100:0,contrib:totGross?r.gross/totGross*100:0})).sort((a,b)=>b.gross-a.gross);
+  const maxG=Math.max(1,...rows.map(r=>Math.abs(r.gross)));
+  const g=el('div','grid g2');
+  g.appendChild(card('Top 10 Products by Gross','',barsH(rows.slice(0,10).map(r=>({label:r.name+' · '+r.sku,value:r.gross,color:GOLD})),{fmt:money,lw:180})));
+  g.appendChild(card('Top 10 by Units','',barsH([...rows].sort((a,b)=>b.units-a.units).slice(0,10).map(r=>({label:r.name+' · '+r.sku,value:r.units,color:'#3987e5'})),{fmt:fmtInt,lw:180})));
+  m.appendChild(g);
+  const cols=[{key:'name',label:'Product',get:r=>`<b>${truncate(r.name,24)}</b>`,raw:r=>r.name},{key:'sku',label:'SKU',get:r=>r.sku,raw:r=>r.sku},
+    {key:'style',label:'Style',get:r=>r.style,raw:r=>r.style},{key:'cat',label:'Category',get:r=>r.cat,raw:r=>r.cat},{key:'metal',label:'Metal',get:r=>r.metal,raw:r=>r.metal},
+    {key:'units',label:'Units',num:true,get:r=>fmtInt(r.units),sort:r=>r.units},{key:'orders',label:'Orders',num:true,get:r=>fmtInt(r.orders),sort:r=>r.orders},
+    {key:'gross',label:'Gross',num:true,get:r=>moneyFull(r.gross)+' '+inlineBar(r.gross,maxG),sort:r=>r.gross,raw:r=>Math.round(r.gross)},
+    {key:'net',label:'Net',num:true,get:r=>moneyFull(r.net),sort:r=>r.net},{key:'asp',label:'ASP',num:true,get:r=>moneyFull(r.asp),sort:r=>r.asp},
+    {key:'discPct',label:'Disc%',num:true,get:r=>pctStr(r.discPct),sort:r=>r.discPct},{key:'contrib',label:'Contrib%',num:true,get:r=>pctStr(r.contrib),sort:r=>r.contrib}];
+  m.appendChild(card('All Products','Search, sort, paginate & export',dataTable(cols,rows,{name:'products',sortKey:'gross',pageSize:25})));
+}
+
+/* ─────────  4. STYLE PERFORMANCE  ───────── */
+function styleAgg(items){
+  const by=groupObj(items,it=>it.style,()=>({style:'',cat:'',metal:'',coll:'',units:0,gross:0,disc:0,orders:new Set(),last:''}),
+    (a,it)=>{a.style=it.style;a.cat=it.category;a.metal=it.metal;a.coll=it.collection;a.units+=it.qty;a.gross+=it.gross;a.disc+=it.discount;a.orders.add(it.document_no);if(it.date>a.last)a.last=it.date;});
+  const now=STATE.now;
+  return [...by.values()].map(r=>{ const ref=STATE.styleRef.get(r.style)||{}; const first_sale=ref.first_sale_date,inv=ref.first_inventory_date;
+    const sellDays=(STATE.caps.selling_days&&inv&&first_sale)?diffDays(first_sale,inv):null; const daysSinceLast=r.last?diffDays(ymd(now),r.last):9999;
+    let cls='slow'; if(r.units>=CONFIG.MOVEMENT.fastUnits&&daysSinceLast<=CONFIG.MOVEMENT.slowDays) cls='fast'; else if(daysSinceLast>=CONFIG.MOVEMENT.deadDays) cls='dead';
+    return {...r,orders:r.orders.size,net:r.gross/GST,asp:ratio(r.gross,r.units),discPct:r.gross?r.disc/Math.abs(r.gross)*100:0,first_sale,inv,sellDays,daysSinceLast,cls,stock:ref.stock_qty}; }); }
+function renderStyles(m){
+  mount(m,secHead('Style Performance','Design-level Gross, velocity & days-to-sell · '+scopeLine()));
+  const items=fItems(); const rows=styleAgg(items).sort((a,b)=>b.gross-a.gross);
+  const fast=rows.filter(r=>r.cls==='fast'),slow=rows.filter(r=>r.cls==='slow'),dead=rows.filter(r=>r.cls==='dead');
+  const withDays=rows.filter(r=>r.sellDays!=null); const avgDays=withDays.length?withDays.reduce((a,b)=>a+b.sellDays,0)/withDays.length:null;
+  const g=el('div','kpis');
+  g.appendChild(kpi('Active Styles',fmtInt(rows.length),'sold in period',GOLD));
+  g.appendChild(kpi('Fast Moving',fmtInt(fast.length),pctStr(ratio(fast.length,rows.length)*100),'#0ca30c'));
+  g.appendChild(kpi('Slow Moving',fmtInt(slow.length),pctStr(ratio(slow.length,rows.length)*100),'#fab219'));
+  g.appendChild(kpi('Dead (>'+CONFIG.MOVEMENT.deadDays+'d)',fmtInt(dead.length),pctStr(ratio(dead.length,rows.length)*100),'#d03b3b'));
+  g.appendChild(kpi('Avg Days to Sell',avgDays!=null?Math.round(avgDays)+'d':'—',STATE.caps.selling_days?'inventory→first sale':'needs inventory feed','#3987e5'));
+  m.appendChild(g);
+  if(!STATE.caps.selling_days) m.appendChild(el('div','banner','⚠️ <b>Selling-days approximate.</b> Sales_Overview has no inventory-in date, so movement is classed by sales velocity. Map <code>inventory_in_date</code> in the API COLMAP for true first-inventory → first-sale days.'));
+  const g2=el('div','grid g2');
+  g2.appendChild(card('Fastest Selling Styles','Lowest days-to-sell',withDays.length?barsH([...withDays].sort((a,b)=>a.sellDays-b.sellDays).slice(0,12).map(r=>({label:r.style+' · '+r.cat,value:r.sellDays,color:'#0ca30c'})),{fmt:v=>Math.round(v)+'d',lw:160}):el('div','empty','No inventory-in dates available.')));
+  g2.appendChild(card('Gross vs Velocity','Bubble = style · x: units · y: gross',scatter(rows.slice(0,120).filter(r=>r.gross>0).map(r=>({x:r.units,y:r.gross,r:4+Math.min(9,r.orders),color:r.cls==='fast'?'#0ca30c':r.cls==='dead'?'#d03b3b':GOLD,title:`${r.style} · ${fmtInt(r.units)}u · ${moneyFull(r.gross)}`})),{fmtY:moneyAxis,xlab:'Units',ylab:'Gross'})));
+  m.appendChild(g2);
+  const cols=[{key:'style',label:'Style',get:r=>`<b>${r.style}</b>`,raw:r=>r.style},{key:'cat',label:'Category',get:r=>r.cat,raw:r=>r.cat},{key:'coll',label:'Collection',get:r=>r.coll,raw:r=>r.coll},{key:'metal',label:'Metal',get:r=>r.metal,raw:r=>r.metal},
+    {key:'cls',label:'Class',get:r=>`<span class="pill ${r.cls}">${r.cls}</span>`,raw:r=>r.cls},{key:'orders',label:'Orders',num:true,get:r=>fmtInt(r.orders),sort:r=>r.orders},
+    {key:'units',label:'Units',num:true,get:r=>fmtInt(r.units),sort:r=>r.units},{key:'gross',label:'Gross',num:true,get:r=>moneyFull(r.gross),sort:r=>r.gross},
+    {key:'asp',label:'ASP',num:true,get:r=>moneyFull(r.asp),sort:r=>r.asp},{key:'discPct',label:'Disc%',num:true,get:r=>pctStr(r.discPct),sort:r=>r.discPct},
+    {key:'sellDays',label:'Days→Sell',num:true,get:r=>r.sellDays!=null?Math.round(r.sellDays)+'d':NA,sort:r=>r.sellDays==null?1e9:r.sellDays},{key:'last',label:'Last Sale',num:true,get:r=>r.daysSinceLast+'d ago',sort:r=>r.daysSinceLast}];
+  m.appendChild(card('All Styles','',dataTable(cols,rows,{name:'styles',sortKey:'gross',pageSize:25})));
+}
+
+/* ─────────  5. INVENTORY MOVEMENT  ───────── */
+function renderInventory(m){
+  mount(m,secHead('Inventory Movement','Fast / slow / dead, ageing & sell-through · '+scopeLine()));
+  const items=fItems(); const rows=styleAgg(items); const hasStock=STATE.caps.inventory && rows.some(r=>r.stock!=null);
+  if(!hasStock) m.appendChild(el('div','banner','⚠️ <b>Stock-on-hand not in Sales_Overview.</b> Overstock / low-stock / sell-through / turnover need a stock feed — map <code>stock_qty</code> in the API COLMAP. Movement classes (Fast/Slow/Dead) below are valid from sales velocity alone.'));
+  const fast=rows.filter(r=>r.cls==='fast'),slow=rows.filter(r=>r.cls==='slow'),dead=rows.filter(r=>r.cls==='dead');
+  const g=el('div','grid g2');
+  g.appendChild(card('Movement Mix','',donut([{label:'Fast',value:fast.length,color:'#0ca30c'},{label:'Slow',value:slow.length,color:'#fab219'},{label:'Dead',value:dead.length,color:'#d03b3b'}],{center:fmtInt(rows.length),centerSub:'styles'})));
+  const buckets=[['0–30d',0,30],['31–60d',31,60],['61–120d',61,120],['121–240d',121,240],['240d+',241,99999]];
+  g.appendChild(card('Inventory Ageing','Styles by days since last sale',barsV(buckets.map(b=>b[0]),[{values:buckets.map(b=>rows.filter(r=>r.daysSinceLast>=b[1]&&r.daysSinceLast<=b[2]).length),color:GOLD}],{fmt:fmtInt,h:200})));
+  m.appendChild(g);
+  if(hasStock){ rows.forEach(r=>{ r.sellThrough=r.stock!=null?ratio(r.units,r.units+r.stock)*100:null; r.turns=r.stock?ratio(r.units,r.stock):null; });
+    const over=rows.filter(r=>r.stock>=8&&r.turns!=null&&r.turns<CONFIG.MOVEMENT.overstockTurns).sort((a,b)=>b.stock-a.stock);
+    const low=rows.filter(r=>r.stock!=null&&r.stock<=CONFIG.MOVEMENT.lowStock&&r.cls==='fast').sort((a,b)=>a.stock-b.stock);
+    const g2=el('div','grid g2');
+    g2.appendChild(card('⚠ Overstock','High stock, low turnover',simpleTable([{label:'Style',get:r=>r.style},{label:'Cat',get:r=>r.cat},{label:'Stock',num:true,get:r=>fmtInt(r.stock)},{label:'Sold',num:true,get:r=>fmtInt(r.units)},{label:'Turns',num:true,get:r=>r.turns.toFixed(2)}],over,{limit:40})));
+    g2.appendChild(card('🔴 Low Stock on Fast Movers','Restock priority',simpleTable([{label:'Style',get:r=>r.style},{label:'Cat',get:r=>r.cat},{label:'Stock',num:true,get:r=>`<span class="pill dead">${fmtInt(r.stock)}</span>`},{label:'Sold',num:true,get:r=>fmtInt(r.units)},{label:'Sell-thru',num:true,get:r=>pctStr(r.sellThrough)}],low,{limit:40})));
+    m.appendChild(g2); }
+  const cols=[{key:'style',label:'Style',get:r=>`<b>${r.style}</b>`,raw:r=>r.style},{key:'cat',label:'Category',get:r=>r.cat,raw:r=>r.cat},{key:'cls',label:'Class',get:r=>`<span class="pill ${r.cls}">${r.cls}</span>`,raw:r=>r.cls},
+    {key:'units',label:'Units Sold',num:true,get:r=>fmtInt(r.units),sort:r=>r.units},{key:'last',label:'Days Since Sale',num:true,get:r=>r.daysSinceLast+'d',sort:r=>r.daysSinceLast}];
+  if(hasStock) cols.push({key:'stock',label:'Stock',num:true,get:r=>fmtInt(r.stock),sort:r=>r.stock},{key:'st',label:'Sell-thru',num:true,get:r=>pctStr(r.sellThrough),sort:r=>r.sellThrough});
+  m.appendChild(card('Inventory Detail','',dataTable(cols,[...rows].sort((a,b)=>b.daysSinceLast-a.daysSinceLast),{name:'inventory',sortKey:'last',pageSize:25})));
+}
+
+/* ─────────  6. PRODUCT COMBINATIONS  ───────── */
+function renderBasket(m){
+  mount(m,secHead('Product Combination Analysis','Styles bought together → cross-sell & bundles · '+scopeLine()));
+  const items=fItems(); const orders=new Map();
+  for(const it of items){ if(!orders.has(it.document_no)) orders.set(it.document_no,new Set()); orders.get(it.document_no).add(it.style); }
+  const pair=new Map(),single=new Map(); let multi=0;
+  for(const set of orders.values()){ const arr=[...set]; arr.forEach(s=>single.set(s,(single.get(s)||0)+1));
+    if(arr.length>=2){ multi++; for(let i=0;i<arr.length;i++)for(let j=i+1;j<arr.length;j++){ const k=[arr[i],arr[j]].sort().join(' + '); pair.set(k,(pair.get(k)||0)+1); } } }
+  const catMeta=s=>STATE.styleRef.get(s)?.category||'';
+  const topPairs=[...pair.entries()].sort((a,b)=>b[1]-a[1]).slice(0,80).map(([k,v])=>{ const [a,b]=k.split(' + '); return {a,b,k,count:v,supp:v/orders.size*100,conf:v/(single.get(a)||1)*100,ca:catMeta(a),cb:catMeta(b)}; });
+  const g=el('div','kpis');
+  g.appendChild(kpi('Multi-item Orders',fmtInt(multi),pctStr(ratio(multi,orders.size)*100)+' of orders',GOLD));
+  g.appendChild(kpi('Distinct Pairs',fmtInt(pair.size),'co-purchased','#3987e5'));
+  g.appendChild(kpi('Avg Basket (styles)',ratio([...orders.values()].reduce((a,s)=>a+s.size,0),orders.size).toFixed(2),'','#26c281'));
+  m.appendChild(g);
+  m.appendChild(card('Top Style Combinations','Frequently bought together',barsH(topPairs.slice(0,14).map(p=>({label:p.k,value:p.count,color:GOLD})),{fmt:fmtInt,lw:220})));
+  const cats=[...new Set(items.map(i=>i.category))].sort(); const cm=cats.map(()=>cats.map(()=>0));
+  for(const set of orders.values()){ const cs=[...new Set([...set].map(catMeta).filter(Boolean))]; for(let i=0;i<cs.length;i++)for(let j=0;j<cs.length;j++){ if(i===j)continue; const a=cats.indexOf(cs[i]),b=cats.indexOf(cs[j]); if(a>=0&&b>=0)cm[a][b]++; } }
+  m.appendChild(card('Category Affinity','How often categories co-occur in an order',heatmap(cats,cats,cm,{cell:32,lw:120})));
+  const cols=[{key:'a',label:'Style A',get:p=>`<b>${p.a}</b> · ${p.ca}`,raw:p=>p.a},{key:'b',label:'Style B',get:p=>`<b>${p.b}</b> · ${p.cb}`,raw:p=>p.b},
+    {key:'count',label:'Baskets',num:true,get:p=>fmtInt(p.count),sort:p=>p.count},{key:'supp',label:'Support',num:true,get:p=>pctStr(p.supp,2),sort:p=>p.supp},{key:'conf',label:'Confidence',num:true,get:p=>pctStr(p.conf),sort:p=>p.conf}];
+  m.appendChild(card('Cross-sell / Bundle Recommendations','',dataTable(cols,topPairs,{name:'combinations',sortKey:'conf',pageSize:25})));
+}
+
+/* ─────────  7. CATEGORY  ───────── */
+function renderCategory(m){
+  mount(m,secHead('Category Performance','Gross, growth & contribution — categories read dynamically · '+scopeLine()));
+  const items=fItems(); const [a,b]=rangeBounds(); const [pa,pb]=prevBounds(a,b);
+  const prev=STATE.items.filter(i=>i.date>=pa&&i.date<=pb&&passes(i,{date:true}));
+  const agg=list=>groupObj(list,it=>it.category,()=>({gross:0,units:0,disc:0,orders:new Set()}),(x,it)=>{x.gross+=it.gross;x.units+=it.qty;x.disc+=it.discount;x.orders.add(it.document_no);});
+  const cur=agg(items),pv=agg(prev); const totGross=grossSum(items);
+  const rows=[...cur.entries()].map(([k,v])=>({cat:k,gross:v.gross,net:v.gross/GST,units:v.units,orders:v.orders.size,asp:ratio(v.gross,v.units),discPct:v.gross?v.disc/Math.abs(v.gross)*100:0,contrib:totGross?v.gross/totGross*100:0,prev:pv.get(k)?pv.get(k).gross:0})).sort((a,b)=>b.gross-a.gross);
+  const g=el('div','grid g2');
+  g.appendChild(card('Gross by Category','',barsH(rows.map((r,i)=>({label:r.cat,value:r.gross,color:palColor(i)})),{fmt:money,lw:150,onClick:r=>crossFilter('category',r.label)})));
+  g.appendChild(card('Contribution (Pareto)','Which categories drive 80% of gross',pareto(rows.filter(r=>r.gross>0).map((r,i)=>({label:r.cat,value:r.gross,color:palColor(i)})),{fmt:moneyAxis,n:rows.length})));
+  m.appendChild(g);
+  const cols=[{key:'cat',label:'Category',get:r=>`<b>${r.cat}</b>`,raw:r=>r.cat},{key:'gross',label:'Gross',num:true,get:r=>moneyFull(r.gross),sort:r=>r.gross},{key:'net',label:'Net',num:true,get:r=>moneyFull(r.net),sort:r=>r.net},
+    {key:'orders',label:'Orders',num:true,get:r=>fmtInt(r.orders),sort:r=>r.orders},{key:'units',label:'Units',num:true,get:r=>fmtInt(r.units),sort:r=>r.units},{key:'asp',label:'ASP',num:true,get:r=>moneyFull(r.asp),sort:r=>r.asp},
+    {key:'discPct',label:'Disc%',num:true,get:r=>pctStr(r.discPct),sort:r=>r.discPct},{key:'contrib',label:'Contrib%',num:true,get:r=>pctStr(r.contrib),sort:r=>r.contrib},{key:'g',label:'Growth',num:true,get:r=>deltaHtml(r.gross,r.prev),sort:r=>r.prev?(r.gross-r.prev)/Math.abs(r.prev):0}];
+  m.appendChild(card('Category Detail','vs previous period',dataTable(cols,rows,{name:'categories',sortKey:'gross',pageSize:25})));
+  const coll=groupAgg(items,it=>it.collection,it=>it.gross);
+  m.appendChild(card('Gross by Collection','',barsH([...coll.entries()].sort((a,b)=>b[1]-a[1]).map(([k,v],i)=>({label:k,value:v,color:palColor(i)})),{fmt:money,lw:150,onClick:r=>crossFilter('collection',r.label)})));
+}
+
+/* ─────────  8. GEOGRAPHIC  ───────── */
+function renderGeo(m){
+  mount(m,secHead('Geographic Analysis','Gross by region, state, city & store · '+scopeLine()));
+  const items=fItems();
+  const byState=groupAgg(items,it=>it.state&&it.state!=='—'?it.state:null,it=>it.gross);
+  const byCity=groupAgg(items,it=>it.city&&it.city!=='—'?it.city:null,it=>it.gross);
+  const byRegion=groupAgg(items,it=>it.region,it=>it.gross);
+  const byStore=groupObj(items,it=>it.store,()=>({gross:0,orders:new Set(),units:0}),(a,it)=>{a.gross+=it.gross;a.orders.add(it.document_no);a.units+=it.qty;});
+  const g=el('div','grid g2');
+  g.appendChild(card('Gross by Region','',donut([...byRegion.entries()].sort((a,b)=>b[1]-a[1]).map(([k,v],i)=>({label:k,value:Math.max(0,v),color:palColor(i)})),{center:money(grossSum(items))})));
+  g.appendChild(card('Top Cities','',barsH([...byCity.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>({label:k,value:v,color:GOLD})),{fmt:money,lw:130})));
+  m.appendChild(g);
+  const storeRows=[...byStore.entries()].map(([k,v])=>({store:k,gross:v.gross,net:v.gross/GST,orders:v.orders.size,units:v.units,aov:ratio(v.gross/GST,v.orders.size)})).sort((a,b)=>b.gross-a.gross);
+  const cols=[{key:'store',label:'Store',get:r=>`<b>${r.store}</b>`,raw:r=>r.store},{key:'gross',label:'Gross',num:true,get:r=>moneyFull(r.gross),sort:r=>r.gross},{key:'net',label:'Net',num:true,get:r=>moneyFull(r.net),sort:r=>r.net},
+    {key:'orders',label:'Orders',num:true,get:r=>fmtInt(r.orders),sort:r=>r.orders},{key:'units',label:'Units',num:true,get:r=>fmtInt(r.units),sort:r=>r.units},{key:'aov',label:'AOV',num:true,get:r=>moneyFull(r.aov),sort:r=>r.aov}];
+  m.appendChild(card('Store / Location Performance','',dataTable(cols,storeRows,{name:'stores',sortKey:'gross',pageSize:25})));
+  m.appendChild(card('Gross by State','',barsH([...byState.entries()].sort((a,b)=>b[1]-a[1]).map(([k,v],i)=>({label:k,value:v,color:palColor(i)})),{fmt:money,lw:160})));
+}
+
+/* ─────────  9. PRICING  ───────── */
+function renderPricing(m){
+  mount(m,secHead('Pricing Analysis','Price bands, discounting & selling-price spread (Gross basis) · '+scopeLine()));
+  const items=fItems(); const units=sum(items,'qty'),gross=grossSum(items),disc=sum(items,'discount');
+  const prices=items.map(i=>ratio(i.gross,i.qty)).filter(x=>x>0).sort((a,b)=>a-b); const med=prices.length?prices[Math.floor(prices.length/2)]:0;
+  const g=el('div','kpis');
+  g.appendChild(kpi('Avg Selling Price',moneyFull(ratio(gross,units)),'gross ÷ units',GOLD));
+  g.appendChild(kpi('Median SP',moneyFull(med),'','#3987e5'));
+  g.appendChild(kpi('Max SP',moneyFull(prices[prices.length-1]||0),'','#26c281'));
+  g.appendChild(kpi('Min SP',moneyFull(prices[0]||0),'','#d55181'));
+  g.appendChild(kpi('Avg Discount',pctStr(gross?disc/Math.abs(gross)*100:0),moneyFull(disc)+' given','#d03b3b'));
+  m.appendChild(g);
+  const byBand=groupObj(items,itemBand,()=>({gross:0,units:0,orders:new Set(),disc:0}),(a,it)=>{a.gross+=it.gross;a.units+=it.qty;a.orders.add(it.document_no);a.disc+=it.discount;});
+  const order=CONFIG.PRICE_BANDS.map(b=>b.label); const bandRows=order.filter(l=>byBand.has(l)).map(l=>({band:l,...byBand.get(l),orders:byBand.get(l).orders.size}));
+  const g2=el('div','grid g2');
+  g2.appendChild(card('Gross by Price Band','',barsV(bandRows.map(r=>r.band),[{values:bandRows.map(r=>r.gross),color:GOLD}],{fmt:moneyAxis,h:210,onClick:lb=>crossFilter('band',lb)})));
+  g2.appendChild(card('Units by Price Band','',barsV(bandRows.map(r=>r.band),[{values:bandRows.map(r=>r.units),color:'#3987e5'}],{fmt:fmtInt,h:210})));
+  m.appendChild(g2);
+  const cols=[{label:'Price Band',get:r=>`<b>${r.band}</b>`},{label:'Gross',num:true,get:r=>moneyFull(r.gross)},{label:'Units',num:true,get:r=>fmtInt(r.units)},
+    {label:'Orders',num:true,get:r=>fmtInt(r.orders)},{label:'ASP',num:true,get:r=>moneyFull(ratio(r.gross,r.units))},{label:'Avg Disc%',num:true,get:r=>pctStr(r.gross?r.disc/Math.abs(r.gross)*100:0)},{label:'Gross Share',num:true,get:r=>pctStr(ratio(r.gross,gross)*100)}];
+  m.appendChild(card('Price Band Performance','',simpleTable(cols,bandRows),[exportMini('price_bands',[{label:'Band',get:r=>r.band},{label:'Gross',get:r=>Math.round(r.gross)},{label:'Units',get:r=>r.units}],()=>bandRows)]));
+}
+
+/* ─────────  10. TIME PATTERNS  ───────── */
+function renderTime(m){
+  mount(m,secHead('Time-Based Analysis','Weekday/weekend & seasonality (Gross) · '+scopeLine()));
+  const items=fItems(); const dow=['Sun','Mon','Tue','Wed','Thu','Fri','Sat']; const byDow=dow.map(()=>0); const byMonth=Array(12).fill(0);
+  items.forEach(it=>{ const d=parseYmd(it.date); byDow[d.getDay()]+=it.gross; byMonth[d.getMonth()]+=it.gross; });
+  let wkend=0,wkday=0; items.forEach(it=>{ const g=parseYmd(it.date).getDay(); if(g===0||g===6)wkend+=it.gross; else wkday+=it.gross; });
+  const g=el('div','grid g2');
+  g.appendChild(card('Gross by Day of Week','',barsV(dow,[{values:byDow,color:GOLD}],{fmt:moneyAxis,h:210})));
+  const mlab=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  g.appendChild(card('Seasonality by Month','Gross across all years',barsV(mlab,[{values:byMonth,color:'#3987e5'}],{fmt:moneyAxis,h:210})));
+  m.appendChild(g);
+  const g2=el('div','grid g2');
+  g2.appendChild(card('Weekday vs Weekend','',donut([{label:'Weekday',value:Math.max(0,wkday),color:'#3987e5'},{label:'Weekend',value:Math.max(0,wkend),color:GOLD}],{center:money(wkday+wkend)})));
+  const ym=[...new Set(items.map(i=>monthKey(i.date)))].sort().slice(-12); const mat=ym.map(()=>dow.map(()=>0));
+  items.forEach(it=>{ const mi=ym.indexOf(monthKey(it.date)); if(mi<0)return; mat[mi][parseYmd(it.date).getDay()]+=it.gross; });
+  g2.appendChild(card('Month × Weekday Heatmap','Gross intensity',heatmap(ym.map(shortLabel),dow,mat,{cell:26,lw:70})));
+  m.appendChild(g2);
+}
+
+/* ─────────  11. CUSTOMER ANALYTICS  ───────── */
+function renderCustomers(m){
+  if(!STATE.caps.customer){ m.appendChild(secHead('Customer Analytics','Unavailable')); m.appendChild(el('div','banner','⚠️ No <code>customer_id</code> mapped in COLMAP.')); return; }
+  mount(m,secHead('Customer Analytics','Acquisition, value & segments · '+scopeLine()));
+  const items=fItems(); const [from]=rangeBounds();
+  const by=groupObj(items,it=>it.customer_id,()=>({id:'',gross:0,orders:new Set(),units:0,last:''}),(a,it)=>{a.id=it.customer_id;a.gross+=it.gross;a.orders.add(it.document_no);a.units+=it.qty;if(it.date>a.last)a.last=it.date;});
+  const custs=[...by.values()].map(c=>{ const ref=STATE.custRef.get(c.id)||{}; const isNew=ref.first_order_date&&ref.first_order_date>=from;
+    return {id:c.id,gross:c.gross,net:c.gross/GST,orders:c.orders.size,aov:ratio(c.gross/GST,c.orders.size),ltv:ref.lifetime_net,ltOrders:ref.lifetime_orders,first:ref.first_order_date,last:c.last,isNew}; });
+  const cur=metrics(items); const oneTime=custs.filter(c=>c.orders===1).length,repeat=custs.filter(c=>c.orders>1).length,vip=custs.filter(c=>(c.ltv||c.net)>=500000).length;
+  const g=el('div','kpis');
+  g.appendChild(kpi('Total Customers',fmtInt(cur.custs),'',GOLD));
+  g.appendChild(kpi('New',fmtInt(cur.newC),pctStr(ratio(cur.newC,cur.custs)*100),'#3987e5'));
+  g.appendChild(kpi('Repeat',fmtInt(cur.repC),pctStr(cur.repPct),'#9085e9'));
+  g.appendChild(kpi('One-time Buyers',fmtInt(oneTime),pctStr(ratio(oneTime,custs.length)*100),'#fab219'));
+  g.appendChild(kpi('VIP (LTV ≥ ₹5L)',fmtInt(vip),'','#26c281'));
+  g.appendChild(kpi('Avg Customer Spend',moneyFull(cur.rpc),'net','#d55181'));
+  m.appendChild(g);
+  const g2=el('div','grid g2');
+  g2.appendChild(card('Customer Segments','By orders in period',donut([{label:'One-time',value:oneTime,color:'#fab219'},{label:'Repeat (2–3)',value:custs.filter(c=>c.orders>=2&&c.orders<=3).length,color:'#3987e5'},{label:'Loyal (4+)',value:custs.filter(c=>c.orders>=4).length,color:'#26c281'}],{center:fmtInt(custs.length),centerSub:'buyers'})));
+  const nr=groupObj(items,it=>monthKey(it.date),()=>({n:new Set(),r:new Set()}),(a,it)=>{ const ref=STATE.custRef.get(it.customer_id)||{}; if(ref.first_order_date&&ref.first_order_date>=monthKey(it.date)+'-01'&&ref.first_order_date<=monthKey(it.date)+'-31')a.n.add(it.customer_id);else a.r.add(it.customer_id);});
+  const nmk=[...nr.keys()].sort();
+  g2.appendChild(card('New vs Repeat Customers','Monthly',(()=>{ const box=el('div'); box.appendChild(lineChart(nmk,[{values:nmk.map(k=>nr.get(k).n.size),color:'#3987e5'},{values:nmk.map(k=>nr.get(k).r.size),color:'#9085e9'}],{fmt:fmtInt,h:210,min0:true})); box.appendChild(legend([['New','#3987e5'],['Repeat','#9085e9']])); return box; })()));
+  m.appendChild(g2);
+  const cols=[{key:'id',label:'Customer',get:c=>`<b>${c.id}</b>`,raw:c=>c.id},{key:'type',label:'Type',get:c=>c.isNew?'<span class="pill new">new</span>':'<span class="pill rep">repeat</span>',raw:c=>c.isNew?'new':'repeat'},
+    {key:'orders',label:'Orders',num:true,get:c=>fmtInt(c.orders),sort:c=>c.orders},{key:'gross',label:'Gross (period)',num:true,get:c=>moneyFull(c.gross),sort:c=>c.gross},{key:'aov',label:'AOV',num:true,get:c=>moneyFull(c.aov),sort:c=>c.aov},
+    {key:'ltOrders',label:'Lifetime Orders',num:true,get:c=>fmtInt(c.ltOrders),sort:c=>c.ltOrders||0},{key:'ltv',label:'LTV (net)',num:true,get:c=>moneyFull(c.ltv),sort:c=>c.ltv||0},{key:'first',label:'First Order',num:true,get:c=>c.first||NA,sort:c=>c.first||''},{key:'last',label:'Last Order',num:true,get:c=>c.last,sort:c=>c.last}];
+  m.appendChild(card('Customers','Search, sort, paginate & export',dataTable(cols,custs,{name:'customers',sortKey:'gross',pageSize:25,searchPlaceholder:'Search customer id…'})));
+}
+
+/* ─────────  12. REPEAT & RETENTION  ───────── */
+function renderRepeat(m){
+  if(!STATE.caps.customer){ m.appendChild(secHead('Repeat & Retention','Unavailable')); m.appendChild(el('div','banner','⚠️ Needs <code>customer_id</code>.')); return; }
+  mount(m,secHead('Repeat Customer Analysis','Retention, purchase gaps & repeat revenue (net) · '+scopeLine()));
+  const items=fItems(); const [from]=rangeBounds();
+  let repeatNet=0,newNet=0,repeatOrders=new Set(),newOrders=new Set();
+  const custOrders=groupObj(items,it=>it.customer_id,()=>({dates:new Set(),net:0}),(a,it)=>{a.dates.add(it.date);a.net+=it.net;});
+  for(const it of items){ const ref=STATE.custRef.get(it.customer_id)||{}; const isNew=ref.first_order_date&&ref.first_order_date>=from;
+    if(isNew){newNet+=it.net;newOrders.add(it.document_no);}else{repeatNet+=it.net;repeatOrders.add(it.document_no);} }
+  let gaps=[]; for(const c of custOrders.values()){ const ds=[...c.dates].sort(); if(ds.length>=2) for(let i=1;i<ds.length;i++) gaps.push(diffDays(ds[i],ds[i-1])); }
+  const avgGap=gaps.length?gaps.reduce((a,b)=>a+b,0)/gaps.length:null;
+  const repeatCusts=[...custOrders.values()].filter(c=>c.dates.size>=2).length; const repeatRate=custOrders.size?repeatCusts/custOrders.size*100:0;
+  const g=el('div','kpis');
+  g.appendChild(kpi('Repeat Purchase Rate',pctStr(repeatRate),'buyers with 2+ orders',GOLD));
+  g.appendChild(kpi('Revenue from Repeat',money(repeatNet),pctStr(ratio(repeatNet,repeatNet+newNet)*100)+' of net','#9085e9'));
+  g.appendChild(kpi('Revenue from New',money(newNet),pctStr(ratio(newNet,repeatNet+newNet)*100)+' of net','#3987e5'));
+  g.appendChild(kpi('Avg Days Between',avgGap!=null?Math.round(avgGap)+'d':'—','repeat purchase gap','#26c281'));
+  g.appendChild(kpi('Repeat AOV',moneyFull(ratio(repeatNet,repeatOrders.size)),`vs new ${moneyFull(ratio(newNet,newOrders.size))}`,'#d55181'));
+  m.appendChild(g);
+  const g2=el('div','grid g2');
+  const byM=groupObj(items,it=>monthKey(it.date),()=>({rep:new Set(),all:new Set()}),(a,it)=>{ const ref=STATE.custRef.get(it.customer_id)||{}; a.all.add(it.customer_id); if(!(ref.first_order_date&&ref.first_order_date>=monthKey(it.date)+'-01')) a.rep.add(it.customer_id); });
+  const mk=[...byM.keys()].sort();
+  g2.appendChild(card('Monthly Repeat %','Returning share of active customers',lineChart(mk,[{values:mk.map(k=>ratio(byM.get(k).rep.size,byM.get(k).all.size)*100),color:'#9085e9',area:true}],{fmt:v=>v.toFixed(0)+'%',h:220,min0:true})));
+  const revM=groupObj(items,it=>monthKey(it.date),()=>({rep:0,nw:0}),(a,it)=>{ const ref=STATE.custRef.get(it.customer_id)||{}; if(ref.first_order_date&&ref.first_order_date>=monthKey(it.date)+'-01')a.nw+=it.net;else a.rep+=it.net; });
+  g2.appendChild(card('Repeat vs New Revenue','Monthly net',(()=>{ const box=el('div'); box.appendChild(barsV(mk,[{values:mk.map(k=>revM.get(k).rep),color:'#9085e9'},{values:mk.map(k=>revM.get(k).nw),color:'#3987e5'}],{fmt:moneyAxis,h:220})); box.appendChild(legend([['Repeat','#9085e9'],['New','#3987e5']])); return box; })()));
+  m.appendChild(g2);
+  const gb=[['<30d',0,30],['30–60',30,60],['60–120',60,120],['120–240',120,240],['240+',240,1e9]];
+  m.appendChild(card('Purchase Gap Distribution','Days between consecutive purchases',barsV(gb.map(b=>b[0]),[{values:gb.map(b=>gaps.filter(x=>x>=b[1]&&x<b[2]).length),color:GOLD}],{fmt:fmtInt,h:200})));
+}
+
+/* ─────────  13. SALES TEAM  ───────── */
+function renderTeam(m){
+  if(!STATE.caps.salesperson){ m.appendChild(secHead('Sales Team','Unavailable')); m.appendChild(el('div','banner','⚠️ No <code>salesperson</code> column mapped in COLMAP.')); return; }
+  mount(m,secHead('Sales Team Performance','Per-person Gross, orders & deal size · '+scopeLine()));
+  const items=fItems().filter(i=>i.salesperson&&i.salesperson!=='Online');
+  const by=groupObj(items,it=>it.salesperson,()=>({gross:0,orders:new Set(),units:0,cust:new Set()}),(a,it)=>{a.gross+=it.gross;a.orders.add(it.document_no);a.units+=it.qty;a.cust.add(it.customer_id);});
+  const rows=[...by.entries()].map(([k,v])=>({person:k,gross:v.gross,net:v.gross/GST,orders:v.orders.size,units:v.units,cust:v.cust.size,aov:ratio(v.gross/GST,v.orders.size)})).sort((a,b)=>b.gross-a.gross);
+  const g=el('div','grid g2');
+  g.appendChild(card('Gross by Sales Person','',barsH(rows.map((r,i)=>({label:r.person,value:r.gross,color:palColor(i)})),{fmt:money,lw:150,onClick:r=>crossFilter('person',r.label)})));
+  g.appendChild(card('AOV by Person','',barsH([...rows].sort((a,b)=>b.aov-a.aov).map(r=>({label:r.person,value:r.aov,color:'#26c281'})),{fmt:money,lw:150})));
+  m.appendChild(g);
+  const cols=[{key:'person',label:'Sales Person',get:r=>`<b>${r.person}</b>`,raw:r=>r.person},{key:'gross',label:'Gross',num:true,get:r=>moneyFull(r.gross),sort:r=>r.gross},{key:'net',label:'Net',num:true,get:r=>moneyFull(r.net),sort:r=>r.net},
+    {key:'orders',label:'Orders',num:true,get:r=>fmtInt(r.orders),sort:r=>r.orders},{key:'units',label:'Units',num:true,get:r=>fmtInt(r.units),sort:r=>r.units},{key:'cust',label:'Customers',num:true,get:r=>fmtInt(r.cust),sort:r=>r.cust},{key:'aov',label:'AOV',num:true,get:r=>moneyFull(r.aov),sort:r=>r.aov}];
+  m.appendChild(card('Team Leaderboard','',dataTable(cols,rows,{name:'sales_team',sortKey:'gross',pageSize:25})));
+}
+
+/* ─────────  14. DETAILED SALES DUMP  ───────── */
+function renderDump(m){
+  mount(m,secHead('Detailed Sales','Deduped line-level dump — search, sort, paginate, export · '+scopeLine()));
+  const items=fItems();
+  m.appendChild(el('div','banner','Every row is a deduped Sales_Overview record (dedup key = Gross + Sale Date + Document No + Net Weight). Net Sale = Gross ÷ '+GST+'. '+fmtInt(items.length)+' rows in current filter.'));
+  const cols=[
+    {key:'date',label:'Sale Date',get:r=>r.date,raw:r=>r.date,sort:r=>r.date},
+    {key:'doc',label:'Document No',get:r=>`<b>${r.document_no}</b>`,raw:r=>r.document_no},
+    {key:'cust',label:'Customer Name',get:r=>truncate(r.customer_name||r.customer_id,22),raw:r=>(r.customer_name||'')+' '+r.customer_id},
+    {key:'prod',label:'Product',get:r=>truncate(r.product_name,20),raw:r=>r.product_name},
+    {key:'style',label:'Style',get:r=>r.style,raw:r=>r.style},
+    {key:'cat',label:'Category',get:r=>r.category,raw:r=>r.category},
+    {key:'stype',label:'Sale Type',get:r=>`<span class="pill ${CONFIG.SALE_TYPES.includes(r.sale_type)?r.sale_type:'Other'}">${r.sale_type}</span>`,raw:r=>r.sale_type},
+    {key:'qty',label:'Qty',num:true,get:r=>fmtInt(r.qty),sort:r=>r.qty},
+    {key:'gw',label:'Gross Wt',num:true,get:r=>grams(r.gross_weight),sort:r=>r.gross_weight},
+    {key:'nw',label:'Net Wt',num:true,get:r=>grams(r.net_weight),sort:r=>r.net_weight},
+    {key:'gross',label:'Gross Sale',num:true,get:r=>moneyFull(r.gross),sort:r=>r.gross,raw:r=>Math.round(r.gross)},
+    {key:'net',label:'Net Sale',num:true,get:r=>moneyFull(r.net),sort:r=>r.net,raw:r=>Math.round(r.net)},
+    {key:'disc',label:'Discount',num:true,get:r=>moneyFull(r.discount),sort:r=>r.discount},
+    {key:'store',label:'Store',get:r=>r.store,raw:r=>r.store},
+    {key:'person',label:'Sales Person',get:r=>r.salesperson||NA,raw:r=>r.salesperson}
+  ];
+  m.appendChild(card('Sales Register','',dataTable(cols,items,{name:'sales_detail',sortKey:'date',sortDir:-1,pageSize:50,searchPlaceholder:'Search doc / customer / product / style…'})));
+}
+
+/* ─────────  15. VALIDATION  ───────── */
+function renderValidation(m){
+  m.appendChild(secHead('Data Validation','Reconciliation against the single source — Sales_Overview (BigQuery). No other table, no manual mapping.'));
+  const v=STATE.validation||{raw:STATE.items.length,deduped:STATE.items.length,removed:0,rawGross:grossSum(STATE.items),dedupGross:grossSum(STATE.items),gst:GST};
+  const g=el('div','kpis');
+  g.appendChild(kpi('Raw Records (source)',fmtInt(v.raw),'in window',GOLD));
+  g.appendChild(kpi('After Dedup',fmtInt(v.deduped),'used everywhere','#26c281'));
+  g.appendChild(kpi('Duplicates Removed',fmtInt(v.removed),pctStr(ratio(v.removed,v.raw)*100)+' of raw','#d03b3b'));
+  g.appendChild(kpi('Gross (raw)',money(v.rawGross),'','#898781'));
+  g.appendChild(kpi('Gross Sales (deduped)',money(v.dedupGross),'authoritative headline',GOLD));
+  g.appendChild(kpi('Net Sales',money(v.dedupGross/GST),'Gross ÷ '+GST,'#26c281'));
+  m.appendChild(g);
+  m.appendChild(el('div','banner','<b>Dedup rule:</b> a row is dropped ONLY when <code>Gross Sale + Sale Date + Document No + Net Weight</code> are all identical. Any difference on one → kept as a distinct transaction.'));
+
+  // Granularity reconciliation — every grain must sum to the grand total (deduped, all data)
+  const all=STATE.items; const grand=grossSum(all);
+  const grains=[['Daily',granKeyFn('daily')],['Weekly',granKeyFn('weekly')],['Monthly',granKeyFn('monthly')],['Quarterly',granKeyFn('quarterly')],['Yearly',granKeyFn('yearly')]];
+  const recRows=grains.map(([name,kf])=>{ const by=groupAgg(all,kf,it=>it.gross); const s=[...by.values()].reduce((a,b)=>a+b,0);
+    return {grain:name,buckets:by.size,sum:s,match:Math.abs(s-grand)<1}; });
+  const rcols=[{label:'Granularity',get:r=>`<b>${r.grain}</b>`},{label:'Buckets',num:true,get:r=>fmtInt(r.buckets)},
+    {label:'Σ Gross',num:true,get:r=>moneyFull(r.sum)},{label:'Grand Total',num:true,get:()=>moneyFull(grand)},
+    {label:'Reconciles',get:r=>r.match?'<span class="match">✓ MATCH</span>':'<span class="nomatch">✗ '+moneyFull(r.sum-grand)+'</span>'}];
+  m.appendChild(card('Granularity Reconciliation','Daily / Weekly / Monthly / Quarterly / Yearly gross must each sum to the same grand total',simpleTable(rcols,recRows)));
+
+  // Sale-type reconciliation
+  if(STATE.caps.sale_type){ const byT=groupAgg(all,it=>CONFIG.SALE_TYPES.includes(it.sale_type)?it.sale_type:'Other',it=>it.gross);
+    const trows=[...byT.entries()].map(([t,gr])=>({t,gr})); const tsum=trows.reduce((a,b)=>a+b.gr,0);
+    trows.push({t:'— TOTAL —',gr:tsum,total:true});
+    m.appendChild(card('Sale-Type Reconciliation','MTO/RTS/Return/Exchange sum to total gross',simpleTable(
+      [{label:'Sale Type',get:r=>r.total?`<b>${r.t}</b>`:`<span class="pill ${CONFIG.SALE_TYPES.includes(r.t)?r.t:'Other'}">${r.t}</span>`},{label:'Gross',num:true,get:r=>r.total?`<b>${moneyFull(r.gr)}</b>`:moneyFull(r.gr)},{label:'% of Gross',num:true,get:r=>pctStr(ratio(r.gr,grand)*100)}],
+      trows))); }
+
+  // Category reconciliation (dynamic)
+  const byC=groupAgg(all,it=>it.category,it=>it.gross); const crows=[...byC.entries()].map(([c,gr])=>({c,gr})).sort((a,b)=>b.gr-a.gr);
+  const csum=crows.reduce((a,b)=>a+b.gr,0);
+  m.appendChild(card('Category Reconciliation','Dynamic categories · sum to total gross ('+moneyFull(csum)+')',simpleTable(
+    [{label:'Category',get:r=>`<b>${r.c}</b>`},{label:'Gross',num:true,get:r=>moneyFull(r.gr)},{label:'% of Gross',num:true,get:r=>pctStr(ratio(r.gr,csum)*100)}],crows)));
+
+  const box=el('div','banner');
+  box.innerHTML = STATE.source==='live'
+    ? '✅ Live mode: these totals come straight from Sales_Overview. To confirm at the source, run <code>queries.sql</code> R1–R6 in BigQuery — <code>R2.gross_sales</code> must equal Gross Sales (deduped) above, and R4 proves the granularity reconciliation.'
+    : '⚠️ Sample mode: numbers are from the built-in dataset. Wire <code>CONFIG.API_BASE</code> to the deployed sales-data function, then run <code>queries.sql</code> R1–R6 against Sales_Overview and compare to this tab to certify the live match.';
+  m.appendChild(box);
+}
+
+/* ─────────  16. BUSINESS INSIGHTS  ───────── */
+function renderInsights(m){
+  m.appendChild(secHead('Business Insights','Auto-generated, grounded on the current filtered data · '+scopeLine()));
+  m.appendChild(filterBar());
+  const box=el('div'); box.appendChild(el('div','banner','✨ Rule-based insight engine — computed live from the deduped snapshot & active filters.'));
+  generateInsights().forEach(ins=>{ const d=el('div','insight '+(ins.k||'')); d.innerHTML=`<div class="t"><span class="tag">${ins.tag}</span>${ins.title}</div><div class="b">${ins.body}</div>`; box.appendChild(d); });
+  m.appendChild(box);
+}
+function generateInsights(){
+  const items=fItems(); const [a,b]=rangeBounds(); const [pa,pb]=prevBounds(a,b);
+  const prev=STATE.items.filter(i=>i.date>=pa&&i.date<=pb&&passes(i,{date:true}));
+  const cur=metrics(items),pm=metrics(prev); const out=[];
+  const growth=pm.gross?(cur.gross-pm.gross)/Math.abs(pm.gross)*100:0;
+  out.push({tag:'Momentum',k:growth>=0?'op':'risk',title:`Gross sales ${growth>=0?'up':'down'} ${Math.abs(growth).toFixed(1)}% vs previous period`,
+    body:`${money(cur.gross)} gross (net ${money(cur.net)}) from ${fmtInt(cur.orders)} orders, AOV ${moneyFull(cur.aov)}.`});
+  if(STATE.caps.sale_type){ const mto=cur.grossByType.MTO,rts=cur.grossByType.RTS;
+    out.push({tag:'Sale Mix',k:'act',title:`MTO ${money(mto)} vs RTS ${money(rts)}`,body:`MTO is ${pctStr(ratio(mto,cur.gross)*100)} of gross, RTS ${pctStr(ratio(rts,cur.gross)*100)}. ${mto>rts?'Make-to-order is leading — protect lead times & advances.':'Ready-stock is leading — keep bestsellers replenished.'}`});
+    if(Math.abs(cur.grossByType.Return)>0.5) out.push({tag:'Returns',k:'risk',title:`Returns at ${money(Math.abs(cur.grossByType.Return))}`,body:`${pctStr(ratio(Math.abs(cur.grossByType.Return),Math.abs(cur.gross))*100)} of gross. Review reasons on the highest-value returned styles.`}); }
+  const sc=list=>groupAgg(list,it=>it.style,it=>it.gross); const c=sc(items),p=sc(prev); const deltas=[];
+  for(const [k,v] of c){ const pv=p.get(k)||0; if(v+pv>150000) deltas.push({k,v,pv,g:pv?(v-pv)/Math.abs(pv)*100:100}); }
+  const rising=[...deltas].filter(d=>d.pv>0).sort((a,b)=>b.g-a.g).slice(0,3);
+  const falling=[...deltas].filter(d=>d.pv>0&&d.v<d.pv).sort((a,b)=>a.g-b.g).slice(0,3);
+  if(rising.length) out.push({tag:'Growing',k:'op',title:'Styles gaining momentum — promote',body:rising.map(d=>`<b>${d.k}</b> +${d.g.toFixed(0)}% → ${money(d.v)}`).join(' · ')});
+  if(falling.length) out.push({tag:'Declining',k:'risk',title:'Styles losing steam — discount or refresh',body:falling.map(d=>`<b>${d.k}</b> ${d.g.toFixed(0)}% → ${money(d.v)}`).join(' · ')});
+  const styles=styleAgg(items); const dead=styles.filter(s=>s.cls==='dead'&&s.gross>0).sort((a,b)=>b.gross-a.gross);
+  if(dead.length) out.push({tag:'Inventory',k:'risk',title:`${dead.length} styles are dead stock (>${CONFIG.MOVEMENT.deadDays}d no sale)`,body:`Top past value: ${dead.slice(0,4).map(d=>d.style).join(', ')}. Liquidate via a clearance bundle.`});
+  const byBand=groupAgg(items,itemBand,it=>it.gross); const topBand=[...byBand.entries()].sort((a,b)=>b[1]-a[1])[0];
+  if(topBand) out.push({tag:'Price Band',k:'op',title:`${topBand[0]} is the revenue sweet spot`,body:`${money(topBand[1])} (${pctStr(ratio(topBand[1],cur.gross)*100)} of gross). Concentrate launches here.`});
+  if(cur.discPct>10) out.push({tag:'Pricing',k:'risk',title:`Discounting high at ${pctStr(cur.discPct)} of gross`,body:`${money(cur.disc)} given away — check whether fast-movers are being discounted needlessly.`});
+  if(STATE.caps.customer) out.push({tag:'Retention',k:'act',title:`Repeat customers = ${pctStr(cur.repPct)} of buyers`,body:`Target one-time buyers with a follow-up offer ~30–60 days post-purchase to lift repeat rate.`});
+  out.push({tag:'Action Today',k:'act',title:'What to do today',body:'1) Reorder low fast-movers. 2) Bundle dead styles into a clearance. 3) Retention offer to one-time buyers. 4) Feature rising styles this week.'});
+  return out;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   EXPORT (CSV + Excel-compatible XML)
+   ═══════════════════════════════════════════════════════════════════ */
+function downloadRows(name,cols,rows,fmt){
+  const headers=cols.map(c=>c.label);
+  const data=rows.map(r=>cols.map(c=>{ let v=c.raw?c.raw(r):c.get(r); if(typeof v==='string') v=v.replace(/<[^>]*>/g,'').trim(); return v==null?'':v; }));
+  if(fmt==='xls') return downloadXls(name,headers,data);
+  const esc=v=>{ v=String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+  const csv=[headers.map(esc).join(','),...data.map(row=>row.map(esc).join(','))].join('\r\n');
+  saveBlob(name+'.csv','text/csv;charset=utf-8;','﻿'+csv);
+}
+function downloadXls(name,headers,data){
+  const cell=v=>{ const isNum=typeof v==='number'||(/^-?[\d.]+$/.test(String(v))&&String(v)!==''); const t=isNum?'Number':'String';
+    const val=String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); return `<Cell><Data ss:Type="${t}">${val}</Data></Cell>`; };
+  const rowsXml=[`<Row>${headers.map(h=>`<Cell><Data ss:Type="String">${h}</Data></Cell>`).join('')}</Row>`,...data.map(r=>`<Row>${r.map(cell).join('')}</Row>`)].join('');
+  const xml=`<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n<Worksheet ss:Name="${name.slice(0,28)}"><Table>${rowsXml}</Table></Worksheet></Workbook>`;
+  saveBlob(name+'.xls','application/vnd.ms-excel',xml);
+}
+function saveBlob(fname,mime,content){ const blob=new Blob([content],{type:mime}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},100); }
+function exportCurrent(fmt){
+  const items=fItems();
+  const cols=[{label:'Sale Date',get:i=>i.date},{label:'Document No',get:i=>i.document_no},{label:'Customer',get:i=>i.customer_id},
+    {label:'SKU',get:i=>i.sku},{label:'Style',get:i=>i.style},{label:'Product',get:i=>i.product_name},{label:'Category',get:i=>i.category},
+    {label:'Collection',get:i=>i.collection},{label:'Metal',get:i=>i.metal},{label:'Sale Type',get:i=>i.sale_type},{label:'Store',get:i=>i.store},
+    {label:'Sales Person',get:i=>i.salesperson},{label:'City',get:i=>i.city},{label:'State',get:i=>i.state},{label:'Qty',get:i=>i.qty},
+    {label:'Gross Weight',get:i=>i.gross_weight},{label:'Net Weight',get:i=>i.net_weight},{label:'Gross Sale',get:i=>Math.round(i.gross)},
+    {label:'Net Sale',get:i=>Math.round(i.net)},{label:'Discount',get:i=>Math.round(i.discount)}];
+  downloadRows('lucira_sales_'+STATE.tab,cols,items,fmt);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   IMPORT (CSV / JSON)
+   ═══════════════════════════════════════════════════════════════════ */
+function handleFile(file){ const reader=new FileReader();
+  reader.onload=()=>{ try{ const txt=String(reader.result);
+    if(file.name.endsWith('.json')){ const j=JSON.parse(txt); ingest(j.items?j:{items:j},'import'); } else { ingest(parseCsv(txt),'import'); }
+    render(); }catch(e){ alert('Import failed: '+e.message); } };
+  reader.readAsText(file); }
+function parseCsv(text){
+  const rows=[]; let f='',row=[],q=false;
+  for(let i=0;i<text.length;i++){ const ch=text[i];
+    if(q){ if(ch==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=ch; }
+    else { if(ch==='"')q=true; else if(ch===','){row.push(f);f='';} else if(ch==='\n'){row.push(f);rows.push(row);row=[];f='';} else if(ch!=='\r')f+=ch; } }
+  if(f!==''||row.length){ row.push(f); rows.push(row); }
+  const H=rows[0].map(h=>h.trim().toLowerCase());
+  const idx=(...names)=>{ for(const n of names){ const i=H.findIndex(h=>h===n||h.includes(n)); if(i>=0)return i; } return -1; };
+  const ci={date:idx('sale date','invoice_date','invoice date','date'),doc:idx('document','invoice','bill','doc'),cust:idx('customer_id','customer','cust'),
+    sku:idx('sku','tag','barcode'),style:idx('style'),name:idx('product','item'),cat:idx('category'),coll:idx('collection'),metal:idx('metal'),
+    stype:idx('sale type','sale_type','type'),qty:idx('qty','quantity'),gw:idx('gross weight','gross_weight','gross wt'),nw:idx('net weight','net_weight','net wt'),
+    gross:idx('gross sale','gross_amount','gross'),disc:idx('discount'),store:idx('store','branch'),person:idx('sales person','salesperson','sales_person'),city:idx('city'),state:idx('state')};
+  const num=v=>{ const x=parseFloat(String(v||'').replace(/[^0-9.\-]/g,'')); return isNaN(x)?0:x; };
+  const items=[];
+  for(let r=1;r<rows.length;r++){ const row=rows[r]; if(!row||row.length<2) continue; const g=i=>i>=0?(row[i]||''):'';
+    const gross=num(g(ci.gross)); const qty=ci.qty>=0?(num(g(ci.qty))||1):1; let dt=g(ci.date); const d=new Date(dt); const date=isNaN(d)?dt:ymd(d);
+    items.push({date,document_no:g(ci.doc)||('R'+r),order_id:g(ci.doc)||('R'+r),customer_id:g(ci.cust)||('C'+r),customer_name:g(ci.cust),
+      sku:g(ci.sku)||('SKU'+r),style:g(ci.style)||g(ci.sku)||('ST'+r),product_name:g(ci.name),category:g(ci.cat)||'—',collection:g(ci.coll)||'—',metal:g(ci.metal)||'—',
+      sale_type:(g(ci.stype)||'Other'),qty,gross,net:net(gross),discount:ci.disc>=0?num(g(ci.disc)):0,gross_weight:num(g(ci.gw)),net_weight:num(g(ci.nw)),cogs:null,
+      store:g(ci.store)||'—',salesperson:g(ci.person)||'',channel:'',city:g(ci.city)||'',state:g(ci.state)||'',region:''}); }
+  const styleRef=[],custRef=[]; const sf=new Map(),cf=new Map(),cn=new Map(),co=new Map();
+  items.forEach(it=>{ if(!sf.has(it.style)||it.date<sf.get(it.style))sf.set(it.style,it.date);
+    if(!cf.has(it.customer_id)||it.date<cf.get(it.customer_id))cf.set(it.customer_id,it.date);
+    cn.set(it.customer_id,(cn.get(it.customer_id)||0)+it.net); if(!co.has(it.customer_id))co.set(it.customer_id,new Set()); co.get(it.customer_id).add(it.document_no); });
+  sf.forEach((v,k)=>styleRef.push({style:k,first_sale_date:v,first_inventory_date:null,stock_qty:null,category:'',metal:''}));
+  cf.forEach((v,k)=>custRef.push({customer_id:k,first_order_date:v,lifetime_net:Math.round(cn.get(k)||0),lifetime_orders:(co.get(k)||new Set()).size}));
+  return {items,styleRef,customerRef:custRef,asOf:maxDate(items),currency:'INR',gst_divisor:GST,
+    capabilities:{margin:false,inventory:false,selling_days:false,customer:ci.cust>=0,salesperson:ci.person>=0,sale_type:ci.stype>=0,weights:ci.nw>=0}};
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   AUTO-REFRESH + THEME + INIT
+   ═══════════════════════════════════════════════════════════════════ */
+let refreshTimer=null, nextRefresh=0;
+function startRefresh(){ if(!CONFIG.API_BASE){ document.getElementById('refreshTag').textContent='sample'; return; }
+  nextRefresh=Date.now()+CONFIG.REFRESH_MS; clearInterval(refreshTimer);
+  refreshTimer=setInterval(()=>{ const left=Math.max(0,nextRefresh-Date.now());
+    document.getElementById('refreshTag').textContent='⟳ '+Math.ceil(left/60000)+'m';
+    if(left<=0){ nextRefresh=Date.now()+CONFIG.REFRESH_MS; loadData().then(render); } },1000); }
+function setTheme(t){ document.body.classList.toggle('light',t==='light');
+  document.querySelectorAll('#themeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.th===t)); refreshThemeColors(); render(); }
+async function init(){
+  buildNav();
+  document.getElementById('refreshBtn').addEventListener('click',()=>loadData().then(render));
+  document.getElementById('exportBtn').addEventListener('click',()=>{ const fmt=confirm('OK = Excel (.xls)   ·   Cancel = CSV')?'xls':'csv'; exportCurrent(fmt); });
+  document.getElementById('csvImportBtn').addEventListener('click',()=>document.getElementById('fileInput').click());
+  document.getElementById('fileInput').addEventListener('change',e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); });
+  document.querySelectorAll('#themeSeg button').forEach(b=>b.addEventListener('click',()=>setTheme(b.dataset.th)));
+  window.addEventListener('hashchange',route);
+  refreshThemeColors(); await loadData(); route(); startRefresh();
+}
+init();
+</script>
+</body>
+</html>

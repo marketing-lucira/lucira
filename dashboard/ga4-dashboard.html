@@ -361,7 +361,7 @@ const CONFIG = {
   // (a public GCS object written by ga4-bq-api /snapshot). If SNAPSHOT_URL is empty
   // but API_BASE is set, the dashboard instead fetches one wide-window payload from
   // <API_BASE>/data once per day. Both empty = built-in deterministic sample.
-  SNAPSHOT_URL: "https://storage.googleapis.com/lucirajewelry-prod-dashboards/ga4/latest-000000000000.json",  // LIVE snapshot, refreshed daily 09:00 IST by the BigQuery Scheduled Query (EXPORT DATA)
+  SNAPSHOT_URL: "https://storage.googleapis.com/lucirajewelry-prod-dashboards/ga4/unified-latest-000000000000.json",  // LIVE UNIFIED snapshot {session,mart}, refreshed daily 09:00 IST by the BigQuery Scheduled Query (EXPORT DATA)
   API_BASE: "",                 // ga4-bq-api base — used by the AI assistant (/ai) and as a /data snapshot fallback
   SNAPSHOT_DAYS: 400,           // history the snapshot covers; the UI filters client-side within it
   REFRESH_HOUR_IST: 9,          // daily refresh hour, IST
@@ -1068,7 +1068,7 @@ const TABS=[
   ['overview','Overview','◱'],['insights','Insights & Actions','⚑'],['sales','Sales & Revenue','₹'],['traffic','Traffic','⇄'],
   ['users','Users','☺'],['devices','Devices','▤'],['geo','Locations','⌖'],
   ['pages','Pages','▦'],['events','Events','✦'],['ecom','E-commerce','⛢'],
-  ['marketing','Marketing','◎'],['data','Data Explorer','▤'],
+  ['merch','Merchandising','◆'],['marketing','Marketing','◎'],['data','Data Explorer','▤'],
 ];
 function renderTabs(){document.getElementById('tabrail').innerHTML=TABS.map(t=>`<div class="tab ${STATE.tab===t[0]?'active':''}" data-tab="${t[0]}"><span class="ic">${t[2]}</span>${t[1]}</div>`).join('');}
 
@@ -1078,7 +1078,7 @@ function render(){
   const R=filtered();
   if(!R.length){v.innerHTML=`<div class="card"><div class="emptybox">No data matches the current filters.<br><button class="btn" style="margin-top:12px" onclick="resetFilters()">Reset filters</button></div></div>`;return;}
   const fn={overview:tabOverview,insights:tabInsights,sales:tabSales,traffic:tabTraffic,users:tabUsers,devices:tabDevices,
-    geo:tabGeo,pages:tabPages,events:tabEvents,ecom:tabEcom,marketing:tabMarketing,data:tabData}[STATE.tab];
+    geo:tabGeo,pages:tabPages,events:tabEvents,ecom:tabEcom,merch:tabMerch,marketing:tabMarketing,data:tabData}[STATE.tab];
   v.innerHTML=fn(R);
   wireDynamic();
 }
@@ -1594,6 +1594,103 @@ function dropoffChart(steps){
   return barChart(data,{h:240,metric:'Drop-off %',pct:true});
 }
 
+/* ─── MERCHANDISING (product mart) ─────────────────────────────
+   Fed by STATE.mart = the `mart` block of the unified snapshot
+   (ga4_data.ga4_data_part joined to the product master). Product-level
+   margin / gender / material / ageing — dimensions the session fact table
+   does not carry. Window-level (mart's own 90-day window), independent of
+   the session date filter. Falls back to MART_SAMPLE under file:// / sample. */
+function tabMerch(R){
+  const M=STATE.mart;
+  if(!M||!M.totals){return `<div class="card"><div class="cbody"><div class="emptybox">Merchandising needs the <b>mart</b> block of the unified snapshot (product master).<br><span style="color:var(--muted)">No mart data is attached to the current snapshot.</span></div></div></div>`;}
+  const mn=v=>+v||0;
+  const t=M.totals, w=M.window||{};
+  const arr=(a,keys)=>(a||[]).map(r=>{const o={...r};keys.forEach(k=>o[k]=mn(r[k]));return o;});
+  const marginPill=v=>{v=mn(v);const c=v>=45?'var(--s3)':v>=25?'var(--s4)':v>0?'var(--s8)':'var(--muted)';return `<span class="tag" style="background:${c}26;color:${c}">${v>-1000?v.toFixed(0)+'%':'—'}</span>`;};
+  const kc=[
+    {label:'Revenue',icon:'₹',value:fmtMoney(mn(t.revenue)),delta:0,color:'var(--s3)'},
+    {label:'Orders',value:fmtInt(mn(t.purchases)),delta:0,color:'var(--s2)'},
+    {label:'AOV',value:fmtMoney(mn(t.aov)),delta:0,color:'var(--s4)'},
+    {label:'PDP → Cart',value:fmtPct(mn(t.pdpToCartRate)),delta:0,color:'var(--s5)'},
+    {label:'PDP Views',value:fmtNum(mn(t.pdpViews)),delta:0,color:'var(--s1)'},
+    {label:'Attributed Sessions',value:fmtNum(mn(t.sessions)),delta:0,color:'var(--s7)'},
+  ];
+  const mr=arr(M.marginRanges,['revenue','purchases','avgMargin','pdpViews']);
+  const genders=arr(M.genders,['revenue','pdpViews','purchases']);
+  const materials=arr(M.materials,['pdpViews','addToCart','purchases','revenue']);
+  const ptypes=arr(M.productTypes,['pdpViews','addToCart','beginCheckout','purchases','revenue']);
+  const prices=arr(M.priceRanges,['pdpViews','purchases','revenue']);
+  const products=(M.products||[]).map(p=>({name:p.title||p.itemId,sku:p.sku||'',productType:p.productType||'',price:mn(p.price),margin:mn(p.margin),ageing:mn(p.ageing),pdpViews:mn(p.pdpViews),purchases:mn(p.purchases),revenue:mn(p.revenue)}));
+  const revC=[{k:'pdpViews',label:'PDP views',num:true,fmt:fmtNum},{k:'purchases',label:'Purch.',num:true,fmt:fmtInt},{k:'revenue',label:'Revenue',num:true,heat:true,fmt:fmtMoney,raw:v=>Math.round(v)}];
+  return `<div class="banner"><span class="bic">◆</span>Merchandising reads the <b>&nbsp;product mart&nbsp;</b>(${esc(w.from||'')} → ${esc(w.to||'')}, ${w.days||90}-day window) — product margin, gender, material &amp; ageing joined to GA4. Window-level; independent of the date filter above.</div>
+    <div class="grid g4" style="margin:14px 0 16px">${kc.map(kpiCard).join('')}</div>
+    <div class="grid g3" style="margin-bottom:16px">
+      ${card('Revenue by margin band','High / Mid / Low product margin',donut(mr.map(r=>({label:r.name,v:r.revenue})),{money:true,center:fmtMoney(mn(t.revenue)),centerLbl:'Revenue',max:4}),{icon:'📊'})}
+      ${card('Revenue by gender','Who the pieces are for',donut(genders.map(r=>({label:r.name,v:r.revenue})),{money:true,center:'By gender',centerLbl:'Revenue',max:5}),{icon:'⚥'})}
+      ${card('Revenue by category','Rings, Earrings, …',donut(ptypes.map(r=>({label:r.name,v:r.revenue})),{money:true,center:'By type',centerLbl:'Revenue',max:6}),{icon:'◆'})}
+    </div>
+    ${card('Margin bands','Revenue & average product margin by band',dataTable('mchMargin',[{k:'name',label:'Margin band'},{k:'pdpViews',label:'PDP views',num:true,fmt:fmtNum},{k:'purchases',label:'Purch.',num:true,fmt:fmtInt},{k:'revenue',label:'Revenue',num:true,heat:true,fmt:fmtMoney,raw:v=>Math.round(v)},{k:'avgMargin',label:'Avg margin',num:true,fmt:v=>marginPill(v),raw:v=>Math.round(v)}],mr,{per:8,sort:3}),{icon:'📊'})}
+    <div class="grid g2" style="margin:16px 0">
+      ${card('Product categories','PDP → cart → checkout → purchase',dataTable('mchType',[{k:'name',label:'Category'},{k:'pdpViews',label:'PDP views',num:true,fmt:fmtNum},{k:'addToCart',label:'Add cart',num:true,fmt:fmtInt},{k:'beginCheckout',label:'Checkout',num:true,fmt:fmtInt},{k:'purchases',label:'Purch.',num:true,fmt:fmtInt},{k:'revenue',label:'Revenue',num:true,heat:true,fmt:fmtMoney,raw:v=>Math.round(v)}],ptypes,{per:14,sort:5}),{icon:'◆'})}
+      <div style="display:flex;flex-direction:column;gap:16px">
+      ${card('Material type','Gold, Diamond, Platinum, …',dataTable('mchMat',[{k:'name',label:'Material'},...revC],materials,{per:8,sort:2}),{icon:'⬡'})}
+      ${card('Price bands','Revenue by price range',dataTable('mchPrice',[{k:'name',label:'Price band'},...revC],prices,{per:8,sort:2}),{icon:'₹'})}
+      </div>
+    </div>
+    ${card('Product master — top 100 by revenue','SKU · price · margin · ageing (product master joined to GA4)',dataTable('mchProd',[
+      {k:'name',label:'Product'},{k:'sku',label:'SKU'},{k:'productType',label:'Type'},
+      {k:'price',label:'Price',num:true,fmt:fmtMoney,raw:v=>Math.round(v)},
+      {k:'ageing',label:'Ageing (d)',num:true,fmt:fmtInt},
+      {k:'pdpViews',label:'PDP views',num:true,fmt:fmtNum},
+      {k:'purchases',label:'Purch.',num:true,fmt:fmtInt},
+      {k:'revenue',label:'Revenue',num:true,heat:true,fmt:fmtMoney,raw:v=>Math.round(v)},
+      {k:'margin',label:'Margin',num:true,fmt:v=>marginPill(v),raw:v=>Math.round(v)}
+    ],products,{per:20,sort:7}),{icon:'◆'})}`;
+}
+
+/* Compact merchandising sample so the tab renders under file:// / offline.
+   Real values arrive from the unified snapshot's `mart` block. */
+const MART_SAMPLE={
+  window:{from:'2026-04-22',to:'2026-07-20',days:90},
+  totals:{revenue:2481049,purchases:165,aov:15037,pdpToCartRate:2.6,pdpViews:1195083,sessions:319598},
+  marginRanges:[
+    {name:'High Margin',pdpViews:498000,purchases:100,revenue:1755366,avgMargin:61.5},
+    {name:'Mid Margin',pdpViews:402000,purchases:44,revenue:519507,avgMargin:28.3},
+    {name:'Low Margin',pdpViews:270000,purchases:19,revenue:188995,avgMargin:14.2},
+    {name:'(none)',pdpViews:25083,purchases:2,revenue:17181,avgMargin:-7724}],
+  genders:[
+    {name:'Women',pdpViews:820000,revenue:1720000,purchases:118},
+    {name:'Men',pdpViews:190000,revenue:430000,purchases:28},
+    {name:'Unisex',pdpViews:120000,revenue:230000,purchases:14},
+    {name:'Kids',pdpViews:65083,revenue:101049,purchases:5}],
+  materials:[
+    {name:'Gold & Diamond',pdpViews:540000,addToCart:9800,purchases:92,revenue:1490000},
+    {name:'Gold',pdpViews:360000,addToCart:6100,purchases:48,revenue:720000},
+    {name:'Platinum',pdpViews:180000,addToCart:2400,purchases:16,revenue:190000},
+    {name:'Silver',pdpViews:115083,addToCart:1500,purchases:9,revenue:81049}],
+  productTypes:[
+    {name:'Rings',pdpViews:430000,addToCart:8200,beginCheckout:4100,purchases:70,revenue:1110605},
+    {name:'Earrings',pdpViews:300000,addToCart:5100,beginCheckout:2600,purchases:41,revenue:455507},
+    {name:'Bracelets',pdpViews:210000,addToCart:3400,beginCheckout:1700,purchases:28,revenue:315645},
+    {name:'Pendants',pdpViews:150000,addToCart:2100,beginCheckout:1000,purchases:16,revenue:360000},
+    {name:'Necklaces',pdpViews:105083,addToCart:1400,beginCheckout:700,purchases:10,revenue:239292}],
+  priceRanges:[
+    {name:'₹1L–5L',pdpViews:410000,purchases:70,revenue:1350000},
+    {name:'₹25K–1L',pdpViews:520000,purchases:66,revenue:780000},
+    {name:'Under ₹25K',pdpViews:200000,purchases:24,revenue:210000},
+    {name:'Above ₹5L',pdpViews:65083,purchases:5,revenue:141049}],
+  collections:[
+    {name:'Bridal',pdpViews:280000,purchases:52,revenue:980000},
+    {name:'Everyday',pdpViews:420000,purchases:61,revenue:640000},
+    {name:'Solitaire',pdpViews:180000,purchases:30,revenue:560000}],
+  products:[
+    {title:'6.590ct Oval Solitaire Engagement Ring',sku:'LJ-R00170-18WGLGD-15',productType:'Rings',price:290757,margin:76.7,ageing:55,pdpViews:1200,purchases:1,revenue:307852},
+    {title:'Classic Diamond Halo Ring',sku:'LJ-R00212-18WGLGD-12',productType:'Rings',price:145000,margin:58.2,ageing:41,pdpViews:2100,purchases:3,revenue:435000},
+    {title:'Emerald-Cut Diamond Studs',sku:'LJ-E00088-18WGLGD-00',productType:'Earrings',price:98000,margin:44.1,ageing:73,pdpViews:1800,purchases:2,revenue:196000},
+    {title:'Gold Tennis Bracelet',sku:'LJ-B00051-22YG-07',productType:'Bracelets',price:210000,margin:31.5,ageing:120,pdpViews:900,purchases:1,revenue:210000},
+    {title:'Diamond Cluster Pendant',sku:'LJ-P00133-18WGLGD-00',productType:'Pendants',price:76000,margin:52.0,ageing:34,pdpViews:1500,purchases:2,revenue:152000}]
+};
+
 /* ─── MARKETING ────────────────────────────────────────────── */
 function tabMarketing(R){
   const camp=groupBy(R,r=>r.campaign).filter(c=>c.name!=='(organic)'&&c.name!=='(not set)').sort(byDesc('revenue'));
@@ -1843,7 +1940,12 @@ function scheduleDailyRefresh(){
    For fully-joined live data, back this with the GA4→BigQuery export.
    Any dimension the API doesn't return simply stays "(not set)". */
 function ingestLive(j){
-  CONFIG.TODAY=j.window?j.window.to:CONFIG.TODAY;
+  // Unified snapshot = { generated_at, window, session:{…}, mart:{…} }.
+  // The session model feeds every session-grain tab; the mart model feeds Merchandising.
+  // Legacy flat snapshots (session fields at top level) still work — mart just stays null.
+  const top=j;
+  if(j.session){ STATE.mart=j.mart||null; j=j.session; } else { STATE.mart=null; }
+  CONFIG.TODAY=(j.window&&j.window.to)||(top.window&&top.window.to)||CONFIG.TODAY;
   const rows=[];let id=0,uid=0;
   const daily=j.daily||[];
   const rng=mulberry32(7);
@@ -1883,7 +1985,7 @@ function ingestLive(j){
   }
   STATE.rows=rows;STATE.userRef={};
   const dates=daily.map(d=>d.date);
-  STATE.meta={from:dates[0],to:dates[dates.length-1],generated:j.generated_at};
+  STATE.meta={from:dates[0],to:dates[dates.length-1],generated:top.generated_at||j.generated_at};
   STATE._liveEvents=evAll; STATE._liveItems=(j.items||[]); STATE._liveFunnel=(j.funnel||[]);
 }
 function setLiveChip(live,txt){document.getElementById('livedot').classList.toggle('live',live);document.getElementById('livetxt').textContent=txt;}
@@ -1895,7 +1997,7 @@ function setTheme(t){document.documentElement.setAttribute('data-theme',t);STATE
 function boot(){
   try{const t=localStorage.getItem('ga4theme');if(t)setTheme(t);}catch(e){}
   const s=buildSample();
-  STATE.rows=s.rows;STATE.userRef=s.userRef;STATE.meta=s.meta;
+  STATE.rows=s.rows;STATE.userRef=s.userRef;STATE.meta=s.meta;STATE.mart=MART_SAMPLE;
   const hInit=(location.hash||'').replace('#','');if(TABS.some(t=>t[0]===hInit))STATE.tab=hInit;
   render();
   document.getElementById('skel').classList.add('hide');

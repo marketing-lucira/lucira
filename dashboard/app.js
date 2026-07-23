@@ -69,7 +69,7 @@ function cleanTitle(v){ v=clean(v); return v; }
 
 /* ---------- filter state ---------- */
 var minDate='2026-05-31', maxDate=(function(){var mx='2026-05-31';DEALS.forEach(function(d){var k=dayKey(d.created);if(k>mx)mx=k;});CALLS.forEach(function(c){var k=dayKey(c.created);if(k>mx)mx=k;});return mx;})();
-var F={ from:minDate, to:maxDate, preset:'all', owners:new Set(), stage:'', trigger:'', leadSource:'', utmSource:'', utmMedium:'', callType:'', taskStatus:'', compare:false };
+var F={ from:minDate, to:maxDate, preset:'7', owners:new Set(), stage:'', trigger:'', leadSource:'', utmSource:'', utmMedium:'', callType:'', taskStatus:'', compare:false };
 
 function inDate(created){ var k=dayKey(created); return k>=F.from && k<=F.to; }
 function inR(created,from,to){ var k=dayKey(created); return k>=(from||F.from) && k<=(to||F.to); }
@@ -228,7 +228,32 @@ function table(host, headers, rows, opts){
   if(ss){ body.sort(function(a,b){ var x=a[ss.c],y=b[ss.c]; var xn=parseFloat(String(x).replace(/[^0-9.\-]/g,'')),yn=parseFloat(String(y).replace(/[^0-9.\-]/g,'')); if(!isNaN(xn)&&!isNaN(yn)&&opts.numCols&&opts.numCols.indexOf(ss.c)>=0){return (xn-yn)*ss.dir;} return String(x).localeCompare(String(y))*ss.dir; }); }
   var tb=el('tbody'); var shown=body.slice(0,opts.limit||500);
   shown.forEach(function(r){ var trr=el('tr'); r.forEach(function(c,ci){ var td=el('td',opts.numCols&&opts.numCols.indexOf(ci)>=0?'right':null); td.innerHTML=(c&&c.html)?c.html:esc(c); trr.appendChild(td); }); tb.appendChild(trr); });
-  t.appendChild(tb); wrap.appendChild(t); host.appendChild(wrap);
+  t.appendChild(tb);
+  /* Totals footer: sum additive numeric columns (counts + talk-time) across ALL rows.
+     Skips non-additive cols (averages, %, min/max/median, per-deal, delay). Only shown when at least one column sums. */
+  if(opts.totals!==false && opts.numCols && opts.numCols.length && body.length>1){
+    var tf=el('tfoot'); var ftr=el('tr'); var summed=0; var cells=[];
+    headers.forEach(function(h,ci){
+      var isNum=opts.numCols.indexOf(ci)>=0; var td=el('td',isNum?'right':null);
+      td.style.borderTop='2px solid rgba(128,128,128,.45)'; td.style.fontWeight='700'; td.style.background='rgba(128,128,128,.07)';
+      if(ci===0){ td.innerHTML='TOTAL'; }
+      else if(isNum){
+        var hl=String(h).toLowerCase();
+        if(/%|avg|rate|\bmed|median|\bmax|\bmin\b|per |\/deal|delay|prob|connectivity/.test(hl)){ td.innerHTML=''; }
+        else {
+          var isTalk=/talk/.test(hl), sum=0;
+          body.forEach(function(r){ var c=r[ci]; var v=(c&&c.text!=null)?c.text:(c&&c.html!=null?c.html:c); var s=String(v); var n;
+            var hm=isTalk?s.match(/(\d+):(\d\d):(\d\d)/):null; /* talk cells may be raw seconds (.text) OR an "HH:MM:SS" string */
+            if(hm){ n=(+hm[1])*3600+(+hm[2])*60+(+hm[3]); } else { n=parseFloat(s.replace(/[^0-9.\-]/g,'')); }
+            if(!isNaN(n))sum+=n; });
+          td.innerHTML=isTalk?hms(sum):num(Math.round(sum)); summed++;
+        }
+      }
+      cells.push(td);
+    });
+    if(summed){ cells.forEach(function(td){ ftr.appendChild(td); }); tf.appendChild(ftr); t.appendChild(tf); }
+  }
+  wrap.appendChild(t); host.appendChild(wrap);
   if(body.length>shown.length){ host.appendChild(el('div','hint','Showing '+shown.length+' of '+num(body.length)+' rows. Use CSV export for full data.')); }
 }
 function exportCSV(name, headers, rows){
@@ -393,7 +418,7 @@ function renderAgents(v){
   var rows=Object.keys(m).map(function(id){ var r=m[id]; var af=r.frt.length?r.frt.reduce(function(s,x){return s+x;},0)/r.frt.length:null;
     return [ownerName(id), r.deals, r.won, {html:p1(pct(r.contacted,r.deals))+'%',text:p1(pct(r.contacted,r.deals))}, {html:af==null?'—':fmtDur(af),text:af==null?'':p1(af)}, r.calls, r.conn, {html:hms(r.talk),text:r.talk}, r.meet, r.tasks, r.online]; })
     .sort(function(a,b){return b[1]-a[1];});
-  table(p.__body,['Agent','Deals','Won','Contact %','Avg Resp','Calls','Connected','Talk Time','Meetings','Tasks','Chats'],rows,{key:'agents',numCols:[1,2,5,6,8,9,10]});
+  table(p.__body,['Agent','Deals','Won','Contact %','Avg Resp','Calls','Connected','Talk Time','Meetings','Tasks','Chats'],rows,{key:'agents',numCols:[1,2,5,6,7,8,9,10]});
   addExport(p,'agent_performance',['Agent','Deals','Won','ContactPct','AvgRespMin','Calls','Connected','TalkSec','Meetings','Tasks','Chats'],
     Object.keys(m).map(function(id){var r=m[id];var af=r.frt.length?r.frt.reduce(function(s,x){return s+x;},0)/r.frt.length:'';return [ownerName(id),r.deals,r.won,p1(pct(r.contacted,r.deals)),af===''?'':p1(af),r.calls,r.conn,r.talk,r.meet,r.tasks,r.online];}));
   var g=el('div','grid g2');
@@ -434,8 +459,8 @@ function renderCalls(v){
   hbar(pAvg.__body, avgIt, {color:'var(--c3)',fmt:hms,onClick:toggleOwner});
   var pTbl=panel('Owner Call Summary'); v.appendChild(pTbl);
   var owners={}; cl.forEach(function(c){var n=ownerName(c.owner); var o=owners[n]||(owners[n]={t:0,cn:0,ms:0,dur:0}); o.t++; if(c.dur>0)o.cn++; if((c.type||'').toLowerCase().indexOf('miss')>=0)o.ms++; o.dur+=c.dur||0;});
-  var rows=Object.keys(owners).map(function(n){var o=owners[n];return [n,o.t,o.cn,o.ms,p1(pct(o.cn,o.t))+'%',hms(o.dur),hms(o.cn?o.dur/o.cn:0)];});
-  table(pTbl.__body,['Owner','Total','Connected','Missed','Conn %','Talk Time','Avg (conn)'],rows,{key:'callsown',numCols:[1,2,3]});
+  var rows=Object.keys(owners).map(function(n){var o=owners[n];return [n,o.t,o.cn,o.ms,p1(pct(o.cn,o.t))+'%',{html:hms(o.dur),text:o.dur},hms(o.cn?o.dur/o.cn:0)];});
+  table(pTbl.__body,['Owner','Total','Connected','Missed','Conn %','Talk Time','Avg (conn)'],rows,{key:'callsown',numCols:[1,2,3,5]});
   addExport(pTbl,'call_owner_summary',['Owner','Total','Connected','Missed','ConnPct','TalkTimeSec','AvgConnSec'],Object.keys(owners).map(function(n){var o=owners[n];return[n,o.t,o.cn,o.ms,p1(pct(o.cn,o.t)),o.dur,o.cn?Math.round(o.dur/o.cn):0];}));
 }
 
@@ -557,10 +582,11 @@ function renderDVC(v){
   addExport(pTe,'trigger_analysis',['Trigger','Deals','Calls','AvgCallsPerDeal','AvgFirstRespMin','ContactPct'],Object.keys(trg).map(function(t){var o=trg[t];var af=o.frt.length?o.frt.reduce(function(s,x){return s+x;},0)/o.frt.length:0;return[t,o.d,o.calls,p1(o.d?o.calls/o.d:0),p1(af),p1(pct(o.c,o.d))];}));
 
   var pOa=panel('Owner Analysis'); v.appendChild(pOa);
+  var talkOa={}; fCalls().forEach(function(c){var n=ownerName(c.owner); talkOa[n]=(talkOa[n]||0)+(c.dur||0);});
   var oa={}; joined.forEach(function(j){var n=ownerName(j.deal.owner); var o=oa[n]||(oa[n]={d:0,c:0,calls:0,frt:[]}); o.d++; o.calls+=j.nCalls; if(j.contacted){o.c++; if(j.frt!=null)o.frt.push(j.frt);} });
-  var orows=Object.keys(oa).map(function(n){var o=oa[n];var af=o.frt.length?o.frt.reduce(function(s,x){return s+x;},0)/o.frt.length:0;return [n,o.d,o.calls,p1(o.d?o.calls/o.d:0),fmtDur(af),p1(pct(o.c,o.d))+'%'];}).sort(function(a,b){return b[1]-a[1];});
-  table(pOa.__body,['Owner','Deals','Calls','Avg Calls','Avg Resp','Contact %'],orows,{key:'oa',numCols:[1,2,3]});
-  addExport(pOa,'owner_analysis',['Owner','Deals','Calls','AvgCalls','AvgRespMin','ContactPct'],Object.keys(oa).map(function(n){var o=oa[n];var af=o.frt.length?o.frt.reduce(function(s,x){return s+x;},0)/o.frt.length:0;return[n,o.d,o.calls,p1(o.d?o.calls/o.d:0),p1(af),p1(pct(o.c,o.d))];}));
+  var orows=Object.keys(oa).map(function(n){var o=oa[n];var af=o.frt.length?o.frt.reduce(function(s,x){return s+x;},0)/o.frt.length:0;var tk=talkOa[n]||0;return [n,o.d,o.calls,{html:hms(tk),text:tk},p1(o.d?o.calls/o.d:0),fmtDur(af),p1(pct(o.c,o.d))+'%'];}).sort(function(a,b){return b[1]-a[1];});
+  table(pOa.__body,['Owner','Deals','Calls','Talk Time','Avg Calls','Avg Resp','Contact %'],orows,{key:'oa',numCols:[1,2,3,4]});
+  addExport(pOa,'owner_analysis',['Owner','Deals','Calls','TalkTimeSec','AvgCalls','AvgRespMin','ContactPct'],Object.keys(oa).map(function(n){var o=oa[n];var af=o.frt.length?o.frt.reduce(function(s,x){return s+x;},0)/o.frt.length:0;return[n,o.d,o.calls,talkOa[n]||0,p1(o.d?o.calls/o.d:0),p1(af),p1(pct(o.c,o.d))];}));
 
   var pNc=panel('Uncontacted Deals','Deals with no call after creation — action list'); v.appendChild(pNc);
   var nc=joined.filter(function(j){return !j.contacted;}).map(function(j){return [esc(j.deal.name),ownerName(j.deal.owner),stagePill(j.deal.stage),normTrig(j.deal.trigger),j.deal.mobile||'—',fmtDT(j.deal.created)];});
@@ -912,13 +938,13 @@ function renderQuality(v){
 
   // 4 — Activity Performance by owner
   var cl=fCalls(), tk=fTasks(), ev=fEvents(), on=fOnline();
-  var ow={}; function orow(id){return ow[id]||(ow[id]={deals:0,acts:0,frt:[],contacted:0,calls:0,conn:0,meet:0,tasks:0,chats:0});}
+  var ow={}; function orow(id){return ow[id]||(ow[id]={deals:0,acts:0,frt:[],contacted:0,calls:0,conn:0,talk:0,meet:0,tasks:0,chats:0});}
   E.forEach(function(e){var o=orow(e.d.owner); o.deals++; o.acts+=(+e.d.numAct||0); if(e.contacted){o.contacted++; if(e.frt!=null)o.frt.push(e.frt);}});
-  cl.forEach(function(c){var o=orow(c.owner); o.calls++; if(c.dur>0)o.conn++;}); ev.forEach(function(e){orow(e.owner).meet++;}); tk.forEach(function(t){orow(t.owner).tasks++;}); on.forEach(function(o2){orow(o2.owner).chats++;});
+  cl.forEach(function(c){var o=orow(c.owner); o.calls++; if(c.dur>0)o.conn++; o.talk+=c.dur||0;}); ev.forEach(function(e){orow(e.owner).meet++;}); tk.forEach(function(t){orow(t.owner).tasks++;}); on.forEach(function(o2){orow(o2.owner).chats++;});
   var pAP=panel('Activity Performance by Owner','response speed & follow-up quality'); v.appendChild(pAP);
-  var apRows=Object.keys(ow).map(function(id){var o=ow[id]; var af=o.frt.length?o.frt.reduce(function(s,x){return s+x;},0)/o.frt.length:null; return [ownerName(id),o.calls,o.conn,o.meet,o.tasks,o.chats,p1(o.deals?o.acts/o.deals:0),{html:af==null?'—':fmtDur(af),text:af==null?'':p1(af)},p1(pct(o.contacted,o.deals))+'%'];}).sort(function(a,b){return b[1]-a[1];});
-  table(pAP.__body,['Owner','Calls','Connected','Meetings','Tasks','Chats','Acts/Deal','Avg 1st Call','Follow-up %'],apRows,{key:'qap',numCols:[1,2,3,4,5]});
-  addExport(pAP,'activity_performance',['Owner','Calls','Connected','Meetings','Tasks','Chats','ActsPerDeal','Avg1stCallMin','FollowupPct'],Object.keys(ow).map(function(id){var o=ow[id];var af=o.frt.length?o.frt.reduce(function(s,x){return s+x;},0)/o.frt.length:'';return [ownerName(id),o.calls,o.conn,o.meet,o.tasks,o.chats,p1(o.deals?o.acts/o.deals:0),af===''?'':p1(af),p1(pct(o.contacted,o.deals))];}));
+  var apRows=Object.keys(ow).map(function(id){var o=ow[id]; var af=o.frt.length?o.frt.reduce(function(s,x){return s+x;},0)/o.frt.length:null; return [ownerName(id),o.calls,o.conn,{html:hms(o.talk),text:o.talk},o.meet,o.tasks,o.chats,p1(o.deals?o.acts/o.deals:0),{html:af==null?'—':fmtDur(af),text:af==null?'':p1(af)},p1(pct(o.contacted,o.deals))+'%'];}).sort(function(a,b){return b[1]-a[1];});
+  table(pAP.__body,['Owner','Calls','Connected','Talk Time','Meetings','Tasks','Chats','Acts/Deal','Avg 1st Call','Follow-up %'],apRows,{key:'qap',numCols:[1,2,3,4,5,6]});
+  addExport(pAP,'activity_performance',['Owner','Calls','Connected','TalkTimeSec','Meetings','Tasks','Chats','ActsPerDeal','Avg1stCallMin','FollowupPct'],Object.keys(ow).map(function(id){var o=ow[id];var af=o.frt.length?o.frt.reduce(function(s,x){return s+x;},0)/o.frt.length:'';return [ownerName(id),o.calls,o.conn,o.talk,o.meet,o.tasks,o.chats,p1(o.deals?o.acts/o.deals:0),af===''?'':p1(af),p1(pct(o.contacted,o.deals))];}));
 
   // 5 — Stale Deal Analysis
   var pStale=panel('Stale Deal Analysis','open deals sorted by idle time · Next follow-up not tracked per-deal in Zoho'); v.appendChild(pStale);
@@ -1232,7 +1258,18 @@ function toggleOwner(name){ var id=Object.keys(OWN).filter(function(k){return OW
     id=name; }
   if(F.owners.has(id))F.owners.delete(id); else F.owners.add(id); sync(); }
 
-function buildTabs(){ var nav=document.getElementById('tabnav'); nav.innerHTML=''; TABS.forEach(function(t){ var b=el('button',t[0]===active?'on':'',t[1]); b.onclick=function(){active=t[0];location.hash=t[0];buildTabs();render();window.scrollTo(0,0);}; nav.appendChild(b); }); }
+function buildTabs(){
+  var nav=document.getElementById('tabnav'); nav.innerHTML='';
+  var cur=null; TABS.forEach(function(t){ if(t[0]===active) cur=t; });
+  var menu=el('div','tabmenu');
+  var btn=el('button','tabmenu-btn','<span>'+esc(cur?cur[1]:'Menu')+'</span><span class="tabmenu-arr">▾</span>');
+  btn.setAttribute('aria-haspopup','true'); btn.title='Choose a view';
+  var pop=el('div','tabmenu-pop');
+  TABS.forEach(function(t){ var item=el('button',t[0]===active?'on':'',t[1]); item.onclick=function(e){ if(e)e.stopPropagation(); active=t[0]; location.hash=t[0]; buildTabs(); render(); window.scrollTo(0,0); }; pop.appendChild(item); });
+  btn.onclick=function(e){ if(e)e.stopPropagation(); menu.classList.toggle('open'); };
+  menu.appendChild(btn); menu.appendChild(pop); nav.appendChild(menu);
+  if(!window._tabMenuDocClose){ window._tabMenuDocClose=true; document.addEventListener('click',function(){ var m=document.querySelector('.tabmenu.open'); if(m)m.classList.remove('open'); }); }
+}
 (function(){ var h=(location.hash||'').replace('#',''); if(h&&VIEWS[h])active=h; })();
 window.addEventListener('hashchange',function(){ var h=(location.hash||'').replace('#',''); if(h&&VIEWS[h]&&h!==active){active=h;buildTabs();render();} });
 
@@ -1245,7 +1282,7 @@ function buildFilters(){
   // presets
   var pg=el('div','fgroup'); pg.appendChild(el('label',null,'Date Range (quick)'));
   var pr=el('div','presets');
-  [['all','All'],['today','Today'],['7','7d'],['30','30d'],['tw','This wk'],['tm','This mo'],['lm','Last mo']].forEach(function(p){ var b=el('button',F.preset===p[0]?'on':'',p[1]); b.onclick=function(){setPreset(p[0]);}; pr.appendChild(b); });
+  [['all','All'],['today','Today'],['yest','Yesterday'],['7','7d'],['30','30d'],['tw','This wk'],['tm','This mo'],['lm','Last mo']].forEach(function(p){ var b=el('button',F.preset===p[0]?'on':'',p[1]); b.onclick=function(){setPreset(p[0]);}; pr.appendChild(b); });
   var cb=el('button',F.preset===''?'on':'','◆ Custom'); cb.title='Active when you pick your own From/To dates'; cb.onclick=function(){ F.preset=''; sync(); }; pr.appendChild(cb);
   pg.appendChild(pr); row.appendChild(pg);
   // custom dates — free choice ("according to me"): no min/max lock, auto-clamped so From<=To
@@ -1303,16 +1340,18 @@ function chips(){
   items.forEach(function(it){ var ch=el('span','chip','<b>'+esc(it[0])+':</b> '+esc(it[1])+' <span class="x">✕</span>'); ch.querySelector('.x').onclick=it[2]; c.appendChild(ch); });
   var clr=el('button','clearall','Clear all'); clr.onclick=function(){ F.owners.clear(); ['stage','trigger','leadSource','utmSource','utmMedium','callType','taskStatus'].forEach(function(k){F[k]='';}); setPreset('all'); }; c.appendChild(clr);
 }
-function setPreset(p){ F.preset=p; var to=maxDate;
-  if(p==='all'){F.from=minDate;F.to=maxDate;}
-  else if(p==='today'){F.from=to;F.to=to;}
-  else if(p==='7'){var d=D(to);d.setDate(d.getDate()-6);F.from=ymd(d);F.to=to;}
-  else if(p==='30'){var d2=D(to);d2.setDate(d2.getDate()-29);F.from=ymd(d2);F.to=to;}
-  else if(p==='tw'){var dw=D(to);var wd=(dw.getDay()+6)%7;dw.setDate(dw.getDate()-wd);F.from=ymd(dw);F.to=to;}
-  else if(p==='tm'){F.from=to.slice(0,7)+'-01';F.to=to;}
-  else if(p==='lm'){var d3=D(to.slice(0,7)+'-01');d3.setMonth(d3.getMonth()-1);var s=ymd(d3);var e=D(to.slice(0,7)+'-01');e.setDate(0);F.from=s;F.to=ymd(e);}
-  sync();
+function presetRange(p){ var to=maxDate, r={from:F.from,to:F.to};
+  if(p==='all'){r.from=minDate;r.to=maxDate;}
+  else if(p==='today'){r.from=to;r.to=to;}
+  else if(p==='yest'){var dy=D(to);dy.setDate(dy.getDate()-1);r.from=ymd(dy);r.to=ymd(dy);}
+  else if(p==='7'){var d=D(to);d.setDate(d.getDate()-6);r.from=ymd(d);r.to=to;}
+  else if(p==='30'){var d2=D(to);d2.setDate(d2.getDate()-29);r.from=ymd(d2);r.to=to;}
+  else if(p==='tw'){var dw=D(to);var wd=(dw.getDay()+6)%7;dw.setDate(dw.getDate()-wd);r.from=ymd(dw);r.to=to;}
+  else if(p==='tm'){r.from=to.slice(0,7)+'-01';r.to=to;}
+  else if(p==='lm'){var d3=D(to.slice(0,7)+'-01');d3.setMonth(d3.getMonth()-1);var s=ymd(d3);var e=D(to.slice(0,7)+'-01');e.setDate(0);r.from=s;r.to=ymd(e);}
+  return r;
 }
+function setPreset(p){ F.preset=p; var r=presetRange(p); F.from=r.from; F.to=r.to; sync(); }
 function sync(){ buildFilters(); chips(); render(); }
 function render(){ var v=document.getElementById('views'); v.innerHTML='';
   /* the Stock tab is a full-bleed iframe — hide the CRM filter bar / chips while it's active */
@@ -1414,6 +1453,1063 @@ function buildAssistant(){
   var sc=gid('askSugg'); ['Contact rate?','Top agent by won','Average first response','Overdue tasks','Deals by stage','Best time-slot'].forEach(function(s){ var b=el('button',null,s); b.onclick=function(){ ask(s); }; sc.appendChild(b); });
 }
 
+/* ============================ SECTION 11 — Export & Sharing ============================
+   Self-contained (no external libraries). Every deliverable is computed from the CURRENT
+   filters (F) through the same joinDeals / whAnalysis / trend engines the dashboard uses,
+   so an export always matches exactly what is on screen. Deliverables:
+     • PDF  — A4-landscape, presentation-ready executive report (print → "Save as PDF")
+     • Excel — multi-sheet SpreadsheetML (.xls): formatted, frozen headers, auto-filter,
+               auto-width, SLA-breach highlighting
+     • WhatsApp — compact copy-ready summary (+ wa.me deep link)
+     • PNG  — branded executive snapshot (canvas)
+     • Print — the live dashboard
+     • Executive Report — one-page summary for senior management
+     • Scheduled Reports — client-persisted configurator (delivery runs on the backend)   */
+(function(){
+  var SLA_MIN=30;          // first-response SLA threshold (minutes) — matches "Overdue (>30 min)"
+  var SLA_TARGET=80;       // owner SLA-compliance target (%)
+  var COVER_TARGET=90;     // call-coverage target (%)
+  var MIN_OWNER_DEALS=5;   // ignore tiny-volume owners when picking best / lowest SLA
+  var BRAND='Lucira Jewelry', REPORT_TITLE='Daily Deals vs Calls — Executive Report';
+  var RC=['#2563eb','#0d9488','#d97706','#9333ea','#e11d48','#0284c7','#65a30d','#ea580c'];
+
+  /* ---------- shared model (respects current filters) ---------- */
+  function reportModel(){
+    var dl=fDeals(), cl=fCalls(), tk=fTasks(), ev=fEvents(), on=fOnline();
+    var joined=joinDeals(dl);
+    var contacted=joined.filter(function(j){return j.contacted;});
+    var pending=joined.filter(function(j){return !j.contacted;});
+    var maxT=D(maxDate);
+    var overdue=joined.filter(function(j){
+      if(j.contacted) return j.frt!=null && j.frt>SLA_MIN;
+      var age=(maxT-D(j.deal.created))/60000; return age>SLA_MIN;   // uncontacted & older than SLA
+    });
+    var frts=contacted.map(function(j){return j.frt;}).filter(function(x){return x!=null&&x>=0;}).sort(function(a,b){return a-b;});
+    var avgFrt=frts.length?frts.reduce(function(s,x){return s+x;},0)/frts.length:0;
+    var medFrt=frts.length?frts[Math.floor(frts.length/2)]:0;
+    var connCalls=cl.filter(function(c){return c.dur>0;}).length;
+    var coverage=pct(contacted.length, dl.length||1);
+    var won=dl.filter(isWon).length;
+
+    var own={};
+    joined.forEach(function(j){ var id=j.deal.owner; var o=own[id]||(own[id]={id:id,name:ownerName(id),deals:0,contacted:0,sla:0,late:0,pending:0,frtSum:0,frtN:0});
+      o.deals++;
+      if(j.contacted){ o.contacted++; if(j.frt!=null){o.frtSum+=j.frt;o.frtN++; if(j.frt<=SLA_MIN)o.sla++; else o.late++;} }
+      else o.pending++;
+    });
+    var owners=Object.keys(own).map(function(id){ var o=own[id];
+      o.slaPct=pct(o.sla,o.deals); o.coverage=pct(o.contacted,o.deals); o.avgFrt=o.frtN?o.frtSum/o.frtN:null;
+      o.calls=cl.filter(function(c){return c.owner===id;}).length; o.conn=cl.filter(function(c){return c.owner===id&&c.dur>0;}).length;
+      return o; }).sort(function(a,b){return b.deals-a.deals;});
+    var ranked=owners.filter(function(o){return o.deals>=MIN_OWNER_DEALS;});
+    var best=ranked.slice().sort(function(a,b){return b.slaPct-a.slaPct;})[0]||owners[0]||null;
+    var worst=ranked.slice().sort(function(a,b){return a.slaPct-b.slaPct;})[0]||owners[owners.length-1]||null;
+
+    var wh=whAnalysis(dl);
+    var odSrc=toItems(groupBy(overdue,function(j){return clean(j.deal.leadSource);}));
+    var odTrig=toItems(groupBy(overdue,function(j){return normTrig(j.deal.trigger);}));
+    var backHr={}; overdue.forEach(function(j){var h=hourOf(j.deal.created); backHr[h]=(backHr[h]||0)+1;});
+    var peakBackHr=Object.keys(backHr).map(function(h){return {h:+h,n:backHr[h]};}).sort(function(a,b){return b.n-a.n;})[0]||null;
+    function covWin(lo,hi){ var d=joined.filter(function(j){var h=hourOf(j.deal.created);return h>=lo&&h<hi;}); return {n:d.length,c:pct(d.filter(function(j){return j.contacted;}).length, d.length||1)}; }
+    var before5=covWin(9,17), after5=covWin(17,22);
+
+    var gran=pickGran(F.from,F.to);
+    var td=trend(dl,gran), tc=trend(cl,gran), tkeys=mergeKeys(td.keys,tc.keys);
+
+    return { dl:dl, cl:cl, tk:tk, ev:ev, on:on, joined:joined, contacted:contacted, pending:pending, overdue:overdue,
+      deals:dl.length, calls:cl.length, connCalls:connCalls, coverage:coverage, avgFrt:avgFrt, medFrt:medFrt, won:won,
+      pendingCnt:pending.length, overdueCnt:overdue.length, owners:owners, best:best, worst:worst,
+      wh:wh, odSrc:odSrc, odTrig:odTrig, peakBackHr:peakBackHr, before5:before5, after5:after5,
+      gran:gran, trendKeys:tkeys, trendLabels:fmtKeys(tkeys,gran),
+      trendDeals:tkeys.map(function(k){return td.map[k]||0;}), trendCalls:tkeys.map(function(k){return tc.map[k]||0;}),
+      from:F.from, to:F.to, ownersActive:owners.length, generated:new Date(),
+      scope:(F.owners.size?F.owners.size+' owner(s)':'all owners')+(F.stage?' · '+F.stage:'')+(F.trigger?' · '+F.trigger:'')+(F.leadSource?' · '+F.leadSource:'') };
+  }
+
+  /* ---------- narrative generators (rule-based, grounded on the model) ---------- */
+  function execSummary(M){
+    var parts=[];
+    parts.push('Between '+fmtDay(M.from)+' and '+fmtDay(M.to)+', the team created <b>'+num(M.deals)+'</b> deals and logged <b>'+num(M.calls)+'</b> calls ('+num(M.connCalls)+' connected), for a call coverage of <b>'+p1(M.coverage)+'%</b>.');
+    parts.push('Average first response was <b>'+fmtMinNice(M.avgFrt)+'</b> (median '+fmtMinNice(M.medFrt)+').');
+    parts.push('<b>'+num(M.pendingCnt)+'</b> deals still await a first call and <b>'+num(M.overdueCnt)+'</b> breached the '+SLA_MIN+'-minute SLA.');
+    if(M.best) parts.push('Best owner: <b>'+esc(M.best.name)+'</b> at '+p1(M.best.slaPct)+'% SLA'+(M.worst&&M.worst!==M.best?('; lowest: <b>'+esc(M.worst.name)+'</b> at '+p1(M.worst.slaPct)+'%'):'')+'.');
+    return parts.join(' ');
+  }
+  function genInsights(M){
+    var out=[];
+    if(M.overdueCnt && M.odSrc.length) out.push(p1(pct(M.odSrc[0].value,M.overdueCnt))+'% of overdue deals came from <b>'+esc(M.odSrc[0].label)+'</b>.');
+    if(M.peakBackHr) out.push('Maximum backlog around <b>'+hr12(M.peakBackHr.h)+'–'+hr12(M.peakBackHr.h+1)+'</b> ('+num(M.peakBackHr.n)+' overdue deals created in that hour).');
+    if(M.after5.n && M.before5.n) out.push('Call coverage '+(M.after5.c<M.before5.c-2?'<b>dropped</b>':'held steady')+' after 5 PM — '+p1(M.after5.c)+'% vs '+p1(M.before5.c)+'% earlier in the day.');
+    var wf=M.wh.buckets.filter(function(b){return b.avgFrt!=null;});
+    var fast=wf.slice().sort(function(a,b){return a.avgFrt-b.avgFrt;})[0], slow=wf.slice().sort(function(a,b){return b.avgFrt-a.avgFrt;})[0];
+    if(fast&&slow&&fast!==slow) out.push('Fastest response hour is <b>'+esc(fast.label)+'</b> ('+fmtMinNice(fast.avgFrt)+'); slowest is <b>'+esc(slow.label)+'</b> ('+fmtMinNice(slow.avgFrt)+').');
+    if(M.deals>M.calls) out.push('Demand outpaced calling capacity: '+num(M.deals-M.calls)+' more deals than calls in the window.');
+    if(M.odTrig.length && M.overdueCnt) out.push('“'+esc(M.odTrig[0].label)+'” is the top entry-trigger among overdue deals ('+num(M.odTrig[0].value)+').');
+    return out;
+  }
+  function genGaps(M){
+    var g=[];
+    g.push(['Call Coverage', p1(M.coverage)+'%', COVER_TARGET+'%', M.coverage>=COVER_TARGET, (M.coverage>=COVER_TARGET?'On target':(p1(COVER_TARGET-M.coverage)+' pp below target')) ]);
+    var slaComp=pct(M.contacted.filter(function(j){return j.frt!=null&&j.frt<=SLA_MIN;}).length, M.deals||1);
+    g.push(['SLA Compliance (≤'+SLA_MIN+'m)', p1(slaComp)+'%', SLA_TARGET+'%', slaComp>=SLA_TARGET, (slaComp>=SLA_TARGET?'On target':(p1(SLA_TARGET-slaComp)+' pp below target')) ]);
+    g.push(['Uncontacted Deals', num(M.pendingCnt), '0', M.pendingCnt===0, (M.pendingCnt?num(M.pendingCnt)+' need a first call':'None pending') ]);
+    g.push(['Overdue (>'+SLA_MIN+'m)', num(M.overdueCnt), '0', M.overdueCnt===0, (M.overdueCnt?num(M.overdueCnt)+' breached SLA':'None overdue') ]);
+    if(M.worst) g.push(['Lowest Owner SLA', esc(M.worst.name)+' · '+p1(M.worst.slaPct)+'%', SLA_TARGET+'%', M.worst.slaPct>=SLA_TARGET, (M.worst.slaPct>=SLA_TARGET?'All owners on target':'Below team target') ]);
+    return g;
+  }
+  function genRecs(M){
+    var r=[];
+    if(M.peakBackHr) r.push('Increase calling capacity around '+hr12(M.peakBackHr.h)+'–'+hr12(M.peakBackHr.h+1)+', where the overdue backlog peaks.');
+    if(M.overdueCnt) r.push('Prioritise the '+num(M.overdueCnt)+' overdue leads older than '+SLA_MIN+' minutes before net-new outreach.');
+    if(M.pendingCnt) r.push('Clear the '+num(M.pendingCnt)+' uncontacted deals — assign a first call within the SLA window.');
+    if(M.worst && M.worst.slaPct<SLA_TARGET) r.push('Coach '+esc(M.worst.name)+' (SLA '+p1(M.worst.slaPct)+'%) — pair with '+(M.best?esc(M.best.name):'the top performer')+' for first-response discipline.');
+    if(M.after5.n && M.after5.c<M.before5.c-2) r.push('Add a late-shift caller after 5 PM; coverage there is '+p1(M.before5.c-M.after5.c)+' pp lower than daytime.');
+    if(M.odSrc.length && M.overdueCnt && pct(M.odSrc[0].value,M.overdueCnt)>=25) r.push('Route '+esc(M.odSrc[0].label)+' leads to a dedicated queue — they account for '+p1(pct(M.odSrc[0].value,M.overdueCnt))+'% of overdue deals.');
+    if(!r.length) r.push('Metrics are within target — maintain current staffing and SLA discipline.');
+    return r;
+  }
+  function genAlerts(M){
+    var a=[];
+    if(M.coverage<COVER_TARGET) a.push(['high','Call coverage '+p1(M.coverage)+'% is below the '+COVER_TARGET+'% target.']);
+    if(M.overdueCnt>0) a.push([(M.overdueCnt>M.deals*0.15?'high':'med'),num(M.overdueCnt)+' deals breached the '+SLA_MIN+'-minute first-response SLA.']);
+    if(M.pendingCnt>0) a.push([(M.pendingCnt>M.deals*0.15?'high':'med'),num(M.pendingCnt)+' deals have received no call yet.']);
+    if(M.worst && M.worst.slaPct<SLA_TARGET) a.push(['med','Owner '+M.worst.name+' at '+p1(M.worst.slaPct)+'% SLA — below the '+SLA_TARGET+'% target.']);
+    if(M.peakBackHr && M.peakBackHr.n>0) a.push(['low','Backlog concentrates around '+hr12(M.peakBackHr.h)+'–'+hr12(M.peakBackHr.h+1)+' ('+num(M.peakBackHr.n)+' overdue).']);
+    if(!a.length) a.push(['ok','All key metrics are within target for this window.']);
+    return a;
+  }
+
+  /* ---------- WhatsApp-ready text ---------- */
+  function whatsappText(M){
+    var L=[];
+    L.push('📅 *Daily Deals vs Calls Report*');
+    L.push('_'+fmtDay(M.from)+' → '+fmtDay(M.to)+' · '+M.scope+'_');
+    L.push('');
+    L.push('✅ Deals Created : '+num(M.deals));
+    L.push('☎ Calls Made : '+num(M.calls));
+    L.push('📞 Call Coverage : '+p1(M.coverage)+'%');
+    L.push('⏱ Avg First Response : '+fmtMinNice(M.avgFrt));
+    L.push('🚨 Pending Calls : '+num(M.pendingCnt));
+    L.push('🔴 Overdue (>'+SLA_MIN+' min) : '+num(M.overdueCnt));
+    if(M.best) L.push('🏆 Best Owner : '+M.best.name+' ('+p1(M.best.slaPct)+'% SLA)');
+    if(M.worst && M.worst!==M.best) L.push('⚠ Lowest SLA : '+M.worst.name+' ('+p1(M.worst.slaPct)+'%)');
+    var ins=genInsights(M).slice(0,3).map(stripTags);
+    if(ins.length){ L.push(''); L.push('*Top Insights:*'); ins.forEach(function(x){L.push('• '+x);}); }
+    var rec=genRecs(M).slice(0,2).map(stripTags);
+    if(rec.length){ L.push(''); L.push('*Recommendations:*'); rec.forEach(function(x){L.push('• '+x);}); }
+    L.push('');
+    L.push('_Generated automatically on '+fmtStamp(M.generated)+'_');
+    return L.join('\n');
+  }
+  function stripTags(s){ return String(s).replace(/<[^>]+>/g,''); }
+  function fmtStamp(d){ var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return d.getDate()+' '+mo[d.getMonth()]+' '+d.getFullYear()+', '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+' IST'; }
+
+  /* ---------- print-scoped SVG (concrete light colours) ---------- */
+  function xesc(s){ return (s==null?'':''+s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function rBars(items,opt){ opt=opt||{}; items=items.slice(0,opt.max||10);
+    if(!items.length) return '<div class="rp-empty">No data.</div>';
+    var max=Math.max.apply(null,items.map(function(x){return x.value;}))||1;
+    var w=720,rowH=24,lw=180,bw=w-lw-90,H=items.length*rowH+6;
+    var s='<svg viewBox="0 0 '+w+' '+H+'" width="100%" style="max-width:'+w+'px">';
+    items.forEach(function(it,i){ var y=i*rowH+3, bl=Math.max(2,it.value/max*bw), c=it.color||opt.color||RC[i%RC.length];
+      s+='<text x="0" y="'+(y+15)+'" font-size="12" fill="#333">'+xesc(it.label.length>26?it.label.slice(0,25)+'…':it.label)+'</text>';
+      s+='<rect x="'+lw+'" y="'+y+'" width="'+bl+'" height="16" rx="3" fill="'+c+'"/>';
+      s+='<text x="'+(lw+bl+6)+'" y="'+(y+14)+'" font-size="11" fill="#555">'+(opt.fmt?opt.fmt(it.value):num(it.value))+'</text>';
+    });
+    return s+'</svg>';
+  }
+  function rLine(labels,series){
+    var w=720,H=220,pl=42,pr=12,ptp=12,pb=34,iw=w-pl-pr,ih=H-ptp-pb;
+    var max=1; series.forEach(function(se){se.data.forEach(function(v){if(v>max)max=v;});}); max=niceMax(max);
+    var s='<svg viewBox="0 0 '+w+' '+H+'" width="100%" style="max-width:'+w+'px">';
+    for(var g=0;g<=4;g++){ var yy=ptp+ih-(g/4)*ih; s+='<line x1="'+pl+'" y1="'+yy+'" x2="'+(w-pr)+'" y2="'+yy+'" stroke="#e3e8f0"/><text x="'+(pl-5)+'" y="'+(yy+3)+'" font-size="10" fill="#999" text-anchor="end">'+num(Math.round(g/4*max))+'</text>'; }
+    var n=labels.length, step=n>1?iw/(n-1):0, every=Math.max(1,Math.ceil(n/10));
+    labels.forEach(function(lb,i){ if(i%every===0){ var x=pl+i*step; s+='<text x="'+x+'" y="'+(H-pb+15)+'" font-size="10" fill="#999" text-anchor="middle">'+xesc(lb)+'</text>'; } });
+    series.forEach(function(se){ var pts=se.data.map(function(v,i){return [pl+i*step, ptp+ih-(v/max)*ih];});
+      s+='<path d="'+pts.map(function(p,i){return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join(' ')+'" fill="none" stroke="'+se.color+'" stroke-width="2.2"/>';
+      if(n<45) pts.forEach(function(p){ s+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.4" fill="'+se.color+'"/>'; });
+    });
+    s+='</svg>';
+    var lg=series.map(function(se){return '<span style="display:inline-flex;align-items:center;gap:5px;margin-right:16px;font-size:11px;color:#555"><i style="width:9px;height:9px;border-radius:2px;background:'+se.color+';display:inline-block"></i>'+xesc(se.name)+'</span>';}).join('');
+    return s+'<div style="margin-top:2px">'+lg+'</div>';
+  }
+  function rHourBars(M){
+    var b=M.wh.buckets, w=720,H=230,pl=40,pr=12,ptp=22,pb=40,iw=w-pl-pr,ih=H-ptp-pb,n=b.length,bw=iw/n;
+    var maxV=Math.max.apply(null,b.map(function(x){return x.avgFrt||0;}).concat([1])); maxV=niceMax(maxV);
+    var s='<svg viewBox="0 0 '+w+' '+H+'" width="100%" style="max-width:'+w+'px">';
+    for(var g=0;g<=4;g++){ var yy=ptp+ih-(g/4)*ih; s+='<line x1="'+pl+'" y1="'+yy+'" x2="'+(w-pr)+'" y2="'+yy+'" stroke="#e3e8f0"/><text x="'+(pl-5)+'" y="'+(yy+3)+'" font-size="10" fill="#999" text-anchor="end">'+num(Math.round(g/4*maxV))+'</text>'; }
+    b.forEach(function(x,i){ var cx=pl+i*bw+bw/2, val=x.avgFrt||0, bh=val>0?Math.max(2,(val/maxV)*ih):0, y=ptp+ih-bh;
+      var col=x.avgFrt==null?'#c2c8d2':(x.avgFrt<=10?'#16a34a':x.avgFrt<=30?'#d97706':x.avgFrt<=120?'#ea580c':'#dc2626');
+      if(bh>0) s+='<rect x="'+(cx-9)+'" y="'+y+'" width="18" height="'+bh+'" rx="3" fill="'+col+'"/>';
+      s+='<text x="'+cx+'" y="'+(y-4)+'" font-size="9.5" fill="#333" text-anchor="middle" font-weight="700">'+num(x.deals)+'</text>';
+      s+='<text x="'+cx+'" y="'+(H-pb+14)+'" font-size="9" fill="#999" text-anchor="middle">'+xesc(x.label)+'</text>';
+    });
+    return s+'</svg><div style="font-size:10.5px;color:#777;margin-top:2px">Bar = avg first-call minutes · number above = deals created · green ≤10m · amber ≤30m · orange ≤2h · red slower.</div>';
+  }
+
+  /* ---------- executive report document (A4 landscape) ---------- */
+  function reportCSS(){ return '@page{size:A4 landscape;margin:12mm}'+
+    '*{box-sizing:border-box}body{font:12px/1.5 -apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#1a2230;margin:0;padding:0;background:#fff}'+
+    '.rp-wrap{max-width:1180px;margin:0 auto;padding:6px}'+
+    '.rp-head{display:flex;align-items:center;gap:14px;border-bottom:3px solid #1f3b57;padding-bottom:12px;margin-bottom:14px}'+
+    '.rp-logo{width:46px;height:46px;border-radius:11px;background:linear-gradient(135deg,#2563eb,#0d9488);color:#fff;font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center}'+
+    '.rp-head h1{margin:0;font-size:20px;color:#1f3b57}.rp-head .m{font-size:11.5px;color:#5a6674;margin-top:2px}'+
+    '.rp-head .stamp{margin-left:auto;text-align:right;font-size:11px;color:#5a6674}'+
+    '.rp-sec{margin:0 0 16px;break-inside:avoid}'+
+    '.rp-sec h2{font-size:13.5px;color:#1f3b57;border-left:4px solid #2563eb;padding-left:8px;margin:0 0 8px}'+
+    '.rp-sum{background:#f4f7fb;border:1px solid #dbe4ee;border-radius:8px;padding:11px 13px;font-size:12.5px;line-height:1.6}'+
+    '.rp-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}'+
+    '.rp-kpi{border:1px solid #dbe4ee;border-radius:8px;padding:9px 11px}.rp-kpi .k{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:#7a8696;font-weight:700}.rp-kpi .v{font-size:20px;font-weight:750;color:#16233a;margin-top:3px}.rp-kpi .d{font-size:10px;color:#7a8696;margin-top:1px}'+
+    '.rp-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}'+
+    '.rp-card{border:1px solid #dbe4ee;border-radius:8px;padding:10px 12px}.rp-card h3{margin:0 0 6px;font-size:12px;color:#1f3b57}'+
+    'ul.rp-list{margin:4px 0 0;padding-left:18px}ul.rp-list li{margin:3px 0;font-size:11.5px}'+
+    'table.rp-tbl{width:100%;border-collapse:collapse;font-size:10.8px}'+
+    'table.rp-tbl th{background:#1f3b57;color:#fff;text-align:left;padding:5px 7px;font-size:9.5px;text-transform:uppercase;letter-spacing:.3px}'+
+    'table.rp-tbl td{padding:4px 7px;border-bottom:1px solid #e6ecf3}table.rp-tbl tr:nth-child(even) td{background:#f7fafd}'+
+    '.rp-r{text-align:right}.breach{background:#fde0e0!important;color:#b10000;font-weight:700}.okc{color:#137333}.badc{color:#b10000}'+
+    '.alert{padding:6px 10px;border-radius:6px;margin:5px 0;font-size:11.5px;border-left:4px solid #999}'+
+    '.alert.high{background:#fdecec;border-left-color:#dc2626}.alert.med{background:#fff6e8;border-left-color:#d97706}.alert.low{background:#eef4fb;border-left-color:#2563eb}.alert.ok{background:#e9f8ee;border-left-color:#16a34a}'+
+    '.gap-ok{color:#137333;font-weight:700}.gap-bad{color:#b10000;font-weight:700}'+
+    '.rp-foot{margin-top:14px;border-top:1px solid #dbe4ee;padding-top:8px;font-size:10px;color:#8a95a6;text-align:center}'; }
+
+  function kpiTile(k,v,d){ return '<div class="rp-kpi"><div class="k">'+xesc(k)+'</div><div class="v">'+v+'</div>'+(d?'<div class="d">'+xesc(d)+'</div>':'')+'</div>'; }
+  function ownerRows(M,limit){ return M.owners.slice(0,limit||14).map(function(o){
+    var slaCls=o.slaPct>=SLA_TARGET?'okc':'badc';
+    return '<tr><td>'+xesc(o.name)+'</td><td class="rp-r">'+num(o.deals)+'</td><td class="rp-r">'+num(o.contacted)+'</td><td class="rp-r">'+num(o.calls)+'</td><td class="rp-r">'+num(o.conn)+'</td><td class="rp-r">'+(o.avgFrt==null?'—':fmtMinNice(o.avgFrt))+'</td><td class="rp-r">'+p1(o.coverage)+'%</td><td class="rp-r '+(o.slaPct<SLA_TARGET?'breach':slaCls)+'">'+p1(o.slaPct)+'%</td></tr>'; }).join(''); }
+  function overdueRows(M,limit){ var od=M.overdue.slice().sort(function(a,b){return (b.frt==null?1e9:b.frt)-(a.frt==null?1e9:a.frt);});
+    return od.slice(0,limit||30).map(function(j){ var late=j.contacted?('First call '+p1(j.frt)+'m (late)'):'No call yet';
+      return '<tr><td>'+xesc(j.deal.name||'—')+'</td><td>'+xesc(ownerName(j.deal.owner))+'</td><td>'+xesc(j.deal.stage||'—')+'</td><td>'+xesc(normTrig(j.deal.trigger))+'</td><td>'+xesc(clean(j.deal.leadSource))+'</td><td class="breach">'+xesc(late)+'</td><td>'+xesc(fmtDT(j.deal.created))+'</td></tr>'; }).join(''); }
+  function hourRows(M){ return M.wh.buckets.map(function(b){
+    return '<tr><td>'+xesc(b.label)+'</td><td class="rp-r">'+num(b.deals)+'</td><td class="rp-r">'+num(b.contacted)+'</td><td class="rp-r">'+num(b.notContacted)+'</td><td class="rp-r">'+(b.avgFrt==null?'—':fmtMinNice(b.avgFrt))+'</td><td class="rp-r">'+p1(b.contactRate)+'%</td></tr>'; }).join(''); }
+
+  function buildReportDoc(M, mode){
+    var isExec=(mode==='exec');
+    var kpis=[ kpiTile('Deals Created',num(M.deals),'unique '+num(uniqueDeals(M.dl))),
+      kpiTile('Calls Made',num(M.calls),num(M.connCalls)+' connected'),
+      kpiTile('Call Coverage',p1(M.coverage)+'%','target '+COVER_TARGET+'%'),
+      kpiTile('Avg First Response',fmtMinNice(M.avgFrt),'median '+fmtMinNice(M.medFrt)),
+      kpiTile('Pending Calls',num(M.pendingCnt),'no call yet'),
+      kpiTile('Overdue (>'+SLA_MIN+'m)',num(M.overdueCnt),'SLA breaches'),
+      kpiTile('Won Deals',num(M.won),p1(pct(M.won,M.deals||1))+'% win'),
+      kpiTile('Active Owners',num(M.ownersActive),'in this window') ].join('');
+    var alerts=genAlerts(M).map(function(a){return '<div class="alert '+a[0]+'">'+(a[0]==='high'?'🔴 ':a[0]==='med'?'🟠 ':a[0]==='ok'?'✅ ':'🔵 ')+stripTags(a[1])+'</div>';}).join('');
+    var insights='<ul class="rp-list">'+genInsights(M).map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>';
+    var recs='<ul class="rp-list">'+genRecs(M).map(function(x){return '<li>'+xesc(x)+'</li>';}).join('')+'</ul>';
+    var gaps='<table class="rp-tbl"><thead><tr><th>Metric</th><th class="rp-r">Actual</th><th class="rp-r">Target</th><th>Status</th></tr></thead><tbody>'+
+      genGaps(M).map(function(g){return '<tr><td>'+g[0]+'</td><td class="rp-r">'+g[1]+'</td><td class="rp-r">'+g[2]+'</td><td class="'+(g[3]?'gap-ok':'gap-bad')+'">'+(g[3]?'✓ ':'✗ ')+xesc(g[4])+'</td></tr>';}).join('')+'</tbody></table>';
+
+    var H=[];
+    H.push('<!doctype html><html><head><meta charset="utf-8"><title>'+xesc(BRAND+' — '+(isExec?'Executive Summary':REPORT_TITLE))+'</title><style>'+reportCSS()+'</style></head><body><div class="rp-wrap">');
+    H.push('<div class="rp-head"><div class="rp-logo">L</div><div><h1>'+xesc(isExec?'Executive Summary — Deals vs Calls':REPORT_TITLE)+'</h1>'+
+      '<div class="m">'+xesc(BRAND)+' · Selected period: <b>'+fmtDay(M.from)+' → '+fmtDay(M.to)+'</b> · Scope: '+xesc(M.scope)+'</div></div>'+
+      '<div class="stamp">Generated<br><b>'+xesc(fmtStamp(M.generated))+'</b></div></div>');
+    H.push('<div class="rp-sec"><h2>Executive Summary</h2><div class="rp-sum">'+execSummary(M)+'</div></div>');
+    H.push('<div class="rp-sec"><h2>KPI Summary</h2><div class="rp-kpis">'+kpis+'</div></div>');
+
+    if(isExec){
+      H.push('<div class="rp-sec"><h2>Alerts</h2>'+alerts+'</div>');
+      H.push('<div class="rp-2"><div class="rp-sec"><h2>AI Insights</h2>'+insights+'</div><div class="rp-sec"><h2>Recommendations</h2>'+recs+'</div></div>');
+      H.push('<div class="rp-sec"><h2>Gap Analysis</h2>'+gaps+'</div>');
+    } else {
+      H.push('<div class="rp-2"><div class="rp-sec"><h2>Deals vs Calls — Trend</h2><div class="rp-card">'+rLine(M.trendLabels,[{name:'Deals',color:'#2563eb',data:M.trendDeals},{name:'Calls',color:'#0d9488',data:M.trendCalls}])+'</div></div>'+
+        '<div class="rp-sec"><h2>Hourly First-Response (10 AM–9 PM)</h2><div class="rp-card">'+rHourBars(M)+'</div></div></div>');
+      H.push('<div class="rp-2"><div class="rp-sec"><h2>AI Insights</h2><div class="rp-card">'+insights+'</div></div><div class="rp-sec"><h2>Recommendations</h2><div class="rp-card">'+recs+'</div></div></div>');
+      H.push('<div class="rp-sec"><h2>Gap Analysis</h2>'+gaps+'</div>');
+      H.push('<div class="rp-sec"><h2>Alerts</h2>'+alerts+'</div>');
+      H.push('<div class="rp-sec"><h2>Owner Performance</h2><table class="rp-tbl"><thead><tr><th>Owner</th><th class="rp-r">Deals</th><th class="rp-r">Contacted</th><th class="rp-r">Calls</th><th class="rp-r">Conn.</th><th class="rp-r">Avg 1st Resp</th><th class="rp-r">Coverage</th><th class="rp-r">SLA %</th></tr></thead><tbody>'+ownerRows(M,16)+'</tbody></table></div>');
+      H.push('<div class="rp-sec"><h2>Overdue Deals (>'+SLA_MIN+' min)</h2><table class="rp-tbl"><thead><tr><th>Deal</th><th>Owner</th><th>Stage</th><th>Trigger</th><th>Lead Source</th><th>SLA</th><th>Created</th></tr></thead><tbody>'+(M.overdueCnt?overdueRows(M,30):'<tr><td colspan="7">No overdue deals in this window. 🎉</td></tr>')+'</tbody></table></div>');
+      H.push('<div class="rp-sec"><h2>Hourly Connectivity</h2><table class="rp-tbl"><thead><tr><th>Hour (IST)</th><th class="rp-r">Deals</th><th class="rp-r">Contacted</th><th class="rp-r">Not Contacted</th><th class="rp-r">Avg 1st Call</th><th class="rp-r">Contact Rate</th></tr></thead><tbody>'+hourRows(M)+'</tbody></table></div>');
+    }
+    H.push('<div class="rp-foot">'+xesc(BRAND)+' · Deals vs Calls Intelligence · Confidential — for internal use · '+xesc(fmtStamp(M.generated))+'</div>');
+    H.push('</div></body></html>');
+    return H.join('');
+  }
+  function openPrint(html){
+    var w=window.open('','_blank','width=1200,height=800');
+    if(!w){ alert('Please allow pop-ups for this site to export the PDF report.'); return; }
+    w.document.open(); w.document.write(html); w.document.close(); w.focus();
+    var done=false; function go(){ if(done)return; done=true; try{ w.print(); }catch(e){} }
+    w.onload=go; setTimeout(go,700);
+  }
+  function exportPDF(){ openPrint(buildReportDoc(reportModel(),'full')); }
+  function exportExecutive(){ openPrint(buildReportDoc(reportModel(),'exec')); }
+
+  /* ---------- Excel (multi-sheet SpreadsheetML) ---------- */
+  function cell(v,style){ var t='String', d;
+    if(typeof v==='number' && isFinite(v)){ t='Number'; d=v; }
+    else { d=xesc(v==null?'':''+v); }
+    return '<Cell'+(style?(' ss:StyleID="'+style+'"'):'')+'><Data ss:Type="'+t+'">'+d+'</Data></Cell>';
+  }
+  function xlSheet(name, cols, rows){
+    // cols: [{title,width,type}]  rows: [[{v,style}|value,...]]
+    var nC=cols.length, nR=rows.length+1;
+    var t='<Worksheet ss:Name="'+xesc(name.slice(0,31))+'"><Table>';
+    cols.forEach(function(c){ t+='<Column ss:Width="'+(c.width||90)+'" ss:AutoFitWidth="0"/>'; });
+    t+='<Row ss:Height="20">'+cols.map(function(c){return cell(c.title,'hdr');}).join('')+'</Row>';
+    rows.forEach(function(r){ t+='<Row>'+r.map(function(x){ if(x&&typeof x==='object'&&'v' in x) return cell(x.v,x.style); return cell(x); }).join('')+'</Row>'; });
+    t+='</Table>';
+    t+='<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><FreezePanes/><FrozenNoSplit/><SplitHorizontal>1</SplitHorizontal><TopRowBottomPane>1</TopRowBottomPane><ActivePane>2</ActivePane><Selected/></WorksheetOptions>';
+    t+='<AutoFilter x:Range="R1C1:R'+nR+'C'+nC+'" xmlns="urn:schemas-microsoft-com:office:excel"></AutoFilter>';
+    t+='</Worksheet>';
+    return t;
+  }
+  function exportExcel(){ downloadBlob(buildExcelXml(reportModel()), fname(reportModel(),'xls'), 'application/vnd.ms-excel'); }
+  function buildExcelXml(M){
+    var styles='<Styles>'+
+      '<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11" ss:Color="#1a2230"/></Style>'+
+      '<Style ss:ID="hdr"><Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1F3B57" ss:Pattern="Solid"/><Alignment ss:Horizontal="Left" ss:Vertical="Center"/></Style>'+
+      '<Style ss:ID="ttl"><Font ss:FontName="Calibri" ss:Size="15" ss:Bold="1" ss:Color="#1F3B57"/></Style>'+
+      '<Style ss:ID="sub"><Font ss:FontName="Calibri" ss:Size="10" ss:Italic="1" ss:Color="#666666"/></Style>'+
+      '<Style ss:ID="lbl"><Font ss:Bold="1" ss:Color="#334155"/></Style>'+
+      '<Style ss:ID="breach"><Interior ss:Color="#FDE0E0" ss:Pattern="Solid"/><Font ss:Color="#B10000" ss:Bold="1"/></Style>'+
+      '<Style ss:ID="good"><Interior ss:Color="#E4F7E9" ss:Pattern="Solid"/><Font ss:Color="#137333"/></Style>'+
+      '</Styles>';
+    var sheets=[];
+
+    // 1 — Summary (label/value, plus insights/recs mini blocks)
+    (function(){
+      var cols=[{title:'Metric',width:200},{title:'Value',width:170}];
+      var rows=[
+        [{v:'Report',style:'lbl'}, BRAND+' — Deals vs Calls'],
+        [{v:'Period',style:'lbl'}, fmtDay(M.from)+' → '+fmtDay(M.to)],
+        [{v:'Scope',style:'lbl'}, M.scope],
+        [{v:'Generated',style:'lbl'}, fmtStamp(M.generated)],
+        ['',''],
+        [{v:'Deals Created',style:'lbl'}, M.deals],
+        [{v:'Calls Made',style:'lbl'}, M.calls],
+        [{v:'Connected Calls',style:'lbl'}, M.connCalls],
+        [{v:'Call Coverage %',style:'lbl'}, +p1(M.coverage)],
+        [{v:'Avg First Response (min)',style:'lbl'}, +p1(M.avgFrt)],
+        [{v:'Median First Response (min)',style:'lbl'}, +p1(M.medFrt)],
+        [{v:'Pending Calls',style:'lbl'}, M.pendingCnt],
+        [{v:'Overdue (>'+SLA_MIN+'m)',style:(M.overdueCnt?'breach':'good')}, {v:M.overdueCnt, style:(M.overdueCnt?'breach':'good')}],
+        [{v:'Won Deals',style:'lbl'}, M.won],
+        [{v:'Best Owner (SLA)',style:'lbl'}, M.best?(M.best.name+' — '+p1(M.best.slaPct)+'%'):'—'],
+        [{v:'Lowest SLA Owner',style:'lbl'}, M.worst?(M.worst.name+' — '+p1(M.worst.slaPct)+'%'):'—']
+      ];
+      genInsights(M).forEach(function(x,i){ rows.push([{v:(i===0?'Insight':''),style:'lbl'}, stripTags(x)]); });
+      genRecs(M).forEach(function(x,i){ rows.push([{v:(i===0?'Recommendation':''),style:'lbl'}, x]); });
+      sheets.push(xlSheet('Summary',cols,rows));
+    })();
+
+    // 2 — Daily KPIs
+    (function(){
+      var byd={}; M.joined.forEach(function(j){ var k=dayKey(j.deal.created); var o=byd[k]||(byd[k]={deals:0,contacted:0,overdue:0}); o.deals++; if(j.contacted)o.contacted++; });
+      M.overdue.forEach(function(j){ var k=dayKey(j.deal.created); if(byd[k])byd[k].overdue++; });
+      var callByDay=trend(M.cl,'day').map;
+      var keys=Object.keys(byd).sort();
+      var cols=[{title:'Date',width:90},{title:'Deals',width:70},{title:'Calls',width:70},{title:'Contacted',width:80},{title:'Coverage %',width:80},{title:'Overdue',width:70}];
+      var rows=keys.map(function(k){ var o=byd[k]; var cov=pct(o.contacted,o.deals); return [k,o.deals,(callByDay[k]||0),o.contacted,{v:+p1(cov)},{v:o.overdue,style:(o.overdue?'breach':undefined)}]; });
+      sheets.push(xlSheet('Daily KPIs',cols,rows));
+    })();
+
+    // 3 — Deals
+    (function(){
+      var cols=[{title:'Deal',width:200},{title:'Owner',width:130},{title:'Stage',width:110},{title:'Prob %',width:60},{title:'Lead Source',width:120},{title:'Trigger',width:100},{title:'UTM Source',width:110},{title:'Activities',width:70},{title:'Created',width:130}];
+      var rows=M.dl.map(function(d){ return [d.name,ownerName(d.owner),d.stage,(d.prob==null?'':+d.prob),clean(d.leadSource),normTrig(d.trigger),clean(d.utmSource),(+d.numAct||0),d.created]; });
+      sheets.push(xlSheet('Deals',cols,rows));
+    })();
+
+    // 4 — Calls
+    (function(){
+      var cols=[{title:'Owner',width:130},{title:'Type',width:90},{title:'Duration (s)',width:90},{title:'Connected',width:80},{title:'Created',width:130}];
+      var rows=M.cl.map(function(c){ return [ownerName(c.owner),c.type||'',(c.dur||0),(c.dur>0?'Yes':'No'),c.created]; });
+      sheets.push(xlSheet('Calls',cols,rows));
+    })();
+
+    // 5 — Overdue Deals
+    (function(){
+      var cols=[{title:'Deal',width:200},{title:'Owner',width:130},{title:'Stage',width:110},{title:'Trigger',width:100},{title:'Lead Source',width:120},{title:'SLA Status',width:150},{title:'First Resp (min)',width:100},{title:'Created',width:130}];
+      var od=M.overdue.slice().sort(function(a,b){return (b.frt==null?1e9:b.frt)-(a.frt==null?1e9:a.frt);});
+      var rows=od.map(function(j){ var stat=j.contacted?'Late first call':'No call yet'; return [j.deal.name,ownerName(j.deal.owner),j.deal.stage,normTrig(j.deal.trigger),clean(j.deal.leadSource),{v:stat,style:'breach'},(j.frt==null?'':+p1(j.frt)),j.deal.created]; });
+      if(!rows.length) rows=[['(none)','','','','','',{v:''},'']];
+      sheets.push(xlSheet('Overdue Deals',cols,rows));
+    })();
+
+    // 6 — Owner Performance
+    (function(){
+      var cols=[{title:'Owner',width:140},{title:'Deals',width:60},{title:'Contacted',width:75},{title:'Calls',width:60},{title:'Connected',width:75},{title:'Avg 1st Resp (min)',width:100},{title:'Coverage %',width:80},{title:'SLA %',width:70}];
+      var rows=M.owners.map(function(o){ return [o.name,o.deals,o.contacted,o.calls,o.conn,(o.avgFrt==null?'':+p1(o.avgFrt)),+p1(o.coverage),{v:+p1(o.slaPct),style:(o.slaPct<SLA_TARGET?'breach':'good')}]; });
+      sheets.push(xlSheet('Owner Performance',cols,rows));
+    })();
+
+    // 7 — Hourly Analysis
+    (function(){
+      var cols=[{title:'Hour (IST)',width:90},{title:'Deals',width:70},{title:'Contacted',width:80},{title:'Not Contacted',width:95},{title:'Avg 1st Call (min)',width:105},{title:'Contact Rate %',width:100}];
+      var rows=M.wh.buckets.map(function(b){ return [b.label,b.deals,b.contacted,b.notContacted,(b.avgFrt==null?'':+p1(b.avgFrt)),+p1(b.contactRate)]; });
+      sheets.push(xlSheet('Hourly Analysis',cols,rows));
+    })();
+
+    // 8 — AI Insights
+    (function(){
+      var cols=[{title:'#',width:40},{title:'Insight',width:640}];
+      var rows=genInsights(M).map(function(x,i){ return [i+1, stripTags(x)]; });
+      sheets.push(xlSheet('AI Insights',cols,rows));
+    })();
+
+    // 9 — Recommendations
+    (function(){
+      var cols=[{title:'#',width:40},{title:'Recommendation',width:640},{title:'Priority',width:80}];
+      var rows=genRecs(M).map(function(x,i){ return [i+1, x, (i===0?'High':i<2?'Medium':'Normal')]; });
+      sheets.push(xlSheet('Recommendations',cols,rows));
+    })();
+
+    // 10 — Raw Data (joined deal × first-call detail)
+    (function(){
+      var cols=[{title:'Deal ID',width:110},{title:'Deal',width:190},{title:'Owner',width:130},{title:'Mobile',width:110},{title:'Stage',width:100},{title:'Contacted',width:75},{title:'#Calls',width:60},{title:'First Resp (min)',width:100},{title:'SLA Met',width:70},{title:'Created',width:130}];
+      var rows=M.joined.map(function(j){ var met=j.contacted&&j.frt!=null&&j.frt<=SLA_MIN; return [j.deal.id,j.deal.name,ownerName(j.deal.owner),j.deal.mobile||'',j.deal.stage,(j.contacted?'Yes':'No'),j.nCalls,(j.frt==null?'':+p1(j.frt)),{v:(met?'Yes':'No'),style:(met?'good':'breach')},j.deal.created]; });
+      sheets.push(xlSheet('Raw Data',cols,rows));
+    })();
+
+    var xml='<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n'+
+      '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+
+      '<DocumentProperties xmlns="urn:schemas-microsoft-com:office:office"><Author>'+xesc(BRAND)+'</Author><Title>Deals vs Calls Report</Title></DocumentProperties>'+
+      styles+sheets.join('')+'</Workbook>';
+    return xml;
+  }
+
+  /* ---------- PNG snapshot (canvas) ---------- */
+  function exportPNG(){
+    var M=reportModel();
+    var W=1280,Hc=720,cv=document.createElement('canvas'); cv.width=W; cv.height=Hc;
+    var x=cv.getContext('2d');
+    x.fillStyle='#0e1117'; x.fillRect(0,0,W,Hc);
+    var grd=x.createLinearGradient(0,0,W,0); grd.addColorStop(0,'#2563eb'); grd.addColorStop(1,'#0d9488');
+    x.fillStyle=grd; x.fillRect(0,0,W,8);
+    // logo
+    x.fillStyle=grd; roundRect(x,40,34,58,58,14); x.fill();
+    x.fillStyle='#fff'; x.font='800 30px Segoe UI, Arial'; x.textBaseline='middle'; x.textAlign='center'; x.fillText('L',69,64);
+    x.textAlign='left';
+    x.fillStyle='#e7ecf3'; x.font='800 30px Segoe UI, Arial'; x.fillText('Deals vs Calls — Executive Snapshot',112,50);
+    x.fillStyle='#9aa7b8'; x.font='15px Segoe UI, Arial'; x.fillText(BRAND+'  ·  '+fmtDay(M.from)+' → '+fmtDay(M.to)+'  ·  '+M.scope,112,78);
+    // KPI grid 4x2
+    var tiles=[['Deals Created',num(M.deals)],['Calls Made',num(M.calls)],['Call Coverage',p1(M.coverage)+'%'],['Avg 1st Response',fmtMinNice(M.avgFrt)],
+      ['Pending Calls',num(M.pendingCnt)],['Overdue >'+SLA_MIN+'m',num(M.overdueCnt)],['Won Deals',num(M.won)],['Best Owner SLA',M.best?p1(M.best.slaPct)+'%':'—']];
+    var gx=40,gy=118,gw=(W-80-3*16)/4,gh=104;
+    tiles.forEach(function(t,i){ var cxp=gx+(i%4)*(gw+16), cyp=gy+Math.floor(i/4)*(gh+16);
+      x.fillStyle='#1a212c'; roundRect(x,cxp,cyp,gw,gh,12); x.fill();
+      x.strokeStyle='#2a3442'; x.lineWidth=1; roundRect(x,cxp,cyp,gw,gh,12); x.stroke();
+      x.fillStyle='#9aa7b8'; x.font='700 12px Segoe UI, Arial'; x.fillText(t[0].toUpperCase(),cxp+16,cyp+26);
+      x.fillStyle='#e7ecf3'; x.font='800 34px Segoe UI, Arial'; x.fillText(t[1],cxp+16,cyp+66);
+    });
+    // insights
+    var iy=gy+2*(gh+16)+18;
+    x.fillStyle='#4f8cff'; x.font='700 16px Segoe UI, Arial'; x.fillText('Top Insights',40,iy);
+    x.fillStyle='#c7d0dc'; x.font='14px Segoe UI, Arial';
+    genInsights(M).slice(0,4).forEach(function(s,i){ x.fillText('•  '+trunc(stripTags(s),120),40,iy+28+i*26); });
+    x.fillStyle='#6b7688'; x.font='12px Segoe UI, Arial'; x.textAlign='right';
+    x.fillText('Generated '+fmtStamp(M.generated)+'  ·  Lucira Deals vs Calls Intelligence',W-40,Hc-24);
+    x.textAlign='left';
+    try{ cv.toBlob(function(b){ if(b) downloadBlob(b, fname(M,'png'), 'image/png'); else fallbackPNG(cv,M); }); }
+    catch(e){ fallbackPNG(cv,M); }
+  }
+  function fallbackPNG(cv,M){ var a=document.createElement('a'); a.href=cv.toDataURL('image/png'); a.download=fname(M,'png'); document.body.appendChild(a); a.click(); a.remove(); }
+  function roundRect(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+  function trunc(s,n){ return s.length>n?s.slice(0,n-1)+'…':s; }
+
+  /* ---------- misc I/O ---------- */
+  function fname(M,ext){ return 'Lucira_DealsVsCalls_'+M.from+'_'+M.to+'.'+ext; }
+  function downloadBlob(content, filename, mime){ var blob=(content instanceof Blob)?content:new Blob([content],{type:mime}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },900); }
+  function copyText(txt, okCb){
+    function done(){ if(okCb)okCb(); }
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done,function(){ legacyCopy(txt); done(); }); }
+    else { legacyCopy(txt); done(); }
+  }
+  function legacyCopy(txt){ var ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.top='-1000px'; document.body.appendChild(ta); ta.focus(); ta.select(); try{ document.execCommand('copy'); }catch(e){} ta.remove(); }
+
+  /* ---------- Scheduled Reports (client-persisted config) ---------- */
+  function loadSched(){ try{ return JSON.parse(localStorage.getItem('dvc_schedule')||'null')||{}; }catch(e){ return {}; } }
+  function saveSched(o){ try{ localStorage.setItem('dvc_schedule', JSON.stringify(o)); }catch(e){} }
+
+  /* ---------- CSS for the Share tab / header ---------- */
+  (function(){ var st=el('style'); st.textContent=
+    '.share-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}'+
+    '.share-btn{display:flex;flex-direction:column;gap:6px;align-items:flex-start;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 16px;cursor:pointer;box-shadow:var(--shadow);transition:border-color .15s,transform .1s;color:var(--tx)}'+
+    '.share-btn:hover{border-color:var(--acc);transform:translateY(-1px)}'+
+    '.share-btn .ic{font-size:22px}.share-btn .t{font-weight:750;font-size:14px}.share-btn .s{font-size:11.5px;color:var(--tx2);line-height:1.4}'+
+    '.share-btn.primary{background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;color:#fff}.share-btn.primary .s{color:rgba(255,255,255,.85)}'+
+    '.wa-prev{white-space:pre-wrap;font:12.5px/1.55 ui-monospace,Menlo,Consolas,monospace;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:14px;color:var(--tx);max-height:360px;overflow:auto}'+
+    '.sched-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:12px}'+
+    '.sched-grid label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--tx3);font-weight:700;margin-bottom:4px}'+
+    '.sched-grid select,.sched-grid input{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:7px 9px;font-size:12.5px}'+
+    '.sched-ch{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 12px}'+
+    '.sched-ch label{display:inline-flex;gap:6px;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:12.5px;cursor:pointer;color:var(--tx)}'+
+    '.sched-ch input{accent-color:var(--acc)}'+
+    '.share-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--good);color:#04210f;font-weight:700;padding:10px 18px;border-radius:22px;box-shadow:var(--shadow);z-index:200;font-size:13px}'+
+    '@media print{.share-actions,.askfab{display:none}}';
+    document.head.appendChild(st);
+  })();
+  function toast(msg){ var t=el('div','share-toast',esc(msg)); document.body.appendChild(t); setTimeout(function(){ t.style.opacity='0'; t.style.transition='opacity .4s'; },1600); setTimeout(function(){ t.remove(); },2100); }
+
+  /* ---------- Share tab ---------- */
+  function renderShare(v){
+    var M=reportModel();
+    v.appendChild(el('div','note','<b>📤 Export &amp; Sharing</b> — every report below reflects your <b>current filters</b> ('+esc(fmtDay(M.from))+' → '+esc(fmtDay(M.to))+' · '+esc(M.scope)+'). Change the date range or owners above and the exports update automatically.'));
+
+    // KPI strip
+    v.appendChild(kpiRow([
+      ['Deals Created',num(M.deals),'unique '+num(uniqueDeals(M.dl)),'','var(--c1)'],
+      ['Calls Made',num(M.calls),num(M.connCalls)+' connected','','var(--c2)'],
+      ['Call Coverage',p1(M.coverage)+'%','target '+COVER_TARGET+'%',(M.coverage>=COVER_TARGET?'up':'down'),'var(--c4)'],
+      ['Avg 1st Response',fmtMinNice(M.avgFrt),'median '+fmtMinNice(M.medFrt),'','var(--c3)'],
+      ['Pending Calls',num(M.pendingCnt),'no call yet','down','var(--warn)'],
+      ['Overdue >'+SLA_MIN+'m',num(M.overdueCnt),'SLA breaches',(M.overdueCnt?'down':'up'),'var(--bad)']
+    ]));
+
+    // Share action buttons
+    var pA=panel('Share Options','One-click export — presentation-ready, no manual editing'); v.appendChild(pA);
+    var wrap=el('div','share-actions');
+    var actions=[
+      ['primary','🧾','Export PDF','A4-landscape executive report — full sections',exportPDF],
+      ['','📊','Export Excel','10-sheet workbook · filters · SLA highlighting',exportExcel],
+      ['','💬','Copy WhatsApp','Compact summary to clipboard',function(){ copyText(whatsappText(reportModel()), function(){ toast('WhatsApp summary copied ✓'); }); }],
+      ['','🖼️','Download PNG','Branded executive snapshot',exportPNG],
+      ['','🖨️','Print Report','Print the live dashboard',function(){ window.print(); }],
+      ['','⭐','Executive Report','One-page summary for senior management',exportExecutive]
+    ];
+    actions.forEach(function(a){ var b=el('button','share-btn'+(a[0]?' '+a[0]:'')); b.innerHTML='<span class="ic">'+a[1]+'</span><span class="t">'+esc(a[2])+'</span><span class="s">'+esc(a[3])+'</span>'; b.onclick=a[4]; wrap.appendChild(b); });
+    pA.__body.appendChild(wrap);
+
+    // WhatsApp preview
+    var pW=panel('WhatsApp-Ready Report','Preview — tap Copy or open WhatsApp'); v.appendChild(pW);
+    var waTxt=whatsappText(M);
+    var prev=el('div','wa-prev'); prev.textContent=waTxt; pW.__body.appendChild(prev);
+    var bar=el('div'); bar.style.cssText='display:flex;gap:8px;margin-top:10px;flex-wrap:wrap';
+    var cpy=el('button','mini','💬 Copy summary'); cpy.onclick=function(){ copyText(whatsappText(reportModel()), function(){ toast('Copied ✓'); }); };
+    var wa=el('a','mini'); wa.textContent='↗ Open in WhatsApp'; wa.href='https://wa.me/?text='+encodeURIComponent(waTxt); wa.target='_blank'; wa.style.textDecoration='none';
+    bar.appendChild(cpy); bar.appendChild(wa); pW.__body.appendChild(bar);
+
+    // Executive summary + Insights/Recs
+    var pE=panel('Executive Summary'); v.appendChild(pE); pE.__body.innerHTML='<div style="font-size:13px;line-height:1.65">'+execSummary(M)+'</div>';
+    var g=el('div','grid g2');
+    var pI=panel('AI Insights'); g.appendChild(pI); pI.__body.innerHTML='<ul style="margin:2px 0 0;padding-left:18px;font-size:12.5px;line-height:1.6">'+genInsights(M).map(function(x){return '<li style="margin:4px 0">'+x+'</li>';}).join('')+'</ul>';
+    var pR=panel('Recommendations'); g.appendChild(pR); pR.__body.innerHTML='<ul style="margin:2px 0 0;padding-left:18px;font-size:12.5px;line-height:1.6">'+genRecs(M).map(function(x){return '<li style="margin:4px 0">'+esc(x)+'</li>';}).join('')+'</ul>';
+    v.appendChild(g);
+
+    // Gap analysis + Alerts
+    var pG=panel('Gap Analysis','Actual vs target'); v.appendChild(pG);
+    table(pG.__body,['Metric','Actual','Target','Status'], genGaps(M).map(function(gp){ return [gp[0],gp[1],gp[2],{html:'<span class="badge '+(gp[3]?'ok':'err')+'">'+(gp[3]?'✓ ':'✗ ')+esc(gp[4])+'</span>',text:gp[4]}]; }), {key:'gap'});
+    var pAl=panel('Alerts'); v.appendChild(pAl);
+    var abox=el('div'); genAlerts(M).forEach(function(a){ var c=el('div'); var col=a[0]==='high'?'var(--bad)':a[0]==='med'?'var(--warn)':a[0]==='ok'?'var(--good)':'var(--acc)'; c.style.cssText='padding:8px 12px;border-left:4px solid '+col+';background:var(--bg2);border-radius:8px;margin:6px 0;font-size:12.5px'; c.innerHTML=(a[0]==='high'?'🔴 ':a[0]==='med'?'🟠 ':a[0]==='ok'?'✅ ':'🔵 ')+esc(stripTags(a[1])); abox.appendChild(c); }); pAl.__body.appendChild(abox);
+
+    // Scheduled reports
+    renderScheduler(v);
+  }
+
+  function renderScheduler(v){
+    var cfg=loadSched();
+    var p=panel('Scheduled Reports','Automate delivery of the reports above'); v.appendChild(p);
+    var grid=el('div','sched-grid');
+    function fld(label, inner){ var d=el('div'); d.appendChild(el('label',null,label)); d.appendChild(inner); return d; }
+    var freq=el('select'); [['off','Off'],['daily','Daily'],['weekly','Weekly'],['monthly','Monthly']].forEach(function(o){ var op=new Option(o[1],o[0]); if((cfg.freq||'off')===o[0])op.selected=true; freq.appendChild(op); });
+    var time=el('input'); time.type='time'; time.value=cfg.time||'10:00';
+    var fmt=el('select'); [['pdf','PDF Executive Report'],['excel','Excel Workbook'],['whatsapp','WhatsApp Summary'],['exec','One-page Executive']].forEach(function(o){ var op=new Option(o[1],o[0]); if((cfg.format||'pdf')===o[0])op.selected=true; fmt.appendChild(op); });
+    var rcpt=el('input'); rcpt.type='text'; rcpt.placeholder='email(s) / phone(s), comma-separated'; rcpt.value=cfg.recipients||'';
+    grid.appendChild(fld('Frequency',freq)); grid.appendChild(fld('Send time (IST)',time)); grid.appendChild(fld('Report format',fmt)); grid.appendChild(fld('Recipients',rcpt));
+    p.__body.appendChild(grid);
+    p.__body.appendChild(el('label',null,'Delivery channels')); p.__body.lastChild.style.cssText='font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--tx3);font-weight:700';
+    var ch=el('div','sched-ch'); var chans=[['email','📧 Email'],['whatsapp','💬 WhatsApp'],['gdrive','📁 Google Drive'],['archive','🗄️ PDF Archive']];
+    var chSet={}; (cfg.channels||['email']).forEach(function(c){chSet[c]=1;});
+    chans.forEach(function(c){ var l=el('label'); var cb=el('input'); cb.type='checkbox'; cb.value=c[0]; cb.checked=!!chSet[c[0]]; l.appendChild(cb); l.appendChild(document.createTextNode(c[1])); ch.appendChild(l); });
+    p.__body.appendChild(ch);
+    var save=el('button','share-btn'); save.style.cssText='flex-direction:row;align-items:center;gap:10px;max-width:260px'; save.innerHTML='<span class="ic">💾</span><span class="t">Save schedule</span>';
+    save.onclick=function(){ var channels=Array.prototype.slice.call(ch.querySelectorAll('input:checked')).map(function(x){return x.value;});
+      var o={freq:freq.value,time:time.value,format:fmt.value,recipients:rcpt.value.trim(),channels:channels,savedAt:new Date().toISOString()};
+      saveSched(o); toast(o.freq==='off'?'Schedule turned off':'Schedule saved ✓'); render(); };
+    p.__body.appendChild(save);
+    var status = (cfg.freq && cfg.freq!=='off')
+      ? '<span class="badge ok">Active</span> '+esc(cfg.freq)+' at '+esc(cfg.time||'10:00')+' IST · '+esc(cfg.format||'pdf').toUpperCase()+' · via '+esc((cfg.channels||['email']).join(', '))
+      : '<span class="badge err">Not scheduled</span>';
+    p.__body.appendChild(el('div','note','<b>Current:</b> '+status+'.<br>Your preferences are saved in this browser. <b>Automated delivery</b> (email / WhatsApp / Google Drive / PDF archive) runs on the backend reporting service — connect it via <code>CONFIG.CRM_API</code> to activate scheduled sends. Until then, use the one-click exports above.'));
+  }
+
+  /* ============================ DAILY CRM OPERATIONS COMMAND CENTER (14 sections) ============================
+     Day-centric operational view — reuses joinDeals / whAnalysis / the Section-11 export machinery. Operates on the
+     currently selected date range (single day when Today/Yesterday preset is active). Honest data gates: Zoho Events
+     in this dataset are owner-level with no outcome field and are NOT deal-linked, so meeting "Missed" and
+     deal↔meeting metrics are surfaced as not-tracked rather than faked. */
+  var BIZ_LO=10, BIZ_HI=20;                 // business hours: 10 AM – 8 PM
+  function ccScope(){ return (F.owners.size?F.owners.size+' owner(s)':'all owners')+(F.stage?' · '+F.stage:'')+(F.leadSource?' · '+F.leadSource:''); }
+  function refNow(){ var real=new Date(); var end=D(F.to+'T23:59:59'); return (end && end<real)?end:real; }
+  function covColor(p){ return p>=90?'var(--good)':p>=70?'#84cc16':p>=50?'var(--warn)':'var(--bad)'; }
+  function delayColor(m){ return m==null?'var(--tx3)':m<10?'var(--good)':m<30?'var(--warn)':m<60?'var(--c8)':'var(--bad)'; }
+  function covHex(p){ return p>=90?'#16a34a':p>=70?'#65a30d':p>=50?'#d97706':'#dc2626'; }
+  function delayHex(m){ return m==null?'#94a3b8':m<10?'#16a34a':m<30?'#d97706':m<60?'#ea580c':'#dc2626'; }
+  var FRT_EDGES=[['< 5 min',0,5],['5–10 min',5,10],['10–15 min',10,15],['15–20 min',15,20],['20–25 min',20,25],['25–30 min',25,30],['30–45 min',30,45],['45–60 min',45,60],['> 60 min',60,1e18]];
+  function isDelayBucket(lbl){ return lbl==='30–45 min'||lbl==='45–60 min'||lbl==='> 60 min'||lbl==='No First Call Yet'; }
+
+  function dayMetrics(from,to){
+    var dl=fDeals(from,to), cl=fCalls(from,to), ev=fEvents(from,to);
+    var j=joinDeals(dl), c=j.filter(function(x){return x.contacted;});
+    var frts=c.map(function(x){return x.frt;}).filter(function(x){return x!=null&&x>=0;}).sort(function(a,b){return a-b;});
+    var avg=frts.length?frts.reduce(function(s,x){return s+x;},0)/frts.length:0;
+    var med=frts.length?frts[Math.floor(frts.length/2)]:0;
+    var sm=c.filter(function(x){return x.frt!=null&&x.frt<=SLA_MIN;}).length;
+    return {deals:dl.length,calls:cl.length,contacted:c.length,pending:dl.length-c.length,coverage:pct(c.length,dl.length||1),avgFrt:avg,medFrt:med,slaPct:pct(sm,dl.length||1),meetings:ev.length};
+  }
+
+  function opsModel(){
+    var dl=fDeals(), cl=fCalls(), tk=fTasks(), ev=fEvents();
+    var joined=joinDeals(dl), ref=refNow();
+    joined.forEach(function(j){ j._delay = j.contacted ? j.frt : Math.max(0,(ref-D(j.deal.created))/60000); });
+    var contacted=joined.filter(function(j){return j.contacted;});
+    var pending=joined.filter(function(j){return !j.contacted;});
+    var overdue=joined.filter(function(j){ return j._delay!=null && j._delay>SLA_MIN; });
+    var frts=contacted.map(function(j){return j.frt;}).filter(function(x){return x!=null&&x>=0;}).sort(function(a,b){return a-b;});
+    var avgFrt=frts.length?frts.reduce(function(s,x){return s+x;},0)/frts.length:0;
+    var medFrt=frts.length?frts[Math.floor(frts.length/2)]:0;
+    var maxFrt=frts.length?frts[frts.length-1]:0;
+    var slaMet=contacted.filter(function(j){return j.frt!=null&&j.frt<=SLA_MIN;}).length;
+    var coverage=pct(contacted.length, dl.length||1), slaPct=pct(slaMet, dl.length||1);
+
+    function distOf(list){ var b=FRT_EDGES.map(function(e){return {label:e[0],lo:e[1],hi:e[2],count:0};}); var noc=0;
+      list.forEach(function(j){ if(!j.contacted||j.frt==null){ noc++; return; } for(var i=0;i<b.length;i++){ if(j.frt>=b[i].lo && j.frt<b[i].hi){ b[i].count++; break; } } });
+      b.push({label:'No First Call Yet',lo:null,hi:null,count:noc}); return b; }
+    var dist=distOf(joined);
+    var pp=prevPeriod(), prevJoined=joinDeals(fDeals(pp.from,pp.to)), prevDist=distOf(prevJoined);
+    var prevC=prevJoined.filter(function(j){return j.contacted;});
+    var prevFrts=prevC.map(function(j){return j.frt;}).filter(function(x){return x!=null;});
+    var prevAvg=prevFrts.length?prevFrts.reduce(function(s,x){return s+x;},0)/prevFrts.length:0;
+    var prevCov=pct(prevC.length, prevJoined.length||1);
+
+    function part(inBiz){ var jd=joined.filter(function(j){var h=hourOf(j.deal.created),b=(h>=BIZ_LO&&h<BIZ_HI);return inBiz?b:!b;});
+      var cc=cl.filter(function(c){var h=hourOf(c.created),b=(h>=BIZ_LO&&h<BIZ_HI);return inBiz?b:!b;});
+      var con=jd.filter(function(j){return j.contacted;});
+      var f=con.map(function(j){return j.frt;}).filter(function(x){return x!=null;});
+      var sm=con.filter(function(j){return j.frt!=null&&j.frt<=SLA_MIN;}).length;
+      return {deals:jd.length,calls:cc.length,avgFrt:f.length?f.reduce(function(s,x){return s+x;},0)/f.length:0,coverage:pct(con.length,jd.length||1),slaPct:pct(sm,jd.length||1),pending:jd.length-con.length}; }
+    var biz=part(true), nonbiz=part(false);
+
+    var hourly=[]; for(var h=BIZ_LO;h<=BIZ_HI;h++){
+      var jd=joined.filter(function(j){return hourOf(j.deal.created)===h;});
+      var cc=cl.filter(function(c){return hourOf(c.created)===h;}).length;
+      var con=jd.filter(function(j){return j.contacted;});
+      var f=con.map(function(j){return j.frt;}).filter(function(x){return x!=null;});
+      hourly.push({hour:h,label:hr12(h),deals:jd.length,calls:cc,avgFrt:f.length?f.reduce(function(s,x){return s+x;},0)/f.length:null,pending:jd.length-con.length,coverage:pct(con.length,jd.length||1)});
+    }
+    var peakBacklog=hourly.slice().sort(function(a,b){return b.pending-a.pending;})[0];
+    var peakWorkload=hourly.slice().sort(function(a,b){return b.deals-a.deals;})[0];
+    var lowProd=hourly.filter(function(x){return x.deals>0;}).slice().sort(function(a,b){return a.coverage-b.coverage;})[0];
+
+    var om={};
+    joined.forEach(function(j){ var id=j.deal.owner; var o=om[id]||(om[id]={id:id,name:ownerName(id),deals:0,contacted:0,pending:0,sla:0,frt:[],delays:[]});
+      o.deals++; o.delays.push(j._delay==null?0:j._delay);
+      if(j.contacted){ o.contacted++; if(j.frt!=null){o.frt.push(j.frt); if(j.frt<=SLA_MIN)o.sla++;} } else o.pending++; });
+    var owners=Object.keys(om).map(function(id){ var o=om[id]; var oc=cl.filter(function(c){return c.owner===id;}); o.calls=oc.length; o.talk=oc.reduce(function(s,c){return s+(c.dur||0);},0);
+      var f=o.frt.slice().sort(function(a,b){return a-b;});
+      o.avgFrt=f.length?f.reduce(function(s,x){return s+x;},0)/f.length:null; o.medFrt=f.length?f[Math.floor(f.length/2)]:null;
+      o.maxDelay=o.delays.length?Math.max.apply(null,o.delays):0; o.callsPerDeal=o.deals?o.calls/o.deals:0;
+      o.slaPct=pct(o.sla,o.deals); o.coverage=pct(o.contacted,o.deals); return o; })
+      .sort(function(a,b){return (b.slaPct-a.slaPct)||(b.deals-a.deals);});
+    var ranked=owners.filter(function(o){return o.deals>=MIN_OWNER_DEALS;});
+    var best=ranked[0]||owners[0]||null;
+    var worst=(ranked.length?ranked[ranked.length-1]:owners[owners.length-1])||null;
+    var mostPending=owners.slice().sort(function(a,b){return b.pending-a.pending;})[0]||null;
+
+    function grpDelay(keyFn){ var g={}; joined.forEach(function(j){ var k=keyFn(j.deal); var o=g[k]||(g[k]={n:0,over:0,dsum:0}); o.n++; if(j._delay!=null)o.dsum+=j._delay; if(j._delay>SLA_MIN)o.over++; });
+      return Object.keys(g).map(function(k){var o=g[k];return {key:k,n:o.n,over:o.over,avg:o.n?o.dsum/o.n:0};}).sort(function(a,b){return b.over-a.over;}); }
+    var srcDelay=grpDelay(function(d){return clean(d.leadSource);}), stageDelay=grpDelay(function(d){return d.stage||'(none)';});
+    var odSrc=toItems(groupBy(overdue,function(j){return clean(j.deal.leadSource);}));
+
+    var meCompleted=ev.filter(function(e){return e.start && D(e.start)<ref;}).length;
+    var mePending=ev.filter(function(e){return e.start && D(e.start)>=ref;}).length;
+    var meet={scheduled:ev.length,completed:meCompleted,pending:mePending,missed:null,conversion:pct(meCompleted,ev.length||1)};
+
+    function win(len){ var d=D(F.to); d.setDate(d.getDate()-(len-1)); return dayMetrics(ymd(d),F.to); }
+    var trend1=win(1), trend7=win(7), trend30=win(30);
+    var days=[]; for(var i=29;i>=0;i--){ var dd=D(F.to); dd.setDate(dd.getDate()-i); days.push(ymd(dd)); }
+    var series=days.map(function(day){ return dayMetrics(day,day); });
+
+    return { from:F.from, to:F.to, single:(F.from===F.to), generated:new Date(), scope:ccScope(), ref:ref,
+      dl:dl, cl:cl, tk:tk, ev:ev, joined:joined, contacted:contacted, pending:pending, overdue:overdue,
+      deals:dl.length, calls:cl.length, uniqueCalled:contacted.length, pendingCnt:pending.length,
+      avgFrt:avgFrt, medFrt:medFrt, maxFrt:maxFrt, coverage:coverage, slaPct:slaPct, overdueCnt:overdue.length,
+      dist:dist, prevDist:prevDist, prevAvg:prevAvg, prevCov:prevCov,
+      biz:biz, nonbiz:nonbiz, hourly:hourly, peakBacklog:peakBacklog, peakWorkload:peakWorkload, lowProd:lowProd,
+      owners:owners, best:best, worst:worst, mostPending:mostPending, srcDelay:srcDelay, stageDelay:stageDelay, odSrc:odSrc,
+      meet:meet, trend1:trend1, trend7:trend7, trend30:trend30, series:series, days:days };
+  }
+
+  /* ---------- ops narrative generators ---------- */
+  function avgCov(hrs){ var t=hrs.reduce(function(s,x){return s+x.deals;},0), c=hrs.reduce(function(s,x){return s+x.deals*x.coverage/100;},0); return t?100*c/t:0; }
+  function opsSummary(M){ var p=[];
+    p.push((M.single?fmtDay(M.to):(fmtDay(M.from)+'–'+fmtDay(M.to)))+': <b>'+num(M.deals)+'</b> deals were created and <b>'+num(M.contacted.length)+'</b> received first calls; <b>'+num(M.pendingCnt)+'</b> are still pending.');
+    p.push('Average First Response Time was <b>'+fmtMinNice(M.avgFrt)+'</b> (median '+fmtMinNice(M.medFrt)+', max '+fmtMinNice(M.maxFrt)+').');
+    if(M.peakBacklog&&M.peakBacklog.pending>0) p.push('Maximum backlog occurred around <b>'+hr12(M.peakBacklog.hour)+'–'+hr12(M.peakBacklog.hour+1)+'</b>.');
+    p.push('Overall SLA was <b>'+p1(M.slaPct)+'%</b> and call coverage <b>'+p1(M.coverage)+'%</b>.');
+    if(M.best) p.push('Top performing owner <b>'+esc(M.best.name)+'</b> achieved '+p1(M.best.slaPct)+'% SLA.');
+    if(M.worst&&M.worst!==M.best) p.push('Owner <b>'+esc(M.worst.name)+'</b> requires attention due to delayed calling ('+p1(M.worst.slaPct)+'% SLA).');
+    return p.join(' ');
+  }
+  function opsInsights(M){ var out=[];
+    if(M.deals) out.push(p1(pct(M.pendingCnt,M.deals))+'% of deals did not receive a first call.');
+    if(M.peakBacklog&&M.peakBacklog.pending>0) out.push('Maximum backlog occurred between '+hr12(M.peakBacklog.hour)+' and '+hr12(M.peakBacklog.hour+1)+' ('+num(M.peakBacklog.pending)+' pending).');
+    if(M.overdueCnt&&M.odSrc.length) out.push(esc(M.odSrc[0].label)+' generated '+p1(pct(M.odSrc[0].value,M.overdueCnt))+'% of overdue deals.');
+    if(M.prevAvg>0){ var ch=(M.avgFrt-M.prevAvg)/M.prevAvg*100; out.push('Average response time '+(ch>=0?'increased':'decreased')+' by '+p1(Math.abs(ch))+'% vs the previous period.'); }
+    if(M.best) out.push('Owner '+esc(M.best.name)+' delivered the highest SLA ('+p1(M.best.slaPct)+'%).');
+    if(M.mostPending&&M.mostPending.pending>0) out.push('Owner '+esc(M.mostPending.name)+' has the highest pending workload ('+num(M.mostPending.pending)+').');
+    var a5=M.hourly.filter(function(x){return x.hour>=17;}), b5=M.hourly.filter(function(x){return x.hour<17;});
+    var ca=avgCov(a5), cb=avgCov(b5); if(a5.length&&b5.length&&ca<cb-2) out.push('Calling efficiency reduced after 5 PM ('+p1(ca)+'% vs '+p1(cb)+'% coverage earlier).');
+    return out;
+  }
+  function opsRecs(M){ var r=[];
+    if(M.peakBacklog&&M.peakBacklog.pending>0) r.push('Increase calling capacity between '+hr12(M.peakBacklog.hour)+' and '+hr12(M.peakBacklog.hour+1)+' to clear the backlog.');
+    var old=M.overdue.filter(function(j){return j._delay>30;}).length; if(old) r.push('Reassign '+num(old)+' overdue deals older than 30 minutes.');
+    if(M.overdueCnt) r.push('Clear the '+num(M.overdueCnt)+' overdue deals before 11 AM.');
+    if(M.odSrc.length&&M.overdueCnt&&pct(M.odSrc[0].value,M.overdueCnt)>=25) r.push('Improve response time for '+esc(M.odSrc[0].label)+' leads ('+p1(pct(M.odSrc[0].value,M.overdueCnt))+'% of overdue).');
+    if(M.mostPending&&M.mostPending.pending>0) r.push('Review '+esc(M.mostPending.name)+"'s workload ("+num(M.mostPending.pending)+' pending) and add support.');
+    if(M.coverage<COVER_TARGET) r.push('Assign additional agents to lift coverage toward '+COVER_TARGET+'%.');
+    if(!r.length) r.push('Operations are within target — maintain current staffing and SLA discipline.');
+    return r;
+  }
+  function opsActions(M){ var a=[];
+    if(M.overdueCnt) a.push(['red',num(M.overdueCnt)+' overdue deals require immediate action.']);
+    var over60=M.overdue.filter(function(j){return j._delay>60;}).length; if(over60) a.push(['red',num(over60)+' deals waiting more than 60 minutes.']);
+    if(M.meet.pending) a.push(['yellow',num(M.meet.pending)+' meetings pending today.']);
+    if(M.pendingCnt) a.push(['yellow',num(M.pendingCnt)+' deals awaiting a first call.']);
+    if(M.worst&&M.worst.slaPct<SLA_TARGET) a.push(['yellow','Owner '+M.worst.name+' SLA below target ('+p1(M.worst.slaPct)+'%).']);
+    if(M.mostPending&&M.mostPending.pending>0) a.push(['yellow','Owner '+M.mostPending.name+' workload is highest ('+num(M.mostPending.pending)+').']);
+    if(M.odSrc.length&&M.overdueCnt&&pct(M.odSrc[0].value,M.overdueCnt)>=40) a.push(['yellow',esc(M.odSrc[0].label)+' SLA below target.']);
+    if(!a.length) a.push(['green','All clear — no urgent operational gaps.']);
+    return a;
+  }
+  function opsGaps(M){ var g=[];
+    if(M.peakBacklog) g.push(['Max backlog hour', hr12(M.peakBacklog.hour)+'–'+hr12(M.peakBacklog.hour+1)+' · '+num(M.peakBacklog.pending)+' pending']);
+    if(M.mostPending) g.push(['Owner highest pending', M.mostPending.name+' · '+num(M.mostPending.pending)]);
+    if(M.srcDelay.length) g.push(['Lead source most delays', M.srcDelay[0].key+' · '+num(M.srcDelay[0].over)+' overdue']);
+    if(M.stageDelay.length) g.push(['Stage most delay', M.stageDelay[0].key+' · avg '+fmtMinNice(M.stageDelay[0].avg)]);
+    g.push(['Average FRT trend', (M.prevAvg?((M.avgFrt>M.prevAvg?'▲ ':'▼ ')+fmtMinNice(M.avgFrt)+' (prev '+fmtMinNice(M.prevAvg)+')'):fmtMinNice(M.avgFrt))]);
+    if(M.peakWorkload) g.push(['Peak workload hour', hr12(M.peakWorkload.hour)+'–'+hr12(M.peakWorkload.hour+1)+' · '+num(M.peakWorkload.deals)+' deals']);
+    if(M.lowProd) g.push(['Lowest productivity hour', hr12(M.lowProd.hour)+'–'+hr12(M.lowProd.hour+1)+' · '+p1(M.lowProd.coverage)+'% coverage']);
+    g.push(['Delay trend', (M.avgFrt>M.prevAvg?'▲ increasing':'▼ improving')+' vs previous period']);
+    var reps=M.owners.filter(function(o){return o.deals>=MIN_OWNER_DEALS && o.slaPct<SLA_TARGET;});
+    g.push(['SLA breaches (owners)', num(reps.length)+' owner(s) below '+SLA_TARGET+'%']);
+    return g;
+  }
+  function crmWhatsapp(M){ var L=[];
+    L.push('📅 *Daily CRM Report*'); L.push('_'+(M.single?fmtDay(M.to):(fmtDay(M.from)+' – '+fmtDay(M.to)))+' · '+M.scope+'_'); L.push('');
+    L.push('✅ Deals Created : '+num(M.deals));
+    L.push('☎ Calls Done : '+num(M.calls));
+    L.push('📞 Coverage : '+p1(M.coverage)+'%');
+    L.push('⏱ Avg FRT : '+fmtMinNice(M.avgFrt));
+    L.push('🚨 Pending Calls : '+num(M.pendingCnt));
+    L.push('🔴 Overdue : '+num(M.overdueCnt));
+    L.push('📅 Meetings Today : '+num(M.meet.scheduled));
+    if(M.best) L.push('🏆 Best Owner : '+M.best.name);
+    if(M.worst&&M.worst!==M.best) L.push('⚠ Lowest SLA : '+M.worst.name);
+    var ins=opsInsights(M).slice(0,3).map(stripTags); if(ins.length){ L.push(''); L.push('*Top Insights*'); ins.forEach(function(x){L.push('• '+x);}); }
+    var rec=opsRecs(M).slice(0,2).map(stripTags); if(rec.length){ L.push(''); L.push('*Recommendations*'); rec.forEach(function(x){L.push('• '+x);}); }
+    L.push(''); L.push('_Generated '+fmtStamp(M.generated)+'_');
+    return L.join('\n');
+  }
+  function managerBrief(M){ var L=[];
+    L.push('📅 *Daily CRM Brief* — '+(M.single?fmtDay(M.to):fmtDay(M.from)+'–'+fmtDay(M.to))); L.push('');
+    L.push('• Deals Created : '+num(M.deals));
+    L.push('• Calls Completed : '+num(M.calls));
+    L.push('• Pending Calls : '+num(M.pendingCnt));
+    L.push('• Average Response : '+fmtMinNice(M.avgFrt));
+    L.push('• Call Coverage : '+p1(M.coverage)+'%');
+    L.push('• Overdue Deals : '+num(M.overdueCnt));
+    L.push('• Meetings Today : '+num(M.meet.scheduled));
+    if(M.peakBacklog) L.push('• Highest Backlog : '+hr12(M.peakBacklog.hour)+'–'+hr12(M.peakBacklog.hour+1));
+    if(M.best) L.push('• Highest Performing Owner : '+M.best.name+' ('+p1(M.best.slaPct)+'%)');
+    if(M.worst&&M.worst!==M.best) L.push('• Lowest Performing Owner : '+M.worst.name+' ('+p1(M.worst.slaPct)+'%)');
+    L.push(''); L.push('*Top 5 Priority Actions*');
+    opsActions(M).slice(0,5).forEach(function(a,i){ L.push((i+1)+'. '+stripTags(a[1])); });
+    L.push(''); L.push('_Generated '+fmtStamp(M.generated)+'_');
+    return L.join('\n');
+  }
+
+  /* ---------- Command Center CSS ---------- */
+  (function(){ var st=el('style'); st.textContent=
+    '.cc-daybar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}'+
+    '.cc-seg{display:flex;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:3px}'+
+    '.cc-seg button{background:none;border:none;color:var(--tx2);padding:6px 13px;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:650}'+
+    '.cc-seg button.on{background:var(--acc);color:#fff}'+
+    '.cc-exp{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}'+
+    '.cc-exec{background:linear-gradient(135deg,rgba(79,140,255,.09),rgba(34,211,168,.06));border:1px solid var(--line);border-radius:12px;padding:15px 17px;font-size:13.5px;line-height:1.7;color:var(--tx)}'+
+    '.cc-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}'+
+    '.cc-card{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:11px 13px}'+
+    '.cc-card.ins{border-left:3px solid var(--acc)}'+
+    '.cc-card .t{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--tx3);font-weight:700}'+
+    '.cc-card .val{font-size:13.5px;font-weight:600;margin-top:3px;color:var(--tx);line-height:1.45}'+
+    '.cc-act{display:flex;gap:10px;align-items:flex-start;padding:9px 13px;border-radius:9px;margin:6px 0;font-size:13px;border:1px solid var(--line);color:var(--tx)}'+
+    '.cc-act .dot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex:0 0 auto}'+
+    '.cc-act.red{background:rgba(255,107,107,.10)}.cc-act.red .dot{background:var(--bad)}'+
+    '.cc-act.yellow{background:rgba(244,183,64,.10)}.cc-act.yellow .dot{background:var(--warn)}'+
+    '.cc-act.green{background:rgba(34,197,94,.10)}.cc-act.green .dot{background:var(--good)}'+
+    '.cc-heat td.h{color:#08210f;font-weight:750;text-align:center;border-radius:4px}'+
+    '.brief-box{white-space:pre-wrap;font:12.5px/1.55 ui-monospace,Menlo,Consolas,monospace;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:14px;color:var(--tx);max-height:440px;overflow:auto}'+
+    '.cc-medal{font-size:13px;margin-right:4px}';
+    document.head.appendChild(st);
+  })();
+
+  /* ---------- Command Center render ---------- */
+  function renderCommand(v){
+    var M=opsModel();
+    // Day quick-bar + export row
+    var bar=el('div','cc-daybar');
+    var seg=el('div','cc-seg');
+    [['today','Today'],['yest','Yesterday'],['7','Last 7d'],['30','Last 30d']].forEach(function(p){ var b=el('button',F.preset===p[0]?'on':'',p[1]); b.onclick=function(){ setPreset(p[0]); }; seg.appendChild(b); });
+    bar.appendChild(el('span','',null)); bar.lastChild.style.cssText='font-size:12.5px;color:var(--tx2)'; bar.lastChild.innerHTML='<b style="color:var(--tx)">Operations for</b> '+esc(M.single?fmtDay(M.to):fmtDay(M.from)+' → '+fmtDay(M.to))+' · '+esc(M.scope);
+    bar.appendChild(seg);
+    var exp=el('div','cc-exp');
+    [['🧾 PDF',opsPDF],['📊 Excel',opsExcel],['🖨️ Print',function(){window.print();}],['🖼️ PNG',opsPNG],['💬 WhatsApp',function(){ copyText(crmWhatsapp(opsModel()),function(){toast('CRM summary copied ✓');}); }]].forEach(function(a){ var b=el('button','hbtn',a[0]); b.onclick=a[1]; exp.appendChild(b); });
+    bar.appendChild(exp);
+    v.appendChild(bar);
+
+    // TOP KPI SUMMARY (14)
+    v.appendChild(kpiRow([
+      ['Deals Created',num(M.deals),'','','var(--c1)'],
+      ['Calls Done',num(M.calls),'','','var(--c2)'],
+      ['Unique Deals Called',num(M.uniqueCalled),'≥1 first call','','var(--c6)'],
+      ['Pending First Calls',num(M.pendingCnt),'no call yet','down','var(--warn)'],
+      ['Avg First Response',fmtMinNice(M.avgFrt),'','','var(--c3)'],
+      ['Median First Response',fmtMinNice(M.medFrt),'','','var(--c3)'],
+      ['Max First Response',fmtMinNice(M.maxFrt),'','down','var(--c8)'],
+      ['Call Coverage',p1(M.coverage)+'%','target '+COVER_TARGET+'%',(M.coverage>=COVER_TARGET?'up':'down'),'var(--c4)'],
+      ['SLA %',p1(M.slaPct)+'%','≤'+SLA_MIN+'m · target '+SLA_TARGET+'%',(M.slaPct>=SLA_TARGET?'up':'down'),'var(--acc2)'],
+      ['Overdue Deals',num(M.overdueCnt),'>'+SLA_MIN+'m',(M.overdueCnt?'down':'up'),'var(--bad)'],
+      ['Meetings Scheduled',num(M.meet.scheduled),'','','var(--c5)'],
+      ['Meetings Completed',num(M.meet.completed),p1(M.meet.conversion)+'%','up','var(--good)'],
+      ['Meetings Pending',num(M.meet.pending),'upcoming','','var(--warn)'],
+      ['Meetings Missed',(M.meet.missed==null?'n/a':num(M.meet.missed)),'not tracked','','var(--tx3)']
+    ]));
+
+    // SECTION 1 — Business summary
+    var p1p=panel('① '+(M.single?'Day':'Period')+' Business Summary','Auto-generated executive summary'); v.appendChild(p1p);
+    p1p.__body.innerHTML='<div class="cc-exec">'+opsSummary(M)+'</div>';
+
+    // SECTION 2 — First Response Analysis
+    var p2=panel('② First Response Analysis','Deals created in the selected window, by time-to-first-call. Delay buckets highlighted.'); v.appendChild(p2);
+    var total=M.joined.length||1, ckey={}; M.dist.forEach(function(b){ ckey[b.label]=isDelayBucket(b.label)?(b.label==='No First Call Yet'?'var(--bad)':'var(--c8)'):'var(--good)'; });
+    hbar(p2.__body, M.dist.map(function(b){return {key:b.label,label:b.label,value:b.count};}), {max:11, colorByKey:ckey, fmt:function(x){return num(x)+' ('+p1(pct(x,total))+'%)';}});
+    var pdMap={}; M.prevDist.forEach(function(b){pdMap[b.label]=b.count;});
+    var d2rows=M.dist.map(function(b){ var prev=pdMap[b.label]||0, dlt=b.count-prev, hl=isDelayBucket(b.label);
+      return [ hl?{html:'<b style="color:'+(b.label==='No First Call Yet'?'var(--bad)':'var(--c8)')+'">'+esc(b.label)+'</b>',text:b.label}:b.label,
+        b.count, p1(pct(b.count,total))+'%', prev, (dlt>0?'+':'')+dlt ]; });
+    table(p2.__body,['Bucket','Deals','%','Prev','Δ'],d2rows,{key:'frtdist',numCols:[1,3,4]});
+
+    // SECTION 3 — Business vs Non-business
+    var p3=panel('③ Business vs Non-Business Hours','Business = 10 AM–8 PM · Non-business = 8 PM–10 AM'); v.appendChild(p3);
+    table(p3.__body,['Metric','Business (10 AM–8 PM)','Non-Business (8 PM–10 AM)'],[
+      ['Deals Created',num(M.biz.deals),num(M.nonbiz.deals)],
+      ['Calls Done',num(M.biz.calls),num(M.nonbiz.calls)],
+      ['Average FRT',fmtMinNice(M.biz.avgFrt),fmtMinNice(M.nonbiz.avgFrt)],
+      ['Coverage %',p1(M.biz.coverage)+'%',p1(M.nonbiz.coverage)+'%'],
+      ['SLA %',p1(M.biz.slaPct)+'%',p1(M.nonbiz.slaPct)+'%'],
+      ['Pending Calls',num(M.biz.pending),num(M.nonbiz.pending)]
+    ],{key:'bizsplit'});
+
+    // SECTION 4 — Hourly connectivity (heatmap)
+    var p4=panel('④ Hourly Connectivity','Green = good · Yellow = medium · Red = problem. Highest-backlog hour flagged.'); v.appendChild(p4);
+    p4.__body.appendChild(ccHourlyTable(M));
+
+    // SECTION 5 — Owner performance
+    var p5=panel('⑤ Owner Performance','Ranked by SLR%. 🏆 best · ⚠ worst.'); v.appendChild(p5);
+    var orows=M.owners.map(function(o){ var medal=(M.best&&o.id===M.best.id)?'<span class="cc-medal">🏆</span>':(M.worst&&o.id===M.worst.id)?'<span class="cc-medal">⚠</span>':'';
+      return [ {html:medal+esc(o.name),text:o.name}, o.deals, o.calls, {html:hms(o.talk||0),text:o.talk||0}, o.pending, (o.avgFrt==null?'—':fmtMinNice(o.avgFrt)), (o.medFrt==null?'—':fmtMinNice(o.medFrt)), fmtMinNice(o.maxDelay), p1(o.callsPerDeal), {html:'<b style="color:'+(o.slaPct<SLA_TARGET?'var(--bad)':'var(--good)')+'">'+p1(o.slaPct)+'%</b>',text:p1(o.slaPct)} ]; });
+    table(p5.__body,['Owner','Deals','Calls','Talk Time','Pending','Avg FRT','Median FRT','Max Delay','Calls/Deal','SLA %'],orows,{key:'ccown',numCols:[1,2,3,4,8]});
+    addExport(p5,'owner_performance',['Owner','Deals','Calls','TalkTimeSec','Pending','AvgFRTmin','MedianFRTmin','MaxDelayMin','CallsPerDeal','SLApct'],M.owners.map(function(o){return [o.name,o.deals,o.calls,o.talk||0,o.pending,(o.avgFrt==null?'':p1(o.avgFrt)),(o.medFrt==null?'':p1(o.medFrt)),p1(o.maxDelay),p1(o.callsPerDeal),p1(o.slaPct)];}));
+
+    // SECTION 6 — Overdue deals
+    var p6=panel('⑥ Overdue Deals','Green <10m · Yellow 10–30m · Orange 30–60m · Red >60m. Delay measured to '+(M.single?'end of day / now':'now')+'.'); v.appendChild(p6);
+    var od=M.overdue.slice().sort(function(a,b){return (b._delay||0)-(a._delay||0);});
+    var orws=od.slice(0,400).map(function(j){ var col=delayColor(j._delay);
+      return [ j.deal.id, esc(j.deal.name||'—'), ownerName(j.deal.owner), fmtDT(j.deal.created), fmtMinNice(j._delay),
+        {html:'<b style="color:'+col+'">'+fmtMinNice(j._delay)+'</b>',text:p1(j._delay||0)}, clean(j.deal.leadSource), esc(j.deal.stage||'—'),
+        {html:'<span class="tag2 '+(j._delay>60?'pill-lost':j._delay>30?'pill-open':'pill-won')+'">'+(j._delay>60?'High':j._delay>30?'Medium':'Low')+'</span>',text:(j._delay>60?'High':j._delay>30?'Medium':'Low')},
+        '—','—', (j.contacted?'Called late':'Awaiting call') ]; });
+    table(p6.__body,['Deal ID','Customer','Owner','Created','Waiting Since','Current Delay','Lead Source','Stage','Priority','Meeting','Next Follow-up','Status'],orws,{key:'ccover',numCols:[5],limit:250});
+    addExport(p6,'overdue_deals',['DealID','Customer','Owner','Created','CurrentDelayMin','LeadSource','Stage','Priority','Status'],od.map(function(j){return [j.deal.id,j.deal.name,ownerName(j.deal.owner),j.deal.created,p1(j._delay||0),clean(j.deal.leadSource),j.deal.stage,(j._delay>60?'High':j._delay>30?'Medium':'Low'),(j.contacted?'Called late':'Awaiting call')];}));
+    p6.__body.appendChild(el('div','hint','“Meeting” &amp; “Next Follow-up” are not linked per-deal in Zoho (Events are owner-level, no per-deal link/outcome field) — shown as “—”.'));
+
+    // SECTION 7 — Meeting analysis
+    var p7=panel('⑦ Meeting Analysis','Zoho Events (owner-level). Completed = start time already passed; Pending = upcoming.'); v.appendChild(p7);
+    var m7=el('div','kpis');
+    [['Scheduled',num(M.meet.scheduled),'','var(--c5)'],['Completed',num(M.meet.completed),p1(M.meet.conversion)+'% conversion','var(--good)'],['Pending',num(M.meet.pending),'upcoming','var(--warn)'],['Missed','n/a','not tracked','var(--tx3)']].forEach(function(x){ m7.appendChild(kpi(x[0],x[1],x[2],'',x[3])); });
+    p7.__body.appendChild(m7);
+    var mBy=toItems(groupBy(M.ev,function(e){return ownerName(e.owner);}));
+    if(mBy.length){ var mp=el('div','chart'); p7.__body.appendChild(mp); hbar(mp, mBy, {color:'var(--c5)',onClick:toggleOwner}); }
+    p7.__body.appendChild(el('div','note','<b>Not available in this dataset:</b> Meeting-to-Sale %, Deals with/without Meeting, and avg first-call→meeting / creation→meeting times — Zoho Events here carry no per-deal link or outcome field, so these would be guesses. Connect a deal-linked meeting source to enable them.'));
+
+    // SECTION 8 — Gap analysis
+    var p8=panel('⑧ Gap Analysis','Auto-detected operational bottlenecks'); v.appendChild(p8);
+    var g8=el('div','cc-cards'); opsGaps(M).forEach(function(gp){ var c=el('div','cc-card'); c.innerHTML='<div class="t">'+esc(gp[0])+'</div><div class="val">'+gp[1]+'</div>'; g8.appendChild(c); }); p8.__body.appendChild(g8);
+
+    // SECTION 9 — AI insights
+    var p9=panel('⑨ AI Insights','Auto-generated business insights'); v.appendChild(p9);
+    var g9=el('div','cc-cards'); opsInsights(M).forEach(function(x){ var c=el('div','cc-card ins'); c.innerHTML='<div class="val">💡 '+x+'</div>'; g9.appendChild(c); }); p9.__body.appendChild(g9);
+
+    // SECTION 10 — Recommendations
+    var p10=panel('⑩ AI Recommendations','Suggested next actions'); v.appendChild(p10);
+    var g10=el('div','cc-cards'); opsRecs(M).forEach(function(x){ var c=el('div','cc-card'); c.style.borderLeft='3px solid var(--acc2)'; c.innerHTML='<div class="val">✅ '+esc(x)+'</div>'; g10.appendChild(c); }); p10.__body.appendChild(g10);
+
+    // SECTION 11 — Today's action items
+    var p11=panel("⑪ Today's Action Items",'Red = urgent · Yellow = attention · Green = clear'); v.appendChild(p11);
+    opsActions(M).forEach(function(a){ var c=el('div','cc-act '+a[0]); c.innerHTML='<span class="dot"></span><span>'+esc(stripTags(a[1]))+'</span>'; p11.__body.appendChild(c); });
+
+    // SECTION 12 — Trend analysis
+    var p12=panel('⑫ Trend Analysis','Selected day vs last 7 vs last 30 days'); v.appendChild(p12);
+    table(p12.__body,['Metric',(M.single?'Selected Day':'Selected'),'Last 7 Days','Last 30 Days'],[
+      ['Call Coverage %',p1(M.trend1.coverage)+'%',p1(M.trend7.coverage)+'%',p1(M.trend30.coverage)+'%'],
+      ['Average FRT',fmtMinNice(M.trend1.avgFrt),fmtMinNice(M.trend7.avgFrt),fmtMinNice(M.trend30.avgFrt)],
+      ['Pending Deals',num(M.trend1.pending),num(M.trend7.pending),num(M.trend30.pending)],
+      ['SLA %',p1(M.trend1.slaPct)+'%',p1(M.trend7.slaPct)+'%',p1(M.trend30.slaPct)+'%'],
+      ['Meetings',num(M.trend1.meetings),num(M.trend7.meetings),num(M.trend30.meetings)]
+    ],{key:'cctrend'});
+    var g12=el('div','grid g2');
+    var t1=panel('Call Coverage & SLA — 30-day trend'); g12.appendChild(t1);
+    lineChart(t1.__body, M.days.map(fmtDay), [{name:'Coverage %',color:'var(--c4)',data:M.series.map(function(s){return +p1(s.coverage);})},{name:'SLA %',color:'var(--c2)',data:M.series.map(function(s){return +p1(s.slaPct);})}],{legend:true});
+    var t2=panel('Avg FRT & Pending — 30-day trend'); g12.appendChild(t2);
+    lineChart(t2.__body, M.days.map(fmtDay), [{name:'Avg FRT (min)',color:'var(--c3)',data:M.series.map(function(s){return +p1(s.avgFrt);})},{name:'Pending',color:'var(--bad)',data:M.series.map(function(s){return s.pending;})}],{legend:true});
+    v.appendChild(g12);
+
+    // SECTION 13 — Manager morning brief
+    var p13=panel('⑬ Manager Morning Brief','Ready for WhatsApp &amp; Email'); v.appendChild(p13);
+    var brief=managerBrief(M); var bb=el('div','brief-box'); bb.textContent=brief; p13.__body.appendChild(bb);
+    var bbar=el('div'); bbar.style.cssText='display:flex;gap:8px;margin-top:10px;flex-wrap:wrap';
+    var cpb=el('button','mini','📋 Copy brief'); cpb.onclick=function(){ copyText(managerBrief(opsModel()),function(){toast('Brief copied ✓');}); };
+    var wab=el('a','mini'); wab.textContent='💬 Send on WhatsApp'; wab.href='https://wa.me/?text='+encodeURIComponent(brief); wab.target='_blank'; wab.style.textDecoration='none';
+    bbar.appendChild(cpb); bbar.appendChild(wab); p13.__body.appendChild(bbar);
+  }
+
+  function ccHourlyTable(M){
+    var wrap=el('div','tblwrap');
+    var h='<table class="cc-heat"><thead><tr><th>Hour</th><th class="right">Deals</th><th class="right">Calls</th><th class="right">Avg FRT</th><th class="right">Pending</th><th class="right">Coverage</th></tr></thead><tbody>';
+    var maxBack=M.peakBacklog?M.peakBacklog.pending:0;
+    M.hourly.forEach(function(x){ var flag=(maxBack>0&&x.pending===maxBack);
+      h+='<tr'+(flag?' style="outline:2px solid var(--bad);outline-offset:-2px"':'')+'><td><b>'+esc(x.label)+'</b>'+(flag?' 🔴':'')+'</td>'+
+        '<td class="right">'+num(x.deals)+'</td><td class="right">'+num(x.calls)+'</td>'+
+        '<td class="right">'+(x.avgFrt==null?'—':fmtMinNice(x.avgFrt))+'</td>'+
+        '<td class="right">'+num(x.pending)+'</td>'+
+        '<td class="h" style="background:'+(x.deals?covColor(x.coverage):'var(--bg2)')+'">'+(x.deals?p1(x.coverage)+'%':'—')+'</td></tr>';
+    });
+    h+='</tbody></table>'; wrap.innerHTML=h; return wrap;
+  }
+
+  /* ---------- ops exports (reuse Section-11 helpers) ---------- */
+  function buildOpsDoc(M){
+    var kpis=[ kpiTile('Deals Created',num(M.deals),''), kpiTile('Calls Done',num(M.calls),''),
+      kpiTile('Call Coverage',p1(M.coverage)+'%','target '+COVER_TARGET+'%'), kpiTile('Avg First Response',fmtMinNice(M.avgFrt),'median '+fmtMinNice(M.medFrt)),
+      kpiTile('Pending First Calls',num(M.pendingCnt),''), kpiTile('Overdue',num(M.overdueCnt),'>'+SLA_MIN+'m'),
+      kpiTile('SLA %',p1(M.slaPct)+'%','≤'+SLA_MIN+'m'), kpiTile('Meetings',num(M.meet.scheduled),num(M.meet.completed)+' completed') ].join('');
+    var distItems=M.dist.map(function(b){ return {label:b.label,value:b.count,color:isDelayBucket(b.label)?(b.label==='No First Call Yet'?'#dc2626':'#ea580c'):'#16a34a'}; });
+    var insights='<ul class="rp-list">'+opsInsights(M).map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>';
+    var recs='<ul class="rp-list">'+opsRecs(M).map(function(x){return '<li>'+xesc(x)+'</li>';}).join('')+'</ul>';
+    var actions=opsActions(M).map(function(a){return '<div class="alert '+(a[0]==='red'?'high':a[0]==='yellow'?'med':'ok')+'">'+(a[0]==='red'?'🔴 ':a[0]==='yellow'?'🟠 ':'✅ ')+stripTags(a[1])+'</div>';}).join('');
+    var ownerT='<table class="rp-tbl"><thead><tr><th>Owner</th><th class="rp-r">Deals</th><th class="rp-r">Calls</th><th class="rp-r">Pending</th><th class="rp-r">Avg FRT</th><th class="rp-r">Max Delay</th><th class="rp-r">SLA %</th></tr></thead><tbody>'+
+      M.owners.slice(0,16).map(function(o){return '<tr><td>'+xesc(o.name)+'</td><td class="rp-r">'+num(o.deals)+'</td><td class="rp-r">'+num(o.calls)+'</td><td class="rp-r">'+num(o.pending)+'</td><td class="rp-r">'+(o.avgFrt==null?'—':fmtMinNice(o.avgFrt))+'</td><td class="rp-r">'+fmtMinNice(o.maxDelay)+'</td><td class="rp-r '+(o.slaPct<SLA_TARGET?'breach':'okc')+'">'+p1(o.slaPct)+'%</td></tr>';}).join('')+'</tbody></table>';
+    var od=M.overdue.slice().sort(function(a,b){return (b._delay||0)-(a._delay||0);});
+    var overT='<table class="rp-tbl"><thead><tr><th>Deal</th><th>Owner</th><th>Stage</th><th>Lead Source</th><th class="rp-r">Delay</th><th>Priority</th><th>Created</th></tr></thead><tbody>'+
+      (od.length?od.slice(0,28).map(function(j){return '<tr><td>'+xesc(j.deal.name||'—')+'</td><td>'+xesc(ownerName(j.deal.owner))+'</td><td>'+xesc(j.deal.stage||'—')+'</td><td>'+xesc(clean(j.deal.leadSource))+'</td><td class="rp-r" style="color:'+delayHex(j._delay)+';font-weight:700">'+fmtMinNice(j._delay)+'</td><td>'+(j._delay>60?'High':j._delay>30?'Medium':'Low')+'</td><td>'+xesc(fmtDT(j.deal.created))+'</td></tr>';}).join(''):'<tr><td colspan="7">No overdue deals. 🎉</td></tr>')+'</tbody></table>';
+    var hourT='<table class="rp-tbl"><thead><tr><th>Hour</th><th class="rp-r">Deals</th><th class="rp-r">Calls</th><th class="rp-r">Avg FRT</th><th class="rp-r">Pending</th><th class="rp-r">Coverage</th></tr></thead><tbody>'+
+      M.hourly.map(function(x){return '<tr><td>'+xesc(x.label)+'</td><td class="rp-r">'+num(x.deals)+'</td><td class="rp-r">'+num(x.calls)+'</td><td class="rp-r">'+(x.avgFrt==null?'—':fmtMinNice(x.avgFrt))+'</td><td class="rp-r">'+num(x.pending)+'</td><td class="rp-r" style="color:'+covHex(x.coverage)+';font-weight:700">'+(x.deals?p1(x.coverage)+'%':'—')+'</td></tr>';}).join('')+'</tbody></table>';
+    var meetT='<table class="rp-tbl"><thead><tr><th>Scheduled</th><th>Completed</th><th>Pending</th><th>Missed</th><th>Conversion</th></tr></thead><tbody><tr><td>'+num(M.meet.scheduled)+'</td><td>'+num(M.meet.completed)+'</td><td>'+num(M.meet.pending)+'</td><td>n/a</td><td>'+p1(M.meet.conversion)+'%</td></tr></tbody></table>';
+    var trendT='<table class="rp-tbl"><thead><tr><th>Metric</th><th class="rp-r">Selected</th><th class="rp-r">Last 7d</th><th class="rp-r">Last 30d</th></tr></thead><tbody>'+
+      [['Coverage %',p1(M.trend1.coverage)+'%',p1(M.trend7.coverage)+'%',p1(M.trend30.coverage)+'%'],['Avg FRT',fmtMinNice(M.trend1.avgFrt),fmtMinNice(M.trend7.avgFrt),fmtMinNice(M.trend30.avgFrt)],['Pending',num(M.trend1.pending),num(M.trend7.pending),num(M.trend30.pending)],['SLA %',p1(M.trend1.slaPct)+'%',p1(M.trend7.slaPct)+'%',p1(M.trend30.slaPct)+'%'],['Meetings',num(M.trend1.meetings),num(M.trend7.meetings),num(M.trend30.meetings)]].map(function(r){return '<tr><td>'+r[0]+'</td><td class="rp-r">'+r[1]+'</td><td class="rp-r">'+r[2]+'</td><td class="rp-r">'+r[3]+'</td></tr>';}).join('')+'</tbody></table>';
+
+    var H=[];
+    H.push('<!doctype html><html><head><meta charset="utf-8"><title>'+xesc(BRAND+' — Daily CRM Operations')+'</title><style>'+reportCSS()+'</style></head><body><div class="rp-wrap">');
+    H.push('<div class="rp-head"><div class="rp-logo">L</div><div><h1>Daily CRM Operations — Command Center</h1><div class="m">'+xesc(BRAND)+' · '+(M.single?fmtDay(M.to):fmtDay(M.from)+' → '+fmtDay(M.to))+' · Scope: '+xesc(M.scope)+'</div></div><div class="stamp">Generated<br><b>'+xesc(fmtStamp(M.generated))+'</b></div></div>');
+    H.push('<div class="rp-sec"><h2>Executive Summary</h2><div class="rp-sum">'+opsSummary(M)+'</div></div>');
+    H.push('<div class="rp-sec"><h2>KPI Summary</h2><div class="rp-kpis">'+kpis+'</div></div>');
+    H.push('<div class="rp-2"><div class="rp-sec"><h2>First Response Distribution</h2><div class="rp-card">'+rBars(distItems,{max:11,fmt:num})+'</div></div><div class="rp-sec"><h2>Coverage & SLA — 30-day Trend</h2><div class="rp-card">'+rLine(M.days.map(fmtDay),[{name:'Coverage %',color:'#2563eb',data:M.series.map(function(s){return +p1(s.coverage);})},{name:'SLA %',color:'#0d9488',data:M.series.map(function(s){return +p1(s.slaPct);})}])+'</div></div></div>');
+    H.push('<div class="rp-2"><div class="rp-sec"><h2>AI Insights</h2><div class="rp-card">'+insights+'</div></div><div class="rp-sec"><h2>Recommendations</h2><div class="rp-card">'+recs+'</div></div></div>');
+    H.push('<div class="rp-sec"><h2>Action Items</h2>'+actions+'</div>');
+    H.push('<div class="rp-sec"><h2>Owner Performance</h2>'+ownerT+'</div>');
+    H.push('<div class="rp-sec"><h2>Overdue / Pending Deals</h2>'+overT+'</div>');
+    H.push('<div class="rp-2"><div class="rp-sec"><h2>Meetings</h2>'+meetT+'</div><div class="rp-sec"><h2>Trend Analysis</h2>'+trendT+'</div></div>');
+    H.push('<div class="rp-sec"><h2>Hourly Analysis</h2>'+hourT+'</div>');
+    H.push('<div class="rp-foot">'+xesc(BRAND)+' · Daily CRM Operations Command Center · Confidential — internal use · '+xesc(fmtStamp(M.generated))+'</div>');
+    H.push('</div></body></html>');
+    return H.join('');
+  }
+  function opsPDF(){ openPrint(buildOpsDoc(opsModel())); }
+  function opsPNG(){
+    var M=opsModel(), W=1280,Hc=720,cv=document.createElement('canvas'); cv.width=W; cv.height=Hc; var x=cv.getContext('2d');
+    x.fillStyle='#0e1117'; x.fillRect(0,0,W,Hc);
+    var grd=x.createLinearGradient(0,0,W,0); grd.addColorStop(0,'#2563eb'); grd.addColorStop(1,'#0d9488');
+    x.fillStyle=grd; x.fillRect(0,0,W,8);
+    x.fillStyle=grd; roundRect(x,40,34,58,58,14); x.fill();
+    x.fillStyle='#fff'; x.font='800 30px Segoe UI, Arial'; x.textBaseline='middle'; x.textAlign='center'; x.fillText('L',69,64); x.textAlign='left';
+    x.fillStyle='#e7ecf3'; x.font='800 29px Segoe UI, Arial'; x.fillText('Daily CRM Operations — Command Center',112,50);
+    x.fillStyle='#9aa7b8'; x.font='15px Segoe UI, Arial'; x.fillText(BRAND+'  ·  '+(M.single?fmtDay(M.to):fmtDay(M.from)+' → '+fmtDay(M.to))+'  ·  '+M.scope,112,78);
+    var tiles=[['Deals Created',num(M.deals)],['Calls Done',num(M.calls)],['Coverage',p1(M.coverage)+'%'],['Avg FRT',fmtMinNice(M.avgFrt)],
+      ['Pending Calls',num(M.pendingCnt)],['Overdue',num(M.overdueCnt)],['SLA %',p1(M.slaPct)+'%'],['Meetings',num(M.meet.scheduled)]];
+    var gx=40,gy=118,gw=(W-80-3*16)/4,gh=104;
+    tiles.forEach(function(t,i){ var cxp=gx+(i%4)*(gw+16), cyp=gy+Math.floor(i/4)*(gh+16);
+      x.fillStyle='#1a212c'; roundRect(x,cxp,cyp,gw,gh,12); x.fill(); x.strokeStyle='#2a3442'; x.lineWidth=1; roundRect(x,cxp,cyp,gw,gh,12); x.stroke();
+      x.fillStyle='#9aa7b8'; x.font='700 12px Segoe UI, Arial'; x.fillText(t[0].toUpperCase(),cxp+16,cyp+26);
+      x.fillStyle='#e7ecf3'; x.font='800 32px Segoe UI, Arial'; x.fillText(t[1],cxp+16,cyp+66); });
+    var iy=gy+2*(gh+16)+18; x.fillStyle='#4f8cff'; x.font='700 16px Segoe UI, Arial'; x.fillText('Top Insights & Actions',40,iy);
+    x.fillStyle='#c7d0dc'; x.font='14px Segoe UI, Arial';
+    opsInsights(M).slice(0,2).concat(opsActions(M).slice(0,2).map(function(a){return a[1];})).forEach(function(s,i){ x.fillText('•  '+trunc(stripTags(s),120),40,iy+28+i*26); });
+    x.fillStyle='#6b7688'; x.font='12px Segoe UI, Arial'; x.textAlign='right'; x.fillText('Generated '+fmtStamp(M.generated)+'  ·  Lucira CRM Command Center',W-40,Hc-24); x.textAlign='left';
+    try{ cv.toBlob(function(b){ if(b) downloadBlob(b, ccFname(M,'png'), 'image/png'); else fallbackPNG(cv,M); }); }catch(e){ fallbackPNG(cv,M); }
+  }
+  function ccFname(M,ext){ return 'Lucira_CRM_Ops_'+M.to+'.'+ext; }
+  function opsExcel(){ var M=opsModel(); downloadBlob(buildOpsExcelXml(M), ccFname(M,'xls'), 'application/vnd.ms-excel'); }
+  function buildOpsExcelXml(M){
+    var styles='<Styles>'+
+      '<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11" ss:Color="#1a2230"/></Style>'+
+      '<Style ss:ID="hdr"><Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1F3B57" ss:Pattern="Solid"/><Alignment ss:Horizontal="Left" ss:Vertical="Center"/></Style>'+
+      '<Style ss:ID="lbl"><Font ss:Bold="1" ss:Color="#334155"/></Style>'+
+      '<Style ss:ID="breach"><Interior ss:Color="#FDE0E0" ss:Pattern="Solid"/><Font ss:Color="#B10000" ss:Bold="1"/></Style>'+
+      '<Style ss:ID="good"><Interior ss:Color="#E4F7E9" ss:Pattern="Solid"/><Font ss:Color="#137333"/></Style>'+
+      '</Styles>';
+    var sh=[];
+    sh.push(xlSheet('Summary',[{title:'Metric',width:200},{title:'Value',width:180}],[
+      [{v:'Report',style:'lbl'},BRAND+' — Daily CRM Operations'],[{v:'Period',style:'lbl'},(M.single?fmtDay(M.to):fmtDay(M.from)+' → '+fmtDay(M.to))],
+      [{v:'Scope',style:'lbl'},M.scope],[{v:'Generated',style:'lbl'},fmtStamp(M.generated)],['',''],
+      [{v:'Deals Created',style:'lbl'},M.deals],[{v:'Calls Done',style:'lbl'},M.calls],[{v:'Pending First Calls',style:'lbl'},M.pendingCnt],
+      [{v:'Call Coverage %',style:'lbl'},+p1(M.coverage)],[{v:'SLA %',style:'lbl'},+p1(M.slaPct)],
+      [{v:'Avg FRT (min)',style:'lbl'},+p1(M.avgFrt)],[{v:'Median FRT (min)',style:'lbl'},+p1(M.medFrt)],[{v:'Max FRT (min)',style:'lbl'},+p1(M.maxFrt)],
+      [{v:'Overdue (>'+SLA_MIN+'m)',style:(M.overdueCnt?'breach':'good')},{v:M.overdueCnt,style:(M.overdueCnt?'breach':'good')}],
+      [{v:'Meetings Scheduled',style:'lbl'},M.meet.scheduled],[{v:'Meetings Completed',style:'lbl'},M.meet.completed],[{v:'Meetings Pending',style:'lbl'},M.meet.pending],
+      [{v:'Best Owner',style:'lbl'},M.best?(M.best.name+' — '+p1(M.best.slaPct)+'%'):'—'],[{v:'Lowest SLA Owner',style:'lbl'},M.worst?(M.worst.name+' — '+p1(M.worst.slaPct)+'%'):'—']
+    ]));
+    sh.push(xlSheet('KPIs',[{title:'KPI',width:180},{title:'Value',width:120}],[
+      ['Deals Created',M.deals],['Calls Done',M.calls],['Unique Deals Called',M.uniqueCalled],['Pending First Calls',M.pendingCnt],
+      ['Avg FRT (min)',+p1(M.avgFrt)],['Median FRT (min)',+p1(M.medFrt)],['Max FRT (min)',+p1(M.maxFrt)],['Coverage %',+p1(M.coverage)],['SLA %',+p1(M.slaPct)],
+      ['Overdue',M.overdueCnt],['Meetings Scheduled',M.meet.scheduled],['Meetings Completed',M.meet.completed],['Meetings Pending',M.meet.pending]
+    ]));
+    sh.push(xlSheet('Deals',[{title:'Deal',width:200},{title:'Owner',width:130},{title:'Stage',width:110},{title:'Lead Source',width:120},{title:'Contacted',width:75},{title:'First Resp (min)',width:100},{title:'Created',width:130}],
+      M.joined.map(function(j){return [j.deal.name,ownerName(j.deal.owner),j.deal.stage,clean(j.deal.leadSource),(j.contacted?'Yes':'No'),(j.frt==null?'':+p1(j.frt)),j.deal.created];})));
+    sh.push(xlSheet('Calls',[{title:'Owner',width:130},{title:'Type',width:90},{title:'Duration (s)',width:90},{title:'Connected',width:80},{title:'Created',width:130}],
+      M.cl.map(function(c){return [ownerName(c.owner),c.type||'',(c.dur||0),(c.dur>0?'Yes':'No'),c.created];})));
+    var od=M.overdue.slice().sort(function(a,b){return (b._delay||0)-(a._delay||0);});
+    sh.push(xlSheet('Pending Deals',[{title:'Deal ID',width:110},{title:'Customer',width:190},{title:'Owner',width:130},{title:'Lead Source',width:120},{title:'Stage',width:110},{title:'Current Delay (min)',width:110},{title:'Priority',width:80},{title:'Status',width:110},{title:'Created',width:130}],
+      (od.length?od:[{deal:{}, _delay:0, contacted:true}]).map(function(j){ if(!j.deal.id) return ['(none)','','','','',{v:''},'','','']; return [j.deal.id,j.deal.name,ownerName(j.deal.owner),clean(j.deal.leadSource),j.deal.stage,{v:+p1(j._delay||0),style:'breach'},(j._delay>60?'High':j._delay>30?'Medium':'Low'),{v:(j.contacted?'Called late':'Awaiting call'),style:'breach'},j.deal.created];})));
+    sh.push(xlSheet('Owner Performance',[{title:'Owner',width:140},{title:'Deals',width:60},{title:'Calls',width:60},{title:'Pending',width:70},{title:'Avg FRT (min)',width:90},{title:'Median FRT',width:80},{title:'Max Delay (min)',width:95},{title:'Calls/Deal',width:75},{title:'SLA %',width:70}],
+      M.owners.map(function(o){return [o.name,o.deals,o.calls,o.pending,(o.avgFrt==null?'':+p1(o.avgFrt)),(o.medFrt==null?'':+p1(o.medFrt)),+p1(o.maxDelay),+p1(o.callsPerDeal),{v:+p1(o.slaPct),style:(o.slaPct<SLA_TARGET?'breach':'good')}];})));
+    sh.push(xlSheet('Meeting Analysis',[{title:'Metric',width:180},{title:'Value',width:100}],[
+      ['Scheduled',M.meet.scheduled],['Completed',M.meet.completed],['Pending',M.meet.pending],['Missed (not tracked)','n/a'],['Conversion %',+p1(M.meet.conversion)]]));
+    sh.push(xlSheet('AI Insights',[{title:'#',width:40},{title:'Insight',width:640}], opsInsights(M).map(function(x,i){return [i+1,stripTags(x)];})));
+    sh.push(xlSheet('Recommendations',[{title:'#',width:40},{title:'Recommendation',width:640}], opsRecs(M).map(function(x,i){return [i+1,x];})));
+    sh.push(xlSheet('Raw Data',[{title:'Deal ID',width:110},{title:'Deal',width:190},{title:'Owner',width:130},{title:'Mobile',width:110},{title:'Stage',width:100},{title:'Contacted',width:75},{title:'#Calls',width:60},{title:'Delay (min)',width:90},{title:'Created',width:130}],
+      M.joined.map(function(j){return [j.deal.id,j.deal.name,ownerName(j.deal.owner),j.deal.mobile||'',j.deal.stage,(j.contacted?'Yes':'No'),j.nCalls,+p1(j._delay||0),j.deal.created];})));
+    var xml='<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+
+      '<DocumentProperties xmlns="urn:schemas-microsoft-com:office:office"><Author>'+xesc(BRAND)+'</Author><Title>Daily CRM Operations</Title></DocumentProperties>'+styles+sh.join('')+'</Workbook>';
+    return xml;
+  }
+
+  /* ---------- register tab + header Share button ---------- */
+  TABS.unshift(['command','🎯 Command Center']);
+  VIEWS.command=renderCommand;
+  (function(){ var h=(location.hash||'').replace('#',''); if(!h||!VIEWS[h]) active='command'; })();
+  window.DVCOps={ model:opsModel, pdf:opsPDF, excel:opsExcel, png:opsPNG, whatsapp:crmWhatsapp, brief:managerBrief, doc:function(){return buildOpsDoc(opsModel());}, excelXml:function(){return buildOpsExcelXml(opsModel());} };
+  TABS.push(['share','⤴ Share']);
+  VIEWS.share=renderShare;
+  (function(){ var pb=gid('printBtn'); if(pb && !gid('shareBtn')){ var sb=el('button','hbtn'); sb.id='shareBtn'; sb.title='Export & share reports (PDF, Excel, WhatsApp, PNG)'; sb.innerHTML='⤴ Share';
+    sb.onclick=function(){ active='share'; try{location.hash='share';}catch(e){} buildTabs(); render(); window.scrollTo(0,0); };
+    pb.parentNode.insertBefore(sb, pb); } })();
+  /* expose for console / future hooks */
+  window.DVCReports={ model:reportModel, pdf:exportPDF, excel:exportExcel, whatsapp:whatsappText, png:exportPNG, executive:exportExecutive,
+    pdfDoc:function(mode){ return buildReportDoc(reportModel(),mode||'full'); }, excelXml:function(){ return buildExcelXml(reportModel()); } };
+})();
+
 /* ============================ LIVE data layer ============================ */
 /* hydrate(bundle): rebuild every derived structure from a fresh bundle (same schema as window.DASH / data.js) */
 function hydrate(b){
@@ -1430,6 +2526,27 @@ function hydrate(b){
 }
 function totalRecords(){ return DEALS.length+CALLS.length+TASKS.length+ONLINE.length+EVENTS.length; }
 function fmtClock(d){ return d? (String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0')) : '—'; }
+
+/* Data-freshness banner: always-on header strip showing mode (LIVE/snapshot/failed),
+   data source, the date range the data covers, last-sync time and record counts. */
+function prettyDay(k){ var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; var p=String(k||'').split('-'); if(p.length<3) return k||'—'; return parseInt(p[2],10)+' '+m[(parseInt(p[1],10)||1)-1]+' '+p[0]; }
+function renderFreshbar(){
+  var box=gid('freshbar'); if(!box) return;
+  var live=(LIVE.mode==='live'), err=(live&&LIVE.error), pill,cls,src,updLbl,upd;
+  if(err){ pill='⚠ SYNC FAILED'; cls='fb-bad'; src='Live BigQuery feed — last sync attempt failed'; updLbl='Last good'; upd=(LIVE.lastSync?fmtClock(LIVE.lastSync):'never'); }
+  else if(live){ pill='● LIVE'; cls='fb-live'; src='Live BigQuery · Zoho-synced every 15 min'; updLbl='Last synced'; upd=fmtClock(LIVE.lastSync); }
+  else { pill='◷ SNAPSHOT'; cls='fb-snap'; var gen=(DASH.meta&&DASH.meta.generated)?String(DASH.meta.generated).slice(0,16).replace('T',' '):'—'; src='Static snapshot file'; updLbl='Data as of'; upd=gen; }
+  if(LIVE.autoMs) upd+=' · auto '+(LIVE.autoMs/60000)+'m';
+  var brk=num(DEALS.length)+' deals · '+num(CALLS.length)+' calls · '+num(TASKS.length)+' tasks · '+num(ONLINE.length)+' chats · '+num(EVENTS.length)+' meetings · '+num(CE.total)+' events';
+  box.className='freshbar '+cls;
+  box.innerHTML=
+    '<span class="fb-pill">'+esc(pill)+'</span>'+
+    '<span class="fb-item"><b>Source</b><span>'+esc(src)+'</span></span>'+
+    '<span class="fb-item"><b>Data range</b><span>'+esc(prettyDay(minDate))+' → '+esc(prettyDay(maxDate))+'</span></span>'+
+    '<span class="fb-item"><b>'+esc(updLbl)+'</b><span>'+esc(upd)+'</span></span>'+
+    '<span class="fb-sp"></span>'+
+    '<span class="fb-item" style="text-align:right"><b>'+num(totalRecords())+' records</b><span class="fb-brk">'+esc(brk)+'</span></span>';
+}
 
 var LIVE={ mode:(CONFIG.CRM_API?'live':'snapshot'), lastSync:null, error:null, autoMs:0, timer:null, delta:null, records:0 };
 
@@ -1451,7 +2568,7 @@ function syncNow(auto){
       if(!b || !b.deals){ throw new Error('bad payload — no deals[] in response'); }
       hydrate(b); LIVE.error=null; LIVE.lastSync=new Date(); LIVE.records=totalRecords();
       LIVE.delta={deals:DEALS.length-prev.D,calls:CALLS.length-prev.C,tasks:TASKS.length-prev.T,online:ONLINE.length-prev.O,events:EVENTS.length-prev.E,ce:CE.total-prev.CE};
-      if(F.preset==='all'){ F.from=minDate; F.to=maxDate; }
+      if(F.preset){ var _pr=presetRange(F.preset); F.from=_pr.from; F.to=_pr.to; }
       buildFilters(); chips(); render(); setLiveStatus();
     })
     .catch(function(err){ LIVE.error=(err&&err.message)||'network error'; setLiveStatus(); });
@@ -1470,6 +2587,7 @@ function setLiveStatus(state){
     if(LIVE.error && LIVE.mode==='live'){ ban.style.display='flex'; ban.innerHTML='<span>⚠ <b>Live sync to Zoho CRM failed</b> at '+fmtClock(new Date())+' — '+esc(LIVE.error)+'. '+(LIVE.lastSync?('Showing last good data from '+fmtClock(LIVE.lastSync)+'.'):'No data has loaded yet.')+'</span> <button class="mini" id="banretry">Retry now</button>'; var rb=gid('banretry'); if(rb)rb.onclick=function(){ syncNow(false); }; }
     else { ban.style.display='none'; ban.innerHTML=''; }
   }
+  renderFreshbar();
 }
 
 /* header */
@@ -1486,13 +2604,19 @@ document.getElementById('synced').innerHTML='Zoho CRM · <b>'+num(totalRecords()
     host.insertBefore(sel, rbtn);
   }
   var wrap=document.querySelector('.wrap'); if(wrap && !gid('livebanner')){ var ban=el('div'); ban.id='livebanner'; ban.className='livebanner'; ban.style.display='none'; wrap.insertBefore(ban, wrap.firstChild); }
+  if(wrap && !gid('freshbar')){
+    var fst=el('style'); fst.textContent='.freshbar{display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--tx3);border-radius:12px;padding:11px 16px;margin-bottom:14px;box-shadow:var(--shadow);font-size:12.5px}.freshbar.fb-live{border-left-color:var(--good)}.freshbar.fb-snap{border-left-color:var(--warn)}.freshbar.fb-bad{border-left-color:var(--bad)}.fb-pill{font-weight:800;padding:3px 11px;border-radius:20px;white-space:nowrap;font-size:12px;letter-spacing:.3px}.fb-live .fb-pill{background:rgba(34,197,94,.15);color:var(--good)}.fb-snap .fb-pill{background:rgba(244,183,64,.15);color:var(--warn)}.fb-bad .fb-pill{background:rgba(255,107,107,.15);color:var(--bad)}.fb-item{display:inline-flex;flex-direction:column;line-height:1.35;gap:1px;color:var(--tx)}.fb-item b{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);font-weight:700}.fb-sp{flex:1}.fb-brk{color:var(--tx2);font-size:11px;font-weight:400}@media print{.freshbar{box-shadow:none}}'; document.head.appendChild(fst);
+    /* Unpin the sticky header/tabs/filters (no freeze on scroll) + right-side tab dropdown menu */
+    var tst=el('style'); tst.textContent='header.top{position:static !important}nav.tabs{position:static !important;top:auto !important}.filters{position:static !important;top:auto !important}nav.tabs .in{justify-content:flex-end;overflow:visible}.tabmenu{position:relative}.tabmenu-btn{display:inline-flex;align-items:center;gap:12px;justify-content:space-between;background:var(--card);border:1px solid var(--line);color:var(--tx);padding:9px 14px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;min-width:190px}.tabmenu-btn:hover{border-color:var(--acc)}.tabmenu-arr{color:var(--tx2);font-size:11px;transition:transform .2s}.tabmenu.open .tabmenu-arr{transform:rotate(180deg)}.tabmenu-pop{display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:230px;max-height:70vh;overflow:auto;z-index:70;box-shadow:var(--shadow);flex-direction:column;gap:2px}.tabmenu.open .tabmenu-pop{display:flex}.tabmenu-pop button{background:none;border:none;color:var(--tx2);text-align:left;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;width:100%}.tabmenu-pop button:hover{background:var(--bg2);color:var(--tx)}.tabmenu-pop button.on{background:var(--acc);color:#fff}@media print{header.top,nav.tabs,.filters{display:none}}'; document.head.appendChild(tst);
+    var fb=el('div'); fb.id='freshbar'; fb.className='freshbar'; wrap.insertBefore(fb, wrap.firstChild);
+  }
 })();
 
 /* snapshot-mode delta after a reload */
 (function(){ try{ var pr=sessionStorage.getItem('dvc_prevRecords'); if(pr!=null){ LIVE.delta={_reload:totalRecords()-parseInt(pr,10)}; sessionStorage.removeItem('dvc_prevRecords'); } }catch(e){} })();
 
 restoreF();
-if(F.preset==='all'){ F.from=minDate; F.to=maxDate; }
+if(F.preset){ var _pr=presetRange(F.preset); F.from=_pr.from; F.to=_pr.to; }
 setAuto(CONFIG.AUTO_MS||0);
 
 buildTabs(); buildFilters(); chips(); render(); buildAssistant();

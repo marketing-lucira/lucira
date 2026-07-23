@@ -1,0 +1,253 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# KPI REGISTRY — the single source of truth for every metric the copilot tracks.
+# Adding a KPI = a new entry here (+ SQL in the domain collector). No schema change.
+#
+# Each KPI:
+#   key            unique id (used in bi.fact_kpi_daily.kpi_key)
+#   label          human name
+#   domain         sales|marketing|crm|inventory|product|ops
+#   unit           INR|count|pct|days|ratio
+#   agg            how the daily series rolls up: sum|avg|last|ratio
+#   higher_is_better  drives arrow colour + status
+#   target         static target (nullable; store/dynamic targets override)
+#   watch_pct      Δ% band -> 'watch' status
+#   risk_pct       Δ% band -> 'risk' status
+#   slice_by       optional dimensions to also compute (store/channel/category)
+#   describe       one-line definition (also used in dashboard ⓘ explainers)
+# ─────────────────────────────────────────────────────────────────────────────
+kpis:
+
+  # ── SALES ──────────────────────────────────────────────────────────────────
+  - key: revenue
+    label: Net Revenue
+    domain: sales
+    unit: INR
+    agg: sum
+    higher_is_better: true
+    watch_pct: -10
+    risk_pct: -15
+    slice_by: [store, category, sale_type]
+    describe: Net sales revenue (Gross/1.03), all records included.
+
+  - key: orders
+    label: Orders
+    domain: sales
+    unit: count
+    agg: sum
+    higher_is_better: true
+    slice_by: [store, channel]
+    describe: Count of sales transactions (invoices) in the period.
+
+  - key: aov
+    label: Average Order Value
+    domain: sales
+    unit: INR
+    agg: ratio            # revenue / orders
+    higher_is_better: true
+    slice_by: [store, category]
+    describe: Net revenue divided by orders.
+
+  - key: new_customers
+    label: New Customers
+    domain: sales
+    unit: count
+    agg: sum
+    higher_is_better: true
+    describe: Distinct mobile numbers buying for the first time ever.
+
+  - key: repeat_customers
+    label: Repeat Customers
+    domain: sales
+    unit: count
+    agg: sum
+    higher_is_better: true
+    describe: Distinct mobiles with a prior purchase before the period.
+
+  - key: store_target_attainment
+    label: Store Target Attainment
+    domain: sales
+    unit: pct
+    agg: ratio            # revenue / target
+    higher_is_better: true
+    target: 100
+    watch_pct: -20        # <80% attainment = watch
+    risk_pct: -30         # <70% = risk (brief's rule)
+    slice_by: [store]
+    describe: Revenue as a % of the store's monthly target.
+
+  # ── OPERATIONS ───────────────────────────────────────────────────────────────
+  - key: pending_mto
+    label: Pending MTO
+    domain: ops
+    unit: count
+    agg: last
+    higher_is_better: false
+    describe: Make-To-Order jobs open (not yet dispatched).
+
+  - key: dispatch
+    label: Dispatched Orders
+    domain: ops
+    unit: count
+    agg: sum
+    higher_is_better: true
+    describe: Orders dispatched in the period.
+
+  - key: avg_dispatch_days
+    label: Avg Days to Dispatch
+    domain: ops
+    unit: days
+    agg: avg
+    higher_is_better: false
+    target: 7
+    describe: Mean days from order to dispatch.
+
+  # ── RETURNS ──────────────────────────────────────────────────────────────────
+  - key: returns_value
+    label: Returns Value
+    domain: sales
+    unit: INR
+    agg: sum
+    higher_is_better: false
+    slice_by: [store, category]
+    describe: Absolute value of Return + Exchange transactions.
+
+  - key: return_rate
+    label: Return Rate
+    domain: sales
+    unit: pct
+    agg: ratio            # returns / gross
+    higher_is_better: false
+    target: 5
+    watch_pct: 8
+    risk_pct: 12
+    slice_by: [store, category]
+    describe: Returns value as a % of gross sales.
+
+  # ── CRM ──────────────────────────────────────────────────────────────────────
+  - key: deals
+    label: Deals Created
+    domain: crm
+    unit: count
+    agg: sum
+    higher_is_better: true
+    slice_by: [owner, lead_source]
+    describe: Zoho deals created in the period.
+
+  - key: calls
+    label: Calls
+    domain: crm
+    unit: count
+    agg: sum
+    higher_is_better: true
+    slice_by: [owner]
+    describe: Zoho calls logged in the period.
+
+  - key: contact_rate
+    label: Deal Contact Rate
+    domain: crm
+    unit: pct
+    agg: ratio            # contacted deals / deals
+    higher_is_better: true
+    target: 80
+    watch_pct: -10
+    risk_pct: -20
+    describe: Share of deals with at least one linked/matched call.
+
+  - key: conversion
+    label: Conversion Rate
+    domain: crm
+    unit: pct
+    agg: ratio            # won deals / deals
+    higher_is_better: true
+    target: 25
+    slice_by: [owner, lead_source]
+    describe: Won deals as a % of created deals.
+
+  # ── MARKETING ────────────────────────────────────────────────────────────────
+  - key: sessions
+    label: Sessions
+    domain: marketing
+    unit: count
+    agg: sum
+    higher_is_better: true
+    slice_by: [channel]
+    describe: GA4 sessions.
+
+  - key: marketing_conversion
+    label: Site Conversion
+    domain: marketing
+    unit: pct
+    agg: ratio
+    higher_is_better: true
+    target: 1.5
+    describe: Purchases (funnel) as a % of sessions.
+
+  - key: ad_spend
+    label: Ad Spend
+    domain: marketing
+    unit: INR
+    agg: sum
+    higher_is_better: false
+    slice_by: [channel, campaign]
+    describe: Meta + Google ad spend.
+
+  - key: marketing_roi
+    label: Marketing ROI (ROAS)
+    domain: marketing
+    unit: ratio           # revenue / spend
+    agg: ratio
+    higher_is_better: true
+    target: 4
+    watch_pct: -15
+    risk_pct: -25
+    describe: Return on ad spend = attributed revenue / ad spend.
+
+  # ── INVENTORY ────────────────────────────────────────────────────────────────
+  - key: inventory_value
+    label: Inventory Value
+    domain: inventory
+    unit: INR
+    agg: last
+    higher_is_better: true
+    slice_by: [store, category]
+    describe: On-hand stock value.
+
+  - key: inventory_health
+    label: Inventory Health Score
+    domain: inventory
+    unit: pct
+    agg: avg
+    higher_is_better: true
+    target: 75
+    watch_pct: -10
+    risk_pct: -20
+    describe: Composite 0-100 (coverage vs velocity, low-stock, dead-stock, over-stock).
+
+  - key: low_stock_skus
+    label: Low-Stock SKUs
+    domain: inventory
+    unit: count
+    agg: last
+    higher_is_better: false
+    slice_by: [store, category]
+    describe: SKUs below reorder threshold (needs refill).
+
+  - key: dead_stock_pct
+    label: Dead-Stock %
+    domain: inventory
+    unit: pct
+    agg: ratio            # dead_value / total_value ×100
+    higher_is_better: false
+    target: 10
+    watch_pct: 15
+    risk_pct: 25
+    describe: Share of inventory value with no movement in 180 days.
+
+  # ── PRODUCT ──────────────────────────────────────────────────────────────────
+  - key: products_missing_attrs
+    label: Products Missing Attributes
+    domain: product
+    unit: count
+    agg: last
+    higher_is_better: false
+    describe: Active SKUs missing mandatory attributes (metal/purity/weight/image/price).

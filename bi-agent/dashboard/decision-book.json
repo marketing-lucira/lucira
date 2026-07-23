@@ -1,0 +1,1664 @@
+{
+  "meta": {
+    "run_date": "2026-07-22",
+    "generated_at": "2026-07-23T09:18:28.890950+00:00",
+    "period": "Yesterday vs 7-day average",
+    "source": "live"
+  },
+  "sections": [
+    {
+      "id": "ga4",
+      "icon": "\ud83c\udf10",
+      "title": "GA4 \u2014 Website & App Analytics",
+      "kpis": [
+        {
+          "name": "Sessions",
+          "yesterday": 14989.0,
+          "avg7": 15091.285714285714,
+          "target": null,
+          "change_pct": -0.6777799865579912,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "count"
+        },
+        {
+          "name": "Site Conversion",
+          "yesterday": 0.0,
+          "avg7": 0.01334311828674361,
+          "target": 1.5,
+          "change_pct": -100.0,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "pct"
+        },
+        {
+          "name": "Ad Spend",
+          "yesterday": 0.0,
+          "avg7": 0.0,
+          "target": null,
+          "change_pct": null,
+          "status": "good",
+          "insight": "Meta feed stale since 06-Jan.",
+          "action": "",
+          "unit": "INR"
+        },
+        {
+          "name": "ROAS (proxy)",
+          "yesterday": 0.0,
+          "avg7": 0.0,
+          "target": 4,
+          "change_pct": null,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "ratio"
+        },
+        {
+          "name": "Users / New Users / Engagement / Funnel",
+          "yesterday": null,
+          "avg7": null,
+          "target": null,
+          "change_pct": null,
+          "status": "off",
+          "insight": "From GA4 detail \u2014 enable ga4 funnel query for full table.",
+          "action": "",
+          "unit": null
+        }
+      ],
+      "breakdowns": [
+        {
+          "title": "Top Channels",
+          "rows": [
+            {
+              "label": "Paid Search",
+              "value": 33350.0,
+              "unit": "count"
+            },
+            {
+              "label": "Paid Social",
+              "value": 17116.0,
+              "unit": "count"
+            },
+            {
+              "label": "Paid Other",
+              "value": 14513.0,
+              "unit": "count"
+            },
+            {
+              "label": "Display",
+              "value": 2397.0,
+              "unit": "count"
+            },
+            {
+              "label": "Organic Search",
+              "value": 1555.0,
+              "unit": "count"
+            },
+            {
+              "label": "Direct",
+              "value": 1547.0,
+              "unit": "count"
+            },
+            {
+              "label": "Organic Social",
+              "value": 847.0,
+              "unit": "count"
+            },
+            {
+              "label": "SMS / Push",
+              "value": 611.0,
+              "unit": "count"
+            }
+          ]
+        },
+        {
+          "title": "Top Cities",
+          "rows": [
+            {
+              "label": "Mumbai",
+              "value": 7083.0,
+              "unit": "count"
+            },
+            {
+              "label": "Delhi",
+              "value": 5738.0,
+              "unit": "count"
+            },
+            {
+              "label": "Pune",
+              "value": 4255.0,
+              "unit": "count"
+            },
+            {
+              "label": "Bengaluru",
+              "value": 4211.0,
+              "unit": "count"
+            },
+            {
+              "label": "Hyderabad",
+              "value": 3557.0,
+              "unit": "count"
+            },
+            {
+              "label": "(not set)",
+              "value": 3131.0,
+              "unit": "count"
+            },
+            {
+              "label": "Patna",
+              "value": 2718.0,
+              "unit": "count"
+            },
+            {
+              "label": "Lucknow",
+              "value": 2356.0,
+              "unit": "count"
+            }
+          ]
+        },
+        {
+          "title": "Top Devices",
+          "rows": [
+            {
+              "label": "mobile",
+              "value": 67209.0,
+              "unit": "count"
+            },
+            {
+              "label": "desktop",
+              "value": 5206.0,
+              "unit": "count"
+            },
+            {
+              "label": "tablet",
+              "value": 132.0,
+              "unit": "count"
+            }
+          ]
+        },
+        {
+          "title": "Top Campaigns",
+          "rows": [
+            {
+              "label": "online_tof_all_all_acqn_shopping_26.10.2025",
+              "value": 17637.0,
+              "unit": "count"
+            },
+            {
+              "label": "rtbcom-retargeting",
+              "value": 8964.0,
+              "unit": "count"
+            },
+            {
+              "label": "online_tof_all_na_acqn_display_27.01.2026",
+              "value": 3587.0,
+              "unit": "count"
+            },
+            {
+              "label": "online_tof_all_india_acqn_multi-format_rings_13.01.2026",
+              "value": 3524.0,
+              "unit": "count"
+            },
+            {
+              "label": "online_mof-cartabandoned_20.05.2026",
+              "value": 2384.0,
+              "unit": "count"
+            },
+            {
+              "label": "online_mof-bof_all_na_retar_display_27.01.2026",
+              "value": 2017.0,
+              "unit": "count"
+            },
+            {
+              "label": "online_mof_all_all_acqn_shopping_06.04.2026",
+              "value": 1859.0,
+              "unit": "count"
+            },
+            {
+              "label": "Facebook Shopping",
+              "value": 1840.0,
+              "unit": "count"
+            }
+          ]
+        },
+        {
+          "title": "Top Landing Pages",
+          "rows": [
+            {
+              "label": "/",
+              "value": 6616.0,
+              "unit": "count"
+            },
+            {
+              "label": "/collections/eterna",
+              "value": 3072.0,
+              "unit": "count"
+            },
+            {
+              "label": "/products/corinthian-pave-diamond-mens-ring",
+              "value": 1462.0,
+              "unit": "count"
+            },
+            {
+              "label": "/products/paramount-pave-diamond-mens-ring",
+              "value": 1233.0,
+              "unit": "count"
+            },
+            {
+              "label": "/collections/all-earrings",
+              "value": 1162.0,
+              "unit": "count"
+            },
+            {
+              "label": "/products/men-s-bezel-set-solitaire-lab-grown-diamond-ring",
+              "value": 1115.0,
+              "unit": "count"
+            },
+            {
+              "label": "/products/mens-classic-solitaire-engagement-ring",
+              "value": 1088.0,
+              "unit": "count"
+            },
+            {
+              "label": "/schemes",
+              "value": 1016.0,
+              "unit": "count"
+            }
+          ]
+        }
+      ],
+      "executive_summary": "Website traffic and on-site conversion for the period, with channel, city and device mix.",
+      "insights": [],
+      "root_cause": [],
+      "opportunities": [],
+      "leakage": [],
+      "risks": [],
+      "actions": [
+        "Address: Net revenue down -100.0% vs prior period (\u20b90)."
+      ]
+    },
+    {
+      "id": "sales",
+      "icon": "\ud83d\udcb0",
+      "title": "Sales",
+      "kpis": [
+        {
+          "name": "Revenue",
+          "yesterday": 567886.7799999999,
+          "avg7": 358556.70285714284,
+          "target": null,
+          "change_pct": 58.38130356365391,
+          "status": "risk",
+          "insight": "",
+          "action": "",
+          "unit": "INR"
+        },
+        {
+          "name": "Orders",
+          "yesterday": 18.0,
+          "avg7": 10.142857142857142,
+          "target": null,
+          "change_pct": 77.46478873239437,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "count"
+        },
+        {
+          "name": "AOV",
+          "yesterday": 0.0,
+          "avg7": 29639.183636363632,
+          "target": null,
+          "change_pct": -100.0,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "INR"
+        },
+        {
+          "name": "Returns Value",
+          "yesterday": 0.0,
+          "avg7": 5043.881428571428,
+          "target": null,
+          "change_pct": -100.0,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "INR"
+        },
+        {
+          "name": "Return Rate",
+          "yesterday": 0.0,
+          "avg7": 0.0,
+          "target": 5,
+          "change_pct": null,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "pct"
+        },
+        {
+          "name": "Margin",
+          "yesterday": null,
+          "avg7": null,
+          "target": null,
+          "change_pct": null,
+          "status": "off",
+          "insight": "No cost/COGS in reporting table.",
+          "action": "Add COGS to enable margin.",
+          "unit": "INR"
+        },
+        {
+          "name": "Target Achievement",
+          "yesterday": null,
+          "avg7": null,
+          "target": null,
+          "change_pct": null,
+          "status": "off",
+          "insight": "No store-target table connected.",
+          "action": "Connect targets.",
+          "unit": "pct"
+        }
+      ],
+      "breakdowns": [
+        {
+          "title": "By Store",
+          "rows": [
+            {
+              "label": "HO",
+              "value": 751888.41,
+              "unit": "INR"
+            },
+            {
+              "label": "PN1",
+              "value": 494449.67000000004,
+              "unit": "INR"
+            },
+            {
+              "label": "PV1",
+              "value": 204057.52999999997,
+              "unit": "INR"
+            },
+            {
+              "label": "BO1",
+              "value": 183707.26,
+              "unit": "INR"
+            },
+            {
+              "label": "FCS",
+              "value": 152002.47,
+              "unit": "INR"
+            },
+            {
+              "label": "N18",
+              "value": 141866.59999999998,
+              "unit": "INR"
+            }
+          ]
+        },
+        {
+          "title": "By Category",
+          "rows": [
+            {
+              "label": "Rings",
+              "value": 1123035.2999999998,
+              "unit": "INR"
+            },
+            {
+              "label": "Earrings",
+              "value": 321967.82,
+              "unit": "INR"
+            },
+            {
+              "label": "Pendants",
+              "value": 220004.77,
+              "unit": "INR"
+            },
+            {
+              "label": "Bracelets",
+              "value": 125016.82,
+              "unit": "INR"
+            },
+            {
+              "label": "Tanmaniya",
+              "value": 62457.59,
+              "unit": "INR"
+            },
+            {
+              "label": "Gold Coin",
+              "value": 29467.96,
+              "unit": "INR"
+            },
+            {
+              "label": "Nosepins",
+              "value": 24989.64,
+              "unit": "INR"
+            },
+            {
+              "label": "Chain",
+              "value": 21032.04,
+              "unit": "INR"
+            }
+          ]
+        },
+        {
+          "title": "By City",
+          "rows": [
+            {
+              "label": "Pune",
+              "value": 288883.26,
+              "unit": "INR"
+            },
+            {
+              "label": "Mumbai",
+              "value": 87808.64000000001,
+              "unit": "INR"
+            },
+            {
+              "label": "Bangalore Urban",
+              "value": 87513.03,
+              "unit": "INR"
+            },
+            {
+              "label": "Ghaziabad",
+              "value": 85288.70999999999,
+              "unit": "INR"
+            },
+            {
+              "label": "Chennai",
+              "value": 65760.17,
+              "unit": "INR"
+            },
+            {
+              "label": "Vadodara",
+              "value": 60620.09,
+              "unit": "INR"
+            },
+            {
+              "label": "South Delhi",
+              "value": 32000.45,
+              "unit": "INR"
+            }
+          ]
+        },
+        {
+          "title": "Top Products",
+          "rows": [
+            {
+              "label": "Forever Us Round Solitaire Stackable Ring",
+              "value": 182596.02,
+              "unit": "INR"
+            },
+            {
+              "label": "Accents Round Solitaire Stud Earrings",
+              "value": 117180.13,
+              "unit": "INR"
+            },
+            {
+              "label": "Paramount Pave Diamond Men's Ring",
+              "value": 117161.14,
+              "unit": "INR"
+            },
+            {
+              "label": "Customer Order COP124",
+              "value": 99101.63,
+              "unit": "INR"
+            },
+            {
+              "label": "Customer Order COR123",
+              "value": 89876.45,
+              "unit": "INR"
+            },
+            {
+              "label": "2ct Classic Cushion Solitaire Ring",
+              "value": 89296.41,
+              "unit": "INR"
+            },
+            {
+              "label": "Customer Order COR125",
+              "value": 84416.7,
+              "unit": "INR"
+            },
+            {
+              "label": "Solitaire Halo Round Sidestone Ring",
+              "value": 65820.85,
+              "unit": "INR"
+            },
+            {
+              "label": "1.5ct Minimalist Cushion Solitaire Chain Pendant",
+              "value": 65760.17,
+              "unit": "INR"
+            },
+            {
+              "label": "Customer Order CTN114",
+              "value": 62457.59,
+              "unit": "INR"
+            }
+          ]
+        }
+      ],
+      "executive_summary": "Revenue, orders and AOV for the period, broken down by store, category, city and product.",
+      "insights": [
+        "Net Revenue is 0 INR, down 100.0% vs prior period.",
+        "Net revenue down -100.0% vs prior period (\u20b90)."
+      ],
+      "root_cause": [
+        "Driver not identifiable from available data (enable LLM for root-cause).",
+        "Business rule breached."
+      ],
+      "opportunities": [
+        "Push the top-selling category where demand is strong.",
+        "Recover order volume to the 7-day norm."
+      ],
+      "leakage": [
+        "Net revenue down -100.0% vs prior period (\u20b90)."
+      ],
+      "risks": [
+        "Net revenue down -100.0% vs prior period (\u20b90)."
+      ],
+      "actions": [
+        "Run a store-recovery push at the lagging stores.",
+        "Address: Net revenue down -100.0% vs prior period (\u20b90)."
+      ]
+    },
+    {
+      "id": "crm",
+      "icon": "\ud83e\udd1d",
+      "title": "CRM / Deals",
+      "kpis": [
+        {
+          "name": "Total Deals",
+          "yesterday": 262.0,
+          "avg7": 257.14285714285717,
+          "target": null,
+          "change_pct": 1.8888888888888793,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "count"
+        },
+        {
+          "name": "Conversion %",
+          "yesterday": 0.42643923240938164,
+          "avg7": 1.9569471624266144,
+          "target": 25,
+          "change_pct": -78.2089552238806,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "pct"
+        },
+        {
+          "name": "Contact Rate",
+          "yesterday": 100.0,
+          "avg7": 100.0,
+          "target": 80,
+          "change_pct": 0.0,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "pct"
+        },
+        {
+          "name": "Total Leads",
+          "yesterday": null,
+          "avg7": null,
+          "target": null,
+          "change_pct": null,
+          "status": "off",
+          "insight": "Lead module (leads_1) not wired.",
+          "action": "Connect leads.",
+          "unit": null
+        },
+        {
+          "name": "Pipeline Value",
+          "yesterday": null,
+          "avg7": null,
+          "target": null,
+          "change_pct": null,
+          "status": "off",
+          "insight": "Deal Amount mostly \u20b90 in CRM.",
+          "action": "Populate deal value.",
+          "unit": "INR"
+        }
+      ],
+      "breakdowns": [
+        {
+          "title": "Top Deal Owners",
+          "rows": [
+            {
+              "label": "Shreekant Balwat",
+              "value": 391.0,
+              "unit": "count"
+            },
+            {
+              "label": "Sheetal Parve",
+              "value": 375.0,
+              "unit": "count"
+            },
+            {
+              "label": "Shamwail Ansari",
+              "value": 303.0,
+              "unit": "count"
+            },
+            {
+              "label": "Noida Store",
+              "value": 240.0,
+              "unit": "count"
+            },
+            {
+              "label": "Farha Ansari",
+              "value": 168.0,
+              "unit": "count"
+            },
+            {
+              "label": "Devjeet Bagchi",
+              "value": 160.0,
+              "unit": "count"
+            },
+            {
+              "label": "Chembur Store",
+              "value": 108.0,
+              "unit": "count"
+            },
+            {
+              "label": "Vishal Thapa",
+              "value": 105.0,
+              "unit": "count"
+            },
+            {
+              "label": "Pune Store",
+              "value": 87.0,
+              "unit": "count"
+            },
+            {
+              "label": "Lucira Tech",
+              "value": 56.0,
+              "unit": "count"
+            }
+          ]
+        },
+        {
+          "title": "Deal Stages",
+          "rows": [
+            {
+              "label": "Prospect",
+              "value": 1223.0,
+              "unit": "count"
+            },
+            {
+              "label": "Closed Lost",
+              "value": 625.0,
+              "unit": "count"
+            },
+            {
+              "label": "Add to Cart",
+              "value": 82.0,
+              "unit": "count"
+            },
+            {
+              "label": "Checkout",
+              "value": 48.0,
+              "unit": "count"
+            },
+            {
+              "label": "Closed Won",
+              "value": 30.0,
+              "unit": "count"
+            },
+            {
+              "label": "Payment",
+              "value": 10.0,
+              "unit": "count"
+            }
+          ]
+        },
+        {
+          "title": "Lead Sources",
+          "rows": [
+            {
+              "label": "Website",
+              "value": 1641.0,
+              "unit": "count"
+            },
+            {
+              "label": "Chat",
+              "value": 9.0,
+              "unit": "count"
+            },
+            {
+              "label": "Meta",
+              "value": 6.0,
+              "unit": "count"
+            },
+            {
+              "label": "corefactors_borivali",
+              "value": 3.0,
+              "unit": "count"
+            },
+            {
+              "label": "paschim_vihar_west_delhi",
+              "value": 2.0,
+              "unit": "count"
+            },
+            {
+              "label": "NitroX",
+              "value": 2.0,
+              "unit": "count"
+            },
+            {
+              "label": "Inbound Call",
+              "value": 2.0,
+              "unit": "count"
+            }
+          ]
+        }
+      ],
+      "executive_summary": "Deal inflow, win-rate and follow-up (contact rate), with owner, stage and lead-source mix.",
+      "insights": [],
+      "root_cause": [],
+      "opportunities": [
+        "Lift contact rate to the 80% SLA to realise aging pipeline.",
+        "Coach low-win owners using the top owner's playbook."
+      ],
+      "leakage": [],
+      "risks": [],
+      "actions": [
+        "Call the un-contacted deals today, worst owners first.",
+        "Address: Net revenue down -100.0% vs prior period (\u20b90)."
+      ]
+    },
+    {
+      "id": "calls",
+      "icon": "\ud83d\udcde",
+      "title": "Calls",
+      "kpis": [
+        {
+          "name": "Total Calls",
+          "yesterday": 767.0,
+          "avg7": 707.8571428571429,
+          "target": null,
+          "change_pct": 8.355196770938441,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "count"
+        },
+        {
+          "name": "Connected Calls",
+          "yesterday": null,
+          "avg7": null,
+          "target": null,
+          "change_pct": null,
+          "status": "off",
+          "insight": "Call_Result not consistently set.",
+          "action": "Standardise dispositions.",
+          "unit": null
+        },
+        {
+          "name": "Avg Call Duration",
+          "yesterday": null,
+          "avg7": null,
+          "target": null,
+          "change_pct": null,
+          "status": "off",
+          "insight": "Duration format varies.",
+          "action": "Normalise duration.",
+          "unit": "sec"
+        },
+        {
+          "name": "First Response Time",
+          "yesterday": null,
+          "avg7": null,
+          "target": 30,
+          "change_pct": null,
+          "status": "off",
+          "insight": "Not derivable per-deal yet.",
+          "action": "Wire deal\u2194call join.",
+          "unit": null
+        }
+      ],
+      "breakdowns": [
+        {
+          "title": "Calls per Agent",
+          "rows": [
+            {
+              "label": "Shreekant Balwat",
+              "value": 1191.0,
+              "unit": "count"
+            },
+            {
+              "label": "Noida Store",
+              "value": 800.0,
+              "unit": "count"
+            },
+            {
+              "label": "Pashchim Vihar",
+              "value": 770.0,
+              "unit": "count"
+            },
+            {
+              "label": "Shamwail Ansari",
+              "value": 680.0,
+              "unit": "count"
+            },
+            {
+              "label": "Sheetal Parve",
+              "value": 667.0,
+              "unit": "count"
+            },
+            {
+              "label": "Borivali Team",
+              "value": 452.0,
+              "unit": "count"
+            },
+            {
+              "label": "Pune Store",
+              "value": 370.0,
+              "unit": "count"
+            },
+            {
+              "label": "Devjeet Bagchi",
+              "value": 351.0,
+              "unit": "count"
+            },
+            {
+              "label": "Farha Ansari",
+              "value": 240.0,
+              "unit": "count"
+            },
+            {
+              "label": "Vishal Thapa",
+              "value": 201.0,
+              "unit": "count"
+            }
+          ]
+        }
+      ],
+      "executive_summary": "Call activity by agent. Disposition and first-response quality need field standardisation to score.",
+      "insights": [
+        "Agent call volume is uneven \u2014 rebalance workload."
+      ],
+      "root_cause": [
+        "Call dispositions inconsistent \u2192 connected/missed not measurable."
+      ],
+      "opportunities": [
+        "Standardising dispositions unlocks outcome-based agent coaching."
+      ],
+      "leakage": [
+        "Un-measured missed calls = hidden follow-up leakage."
+      ],
+      "risks": [
+        "High-value customers may go uncontacted undetected."
+      ],
+      "actions": [
+        "Standardise call dispositions.",
+        "Wire deal\u2194call join for first-response time.",
+        "Rebalance workload across agents."
+      ]
+    },
+    {
+      "id": "inventory",
+      "icon": "\ud83d\udce6",
+      "title": "Inventory",
+      "kpis": [
+        {
+          "name": "Total Inventory Value",
+          "yesterday": 0.0,
+          "avg7": 175486553.75000003,
+          "target": null,
+          "change_pct": -100.0,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "INR"
+        },
+        {
+          "name": "Health Score",
+          "yesterday": 0.0,
+          "avg7": 42.59717076456716,
+          "target": 75,
+          "change_pct": -100.0,
+          "status": "risk",
+          "insight": "",
+          "action": "",
+          "unit": "pct"
+        },
+        {
+          "name": "Low Stock SKUs",
+          "yesterday": 0.0,
+          "avg7": 0.0,
+          "target": null,
+          "change_pct": null,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "count"
+        },
+        {
+          "name": "Dead Stock %",
+          "yesterday": 0.0,
+          "avg7": 71.59140378298076,
+          "target": 10,
+          "change_pct": -100.0,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "pct"
+        },
+        {
+          "name": "Products Missing Attrs",
+          "yesterday": 0.0,
+          "avg7": 1393.0,
+          "target": null,
+          "change_pct": -100.0,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "count"
+        }
+      ],
+      "breakdowns": [
+        {
+          "title": "By Category (value)",
+          "rows": [
+            {
+              "label": "Rings",
+              "value": 62118282.74999997,
+              "unit": "INR"
+            },
+            {
+              "label": "Earrings",
+              "value": 44822804.82,
+              "unit": "INR"
+            },
+            {
+              "label": "Pendants",
+              "value": 23635217.660000026,
+              "unit": "INR"
+            },
+            {
+              "label": "Necklaces",
+              "value": 17024481.850000005,
+              "unit": "INR"
+            },
+            {
+              "label": "Bracelets",
+              "value": 16987494.51000001,
+              "unit": "INR"
+            },
+            {
+              "label": "Tanmaniya",
+              "value": 3197283.000000002,
+              "unit": "INR"
+            },
+            {
+              "label": "Pendent Earring",
+              "value": 2193052.41,
+              "unit": "INR"
+            },
+            {
+              "label": "SBR",
+              "value": 2038405.9599999997,
+              "unit": "INR"
+            }
+          ]
+        }
+      ],
+      "executive_summary": "On-hand value with health, low-stock, dead-stock and attribute completeness by category.",
+      "insights": [
+        "Inventory Health Score is 0 pct, down 100.0% vs prior period."
+      ],
+      "root_cause": [
+        "Driver not identifiable from available data (enable LLM for root-cause)."
+      ],
+      "opportunities": [
+        "Build a SKU crosswalk to reclassify most 'dead' stock and unlock accurate refill."
+      ],
+      "leakage": [],
+      "risks": [
+        "Stock-out on true fast-movers ahead of demand."
+      ],
+      "actions": [
+        "Build the SKU crosswalk table (biggest lever).",
+        "Trigger POs for the low-stock SKUs.",
+        "Complete missing product attributes."
+      ]
+    },
+    {
+      "id": "marketing",
+      "icon": "\ud83d\udce3",
+      "title": "Marketing",
+      "kpis": [
+        {
+          "name": "Ad Spend",
+          "yesterday": 0.0,
+          "avg7": 0.0,
+          "target": null,
+          "change_pct": null,
+          "status": "good",
+          "insight": "meta_ads stale since 06-Jan.",
+          "action": "Reconnect feed.",
+          "unit": "INR"
+        },
+        {
+          "name": "Revenue (attributed)",
+          "yesterday": 567886.7799999999,
+          "avg7": 358556.70285714284,
+          "target": null,
+          "change_pct": 58.38130356365391,
+          "status": "risk",
+          "insight": "Using order revenue.",
+          "action": "",
+          "unit": "INR"
+        },
+        {
+          "name": "ROAS",
+          "yesterday": 0.0,
+          "avg7": 0.0,
+          "target": 4,
+          "change_pct": null,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "ratio"
+        },
+        {
+          "name": "CPC / CTR / CPM / CAC",
+          "yesterday": null,
+          "avg7": null,
+          "target": null,
+          "change_pct": null,
+          "status": "off",
+          "insight": "No spend data (stale meta_ads).",
+          "action": "Reconnect meta_ads.",
+          "unit": null
+        }
+      ],
+      "breakdowns": [
+        {
+          "title": "Top Channels",
+          "rows": [
+            {
+              "label": "Paid Search",
+              "value": 33350.0,
+              "unit": "count"
+            },
+            {
+              "label": "Paid Social",
+              "value": 17116.0,
+              "unit": "count"
+            },
+            {
+              "label": "Paid Other",
+              "value": 14513.0,
+              "unit": "count"
+            },
+            {
+              "label": "Display",
+              "value": 2397.0,
+              "unit": "count"
+            },
+            {
+              "label": "Organic Search",
+              "value": 1555.0,
+              "unit": "count"
+            },
+            {
+              "label": "Direct",
+              "value": 1547.0,
+              "unit": "count"
+            },
+            {
+              "label": "Organic Social",
+              "value": 847.0,
+              "unit": "count"
+            },
+            {
+              "label": "SMS / Push",
+              "value": 611.0,
+              "unit": "count"
+            }
+          ]
+        },
+        {
+          "title": "Top Cities",
+          "rows": [
+            {
+              "label": "Mumbai",
+              "value": 7083.0,
+              "unit": "count"
+            },
+            {
+              "label": "Delhi",
+              "value": 5738.0,
+              "unit": "count"
+            },
+            {
+              "label": "Pune",
+              "value": 4255.0,
+              "unit": "count"
+            },
+            {
+              "label": "Bengaluru",
+              "value": 4211.0,
+              "unit": "count"
+            },
+            {
+              "label": "Hyderabad",
+              "value": 3557.0,
+              "unit": "count"
+            },
+            {
+              "label": "(not set)",
+              "value": 3131.0,
+              "unit": "count"
+            },
+            {
+              "label": "Patna",
+              "value": 2718.0,
+              "unit": "count"
+            },
+            {
+              "label": "Lucknow",
+              "value": 2356.0,
+              "unit": "count"
+            }
+          ]
+        },
+        {
+          "title": "Top Campaigns",
+          "rows": [
+            {
+              "label": "online_tof_all_all_acqn_shopping_26.10.2025",
+              "value": 17637.0,
+              "unit": "count"
+            },
+            {
+              "label": "rtbcom-retargeting",
+              "value": 8964.0,
+              "unit": "count"
+            },
+            {
+              "label": "online_tof_all_na_acqn_display_27.01.2026",
+              "value": 3587.0,
+              "unit": "count"
+            },
+            {
+              "label": "online_tof_all_india_acqn_multi-format_rings_13.01.2026",
+              "value": 3524.0,
+              "unit": "count"
+            },
+            {
+              "label": "online_mof-cartabandoned_20.05.2026",
+              "value": 2384.0,
+              "unit": "count"
+            },
+            {
+              "label": "online_mof-bof_all_na_retar_display_27.01.2026",
+              "value": 2017.0,
+              "unit": "count"
+            },
+            {
+              "label": "online_mof_all_all_acqn_shopping_06.04.2026",
+              "value": 1859.0,
+              "unit": "count"
+            },
+            {
+              "label": "Facebook Shopping",
+              "value": 1840.0,
+              "unit": "count"
+            }
+          ]
+        }
+      ],
+      "executive_summary": "Paid performance is un-scorable until the Meta spend feed reconnects (stale since 6 Jan); channel mix from GA4 shown.",
+      "insights": [
+        "Organic/Direct efficient; paid can't be judged without spend."
+      ],
+      "root_cause": [
+        "Meta ad-insights ingestion stopped 06-Jan-2026."
+      ],
+      "opportunities": [
+        "Reconnecting spend enables budget-shift decisions (pause low-ROAS sets)."
+      ],
+      "leakage": [
+        "Flying blind on paid spend = unquantified waste risk."
+      ],
+      "risks": [
+        "Budget may be spent on low-ROAS campaigns undetected."
+      ],
+      "actions": [
+        "Reconnect the meta_ads pipeline (priority).",
+        "Until then, lean budget into Direct/Organic promos."
+      ]
+    },
+    {
+      "id": "customer",
+      "icon": "\ud83d\udc65",
+      "title": "Customer",
+      "kpis": [
+        {
+          "name": "New Customers",
+          "yesterday": 12.0,
+          "avg7": 7.0,
+          "target": null,
+          "change_pct": 71.42857142857143,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "count"
+        },
+        {
+          "name": "Repeat Customers",
+          "yesterday": 3.0,
+          "avg7": 2.142857142857143,
+          "target": null,
+          "change_pct": 40.0,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "count"
+        },
+        {
+          "name": "Return Rate",
+          "yesterday": 0.0,
+          "avg7": 0.0,
+          "target": 5,
+          "change_pct": null,
+          "status": "good",
+          "insight": "",
+          "action": "",
+          "unit": "pct"
+        },
+        {
+          "name": "Refund %",
+          "yesterday": null,
+          "avg7": null,
+          "target": null,
+          "change_pct": null,
+          "status": "off",
+          "insight": "Refund source not wired.",
+          "action": "",
+          "unit": "pct"
+        },
+        {
+          "name": "Customer Lifetime Value",
+          "yesterday": null,
+          "avg7": null,
+          "target": null,
+          "change_pct": null,
+          "status": "off",
+          "insight": "CLV needs a full-history model.",
+          "action": "Enable CLV model.",
+          "unit": "INR"
+        }
+      ],
+      "breakdowns": [],
+      "executive_summary": "New vs repeat acquisition and returns. Loyalty (repeat cohort) is the lever to lean on while acquisition recovers.",
+      "insights": [
+        "Repeat cohort resilience is a bright spot."
+      ],
+      "root_cause": [
+        "Acquisition tracks overall traffic/checkout softness."
+      ],
+      "opportunities": [
+        "Targeted repeat-customer offers (esp. top cities).",
+        "Stand up a win-back flow for lapsed VIPs."
+      ],
+      "leakage": [
+        "Lost-customer / win-back not yet instrumented."
+      ],
+      "risks": [
+        "Acquisition softness if the traffic issue persists."
+      ],
+      "actions": [
+        "Push repeat-customer offers in the top cities.",
+        "Build a win-back flow for lapsed high-value customers."
+      ]
+    }
+  ],
+  "final": {
+    "health": {
+      "overall": 90,
+      "domains": [
+        {
+          "name": "Sales",
+          "score": 67,
+          "status": "yellow"
+        },
+        {
+          "name": "Marketing",
+          "score": 100,
+          "status": "green"
+        },
+        {
+          "name": "CRM",
+          "score": 100,
+          "status": "green"
+        },
+        {
+          "name": "Inventory",
+          "score": 82,
+          "status": "green"
+        },
+        {
+          "name": "Customer",
+          "score": 100,
+          "status": "green"
+        },
+        {
+          "name": "Operations",
+          "score": null,
+          "status": "off"
+        },
+        {
+          "name": "Finance",
+          "score": null,
+          "status": "off"
+        }
+      ]
+    },
+    "estimated_gain_inr": null,
+    "decision_table": [
+      {
+        "priority": "P1",
+        "department": "CEO",
+        "issue": "Address: Net revenue down -100.0% vs prior period (\u20b90).",
+        "why": "Rule revenue_drop_15 fired.",
+        "impact_inr": null,
+        "action": "Address: Net revenue down -100.0% vs prior period (\u20b90).",
+        "owner": "CEO",
+        "deadline": "1d"
+      }
+    ],
+    "lists": {
+      "growth": [
+        "Address: Net revenue down -100.0% vs prior period (\u20b90)."
+      ],
+      "leakage": [
+        "Net revenue down -100.0% vs prior period (\u20b90)."
+      ],
+      "risks": [
+        "Net revenue down -100.0% vs prior period (\u20b90)."
+      ],
+      "quick_wins": [
+        "Address: Net revenue down -100.0% vs prior period (\u20b90)."
+      ]
+    },
+    "rankings": {
+      "best_cities": [
+        {
+          "label": "Pune",
+          "value": 288883.26,
+          "unit": "INR"
+        },
+        {
+          "label": "Mumbai",
+          "value": 87808.64000000001,
+          "unit": "INR"
+        },
+        {
+          "label": "Bangalore Urban",
+          "value": 87513.03,
+          "unit": "INR"
+        },
+        {
+          "label": "Ghaziabad",
+          "value": 85288.70999999999,
+          "unit": "INR"
+        },
+        {
+          "label": "Chennai",
+          "value": 65760.17,
+          "unit": "INR"
+        }
+      ],
+      "worst_cities": [
+        {
+          "label": "South Delhi",
+          "value": 32000.45,
+          "unit": "INR"
+        },
+        {
+          "label": "Vadodara",
+          "value": 60620.09,
+          "unit": "INR"
+        },
+        {
+          "label": "Chennai",
+          "value": 65760.17,
+          "unit": "INR"
+        },
+        {
+          "label": "Ghaziabad",
+          "value": 85288.70999999999,
+          "unit": "INR"
+        },
+        {
+          "label": "Bangalore Urban",
+          "value": 87513.03,
+          "unit": "INR"
+        }
+      ],
+      "best_stores": [
+        {
+          "label": "HO",
+          "value": 751888.41,
+          "unit": "INR"
+        },
+        {
+          "label": "PN1",
+          "value": 494449.67000000004,
+          "unit": "INR"
+        },
+        {
+          "label": "PV1",
+          "value": 204057.52999999997,
+          "unit": "INR"
+        },
+        {
+          "label": "BO1",
+          "value": 183707.26,
+          "unit": "INR"
+        },
+        {
+          "label": "FCS",
+          "value": 152002.47,
+          "unit": "INR"
+        }
+      ],
+      "worst_stores": [
+        {
+          "label": "N18",
+          "value": 141866.59999999998,
+          "unit": "INR"
+        },
+        {
+          "label": "FCS",
+          "value": 152002.47,
+          "unit": "INR"
+        },
+        {
+          "label": "BO1",
+          "value": 183707.26,
+          "unit": "INR"
+        },
+        {
+          "label": "PV1",
+          "value": 204057.52999999997,
+          "unit": "INR"
+        },
+        {
+          "label": "PN1",
+          "value": 494449.67000000004,
+          "unit": "INR"
+        }
+      ],
+      "best_agents": [
+        {
+          "label": "Shreekant Balwat",
+          "value": 1191.0,
+          "unit": "count"
+        },
+        {
+          "label": "Noida Store",
+          "value": 800.0,
+          "unit": "count"
+        },
+        {
+          "label": "Pashchim Vihar",
+          "value": 770.0,
+          "unit": "count"
+        },
+        {
+          "label": "Shamwail Ansari",
+          "value": 680.0,
+          "unit": "count"
+        },
+        {
+          "label": "Sheetal Parve",
+          "value": 667.0,
+          "unit": "count"
+        }
+      ],
+      "worst_agents": [
+        {
+          "label": "Vishal Thapa",
+          "value": 201.0,
+          "unit": "count"
+        },
+        {
+          "label": "Farha Ansari",
+          "value": 240.0,
+          "unit": "count"
+        },
+        {
+          "label": "Devjeet Bagchi",
+          "value": 351.0,
+          "unit": "count"
+        },
+        {
+          "label": "Pune Store",
+          "value": 370.0,
+          "unit": "count"
+        },
+        {
+          "label": "Borivali Team",
+          "value": 452.0,
+          "unit": "count"
+        }
+      ],
+      "best_campaigns": [
+        {
+          "label": "online_tof_all_all_acqn_shopping_26.10.2025",
+          "value": 17637.0,
+          "unit": "count"
+        },
+        {
+          "label": "rtbcom-retargeting",
+          "value": 8964.0,
+          "unit": "count"
+        },
+        {
+          "label": "online_tof_all_na_acqn_display_27.01.2026",
+          "value": 3587.0,
+          "unit": "count"
+        },
+        {
+          "label": "online_tof_all_india_acqn_multi-format_rings_13.01.2026",
+          "value": 3524.0,
+          "unit": "count"
+        },
+        {
+          "label": "online_mof-cartabandoned_20.05.2026",
+          "value": 2384.0,
+          "unit": "count"
+        }
+      ],
+      "worst_campaigns": [
+        {
+          "label": "Facebook Shopping",
+          "value": 1840.0,
+          "unit": "count"
+        },
+        {
+          "label": "online_mof_all_all_acqn_shopping_06.04.2026",
+          "value": 1859.0,
+          "unit": "count"
+        },
+        {
+          "label": "online_mof-bof_all_na_retar_display_27.01.2026",
+          "value": 2017.0,
+          "unit": "count"
+        },
+        {
+          "label": "online_mof-cartabandoned_20.05.2026",
+          "value": 2384.0,
+          "unit": "count"
+        },
+        {
+          "label": "online_tof_all_india_acqn_multi-format_rings_13.01.2026",
+          "value": 3524.0,
+          "unit": "count"
+        }
+      ],
+      "best_products": [
+        {
+          "label": "Forever Us Round Solitaire Stackable Ring",
+          "value": 182596.02,
+          "unit": "INR"
+        },
+        {
+          "label": "Accents Round Solitaire Stud Earrings",
+          "value": 117180.13,
+          "unit": "INR"
+        },
+        {
+          "label": "Paramount Pave Diamond Men's Ring",
+          "value": 117161.14,
+          "unit": "INR"
+        },
+        {
+          "label": "Customer Order COP124",
+          "value": 99101.63,
+          "unit": "INR"
+        },
+        {
+          "label": "Customer Order COR123",
+          "value": 89876.45,
+          "unit": "INR"
+        }
+      ],
+      "attention_products": [
+        {
+          "label": "Puffy Heart Plain Gold Pendant",
+          "value": 5903.1,
+          "unit": "INR"
+        },
+        {
+          "label": "Fleure Plain Gold Ring",
+          "value": 6243.69,
+          "unit": "INR"
+        },
+        {
+          "label": "Customer Order COP127",
+          "value": 7384.15,
+          "unit": "INR"
+        },
+        {
+          "label": "Gold-Wave Diamond Bali Nosepin",
+          "value": 7516.02,
+          "unit": "INR"
+        },
+        {
+          "label": "Daisy Cluster Diamond Nosepin",
+          "value": 7766.02,
+          "unit": "INR"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,216 @@
+{
+  "meta": {
+    "generated_at": "2026-07-23T09:18:08.394653+00:00",
+    "period": "21 Jul \u2013 22 Jul 2026",
+    "source": "live"
+  },
+  "system": {
+    "status": "green",
+    "last_run": "2026-07-23T09:17:44.871175+00:00",
+    "next_run": "2026-07-24T04:30:00+00:00",
+    "run_id": "a7d6fc11b198",
+    "duration_sec": 23.5
+  },
+  "health": {
+    "overall": 90,
+    "domains": [
+      {
+        "name": "Sales",
+        "score": 67,
+        "status": "yellow",
+        "reason": "Net Revenue -100.0% (risk)."
+      },
+      {
+        "name": "Marketing",
+        "score": 100,
+        "status": "green",
+        "reason": "Healthy \u2014 all metrics within range."
+      },
+      {
+        "name": "CRM",
+        "score": 100,
+        "status": "green",
+        "reason": "Healthy \u2014 all metrics within range."
+      },
+      {
+        "name": "Inventory",
+        "score": 82,
+        "status": "green",
+        "reason": "Inventory Health Score -100.0% (risk)."
+      },
+      {
+        "name": "Customer",
+        "score": 100,
+        "status": "green",
+        "reason": "Healthy \u2014 all metrics within range."
+      },
+      {
+        "name": "Operations",
+        "score": null,
+        "status": "off",
+        "reason": "No data source connected yet."
+      },
+      {
+        "name": "Finance",
+        "score": null,
+        "status": "off",
+        "reason": "No data source connected yet."
+      }
+    ]
+  },
+  "automation": {
+    "email_sent": 0,
+    "whatsapp_sent": 0,
+    "insights_generated": 3,
+    "dashboards_ok": 6,
+    "dashboards_failed": 0,
+    "failed_jobs": 0,
+    "retries": 0
+  },
+  "dashboards": [
+    {
+      "name": "Sales Intelligence",
+      "status": "green",
+      "url": "https://storage.googleapis.com/lucira-dashboards/sales/latest.json"
+    },
+    {
+      "name": "GA4 Analytics",
+      "status": "green",
+      "url": "https://storage.googleapis.com/lucirajewelry-prod-dashboards/ga4/latest-000000000000.json"
+    },
+    {
+      "name": "Inventory Intelligence",
+      "status": "green",
+      "url": "https://inventory-intel-api-3mvv5mdr2q-el.a.run.app/?action=app"
+    },
+    {
+      "name": "Deals vs Call (CRM)",
+      "status": "green",
+      "url": "https://zoho-login-dashboard-385594025448.asia-south1.run.app/dashboard"
+    },
+    {
+      "name": "GCP Cost",
+      "status": "red",
+      "url": ""
+    }
+  ],
+  "alerts": [
+    {
+      "severity": "critical",
+      "domain": "sales",
+      "message": "Net revenue down -100.0% vs prior period (\u20b90).",
+      "owner": "CEO"
+    }
+  ],
+  "insights": [
+    {
+      "what": "Net Revenue is 0 INR, down 100.0% vs prior period.",
+      "confidence": "low"
+    },
+    {
+      "what": "Inventory Health Score is 0 pct, down 100.0% vs prior period.",
+      "confidence": "low"
+    },
+    {
+      "what": "Net revenue down -100.0% vs prior period (\u20b90).",
+      "confidence": "high"
+    }
+  ],
+  "recommendations": [
+    {
+      "action": "Address: Net revenue down -100.0% vs prior period (\u20b90).",
+      "priority": "P1",
+      "owner": "CEO",
+      "eta_days": 1,
+      "est_value_inr": null,
+      "difficulty": null,
+      "confidence": null
+    }
+  ],
+  "steps": [
+    {
+      "name": "Collect \u00b7 sales",
+      "status": "ok",
+      "duration_sec": 3.09,
+      "retry_count": 0,
+      "error": ""
+    },
+    {
+      "name": "Collect \u00b7 sales",
+      "status": "ok",
+      "duration_sec": 2.14,
+      "retry_count": 0,
+      "error": ""
+    },
+    {
+      "name": "Collect \u00b7 crm",
+      "status": "ok",
+      "duration_sec": 2.11,
+      "retry_count": 0,
+      "error": ""
+    },
+    {
+      "name": "Collect \u00b7 marketing",
+      "status": "ok",
+      "duration_sec": 3.39,
+      "retry_count": 0,
+      "error": ""
+    },
+    {
+      "name": "Collect \u00b7 inventory",
+      "status": "ok",
+      "duration_sec": 1.87,
+      "retry_count": 0,
+      "error": ""
+    },
+    {
+      "name": "Collect \u00b7 product",
+      "status": "ok",
+      "duration_sec": 1.37,
+      "retry_count": 0,
+      "error": ""
+    },
+    {
+      "name": "KPI + rules",
+      "status": "ok",
+      "duration_sec": 0.0,
+      "retry_count": 0,
+      "error": ""
+    },
+    {
+      "name": "AI insights",
+      "status": "ok",
+      "duration_sec": 0.0,
+      "retry_count": 0,
+      "error": ""
+    },
+    {
+      "name": "AI recommendations",
+      "status": "ok",
+      "duration_sec": 0.0,
+      "retry_count": 0,
+      "error": ""
+    },
+    {
+      "name": "Deal Follow-up analysis",
+      "status": "ok",
+      "duration_sec": 2.28,
+      "retry_count": 0,
+      "error": ""
+    },
+    {
+      "name": "Publish snapshot",
+      "status": "ok",
+      "duration_sec": 1.87,
+      "retry_count": 0,
+      "error": ""
+    },
+    {
+      "name": "Notify (email + WhatsApp)",
+      "status": "ok",
+      "duration_sec": 5.05,
+      "retry_count": 0,
+      "error": ""
+    }
+  ]
+}

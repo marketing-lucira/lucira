@@ -1,0 +1,62 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Data-source registry.  Maps each domain to the ALREADY-EXISTING reporting table
+# it reads from.  The agent NEVER queries raw source tables at request time.
+# Change a backing table here -> the whole agent follows, no code edit.
+# ─────────────────────────────────────────────────────────────────────────────
+sources:
+
+  sales:
+    table: lucirajewelry-prod.sales_dashboard.sales_reporting
+    date_column: date
+    grain: transaction
+    refreshed_by: sales-reporting-api        # Scheduled Query 10:00 IST
+    notes: >
+      Net = Gross/1.03 already applied. Dedup DISABLED per client (all rows kept).
+      Customer identity = distinct mobile no. sale_type in {RTS,MTO,TAH,Return,Exchange,Other}.
+
+  inventory:
+    table: lucirajewelry-prod.reporting.inventory_intelligence_fact
+    date_column: refresh_date            # validated 2026-07-21
+    grain: sku_store
+    refreshed_by: inventory-intelligence-api  # Scheduled Query 09:00 IST
+    notes: Jewelry only (silver + coin excluded in build SQL). Velocity network-wide by SKU.
+
+  marketing:
+    table: lucirajewelry-prod.ga4_dashboard.ga4_fact_sessions   # validated 2026-07-21 (session grain)
+    date_column: session_date
+    grain: session
+    refreshed_by: ga4-bq-api                   # Scheduled Query 09:00 IST
+    notes: >
+      GA4 purchases are tiny (GoKwik checkout completes off-GA4). Use for traffic/engagement/
+      conversion-funnel; real order revenue comes from shopify/sales.
+
+  marketing_spend:
+    table: lucirajewelry-prod.meta_ads.ad_insights        # + google_ads.* union in collector
+    date_column: date
+    grain: day_campaign
+    notes: Spend/impressions/clicks for Marketing ROI (ROAS/CPA vs sales revenue).
+
+  crm:
+    table: lucirajewelry-prod.zoho_crm.cdc_deals           # cdc_calls/cdc_tasks joined in collector
+    date_column: created_time
+    grain: record
+    refreshed_by: zoho-sync                    # every 15 min
+    notes: JSON payload columns via JSON_VALUE(data,'$.Field'). Contact-rate via What_Id or mobile.
+
+  orders:
+    table: lucirajewelry-prod.shopify_raw.orders
+    date_column: created_at
+    grain: order
+    notes: Orders/AOV/new-vs-repeat at the storefront level; returns via refunds.
+
+  returns:
+    table: lucirajewelry-prod.sales_dashboard.sales_reporting   # sale_type in (Return,Exchange)
+    date_column: date
+    grain: transaction
+    notes: Return% = |returns| / gross by store/category.
+
+  stores:
+    table: lucirajewelry-prod.ornaverse_erp_pos.store_targets   # VALIDATE exact name
+    date_column: month
+    grain: store_month
+    notes: Store target attainment. If absent, targets come from kpis.yaml static config.

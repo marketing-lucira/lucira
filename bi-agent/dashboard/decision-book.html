@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Executive Decision Book — Lucira</title>
+<style>
+  :root{
+    --bg:#f2efe8; --paper:#ffffff; --ink:#1d1a14; --muted:#615a4c; --faint:#948c7b;
+    --line:#e5ded0; --line2:#efe9dd; --gold:#a9822f; --gold2:#c9a24b; --emerald:#0b6e4f;
+    --green:#2c9e63; --amber:#c07d1c; --red:#c4463b; --blue:#2f6fd0;
+    --shadow:0 12px 40px -26px rgba(80,60,10,.5);
+  }
+  :root[data-theme="dark"]{
+    --bg:#100f0b; --paper:#17150f; --ink:#efe9dc; --muted:#a89f8b; --faint:#766e5b;
+    --line:#2a251a; --line2:#211d14; --gold:#c9a24b; --gold2:#e6c976; --emerald:#3fb389;
+    --green:#3fc07f; --amber:#e0a13c; --red:#e6675b; --blue:#6f9ff0; --shadow:0 18px 50px -30px #000;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#100f0b;--paper:#17150f;--ink:#efe9dc;--muted:#a89f8b;--line:#2a251a;--line2:#211d14;--gold:#c9a24b;--gold2:#e6c976}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6}
+  .serif{font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif}
+  .mono{font-family:ui-monospace,"Cascadia Code",Consolas,monospace}
+  .book{max-width:1080px;margin:0 auto;padding:26px}
+
+  .toolbar{position:sticky;top:0;z-index:9;display:flex;gap:10px;align-items:center;
+    background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);
+    padding:12px 0;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .toolbar .sp{flex:1}
+  .btn{cursor:pointer;background:var(--paper);border:1px solid var(--line);color:var(--ink);
+    border-radius:9px;padding:8px 13px;font-size:12.5px;font-weight:600}
+  .btn:hover{border-color:var(--gold)} .btn.primary{background:var(--gold);color:#17150f;border:none}
+  .src{font-size:12px;color:var(--faint)}
+
+  /* cover */
+  .cover{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:40px;box-shadow:var(--shadow);
+    margin-bottom:20px;position:relative;overflow:hidden}
+  .cover::before{content:"";position:absolute;inset:0;background:
+    radial-gradient(600px 200px at 90% -10%,color-mix(in srgb,var(--gold2) 22%,transparent),transparent)}
+  .cover .eyebrow{letter-spacing:.34em;text-transform:uppercase;font-size:11.5px;color:var(--gold);font-weight:700}
+  .cover h1{font-size:clamp(30px,5vw,46px);margin:12px 0 6px;font-weight:600;letter-spacing:-.02em}
+  .cover .sub{color:var(--muted);font-size:15px}
+  .cover .meta{display:flex;gap:22px;flex-wrap:wrap;margin-top:18px;font-size:13px;color:var(--faint)}
+  .cover .meta b{color:var(--ink)}
+  .hscore{position:absolute;right:40px;top:38px;text-align:center}
+  .hscore .n{font-size:52px;font-weight:800;line-height:1}
+  .hscore .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 24px}
+  .toc a{font-size:12.5px;text-decoration:none;color:var(--muted);border:1px solid var(--line);
+    background:var(--paper);border-radius:16px;padding:6px 12px}
+  .toc a:hover{border-color:var(--gold);color:var(--ink)}
+
+  section.sec{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:28px;
+    box-shadow:var(--shadow);margin-bottom:20px}
+  .sechead{display:flex;align-items:center;gap:12px;border-bottom:2px solid var(--line);padding-bottom:14px;margin-bottom:18px}
+  .secno{font-family:Georgia,serif;font-size:13px;color:var(--gold);font-weight:700;letter-spacing:.1em}
+  .sechead h2{font-size:24px;margin:0;font-weight:600;letter-spacing:-.01em;flex:1}
+  .sechead .ic{font-size:22px}
+
+  table.kpi{width:100%;border-collapse:collapse;font-size:12.5px}
+  .kpiscroll{overflow-x:auto}
+  table.kpi th,table.kpi td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line2);vertical-align:top}
+  table.kpi th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--faint);font-weight:700;white-space:nowrap}
+  table.kpi td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .kname{font-weight:600}
+  .chg{font-weight:700} .chg.up{color:var(--green)} .chg.down{color:var(--red)} .chg.flat{color:var(--faint)}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .s-green{background:var(--green)} .s-amber{background:var(--amber)} .s-red{background:var(--red)} .s-off{background:var(--faint)}
+  .kins{color:var(--muted);max-width:280px} .kact{color:var(--ink);max-width:240px}
+  .gated{color:var(--faint);font-style:italic}
+
+  .blocks{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
+  @media(max-width:760px){.blocks{grid-template-columns:1fr}}
+  .block h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--gold);font-weight:700}
+  .block.full{grid-column:1/-1}
+  .block ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px}
+  .block li{font-size:13.5px;padding-left:18px;position:relative;color:var(--ink)}
+  .block li::before{content:"–";position:absolute;left:0;color:var(--gold)}
+  .block.risk li::before{content:"▲";color:var(--red);font-size:10px;top:3px}
+  .block.opp li::before{content:"↑";color:var(--green)}
+  .block.leak li::before{content:"↓";color:var(--red)}
+  .esum{font-size:14.5px;line-height:1.65;color:var(--ink);background:color-mix(in srgb,var(--gold2) 8%,transparent);
+    border-left:3px solid var(--gold);padding:12px 16px;border-radius:0 10px 10px 0}
+  .bdgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:18px}
+  .bd h4{margin:0 0 7px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+  .bd .r{display:flex;justify-content:space-between;font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--line2)}
+  .bd .r:last-child{border-bottom:none} .bd .r b{font-variant-numeric:tabular-nums}
+
+  /* final CEO summary */
+  .final{background:linear-gradient(160deg,color-mix(in srgb,var(--gold2) 12%,var(--paper)),var(--paper));
+    border:1px solid var(--gold);border-radius:18px;padding:30px;box-shadow:var(--shadow);margin-bottom:24px}
+  .final h2{font-size:28px;margin:0 0 4px;font-weight:600}
+  .final .lead{color:var(--muted);margin:0 0 22px}
+  table.dec{width:100%;border-collapse:collapse;font-size:12.5px}
+  table.dec th,table.dec td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  table.dec th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--faint);font-weight:700}
+  .prio{font-weight:800;font-size:10.5px;padding:2px 7px;border-radius:5px;white-space:nowrap}
+  .p1{background:color-mix(in srgb,var(--red) 20%,transparent);color:var(--red)}
+  .p2{background:color-mix(in srgb,var(--amber) 22%,transparent);color:var(--amber)}
+  .p3{background:color-mix(in srgb,var(--green) 22%,transparent);color:var(--green)}
+  .lists{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin-top:26px}
+  .lcard h4{margin:0 0 9px;font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:7px}
+  .lcard ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px}
+  .lcard li{font-size:13px;color:var(--ink)}
+  .rankgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:24px}
+  .rank h4{margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  .rank .r{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0}
+  .gainbar{margin-top:26px;padding:20px;border-radius:14px;background:color-mix(in srgb,var(--emerald) 12%,var(--paper));
+    border:1px solid color-mix(in srgb,var(--emerald) 40%,transparent);text-align:center}
+  .gainbar .n{font-size:38px;font-weight:800;color:var(--emerald)}
+  .gainbar .l{font-size:13px;color:var(--muted)}
+
+  footer{color:var(--faint);font-size:11.5px;text-align:center;padding:20px 0 40px}
+
+  @media print{
+    body{background:#fff} .toolbar,.toc{display:none} .book{max-width:none;padding:0}
+    section.sec,.final,.cover{box-shadow:none;border:1px solid #ddd;break-inside:avoid;page-break-inside:avoid}
+    section.sec{page-break-before:always}
+    @page{size:A4;margin:14mm}
+  }
+</style>
+</head>
+<body>
+<div class="book">
+  <div class="toolbar">
+    <span class="src" id="src">Loading…</span>
+    <span class="sp"></span>
+    <button class="btn" id="theme">◐ Theme</button>
+    <button class="btn primary" id="print">⎙ Print / Save PDF</button>
+  </div>
+  <div id="content"></div>
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const CONFIG = {
+  BOOK_URL: "https://storage.googleapis.com/lucira-dashboards/bi/decision-book.json",  // LIVE
+  LOCAL_URL: "decision-book.json"
+};
+if (window.__BOOK_CONFIG__) Object.assign(CONFIG, window.__BOOK_CONFIG__);
+
+const esc = s => (s==null?"":String(s)).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const fmtINR = v => v==null?"—":(Math.abs(v)>=1e7?"₹"+(v/1e7).toFixed(2)+" Cr":Math.abs(v)>=1e5?"₹"+(v/1e5).toFixed(2)+" L":Math.abs(v)>=1e3?"₹"+(v/1e3).toFixed(1)+"K":"₹"+Math.round(v).toLocaleString("en-IN"));
+function fmt(v,unit){
+  if(v==null||v==="") return `<span class="gated">n/a</span>`;
+  if(unit==="INR") return fmtINR(v);
+  if(unit==="pct") return (+v).toFixed(1)+"%";
+  if(unit==="sec") return (+v).toFixed(0)+"s";
+  if(unit==="ratio") return (+v).toFixed(2)+"×";
+  return typeof v==="number"? Math.round(v).toLocaleString("en-IN") : esc(v);
+}
+const chgCls = c => c==null?"flat":c>0.5?"up":c<-0.5?"down":"flat";
+const chgTxt = c => c==null?"—":(c>0?"▲ +":c<0?"▼ ":"")+c.toFixed(1)+"%";
+
+/* ---- rich realistic SAMPLE (real Lucira magnitudes) so the book renders offline ---- */
+function sample(){
+  const K=(name,y,a,t,ch,st,ins,act,u)=>({name,yesterday:y,avg7:a,target:t,change_pct:ch,status:st,insight:ins,action:act,unit:u});
+  const list=(...x)=>x;
+  const bd=(title,rows)=>({title,rows});
+  const sec=(id,ic,title,kpis,breakdowns,summary,ins,rca,opp,leak,risk,act)=>(
+    {id,icon:ic,title,kpis,breakdowns,executive_summary:summary,insights:ins,root_cause:rca,opportunities:opp,leakage:leak,risks:risk,actions:act});
+  const bdrows=(arr,u)=>arr.map(([label,value])=>({label,value,unit:u}));
+  return {
+   meta:{run_date:"2026-07-21",generated_at:new Date().toISOString(),period:"Yesterday vs 7-day average",source:"sample"},
+   sections:[
+    sec("ga4","🌐","GA4 — Website & App Analytics",
+      [K("Sessions",14989,17420,null,-14.0,"amber","Traffic dipped, led by paid channels.","Check campaign delivery & budget pacing.","count"),
+       K("Users",11230,12980,null,-13.5,"amber","Fewer users; new-user share stable.","",""),
+       K("New Users",6870,7710,null,-10.9,"amber","","",""),
+       K("Engagement Rate",58.2,60.1,65,-1.9,"amber","Below 65% goal.","Improve landing relevance.","pct"),
+       K("Avg Engagement Time",71,74,null,-4.1,"green","","","sec"),
+       K("Product Views",8210,9450,null,-13.1,"amber","","",""),
+       K("Add To Cart",1180,1360,null,-13.2,"amber","","",""),
+       K("Begin Checkout",430,505,null,-14.9,"red","Checkout starts falling faster than traffic.","Audit mobile checkout.",""),
+       K("Purchases",38,47,null,-19.1,"red","Purchases down 19%.","Fix checkout drop on mobile.",""),
+       K("Conversion Rate",0.25,0.27,0.5,-7.4,"red","Well below 0.5% target.","","pct"),
+       K("Revenue (GA4)",152703,236878,null,-35.5,"red","GA4 revenue understated (GoKwik off-GA4).","Reconcile with Shopify.","INR"),
+       K("Checkout Drop %",91.2,90.7,null,0.5,"red","9 of 10 checkouts abandoned.","Add exit-intent & wallet options.","pct"),
+       K("Marketing Spend",null,null,null,null,"off","Meta feed stale since 06-Jan.","Reconnect meta_ads pipeline.","INR"),
+       K("ROAS",null,null,4,null,"off","No spend data.","","ratio")],
+      [bd("Top Channels",bdrows([["Direct",5120],["Organic Search",3980],["Paid Social",2640],["Referral",1410]],"count")),
+       bd("Top Cities",bdrows([["Mumbai",2810],["Delhi",2440],["Bengaluru",1520],["Pune",980]],"count")),
+       bd("Top Devices",bdrows([["Mobile",11800],["Desktop",2610],["Tablet",579]],"count")),
+       bd("Top Landing Pages",bdrows([["/",4200],["/collections/rings",2100],["/collections/bridal",1350]],"count")),
+       bd("Top Products (views)",bdrows([["Solitaire Ring",640],["Diamond Pendant",520],["Gold Bangle",410]],"count"))],
+      "Website traffic fell 14% yesterday with paid channels leading the decline; the checkout funnel is leaking faster than traffic — begin-checkout −15% and purchases −19% — pointing to a mobile checkout problem rather than a demand problem.",
+      list("Paid Social sessions down ~22% while Direct held steady — a delivery/budget issue, not lost demand.",
+           "Mobile is 79% of sessions but converts below desktop; the drop concentrates there."),
+      list("Meta ad delivery slowed (spend feed stale) → fewer paid sessions.","Checkout-drop rose to 91.2% — a mobile payment-step friction signal."),
+      list("Recovering mobile checkout to desktop conversion parity ≈ +12–15 purchases/day.","Direct + Organic are healthy — lean into them with offers."),
+      list("~₹1.3–1.8L/day of revenue leaking at the mobile checkout step.","Paid budget under-delivering vs plan."),
+      list("Continued paid under-delivery compounds the traffic gap.","Checkout friction erodes the healthy top-of-funnel."),
+      list("Audit the mobile checkout (payment step) end-to-end today.","Reconnect the meta_ads spend feed.","Shift budget to Direct/Organic promos.","Add wallet/UPI express checkout.","Reconcile GA4 vs Shopify revenue.")),
+    sec("sales","💰","Sales",
+      [K("Revenue",152703,236878,null,-35.5,"red","Sharp single-day dip.","Store-level recovery push.","INR"),
+       K("Orders",9,13,null,-30.8,"red","","",""),
+       K("AOV",16967,18221,null,-6.9,"amber","","","INR"),
+       K("Margin",null,null,null,null,"off","No cost data in reporting table.","Add COGS to enable margin.","INR"),
+       K("Target Achievement",null,null,100,null,"off","No store-target table connected.","Connect targets.","pct"),
+       K("Best Seller","Solitaire Ring",null,null,null,"green","Top revenue SKU.","Keep stocked.",""),
+       K("Worst Seller","Silver Charm",null,null,null,"amber","Slow mover.","Consider clearance.","")],
+      [bd("By Store",bdrows([["Flagship",64000],["Park Ave",38000],["City Centre",29000],["Noida",21703]],"INR")),
+       bd("By Category",bdrows([["Diamond",71000],["Gold",52000],["Bridal",21000],["Daily Wear",8703]],"INR")),
+       bd("By City",bdrows([["Mumbai",58000],["Delhi",47000],["Bengaluru",29000],["Pune",18703]],"INR"))],
+      "Sales fell 36% versus the 7-day average on a low order count (9), concentrated in two stores. AOV held, so this is a volume problem, not a discounting one.",
+      list("The drop mirrors the website purchase decline — same root cause (checkout).","Diamond category carried the day; Daily Wear underperformed."),
+      list("Fewer completed orders (mobile checkout friction) rather than lower basket sizes."),
+      list("Restoring order volume to the 7-day norm ≈ +₹0.8L/day.","Push Diamond category where demand is strong."),
+      list("~₹84K vs the 7-day average left on the table yesterday."),
+      list("Team/executive and margin blind spots — no source connected."),
+      list("Run a store-recovery push at the two lagging stores.","Feature the best-seller in-store & online.","Clear the slow Silver line.")),
+    sec("crm","🤝","CRM / Deals",
+      [K("Total Leads",null,null,null,null,"off","Lead module not wired.","Connect leads_1.",""),
+       K("Total Deals",511,553,null,-7.6,"green","Healthy inflow.","",""),
+       K("Won Deals",7,9,null,-22.2,"amber","","",""),
+       K("Conversion %",1.37,1.63,25,-15.9,"amber","Low win rate on high volume.","Tighten qualification.","pct"),
+       K("Pipeline Value",null,null,null,null,"off","Deal Amount mostly ₹0 in CRM.","Populate deal value.","INR"),
+       K("Contact Rate",63,71,80,-11.3,"red","17 pts under SLA.","Call un-contacted deals today.","pct")],
+      [bd("Top Deal Owners",bdrows([["Noida Store",96],["Mumbai Flagship",88],["Delhi CP",74]],"count")),
+       bd("Deal Stages",bdrows([["Prospect",320],["Qualified",110],["Negotiation",54],["Won",7]],"count")),
+       bd("Lead Sources",bdrows([["Website",210],["Meta",140],["Google",96],["Referral",65]],"count"))],
+      "Deal inflow is healthy (511) but win-rate slipped to 1.37% and contact rate to 63% — the bottleneck is follow-up speed, not lead volume.",
+      list("Two owners drive most volume; win-rate varies widely by owner.","Biggest stage drop-off is Prospect → Qualified."),
+      list("Un-contacted deals (contact rate 63%) age out before first touch."),
+      list("Lifting contact rate to the 80% SLA ≈ +₹3.5L pipeline realised.","Coach low-win owners using the top owner's playbook."),
+      list("79 un-contacted deals ≈ lost first-touch opportunity."),
+      list("Aging leads with no follow-up; owners below SLA."),
+      list("Call the 79 un-contacted deals today.","Coach the lowest-win owner.","Fix the Prospect→Qualified drop-off with a script.")),
+    sec("calls","📞","Calls",
+      [K("Total Calls",1407,1519,null,-7.4,"green","High activity.","",""),
+       K("Connected Calls",null,null,null,null,"off","Call_Result not consistently set.","Standardise dispositions.",""),
+       K("Outgoing",1180,1270,null,-7.1,"green","","",""),
+       K("Incoming",227,249,null,-8.8,"amber","","",""),
+       K("Avg Call Duration",null,null,null,null,"off","Duration format varies.","Normalise duration field.","sec"),
+       K("First Response Time",null,null,30,null,"off","Not derivable per-deal yet.","Wire deal↔call join.","")],
+      [bd("Calls per Agent",bdrows([["Rahul",312],["Priya",288],["Amit",241],["Sneha",190]],"count"))],
+      "Call volume stayed high (1,407) but disposition and first-response quality can't be measured yet — the data exists, the fields need standardising.",
+      list("Agent volume is uneven; Rahul & Priya carry most load."),
+      list("Call dispositions inconsistent → connected/missed not measurable."),
+      list("Standardising dispositions unlocks agent coaching by outcome, not just volume."),
+      list("Un-measured missed/first-response = hidden follow-up leakage."),
+      list("High-value customers may go uncontacted undetected."),
+      list("Standardise call dispositions.","Wire deal↔call join for first-response time.","Rebalance workload across agents.")),
+    sec("inventory","📦","Inventory",
+      [K("Total Inventory Value",175486554,175486554,null,0,"green","₹17.55 Cr on hand.","","INR"),
+       K("Low Stock SKUs",63,58,null,8.6,"amber","Refill queue growing.","Trigger POs.",""),
+       K("Out of Stock",null,null,null,null,"off","","",""),
+       K("Dead Stock %",71.6,71.6,10,0,"red","Very high — key-match artifact + true aging.","Add SKU crosswalk; clear aged.","pct"),
+       K("Products Missing Attrs",1393,1393,null,0,"red","Blocks feeds & search.","Complete attributes.",""),
+       K("Health Score",42.6,42.6,75,0,"amber","Depressed by ~66% never-sold (SKU mismatch).","Fix crosswalk.","pct")],
+      [bd("By Category (value)",bdrows([["Diamond",92000000],["Gold",61000000],["Bridal",15000000]],"INR")),
+       bd("Fast Movers",bdrows([["Solitaire Ring",0],["Gold Bangle",0]],"count"))],
+      "₹17.55 Cr of stock, but health reads low (42.6) largely because ~66% of items show 'never sold' — mostly a SKU key mismatch between inventory and sales, not truly dead stock. Fixing the crosswalk is the single biggest inventory win.",
+      list("Dead-stock 71.6% is inflated by the item_code vs Full_sku mismatch (only ~34% join).","1,393 SKUs missing mandatory attributes."),
+      list("SKU convention differs between Live inventory and Sales/GRN → velocity un-joined."),
+      list("A SKU crosswalk would reclassify most 'dead' stock and unlock accurate refill.","Complete attributes to restore ad feeds."),
+      list("Capital locked in mislabelled 'dead' stock.","63 low-stock fast movers risk stock-out."),
+      list("Stock-out on true fast-movers ahead of demand."),
+      list("Build the SKU crosswalk table (biggest lever).","Trigger POs for the 63 low-stock SKUs.","Complete the 1,393 missing attributes.")),
+    sec("marketing","📣","Marketing",
+      [K("Total Spend",null,null,null,null,"off","meta_ads stale since 06-Jan.","Reconnect feed.","INR"),
+       K("Revenue (attributed)",152703,236878,null,-35.5,"amber","Using GA4 revenue proxy.","","INR"),
+       K("ROAS",null,null,4,null,"off","No spend.","","ratio"),
+       K("CPC / CTR / CPM",null,null,null,null,"off","No spend data.","Reconnect meta_ads.",""),
+       K("CAC",null,null,null,null,"off","","","INR")],
+      [bd("Channel Performance (sessions)",bdrows([["Direct",5120],["Organic",3980],["Paid Social",2640]],"count")),
+       bd("City Performance",bdrows([["Mumbai",2810],["Delhi",2440]],"count"))],
+      "Paid performance can't be scored until the Meta spend feed is reconnected (stale since 6 Jan). Channel-mix from GA4 shows Direct + Organic carrying traffic while paid under-delivers.",
+      list("Organic/Direct efficient; paid can't be judged without spend."),
+      list("Meta ad-insights ingestion stopped 06-Jan-2026."),
+      list("Reconnecting spend enables budget-shift decisions worth pausing low-ROAS sets."),
+      list("Flying blind on paid spend = unquantified waste risk."),
+      list("Budget may be spent on low-ROAS campaigns undetected."),
+      list("Reconnect the meta_ads pipeline (priority).","Until then, lean budget into Direct/Organic promos.")),
+    sec("customer","👥","Customer",
+      [K("New Customers",7,11,null,-36.4,"amber","","",""),
+       K("Repeat Customers",3,4,null,-25.0,"green","","",""),
+       K("Repeat Purchase %",30.0,31.0,null,-3.2,"green","Healthy loyalty.","",""),
+       K("Return Rate",0,4.0,5,null,"green","No returns yesterday.","","pct"),
+       K("Refund %",null,null,null,null,"off","Refund source not wired.","","pct"),
+       K("Customer Lifetime Value",null,null,null,null,"off","CLV needs full-history model.","Enable CLV model.","INR")],
+      [bd("Segments (mobile-identity)",bdrows([["New",7],["Repeat",3]],"count"))],
+      "New-customer acquisition tracked yesterday's overall dip, but the repeat cohort held and returns were nil — loyalty is a bright spot to lean on while acquisition recovers.",
+      list("Repeat-purchase % steady at ~30%.","Acquisition fell with overall traffic."),
+      list("Fewer new customers driven by the same traffic/checkout dip."),
+      list("Targeted repeat-customer offers (esp. Mumbai) can lift near-term revenue.","Loyalty is resilient — build a win-back flow."),
+      list("Acquisition softness if traffic issue persists."),
+      list("Lost-customer / win-back not yet instrumented."),
+      list("Push repeat-customer offers in Mumbai & Delhi.","Stand up a win-back flow for lapsed high-value customers."))
+   ],
+   final:{
+     health:{overall:93,domains:[
+       {name:"Sales",score:67,status:"amber"},{name:"Marketing",score:80,status:"amber"},
+       {name:"CRM",score:74,status:"amber"},{name:"Inventory",score:60,status:"amber"},
+       {name:"Customer",score:88,status:"green"},{name:"Operations",score:null,status:"off"},
+       {name:"Finance",score:null,status:"off"}]},
+     estimated_gain_inr:2100000,
+     decision_table:[
+       {priority:"P1",department:"GA4 / Ops",issue:"Mobile checkout drop 91%",why:"Purchases −19% while traffic −14%",impact_inr:1500000,action:"Audit & fix mobile payment step today",owner:"Ecommerce Lead",deadline:"Today"},
+       {priority:"P1",department:"CRM",issue:"79 un-contacted deals",why:"Contact rate 63% vs 80% SLA",impact_inr:350000,action:"Call all 79 today, worst owners first",owner:"Sales Manager",deadline:"Today"},
+       {priority:"P1",department:"Sales",issue:"Two stores lagging",why:"Most of the −36% revenue drop",impact_inr:800000,action:"Store-recovery push (staffing + top SKUs)",owner:"Store Head",deadline:"2 days"},
+       {priority:"P2",department:"Marketing",issue:"Meta spend feed stale",why:"ROAS/CPC blind since 06-Jan",impact_inr:600000,action:"Reconnect meta_ads pipeline",owner:"Marketing Head",deadline:"This week"},
+       {priority:"P2",department:"Inventory",issue:"71% 'dead' stock (mostly mislabel)",why:"SKU key mismatch hides true velocity",impact_inr:1200000,action:"Build SKU crosswalk table",owner:"Inventory Manager",deadline:"This week"},
+       {priority:"P3",department:"Product",issue:"1,393 missing attributes",why:"Blocks ad feeds & search",impact_inr:200000,action:"Complete mandatory attributes",owner:"Catalog Team",deadline:"This month"}],
+     lists:{
+       growth:["Fix mobile checkout → +12–15 orders/day","Lift contact rate to 80% SLA → +₹3.5L pipeline","Repeat-customer offers in Mumbai/Delhi","Feature best-seller Solitaire Ring","Reconnect Meta → optimise paid","Push Diamond category (strong demand)","Win-back flow for lapsed VIPs","Express UPI/wallet checkout","Store-recovery at 2 lagging stores","Clear slow Silver line for cash"],
+       leakage:["₹1.5L/day at mobile checkout","₹84K vs 7-day avg in sales volume","79 un-contacted deals","Paid budget under-delivery","Capital locked in mislabelled dead stock","Missing attributes suppress feed reach","No refund tracking","Un-measured missed calls","Low win-rate on high deal volume","GA4↔Shopify revenue mismatch"],
+       risks:["Mobile checkout friction compounding","Paid under-delivery persists","Aging deals with no follow-up","Stock-out on true fast movers","Acquisition softness if traffic dip holds","Margin blind (no COGS)","Call disposition data gaps","SKU mismatch skews decisions","Store concentration risk","Refund exposure unmeasured"],
+       quick_wins:["Call 79 un-contacted deals","Feature best-seller online & in-store","Trigger POs for 63 low-stock SKUs","Push Mumbai repeat offer","Rebalance call workload","Add exit-intent on checkout","Clear slow Silver SKUs","Pause obviously weak paid sets","Complete top-100 product attributes","Reconcile yesterday's GA4 vs Shopify"]
+     },
+     rankings:{
+       best_cities:bdrows([["Mumbai",58000],["Delhi",47000],["Bengaluru",29000]],"INR"),
+       worst_cities:bdrows([["Pune",18703],["Jaipur",9200]],"INR"),
+       best_stores:bdrows([["Flagship",64000],["Park Ave",38000]],"INR"),
+       worst_stores:bdrows([["Noida",21703],["South Plaza",12000]],"INR"),
+       best_agents:bdrows([["Rahul",312],["Priya",288]],"count"),
+       worst_agents:bdrows([["Sneha",190]],"count"),
+       best_campaigns:[{label:"(reconnect Meta to populate)",value:null}],
+       worst_campaigns:[{label:"(reconnect Meta to populate)",value:null}],
+       best_products:bdrows([["Solitaire Ring",71000],["Diamond Pendant",52000]],"INR"),
+       attention_products:bdrows([["Silver Charm",1200],["Slow Bangle",800]],"INR")
+     }
+   }
+  };
+}
+
+let B=null;
+async function load(){
+  for(const u of [CONFIG.LOCAL_URL, CONFIG.BOOK_URL].filter(Boolean)){
+    try{ const r=await fetch(u,{cache:"no-store"}); if(r.ok){ B=await r.json(); B.meta=B.meta||{}; B.meta.source=B.meta.source||"live"; return; } }catch(e){}
+  }
+  B=sample();
+}
+
+function kpiRow(k){
+  const st = k.status||"off";
+  return `<tr>
+    <td class="kname">${esc(k.name)}</td>
+    <td class="num">${fmt(k.yesterday,k.unit)}</td>
+    <td class="num">${fmt(k.avg7,k.unit)}</td>
+    <td class="num">${k.target==null?'<span class="gated">—</span>':fmt(k.target,k.unit)}</td>
+    <td class="num chg ${chgCls(k.change_pct)}">${chgTxt(k.change_pct)}</td>
+    <td><span class="dot s-${st}"></span></td>
+    <td class="kins">${k.insight?esc(k.insight):'<span class="gated">—</span>'}</td>
+    <td class="kact">${k.action?esc(k.action):'<span class="gated">—</span>'}</td>
+  </tr>`;
+}
+function blockList(title,cls,items){
+  if(!items||!items.length) return "";
+  return `<div class="block ${cls}"><h4>${title}</h4><ul>${items.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
+}
+function breakdowns(bds){
+  if(!bds||!bds.length) return "";
+  return `<div class="bdgrid">${bds.map(b=>`<div class="bd"><h4>${esc(b.title)}</h4>${
+    b.rows.map(r=>`<div class="r"><span>${esc(r.label)}</span><b>${fmt(r.value,r.unit)}</b></div>`).join("")}</div>`).join("")}</div>`;
+}
+function renderSection(s,i){
+  return `<section class="sec" id="sec-${s.id}">
+    <div class="sechead"><span class="secno">SECTION ${i+1}</span><span class="ic">${s.icon||""}</span><h2>${esc(s.title)}</h2></div>
+    <div class="kpiscroll"><table class="kpi">
+      <tr><th>KPI</th><th class="num">Yesterday</th><th class="num">7-Day Avg</th><th class="num">Target</th><th class="num">Change</th><th>Status</th><th>AI Insight</th><th>Recommended Action</th></tr>
+      ${(s.kpis||[]).map(kpiRow).join("")}
+    </table></div>
+    ${breakdowns(s.breakdowns)}
+    <div class="esum" style="margin-top:20px">${esc(s.executive_summary||"")}</div>
+    <div class="blocks">
+      ${blockList("AI Insights","",s.insights)}
+      ${blockList("Root Cause Analysis","",s.root_cause)}
+      ${blockList("Top Opportunities","opp",s.opportunities)}
+      ${blockList("Revenue Leakage","leak",s.leakage)}
+      ${blockList("Risks","risk",s.risks)}
+      ${blockList("Recommended Actions","full",s.actions)}
+    </div>
+  </section>`;
+}
+function rankCard(title,rows){
+  if(!rows||!rows.length) return "";
+  return `<div class="rank"><h4>${title}</h4>${rows.map(r=>`<div class="r"><span>${esc(r.label)}</span><b>${fmt(r.value,r.unit)}</b></div>`).join("")}</div>`;
+}
+function listCard(title,items){
+  return `<div class="lcard"><h4>${title}</h4><ol>${(items||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ol></div>`;
+}
+function renderFinal(f){
+  const h=f.health||{}; const os=h.overall>=80?"green":h.overall>=60?"amber":"red";
+  const dec=(f.decision_table||[]).map(d=>`<tr>
+    <td><span class="prio ${d.priority?.toLowerCase()}">${esc(d.priority)}</span></td>
+    <td>${esc(d.department)}</td><td>${esc(d.issue)}</td><td>${esc(d.why)}</td>
+    <td class="num" style="text-align:right">${d.impact_inr?fmtINR(d.impact_inr):"—"}</td>
+    <td>${esc(d.action)}</td><td>${esc(d.owner)}</td><td>${esc(d.deadline)}</td></tr>`).join("");
+  const R=f.rankings||{}; const L=f.lists||{};
+  return `<div class="final" id="ceo">
+    <h2 class="serif">Final CEO Decision Summary</h2>
+    <p class="lead">The only section you need to read first — what to do today to grow revenue and cut losses.</p>
+    <div style="overflow-x:auto"><table class="dec">
+      <tr><th>Priority</th><th>Dept</th><th>Issue / Opportunity</th><th>Why It Matters</th><th class="num" style="text-align:right">Est. Impact</th><th>Recommended Action</th><th>Owner</th><th>Deadline</th></tr>
+      ${dec}
+    </table></div>
+    <div class="lists">
+      ${listCard("↑ Top 10 Revenue Growth",L.growth)}
+      ${listCard("↓ Top 10 Revenue Leakages",L.leakage)}
+      ${listCard("▲ Top 10 Critical Risks",L.risks)}
+      ${listCard("⚡ Top 10 Quick Wins (today)",L.quick_wins)}
+    </div>
+    <div class="rankgrid">
+      ${rankCard("Best Cities",R.best_cities)}${rankCard("Worst Cities",R.worst_cities)}
+      ${rankCard("Best Stores",R.best_stores)}${rankCard("Worst Stores",R.worst_stores)}
+      ${rankCard("Best Agents",R.best_agents)}${rankCard("Lowest Agents",R.worst_agents)}
+      ${rankCard("Best Campaigns",R.best_campaigns)}${rankCard("Worst Campaigns",R.worst_campaigns)}
+      ${rankCard("Best-Selling Products",R.best_products)}${rankCard("Products Needing Attention",R.attention_products)}
+    </div>
+    <div class="gainbar">
+      <div class="n">${fmtINR(f.estimated_gain_inr)}</div>
+      <div class="l">Estimated revenue gain if all recommendations are implemented · Overall Business Health <b style="color:var(--${os==='green'?'green':os==='amber'?'amber':'red'})">${h.overall}/100</b></div>
+    </div>
+  </div>`;
+}
+
+function render(){
+  const m=B.meta||{};
+  const h=(B.final&&B.final.health)||{};
+  const cover=`<div class="cover">
+    <div class="hscore"><div class="n" style="color:var(--gold)">${h.overall!=null?h.overall:"—"}</div><div class="l">Health /100</div></div>
+    <div class="eyebrow">Lucira Jewelry · AI Chief Business Officer</div>
+    <h1 class="serif">Executive Decision Book</h1>
+    <div class="sub">One daily report. Seven departments. One decision list.</div>
+    <div class="meta"><span>Run date: <b>${esc(m.run_date||"—")}</b></span>
+      <span>${esc(m.period||"Yesterday vs 7-day average")}</span>
+      <span>Generated <b>${m.generated_at?new Date(m.generated_at).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"}):"—"} IST</b></span>
+      <span>Source: <b>${esc(m.source||"—")}</b></span></div>
+  </div>`;
+  const toc=`<div class="toc"><a href="#ceo">★ CEO Summary</a>${(B.sections||[]).map((s,i)=>`<a href="#sec-${s.id}">${i+1}. ${esc(s.title.split("—")[0].trim())}</a>`).join("")}</div>`;
+  document.getElementById("content").innerHTML =
+    cover + toc + renderFinal(B.final||{}) + (B.sections||[]).map(renderSection).join("");
+  document.getElementById("src").textContent =
+    (m.source==="sample"?"Sample data — the live book generates on the next authenticated run":"Live · "+(m.run_date||""));
+  document.getElementById("foot").innerHTML =
+    `Lucira Executive Decision Book · generated daily 10:00 IST by the AI CBO · ${m.source==="sample"?"sample preview":"live"}`;
+}
+
+async function boot(){
+  const t=localStorage.getItem("book_theme"); if(t) document.documentElement.dataset.theme=t;
+  document.getElementById("theme").onclick=()=>{const n=document.documentElement.dataset.theme==="dark"?"light":"dark";
+    document.documentElement.dataset.theme=n;localStorage.setItem("book_theme",n);};
+  document.getElementById("print").onclick=()=>window.print();
+  await load(); render();
+}
+boot();
+</script>
+</body>
+</html>
