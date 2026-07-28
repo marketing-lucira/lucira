@@ -1143,19 +1143,21 @@ def api_crm_bundle():
                    RIGHT(REGEXP_REPLACE(COALESCE(JSON_VALUE(data,'$.Mobile'),''),r'[^0-9]',''),10) mobile
             FROM {P}cdc_deals` WHERE {rng}""")]
         calls = [[r["id"], r["owner"], r["created"], r["type"], r["dur"] or 0,
-                  r["cstart"], r["what_id"] or "", r["phone"] or ""] for r in rows(f"""
+                  r["cstart"], r["what_id"] or "", r["phone"] or "", r["result"] or ""] for r in rows(f"""
             SELECT id, owner_id owner, {ts} created,
                    JSON_VALUE(data,'$.Call_Type') type,
                    SAFE_CAST(JSON_VALUE(data,'$.Call_Duration_in_seconds') AS INT64) dur,
                    JSON_VALUE(data,'$.Call_Start_Time') cstart,
                    JSON_VALUE(data,'$.What_Id.id') what_id,
-                   RIGHT(REGEXP_REPLACE(COALESCE(JSON_VALUE(data,'$.Subject'),''),r'[^0-9]',''),10) phone
+                   RIGHT(REGEXP_REPLACE(COALESCE(JSON_VALUE(data,'$.Subject'),''),r'[^0-9]',''),10) phone,
+                   JSON_VALUE(data,'$.Call_Result') result
             FROM {P}cdc_calls` WHERE {rng}""")]
-        tasks = [[r["id"], r["owner"], r["created"], r["status"], r["due"], r["closed"]]
+        tasks = [[r["id"], r["owner"], r["created"], r["status"], r["due"], r["closed"], r["what_id"] or ""]
                  for r in rows(f"""
             SELECT id, owner_id owner, {ts} created,
                    JSON_VALUE(data,'$.Status') status, JSON_VALUE(data,'$.Due_Date') due,
-                   JSON_VALUE(data,'$.Closed_Time') closed
+                   JSON_VALUE(data,'$.Closed_Time') closed,
+                   JSON_VALUE(data,'$.What_Id.id') what_id
             FROM {P}cdc_tasks` WHERE {rng}""")]
         online = [[r["id"], r["owner"], r["created"], r["channel"], r["atype"]]
                   for r in rows(f"""
