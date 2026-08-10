@@ -23,6 +23,7 @@
   --serif:"Cormorant Garamond","Playfair Display",Georgia,"Times New Roman",serif;
   --sans:"Futura","Josefin Sans","Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --nav-w:248px; --nav-w-collapsed:76px; --topbar-h:60px; --drawer-w:420px;
+  --brand-brown:#8b6f56; --brand-brown-dark:#6e5744; --brand-mauve:#a05a64; --brand-mauve-light:#d9b8b4; --brand-cream:#fff8f0;
 }
 html[data-theme=dark]{
   --bg:#141010; --bg-2:#1a1514; --surface:#201a19; --surface-2:#271f1e; --surface-3:#2e2523;
@@ -56,8 +57,10 @@ svg text{font-family:var(--sans)}
 .load-mark svg{width:100%;height:100%}
 .load-ring{position:absolute;inset:-14px;border-radius:50%;border:1.5px solid var(--glass-brd);border-top-color:var(--gold);animation:spin 1.1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.load-word{font-family:var(--serif);font-size:26px;letter-spacing:6px;color:var(--taupe);text-transform:uppercase;text-align:center}
+.load-word{font-family:var(--serif);font-size:26px;letter-spacing:6px;color:var(--brand-mauve);text-align:center}
 .load-sub{font-size:11px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;text-align:center;margin-top:4px}
+.dotless{position:relative;display:inline-block;font-style:normal}
+.dotless::before{content:'';position:absolute;top:-.6em;left:50%;width:4px;height:4px;background:var(--brand-mauve-light);transform:translateX(-50%) rotate(45deg)}
 
 /* ---- shell layout ---- */
 #app{opacity:0;transition:opacity .5s var(--ease)} #app.ready{opacity:1}
@@ -66,12 +69,12 @@ svg text{font-family:var(--sans)}
 /* left nav */
 .nav{position:fixed;top:0;left:0;bottom:0;width:var(--nav-w);z-index:70;background:var(--bg-2);border-right:1px solid var(--hair);display:flex;flex-direction:column;transition:width .25s var(--ease)}
 .nav.collapsed{width:var(--nav-w-collapsed)}
-.nav .brand{display:flex;align-items:center;gap:11px;padding:18px 16px;border-bottom:1px solid var(--hair);flex:0 0 auto}
+.nav .brand{display:flex;align-items:center;gap:11px;padding:18px 16px;flex:0 0 auto;background:var(--brand-brown);border-bottom:2px solid var(--brand-brown-dark)}
 .nav .brand .mono{width:30px;height:34px;flex:0 0 auto;display:grid;place-items:center}
 .nav .brand .mono svg{width:20px;height:20px}
 .nav .brand .wm{display:flex;flex-direction:column;line-height:1;overflow:hidden;white-space:nowrap}
-.nav .brand .wm b{font-family:var(--serif);font-size:15.5px;font-weight:600;letter-spacing:2px;color:var(--taupe)}
-.nav .brand .wm span{font-size:7.5px;letter-spacing:2.4px;text-transform:uppercase;margin-top:2px;font-weight:600;color:var(--muted)}
+.nav .brand .wm b{font-family:var(--serif);font-size:15.5px;font-weight:600;letter-spacing:2px;color:var(--brand-cream);text-transform:none}
+.nav .brand .wm span{font-size:7.5px;letter-spacing:2.4px;text-transform:uppercase;margin-top:2px;font-weight:600;color:rgba(255,248,240,.72)}
 .nav.collapsed .brand .wm{display:none}
 .navlist{flex:1 1 auto;overflow-y:auto;padding:10px 10px}
 .navitem{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:11px;color:var(--ink-2);font-size:12.8px;font-weight:500;margin-bottom:2px;transition:.18s var(--ease);white-space:nowrap;overflow:hidden;position:relative}
@@ -91,20 +94,27 @@ svg text{font-family:var(--sans)}
 .nav.collapsed ~ .mainwrap{margin-left:var(--nav-w-collapsed)}
 
 /* top bar */
-header.top{position:sticky;top:0;z-index:60;height:var(--topbar-h);backdrop-filter:blur(18px) saturate(1.3);background:linear-gradient(180deg,var(--glass),transparent);border-bottom:1px solid var(--hair);padding:0 clamp(14px,3vw,26px);display:flex;align-items:center;gap:14px;flex-wrap:nowrap}
+header.top{position:sticky;top:0;z-index:60;height:var(--topbar-h);backdrop-filter:none;background:var(--brand-brown);border-bottom:2px solid var(--brand-brown-dark);padding:0 clamp(14px,3vw,26px);display:flex;align-items:center;gap:14px;flex-wrap:nowrap}
 .pagetitle{display:flex;flex-direction:column;line-height:1.2;overflow:hidden}
 .pagetitle b{font-family:var(--serif);font-size:18px;font-weight:600;white-space:nowrap}
 .pagetitle span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1.4px;white-space:nowrap}
+header.top .pagetitle b{color:var(--brand-cream)}
+header.top .pagetitle span{color:rgba(255,248,240,.72)}
 .top .spacer{flex:1}
 .src-dot{display:inline-flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-2);padding:5px 11px;border:1px solid var(--hair);border-radius:20px;background:var(--surface-2);white-space:nowrap}
 .src-dot i{width:7px;height:7px;border-radius:50%;background:var(--warn);box-shadow:0 0 8px var(--warn)}
 .src-dot.live i{background:var(--good);box-shadow:0 0 8px var(--good)}
+header.top .src-dot{color:var(--brand-cream);background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28)}
 .iconbtn{width:36px;height:36px;border-radius:11px;border:1px solid var(--hair);background:var(--surface-2);display:grid;place-items:center;color:var(--ink-2);transition:.2s var(--ease);font-size:15px;flex:0 0 auto}
 .iconbtn:hover{color:var(--gold);border-color:var(--glass-brd)}
+header.top .iconbtn{color:var(--brand-cream);background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28)}
+header.top .iconbtn:hover{color:#fff;border-color:rgba(255,255,255,.5)}
 .btn{padding:8px 14px;border-radius:11px;border:1px solid var(--hair);background:var(--surface-2);color:var(--ink);font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:7px;transition:.2s var(--ease);white-space:nowrap}
 .btn:hover{border-color:var(--glass-brd);transform:translateY(-1px)}
 .btn.gold{background:linear-gradient(120deg,var(--gold),var(--gold-deep));color:#160f00;border:none;font-weight:600}
 .btn.gold .cnt{background:rgba(0,0,0,.18);border-radius:20px;padding:1px 7px;font-size:10.5px;margin-left:2px}
+header.top .btn:not(.gold){color:var(--brand-cream);background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28)}
+header.top .btn:not(.gold):hover{border-color:rgba(255,255,255,.5)}
 .menu-wrap{position:relative}
 .menu{position:absolute;right:0;top:calc(100% + 8px);background:var(--surface-2);border:1px solid var(--hair);border-radius:var(--r-md);box-shadow:var(--shadow);min-width:190px;padding:6px;z-index:80;display:none}
 .menu.on{display:block}
@@ -250,12 +260,6 @@ select.inp:focus,input.inp:focus{border-color:var(--gold)}
 .tabs{display:flex;gap:6px;border-bottom:1px solid var(--hair);margin-bottom:14px;flex-wrap:wrap}
 .tabs button{padding:9px 14px;font-size:12px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent}
 .tabs button.on{color:var(--gold-2);border-color:var(--gold)}
-.topTabs{position:sticky;top:var(--topbar-h);z-index:55;display:flex;gap:4px;overflow-x:auto;padding:9px clamp(14px,3vw,26px);background:var(--bg-2);border-bottom:1px solid var(--hair);backdrop-filter:blur(14px)}
-.topTabs::-webkit-scrollbar{height:5px}
-.toptab{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;padding:7px 13px;border-radius:20px;font-size:11.8px;font-weight:500;color:var(--ink-2);white-space:nowrap;border:1px solid transparent;transition:.18s var(--ease)}
-.toptab .ti{font-size:12px;opacity:.85}
-.toptab:hover{background:var(--surface-2);color:var(--ink)}
-.toptab.on{background:var(--gold-soft);color:var(--gold-2);border-color:var(--glass-brd)}
 .pagebar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;font-size:11.5px;color:var(--muted)}
 .pagebar .pg-btn{padding:5px 9px;border-radius:7px;border:1px solid var(--hair);background:var(--surface-2)}
 .searchbox{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--hair);border-radius:9px;padding:6px 10px;font-size:12px;min-width:180px}
@@ -269,9 +273,9 @@ select.inp:focus,input.inp:focus{border-color:var(--gold)}
 <div id="loader">
   <div class="load-mark">
     <div class="load-ring"></div>
-    <svg viewBox="0 0 100 100"><rect x="17" y="3" width="66" height="94" rx="33" fill="#A68380"/><text x="50" y="58" font-family="Georgia,serif" font-size="42" font-weight="500" text-anchor="middle" fill="#FFFFFF">L</text><path d="M50 71 L54.5 78 L50 85 L45.5 78 Z" fill="#FFFFFF"/></svg>
+    <svg viewBox="0 0 100 100"><rect x="17" y="3" width="66" height="94" rx="33" fill="#fff8f0" stroke="#a05a64" stroke-width="2"/><text x="50" y="58" font-family="Georgia,serif" font-size="42" font-weight="500" text-anchor="middle" fill="#8b6f56">L</text><path d="M50 71 L54.5 78 L50 85 L45.5 78 Z" fill="#a05a64"/></svg>
   </div>
-  <div><div class="load-word">Lucira</div><div class="load-sub">GA4 Geo Intelligence · Loading</div></div>
+  <div><div class="load-word">Luc<span class="dotless">ı</span>rá</div><div class="load-sub">GA4 Geo Intelligence · Loading</div></div>
 </div>
 
 <div id="app">
@@ -280,8 +284,8 @@ select.inp:focus,input.inp:focus{border-color:var(--gold)}
   <!-- LEFT NAV -->
   <nav class="nav" id="navEl">
     <div class="brand">
-      <div class="mono"><svg viewBox="0 0 100 100"><rect x="17" y="3" width="66" height="94" rx="33" fill="#A68380"/><text x="50" y="58" font-family="Georgia,serif" font-size="42" font-weight="500" text-anchor="middle" fill="#FFFFFF">L</text><path d="M50 71 L54.5 78 L50 85 L45.5 78 Z" fill="#FFFFFF"/></svg></div>
-      <div class="wm"><b>LUCIRA</b><span>Geo Intelligence</span></div>
+      <div class="mono"><svg viewBox="0 0 100 100"><rect x="17" y="3" width="66" height="94" rx="33" fill="#fff8f0" stroke="#a05a64" stroke-width="2"/><text x="50" y="58" font-family="Georgia,serif" font-size="42" font-weight="500" text-anchor="middle" fill="#8b6f56">L</text><path d="M50 71 L54.5 78 L50 85 L45.5 78 Z" fill="#a05a64"/></svg></div>
+      <div class="wm"><b>Luc<span class="dotless">ı</span>rá</b><span>Geo Intelligence</span></div>
     </div>
     <div class="navlist" id="navList"><!-- injected --></div>
     <div class="nav-foot"><button class="nav-collapse-btn" id="navCollapseBtn">‹ Collapse</button></div>
@@ -305,8 +309,6 @@ select.inp:focus,input.inp:focus{border-color:var(--gold)}
       </div>
       <button class="iconbtn" id="themeBtn" title="Toggle theme">☾</button>
     </header>
-
-    <nav class="topTabs" id="topTabsEl"></nav>
 
     <main id="mainEl">
       <!-- pages injected by JS PAGE_RENDERERS.* functions -->
@@ -354,7 +356,6 @@ select.inp:focus,input.inp:focus{border-color:var(--gold)}
 </div>
 
 <script src="geo_intel_data.js"></script>
-<script src="caratlane_intel_data.js"></script>
 <script>
 /* GA4 Geo Intelligence Dashboard — main application script.
    Built on top of the earlier City Intelligence & Market Expansion engine (same
@@ -693,22 +694,22 @@ function buildData(){
   const src = RAW || SAMPLE_FALLBACK();
   src.products = src.products || []; src.topProducts = src.topProducts || []; src.devices = src.devices || [];
   src.zohoPincode = src.zohoPincode || []; src.sessionAnalysis = src.sessionAnalysis || []; src.cityUsersFact = src.cityUsersFact || [];
+  src.cityGa4Daily = src.cityGa4Daily || [];
   // normalize date field name: dailyFact (BigQuery fact table) emits `session_date`, q7b emits `d` — guarantee `.d` everywhere.
   const nationalDaily = (src.dailyFact||[]).map(r=>({...r, d: r.d || r.session_date}));
   src.nationalDaily = nationalDaily;
 
-  // ---- city merge: GA4 totals (authoritative revenue/engagement) + Zoho (deal count / lead quality proxies, city-known subset only) ----
-  const ga4ByCity = new Map();
+  // ---- static, full-window-only side data per city (NOT date-filterable: trend comparisons,
+  // impression/click counts and campaign tallies that were never broken down by day) ----
+  const ga4StaticByCity = new Map();
   for(const r of src.cityTotals){
     const city = normCity(r.city); if(!city) continue;
-    const cur = ga4ByCity.get(city) || {city, state:r.state, sessions:0,pdp_views:0,add_to_cart:0,begin_checkout:0,purchase:0,revenue:0,
-      plp_impressions:0,plp_click:0,campaign_count:0,sessions_last90:0,revenue_last90:0,sessions_prev90:0,revenue_prev90:0};
-    cur.sessions += n(r.sessions); cur.pdp_views += n(r.pdp_views); cur.add_to_cart += n(r.add_to_cart);
-    cur.begin_checkout += n(r.begin_checkout); cur.purchase += n(r.purchase); cur.revenue += n(r.revenue);
+    const cur = ga4StaticByCity.get(city) || {city, state:r.state, plp_impressions:0,plp_click:0,campaign_count:0,
+      sessions_last90:0,revenue_last90:0,sessions_prev90:0,revenue_prev90:0};
     cur.plp_impressions += n(r.plp_impressions); cur.plp_click += n(r.plp_click); cur.campaign_count += n(r.campaign_count);
     cur.sessions_last90 += n(r.sessions_last90); cur.revenue_last90 += n(r.revenue_last90);
     cur.sessions_prev90 += n(r.sessions_prev90); cur.revenue_prev90 += n(r.revenue_prev90);
-    ga4ByCity.set(city, cur);
+    ga4StaticByCity.set(city, cur);
   }
   const zohoByCity = new Map();
   for(const r of src.zohoCity){
@@ -723,76 +724,6 @@ function buildData(){
     zohoByCity.set(city, cur);
   }
   const deviceByCity = groupBy(src.devices||[], r=>normCity(r.city));
-
-  const allCityNames = new Set([...ga4ByCity.keys(), ...zohoByCity.keys()]);
-  const CITY = [];
-  for(const city of allCityNames){
-    const g = ga4ByCity.get(city);
-    const z = zohoByCity.get(city);
-    const sessions = g? g.sessions : 0;
-    const purchase = g? g.purchase : 0;
-    const revenue = g? g.revenue : 0;
-    const conv = safeDiv(purchase, sessions)*100;
-    const aov = safeDiv(revenue, purchase);
-    const growthPct = g && g.sessions_prev90>0 ? safeDiv(g.sessions_last90-g.sessions_prev90, g.sessions_prev90)*100 : null;
-    const atcRate = g? safeDiv(g.add_to_cart, g.sessions)*100 : 0;
-    const pdpRate = g? safeDiv(g.pdp_views, g.sessions)*100 : 0;
-    const topDeviceRows = (deviceByCity.get(city)||[]).slice().sort(byDesc(r=>r.sessions));
-    let leadQuality = null;
-    if(z && z.scoreCnt>0){
-      const avgScore = z.scoreSum/z.scoreCnt;      // 0-10 scale observed
-      const avgProb = z.probCnt>0 ? z.probSum/z.probCnt : 0; // 0-100
-      const winRate = z.deals>0 ? (z.won/z.deals)*100 : 0;
-      leadQuality = clamp(avgScore*10*0.45 + avgProb*0.35 + winRate*3*0.20, 0, 100);
-    }
-    CITY.push({
-      city, state: (g&&g.state) || (z&&z.state) || '—',
-      sessions, pdp_views: g?g.pdp_views:0, add_to_cart: g?g.add_to_cart:0, begin_checkout: g?g.begin_checkout:0,
-      purchase, revenue, plp_impressions: g?g.plp_impressions:0, plp_click: g?g.plp_click:0,
-      campaignCount: g?g.campaign_count:0, conv, aov, growthPct, atcRate, pdpRate,
-      topDevice: topDeviceRows[0]? topDeviceRows[0].device : null,
-      hasGa4: !!g, hasZoho: !!z,
-      deals: z?z.deals:0, won: z?z.won:0, lost: z?z.lost:0, openDeals: z?z.open_deals:0,
-      leadQuality, avgDealScore: (z&&z.scoreCnt>0)? z.scoreSum/z.scoreCnt : null,
-      avgProbability: (z&&z.probCnt>0)? z.probSum/z.probCnt : null,
-      population: POPULATION_REF_M[city] || null,
-    });
-  }
-  CITY.sort(byDesc(c=>c.sessions));
-
-  // ---- REAL distinct users / new-vs-returning, from the session-grain fact table (the flat mart
-  // above has no user_pseudo_id and cannot produce a true distinct-user count) ----
-  const factByCity = new Map();
-  for(const r of src.cityUsersFact){
-    const city = normCity(r.city); if(!city) continue;
-    const cur = factByCity.get(city) || {users:0, sessions:0, engaged:0, newUsers:0, returningUsers:0, revenue:0, purchases:0};
-    cur.users += n(r.users); cur.sessions += n(r.sessions); cur.engaged += n(r.engaged_sessions);
-    cur.newUsers += n(r.new_users); cur.returningUsers += n(r.returning_users_est);
-    cur.revenue += n(r.revenue); cur.purchases += n(r.purchases);
-    factByCity.set(city, cur);
-  }
-  for(const c of CITY){
-    const f = factByCity.get(c.city);
-    c.usersReal = f ? f.users : null; c.sessionsFact = f ? f.sessions : null;
-    c.newUsersReal = f ? f.newUsers : null; c.returningUsersReal = f ? f.returningUsers : null;
-    c.returningSharePct = f && f.users>0 ? safeDiv(f.returningUsers, f.users)*100 : null;
-    c.engagedSessionsReal = f ? f.engaged : null; c.hasFact = !!f;
-  }
-  // cities present only in the fact table (rare — fact and mart are both GA4-derived, coverage should largely overlap)
-  for(const [city, f] of factByCity){
-    if(CITY.some(c=>c.city===city)) continue;
-    CITY.push({city, state:'—', sessions:0, pdp_views:0, add_to_cart:0, begin_checkout:0, purchase:0, revenue:0,
-      plp_impressions:0, plp_click:0, campaignCount:0, conv:0, aov:0, growthPct:null, atcRate:0, pdpRate:0,
-      topDevice:null, hasGa4:false, hasZoho:false, deals:0, won:0, lost:0, openDeals:0, leadQuality:null,
-      avgDealScore:null, avgProbability:null, population:POPULATION_REF_M[city]||null,
-      usersReal:f.users, sessionsFact:f.sessions, newUsersReal:f.newUsers, returningUsersReal:f.returningUsers,
-      returningSharePct: f.users>0?safeDiv(f.returningUsers,f.users)*100:null, engagedSessionsReal:f.engaged, hasFact:true});
-  }
-  CITY.sort(byDesc(c=>c.sessions||c.sessionsFact||0));
-
-  // ---- pin code data (Zoho Address_Zip only — sparse, no revenue; see coverage.note) ----
-  const pincodeByCity = groupBy(src.zohoPincode, r=>normCity(r.city));
-
   // ---- product-derived: luxury/high-margin revenue share per city (for Store Expansion "Luxury Interest") ----
   const luxByCity = new Map();
   for(const p of src.products){
@@ -804,19 +735,89 @@ function buildData(){
     if(n(p.revenue) > 0 && n(p.purchase) > 0 && safeDiv(n(p.revenue),n(p.purchase)) > 40000) cur.highValOrders += n(p.purchase);
     luxByCity.set(city, cur);
   }
-  for(const c of CITY){
-    const l = luxByCity.get(c.city);
-    c.luxuryShare = l && l.rev>0 ? safeDiv(l.luxRev, l.rev)*100 : null;
-    c.highValueOrders = l ? l.highValOrders : 0;
+  const campByCity = groupBy(src.campaigns, r=>normCity(r.city));
+
+  // ---- city merge: GA4 (real activity, day-level, filtered to [dateFrom,dateTo]) + Zoho/static side
+  // data (deal count / lead quality / trend / device — never day-level, always full-window) ----
+  // Called fresh for every date-range change (see filteredCity()), not just once at load, so the
+  // date filter actually changes Sessions/PDP/Users/ATC/Checkout for a city instead of always
+  // showing a fixed full-window number.
+  function buildCityArray(dateFrom, dateTo){
+    const inRange = d => (!dateFrom || d>=dateFrom) && (!dateTo || d<=dateTo);
+    const ga4ByCity = new Map();
+    for(const r of src.cityGa4Daily){
+      if(!inRange(r.d)) continue;
+      const city = normCity(r.city); if(!city) continue;
+      const cur = ga4ByCity.get(city) || {sessions:0,pdp_views:0,add_to_cart:0,begin_checkout:0,purchase:0,revenue:0};
+      cur.sessions += n(r.sessions); cur.pdp_views += n(r.pdp_views); cur.add_to_cart += n(r.add_to_cart);
+      cur.begin_checkout += n(r.begin_checkout); cur.purchase += n(r.purchase); cur.revenue += n(r.revenue);
+      ga4ByCity.set(city, cur);
+    }
+    const factByCity = new Map();
+    for(const r of src.cityUsersFact){
+      if(!inRange(r.d)) continue;
+      const city = normCity(r.city); if(!city) continue;
+      const cur = factByCity.get(city) || {users:0, sessions:0, engaged:0, newUsers:0, returningUsers:0, revenue:0, purchases:0};
+      cur.users += n(r.users); cur.sessions += n(r.sessions); cur.engaged += n(r.engaged_sessions);
+      cur.newUsers += n(r.new_users); cur.returningUsers += n(r.returning_users_est);
+      cur.revenue += n(r.revenue); cur.purchases += n(r.purchases);
+      factByCity.set(city, cur);
+    }
+    const allCityNames = new Set([...ga4ByCity.keys(), ...factByCity.keys(), ...zohoByCity.keys()]);
+    const CITY = [];
+    for(const city of allCityNames){
+      const g = ga4ByCity.get(city);
+      const st = ga4StaticByCity.get(city);
+      const z = zohoByCity.get(city);
+      const f = factByCity.get(city);
+      const sessions = g? g.sessions : 0;
+      const purchase = g? g.purchase : 0;
+      const revenue = g? g.revenue : 0;
+      const conv = safeDiv(purchase, sessions)*100;
+      const aov = safeDiv(revenue, purchase);
+      const growthPct = st && st.sessions_prev90>0 ? safeDiv(st.sessions_last90-st.sessions_prev90, st.sessions_prev90)*100 : null;
+      const atcRate = g? safeDiv(g.add_to_cart, g.sessions)*100 : 0;
+      const pdpRate = g? safeDiv(g.pdp_views, g.sessions)*100 : 0;
+      const topDeviceRows = (deviceByCity.get(city)||[]).slice().sort(byDesc(r=>r.sessions));
+      let leadQuality = null;
+      if(z && z.scoreCnt>0){
+        const avgScore = z.scoreSum/z.scoreCnt;      // 0-10 scale observed
+        const avgProb = z.probCnt>0 ? z.probSum/z.probCnt : 0; // 0-100
+        const winRate = z.deals>0 ? (z.won/z.deals)*100 : 0;
+        leadQuality = clamp(avgScore*10*0.45 + avgProb*0.35 + winRate*3*0.20, 0, 100);
+      }
+      const l = luxByCity.get(city);
+      const campRows = campByCity.get(city) || [];
+      const campSess = sumBy(campRows, r=>r.sessions), campPur = sumBy(campRows, r=>r.purchase);
+      CITY.push({
+        city, state: (st&&st.state) || (z&&z.state) || '—',
+        sessions, pdp_views: g?g.pdp_views:0, add_to_cart: g?g.add_to_cart:0, begin_checkout: g?g.begin_checkout:0,
+        purchase, revenue, plp_impressions: st?st.plp_impressions:0, plp_click: st?st.plp_click:0,
+        campaignCount: st?st.campaign_count:0, conv, aov, growthPct, atcRate, pdpRate,
+        topDevice: topDeviceRows[0]? topDeviceRows[0].device : null,
+        hasGa4: !!g, hasZoho: !!z,
+        deals: z?z.deals:0, won: z?z.won:0, lost: z?z.lost:0, openDeals: z?z.open_deals:0,
+        leadQuality, avgDealScore: (z&&z.scoreCnt>0)? z.scoreSum/z.scoreCnt : null,
+        avgProbability: (z&&z.probCnt>0)? z.probSum/z.probCnt : null,
+        population: POPULATION_REF_M[city] || null,
+        usersReal: f?f.users:null, sessionsFact: f?f.sessions:null, newUsersReal: f?f.newUsers:null,
+        returningUsersReal: f?f.returningUsers:null,
+        returningSharePct: f && f.users>0 ? safeDiv(f.returningUsers,f.users)*100 : null,
+        engagedSessionsReal: f?f.engaged:null, hasFact: !!f,
+        luxuryShare: l && l.rev>0 ? safeDiv(l.luxRev, l.rev)*100 : null,
+        highValueOrders: l ? l.highValOrders : 0,
+        campaignResponseRate: campSess>0 ? safeDiv(campPur,campSess)*100 : null,
+      });
+    }
+    CITY.sort(byDesc(c=>c.sessions||c.sessionsFact||0));
+    return CITY;
   }
 
-  // ---- campaign response per city (avg conversion across that city's campaigns, for Store Expansion) ----
-  const campByCity = groupBy(src.campaigns, r=>normCity(r.city));
-  for(const c of CITY){
-    const rows = campByCity.get(c.city) || [];
-    const sess = sumBy(rows, r=>r.sessions), pur = sumBy(rows, r=>r.purchase);
-    c.campaignResponseRate = sess>0 ? safeDiv(pur,sess)*100 : null;
-  }
+  const dateBounds = (()=>{ const d = nationalDaily; return d.length? {min:d[0].d, max:d[d.length-1].d} : {min:null,max:null}; })();
+  const CITY = buildCityArray(dateBounds.min, dateBounds.max); // full-window default, unaffected by any filter
+
+  // ---- pin code data (Zoho Address_Zip only — sparse, no revenue; see coverage.note) ----
+  const pincodeByCity = groupBy(src.zohoPincode, r=>normCity(r.city));
 
   // ---- distinct option lists for live filters ----
   const distinctSorted = (arr, fn) => Array.from(new Set(arr.map(fn).filter(Boolean))).sort();
@@ -838,10 +839,8 @@ function buildData(){
     pincode: distinctSorted(src.zohoPincode, r=>r.pincode),
   };
 
-  const dateBounds = (()=>{ const d = src.nationalDaily; return d.length? {min:d[0].d, max:d[d.length-1].d} : {min:null,max:null}; })();
-
   STATE.D = { RAW: src, CITY, OPTIONS, dateBounds, coverage: src.coverage, luxByCity, campByCity, deviceByCity, pincodeByCity,
-    nationalTotalsFact: src.nationalTotals || {}, funnelFact: src.funnel || {} };
+    nationalTotalsFact: src.nationalTotals || {}, funnelFact: src.funnel || {}, buildCityArray };
   if(!STATE.filters.dateRange){
     const end = dateBounds.max;
     const start = end ? new Date(new Date(end).getTime()-89*86400000).toISOString().slice(0,10) : dateBounds.min;
@@ -863,7 +862,7 @@ function SAMPLE_FALLBACK(){
     campaigns: cities.flatMap(c=>['google/cpc/brand','meta/paid_social/retarget','direct/(none)/(not set)'].map(cm=>{ const [source,medium,campaign_name]=cm.split('/'); return {city:c, source, medium, campaign_name, channel_type:'Paid', sessions:800, pdp_views:2000, add_to_cart:150, begin_checkout:50, purchase:8, revenue:64000}; })),
     products: [], topProducts: [], devices: cities.flatMap(c=>['mobile','desktop'].map(d=>({city:c, device:d, sessions:2000, pdp_views:6000, add_to_cart:400, purchase:20, revenue:160000}))),
     zohoCity: cities.slice(0,3).map((c,i)=>({city:c, state:'—', deals:40-i*10, won:2-i, lost:15-i*3, open_deals:23-i*6, amount:0, won_amount:0, avg_probability:20-i*2, avg_deal_score:6-i, top_lead_source:'Website', top_utm_source:'Meta'})),
-    zohoPincode: cities.slice(0,3).map((c,i)=>({pincode:'40000'+i, city:c, state:'—', deals:12-i*3, won:1, amount:0})),
+    zohoPincode: cities.slice(0,3).map((c,i)=>({pincode:'40000'+i, city:c, state:'—', d:mkDaily(1)[0].d, deals:12-i*3, won:1, amount:0})),
     zohoDaily: mkDaily(3).map(r=>({d:r.d, deals:Math.round(3+Math.random()*4), amount:0, won:Math.round(Math.random()), lost:Math.round(Math.random())})),
     zohoStages:[{stage:'Prospect',n:60,amount:0},{stage:'Closed Lost',n:28,amount:0},{stage:'Closed Won',n:5,amount:40000}],
     zohoLeadSource:[{lead_source:'Website',n:78,won:4,amount:35000},{lead_source:'Meta Ads',n:12,won:1,amount:5000}],
@@ -1310,7 +1309,8 @@ function activeFilterCount(){
   return allFilterFields().filter(f=>f.live && f.type==='ms').reduce((s,f)=> s + (sel(f.key)?sel(f.key).length:0), 0);
 }
 function filteredCity(){
-  let arr = STATE.D.CITY;
+  const dr = STATE.filters.dateRange;
+  let arr = dr ? STATE.D.buildCityArray(dr.start, dr.end) : STATE.D.CITY;
   if(sel('city')) arr = arr.filter(c=>sel('city').includes(c.city));
   if(sel('state')) arr = arr.filter(c=>sel('state').includes(c.state));
   return arr;
@@ -1333,7 +1333,22 @@ function filteredZohoDaily(){ return STATE.D.RAW.zohoDaily.filter(r=>inDateRange
 function filteredZohoCity(){ return STATE.D.RAW.zohoCity.filter(r=> matchMulti('city', normCity(r.city))); }
 function filteredZohoStages(){ return sel('dealStage') ? STATE.D.RAW.zohoStages.filter(r=>sel('dealStage').includes(r.stage)) : STATE.D.RAW.zohoStages; }
 function filteredZohoLeadSource(){ return sel('leadSource') ? STATE.D.RAW.zohoLeadSource.filter(r=>sel('leadSource').includes(r.lead_source)) : STATE.D.RAW.zohoLeadSource; }
-function filteredZohoPincode(){ return (STATE.D.RAW.zohoPincode||[]).filter(r=> matchMulti('city', normCity(r.city)) && matchMulti('pincode', r.pincode)); }
+function filteredZohoPincode(){
+  // zohoPincode is day-level (one row per pincode per day it had deal activity) so the date
+  // range filter can actually change these numbers -- re-aggregate back to one row per pincode
+  // across whichever window is currently selected.
+  const dayRows = (STATE.D.RAW.zohoPincode||[]).filter(r=> inDateRange(r.d) && matchMulti('city', normCity(r.city)) && matchMulti('pincode', r.pincode));
+  const byPin = new Map();
+  for(const r of dayRows){
+    let cur = byPin.get(r.pincode);
+    if(!cur){ cur = {pincode:r.pincode, city:r.city, state:r.state, area:r.area, deals:0, won:0, amount:0}; byPin.set(r.pincode, cur); }
+    cur.deals += n(r.deals); cur.won += n(r.won); cur.amount += n(r.amount);
+    if(!cur.city && r.city) cur.city = r.city;
+    if(!cur.state && r.state) cur.state = r.state;
+    if(!cur.area && r.area) cur.area = r.area;
+  }
+  return Array.from(byPin.values());
+}
 function filteredSessionAnalysis(){ return (STATE.D.RAW.sessionAnalysis||[]).filter(r=> matchMulti('campaignSource', r.source) && matchMulti('campaignMedium', r.medium) && matchMulti('campaignName', r.campaign)); }
 
 /* ============================== 13. KPI CARD ============================== */
@@ -1391,7 +1406,20 @@ function renderDrawer(){
   });
   body.innerHTML = html;
   allFilterFields().filter(f=>f.live && f.type==='ms').forEach(f=> wireMultiSelect(f.key));
+  allFilterFields().filter(f=>f.type==='date').forEach(f=>{
+    const s = $('#flt_'+f.key+'_start'), e = $('#flt_'+f.key+'_end');
+    const onDateChange = ()=>{
+      STATE.filters[f.key] = { start: s.value || STATE.D.dateBounds.min, end: e.value || STATE.D.dateBounds.max };
+      scheduleAutoApply();
+    };
+    if(s) s.addEventListener('change', onDateChange);
+    if(e) e.addEventListener('change', onDateChange);
+  });
 }
+// Filters feel instant: any change in the drawer (checkbox or date) re-renders
+// the page behind it after a short debounce, instead of requiring an explicit
+// Apply click. The Apply/✓ button still works too (applies immediately, no wait).
+const scheduleAutoApply = debounce(()=>{ updateFilterChip(); renderActivePage(); }, 400);
 function renderMultiSelect(key, label, options){
   const selected = sel(key) || [];
   return `<div class="fgroup"><label>${esc(label)} <span style="color:var(--muted);font-weight:400">(${options.length} options)</span></label>
@@ -1433,6 +1461,7 @@ function toggleMsValue(key, val){
   STATE.filters[key] = cur;
   renderDrawer();
   const drop = $('#msdrop_'+key); if(drop) setTimeout(()=>drop.classList.add('on'),0);
+  scheduleAutoApply();
 }
 function openDrawer(){ renderDrawer(); $('#drawer').classList.add('on'); $('#overlay').classList.add('on'); }
 function closeDrawer(){ $('#drawer').classList.remove('on'); $('#overlay').classList.remove('on'); }
@@ -1471,12 +1500,6 @@ function renderNav(){
   $('#navList').innerHTML = NAV_ITEMS.map((it,i)=>`<div class="navitem ${it.id===STATE.currentPage?'on':''}" data-nav="${it.id}">
     <span class="ni">${it.icon}</span><span class="nlbl">${esc(it.label)}</span><span class="nno">${(i+1).toString().padStart(2,'0')}</span></div>`).join('');
   $$('.navitem').forEach(el=> el.addEventListener('click', ()=>{ location.hash = '#'+el.dataset.nav; }));
-  renderTopTabs();
-}
-function renderTopTabs(){
-  const el = $('#topTabsEl'); if(!el) return;
-  el.innerHTML = NAV_ITEMS.map(it=>`<button class="toptab ${it.id===STATE.currentPage?'on':''}" data-nav="${it.id}"><span class="ti">${it.icon}</span>${esc(it.label)}</button>`).join('');
-  $$('.toptab', el).forEach(b=> b.addEventListener('click', ()=>{ location.hash = '#'+b.dataset.nav; }));
 }
 function renderActivePage(){
   const id = STATE.currentPage;
@@ -1490,7 +1513,6 @@ function renderActivePage(){
   if(fn){ try{ target.innerHTML = fn(); wirePageExtras(id); } catch(err){ console.error(err); target.innerHTML = `<div class="card"><b>Render error on this page.</b><div class="hint">${esc(err.message)}</div></div>`; } }
   else target.innerHTML = `<div class="card empty-note">Page not yet built.</div>`;
   $$('.navitem').forEach(el=> el.classList.toggle('on', el.dataset.nav===id));
-  $$('.toptab').forEach(el=> el.classList.toggle('on', el.dataset.nav===id));
 }
 function wirePageExtras(id){
   // sortable tables
@@ -2068,8 +2090,9 @@ function erpCityRowFor(cityNorm){
 }
 
 /* Competitor layer — CaratLane real store presence, matched by EXACT pin code string
-   (dashboard/caratlane_intel_data.js — 112 of an estimated 230+ CaratLane stores nationwide,
-   collected from CaratLane's own public store-catalog pages, not a licensed dataset).
+   (GEO_INTEL_DATA.caratlaneStores, sourced from etl/caratlane_stores.json — 206 of an
+   estimated 230+ CaratLane stores nationwide, collected from CaratLane's own public
+   store-catalog pages, not a licensed dataset).
    "Catalog items" = CaratLane's own ONLINE CATALOG LISTING count for that store — a public
    proxy for local assortment depth, NOT audited stock (no retailer publishes real per-store
    inventory, ours included). A pin code showing no CaratLane store here means none was FOUND
@@ -2086,7 +2109,7 @@ const CARATLANE_PB_BANDS = [
 ];
 const CARATLANE_BY_PINCODE = (() => {
   const m = new Map();
-  (window.CARATLANE_STORES||[]).forEach(s=>{
+  ((window.GEO_INTEL_DATA && window.GEO_INTEL_DATA.caratlaneStores) || []).forEach(s=>{
     if(!s.pincode) return;
     let total = 0; CARATLANE_CAT_KEYS.forEach(k=>{ if(s.cat && s.cat[k]) total += s.cat[k]; });
     const key = String(s.pincode).trim();
@@ -2108,10 +2131,13 @@ PAGE_RENDERERS.pincode = function(){
     const c = normCity(r.city); if(!c) continue;
     cityDealTotals.set(c, (cityDealTotals.get(c)||0) + n(r.deals));
   }
+  // date-filtered city totals -- NOT STATE.D.CITY (full-window, static) -- so Sessions*/PDP*/
+  // Users*/ATC*/Checkout* actually change when the date range filter changes, same as Deals/Won.
+  const cityByName = new Map(filteredCity().map(c=>[c.city, c]));
 
   const enriched = rows.map(r=>{
     const cityNorm = normCity(r.city);
-    const cityObj = STATE.D.CITY.find(c=>c.city===cityNorm);
+    const cityObj = cityByName.get(cityNorm);
     const erp = erpCityRowFor(cityNorm);
     const cityDealTotal = cityDealTotals.get(cityNorm) || 0;
     const share = cityDealTotal>0 ? n(r.deals)/cityDealTotal : 0;
@@ -2137,7 +2163,7 @@ PAGE_RENDERERS.pincode = function(){
 
   return `
   ${renderChipsRow()}
-  <div class="sec-head"><div><h2>Pin Code Intelligence</h2><p>Pin Code, City, State, Deals Created and Closed Won are <b>real</b> (Zoho <code>Address_Zip</code>). Sessions, PDP, Users, ATC, Checkout and Orders are <b>modelled</b> — GA4 has no postal dimension at all and the ERP feed has no pin code either, so these are allocated from that pin code's real city-level GA4/ERP totals, weighted by its share of real deals within the city (marked * throughout). Known/Identified Users has no source at ANY grain and is never modelled — shown as N/A, not estimated. <b>CaratLane columns are a real competitive layer</b> — exact pin-code matches against 112 of an estimated 230+ CaratLane stores nationwide (their own public catalog pages, not stock data — see hint below).</p></div>
+  <div class="sec-head"><div><h2>Pin Code Intelligence</h2><p>Pin Code, City, State, Deals Created and Closed Won are <b>real</b> (Zoho <code>Address_Zip</code>). Sessions, PDP, Users, ATC and Checkout are <b>modelled</b> — GA4 has no postal dimension at all, so these are allocated from that pin code's city-level GA4 totals <b>for the currently selected date range</b> (city sessions/pdp/etc. are tracked day-by-day, same as the pin code deals), weighted by its share of real deals within the city for that same range (marked * throughout) — narrowing to a single day changes both consistently. <b>Orders*</b> is the one exception: it comes from the ERP feed, which is fetched as a live full snapshot with no date dimension, so it does not shrink with the date filter. Known/Identified Users has no source at ANY grain and is never modelled — shown as N/A, not estimated. <b>CaratLane columns are a real competitive layer</b> — exact pin-code matches against 206 of an estimated 230+ CaratLane stores nationwide (their own public catalog pages, not stock data — see hint below).</p></div>
     <span class="chip warn">○ ${fmtInt(rows.length)} pin codes tracked · ${cov.deals_with_city_pct}%-class Zoho coverage</span></div>
 
   <div class="grid kpi-grid" style="margin-bottom:4px">
@@ -2169,7 +2195,7 @@ PAGE_RENDERERS.pincode = function(){
   ].concat(CARATLANE_CAT_KEYS.map(k=> [r.clCat[k]?fmtInt(r.clCat[k]):'—', r.clCat[k]||0]))
    .concat(CARATLANE_PB_BANDS.map(b=> [r.clPb[b.key]?fmtInt(r.clPb[b.key]):'—', r.clPb[b.key]||0]))
   ), {title:'Pin Code Detail  ·  * = modelled (allocated from real city totals by deal-share, not directly measured)  ·  † = CaratLane public catalog listing count, not stock', searchable:true,
-    hint:'Area = the locality/post-office name(s) served by that pin code, resolved from the public India Post pincode directory (api.postalpincode.in) — real reference data, not modelled from Lucira\'s own sources (no Pin→Area field exists in Zoho or GA4). Pin codes covering many post offices show the first few + a "+N more" count rather than picking one arbitrarily; "—" means the directory had no record for that (or a malformed) pin code. Modelled columns assume a pin code\'s share of its city\'s real GA4/ERP activity equals its share of real Zoho deals within that city — a reasonable proxy, not a measurement. Pin codes with very few deals (1-2) produce noisy modelled numbers; treat those directionally only, and lean on the Deals Created / Closed Won columns (real) for anything decision-critical. <b>Every "CaratLane…†" column</b> (Here / Store(s) / Total Inventory / per-category Rings…Nose pin / per-price-band &lt;₹5k…₹30-40k) comes straight from the same table as the standalone CaratLane Competitive Intelligence dashboard (dashboard/caratlane_intel_data.js) — 112 of an estimated 230+ CaratLane stores nationwide, matched to this row by EXACT pin code string, summed across stores if more than one CaratLane store shares that pin code. "No"/"—" means no CaratLane store was found in our captured 112 at that exact pin code — it is not proof CaratLane has zero presence there (they may have a store we did not capture, or one just outside this pin code in the same locality). Every CaratLane figure is that store\'s own ONLINE CATALOG LISTING count (a public assortment-depth proxy), not audited stock — no retailer publishes real per-store inventory, Lucira included; each store page also lists more categories/bands than captured, so these are a floor. Click column headers to sort — e.g. sort by real Deals Created descending, then scan the CaratLane columns, to spot high-demand pin codes CaratLane has not yet reached.'})}
+    hint:'Area = the locality/post-office name(s) served by that pin code, resolved from the public India Post pincode directory (api.postalpincode.in) — real reference data, not modelled from Lucira\'s own sources (no Pin→Area field exists in Zoho or GA4). Pin codes covering many post offices show the first few + a "+N more" count rather than picking one arbitrarily; "—" means the directory had no record for that (or a malformed) pin code. Modelled columns assume a pin code\'s share of its city\'s real GA4/ERP activity equals its share of real Zoho deals within that city — a reasonable proxy, not a measurement. Pin codes with very few deals (1-2) produce noisy modelled numbers; treat those directionally only, and lean on the Deals Created / Closed Won columns (real) for anything decision-critical. <b>Every "CaratLane…†" column</b> (Here / Store(s) / Total Inventory / per-category Rings…Nose pin / per-price-band &lt;₹5k…₹30-40k) comes from the same underlying dataset as the standalone CaratLane Competitive Intelligence dashboard (etl/caratlane_stores.json, embedded into this dashboard\'s own GEO_INTEL_DATA.caratlaneStores) — 206 of an estimated 230+ CaratLane stores nationwide, matched to this row by EXACT pin code string, summed across stores if more than one CaratLane store shares that pin code. "No"/"—" means no CaratLane store was found in our captured 206 at that exact pin code — it is not proof CaratLane has zero presence there (they may have a store we did not capture, or one just outside this pin code in the same locality). Every CaratLane figure is that store\'s own ONLINE CATALOG LISTING count (a public assortment-depth proxy), not audited stock — no retailer publishes real per-store inventory, Lucira included; each store page also lists more categories/bands than captured, so these are a floor. Click column headers to sort — e.g. sort by real Deals Created descending, then scan the CaratLane columns, to spot high-demand pin codes CaratLane has not yet reached.'})}
 
   <div class="card" style="margin-top:16px">
     <h3 style="font-size:14px;margin-bottom:10px">✦ Store-Opening Candidates — Pin Code Level</h3>
