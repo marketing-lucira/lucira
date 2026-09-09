@@ -56,8 +56,10 @@ nav.tabs button.on{color:var(--tx);border-bottom-color:var(--acc)}
 .presets button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
 .multi{position:relative;cursor:pointer;user-select:none;min-width:150px}
 .multi .tag{color:var(--tx)}
-.multi .pop{display:none;position:absolute;top:110%;left:0;background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:8px;min-width:220px;max-height:280px;overflow:auto;z-index:60;box-shadow:var(--shadow)}
-.multi.open .pop{display:block}
+.multi .pop{display:none;flex-direction:column;position:absolute;top:110%;left:0;background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:8px;min-width:220px;max-width:min(360px,90vw);max-height:min(340px,60vh);z-index:60;box-shadow:var(--shadow)}
+.multi.open .pop{display:flex}
+.multi .pop .multi-search,.multi .pop .multi-bar{flex:0 0 auto}
+.multi .pop .multi-list{flex:1 1 auto;overflow-y:auto;min-height:0}
 .multi .pop label{display:flex;gap:8px;align-items:center;padding:4px 6px;border-radius:6px;font-size:12.5px;text-transform:none;letter-spacing:0;color:var(--tx);cursor:pointer;font-weight:400}
 .multi .pop label:hover{background:var(--bg2)}
 .chipbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center}
@@ -147,7 +149,7 @@ tr:hover td{background:var(--bg2)}
 .adv-toggle .arr{transition:transform .25s;font-size:11px;color:var(--tx2)}
 .adv-toggle.open .arr{transform:rotate(180deg)}
 .frow-adv{max-height:0;overflow:hidden;opacity:0;transition:max-height .3s ease,opacity .25s ease,margin-top .3s ease;margin-top:0}
-.frow-adv.open{max-height:1400px;opacity:1;margin-top:12px}
+.frow-adv.open{max-height:1400px;opacity:1;margin-top:12px;overflow:visible}
 .filt-summary{flex:1 1 auto;min-width:0;font-size:13px;color:var(--tx);align-self:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .filt-summary .fs-lbl{color:var(--tx3);text-transform:uppercase;font-size:10.5px;letter-spacing:.4px;font-weight:700;margin-right:5px}
 .frow-adv>.row{border-top:1px dashed var(--line);padding-top:12px}

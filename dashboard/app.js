@@ -10,6 +10,7 @@ var CONFIG = {
   GA4_API: "",     // ← ga4-api Cloud Function URL (see ga4-api/README.md)
   CRM_API: "",     // ← deployed zoho-crm-api "bundle" endpoint (e.g. https://…/zoho-crm-data?format=bundle). Empty = snapshot mode (uses data.js).
   ZOHO_API: "",    // ← zoho-login-dashboard backend base URL (e.g. "https://zoho-login-dashboard-….run.app"). Powers the Products / Login & Status / Helpdesk / SQI / DQI / Data & Sync tabs. Empty = those tabs show a setup panel. Backend must allow this origin (CORS) or serve this file same-origin.
+  SALES_API: "https://storage.googleapis.com/lucira-dashboards/sales/latest.json", // ← live Sales snapshot (Ornaverse ERP), same public feed the Sales dashboards use. Powers Command Center's Sales Breakdown (city/state/product/sku/price-band) — company-wide only, NOT joined to CRM deals (no reliable customer-id match).
   AUTO_MS: 300000  // default auto-refresh interval in ms: 60000 = 1 min, 300000 = 5 min, 0 = off
 };
 /* Same-origin backend: when this file is served BY the Zoho Flask app, the template injects
@@ -22,14 +23,43 @@ try{ if(typeof window!=='undefined' && window.ZOHO_API_BASE!=null && window.ZOHO
    (always current); absent on the static Pages build → CONFIG.CRM_API stays "" → snapshot mode (data.js). */
 try{ if(typeof window!=='undefined' && window.CRM_API_BASE!=null && window.CRM_API_BASE!=='') CONFIG.CRM_API=String(window.CRM_API_BASE); }catch(e){}
 
+/* ---------- Sales feed (company-wide Ornaverse ERP data — separate system from Zoho CRM,
+   loaded independently for Command Center's Sales Breakdown section). No reliable Deal↔Sale
+   join exists (Sales' customer_id is an internal party id, not Zoho's mobile-based identity),
+   so this is shown as company-wide sales, never attributed to a specific deal/owner. */
+var SALES = { items:[], meta:{}, live:false, loaded:false };
+function loadSalesData(){
+  if(!CONFIG.SALES_API){ SALES={items:[],meta:{error:'not configured'},live:false,loaded:true}; return; }
+  fetch(CONFIG.SALES_API,{cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); }).then(function(j){
+    SALES = { items:j.items||[], meta:{generated_at:j.generated_at,asOf:j.asOf}, live:true, loaded:true };
+    if(typeof active!=='undefined' && active==='command') render();
+  }).catch(function(e){
+    SALES = { items:[], meta:{error:e.message}, live:false, loaded:true };
+    if(typeof active!=='undefined' && active==='command') render();
+  });
+}
+function fmtMoney(n){ if(n==null||isNaN(n))return '—'; var a=Math.abs(n),s=n<0?'-':''; if(a>=1e7) return s+'₹'+(a/1e7).toFixed(2)+'Cr'; if(a>=1e5) return s+'₹'+(a/1e5).toFixed(2)+'L'; return s+'₹'+Math.round(a).toLocaleString('en-IN'); }
+function salesInRange(from,to){ return (SALES.items||[]).filter(function(it){ return it.date>=from && it.date<=to && it.sale_type!=='Return'; }); }
+function uniqCount(list,field){ var s={}; list.forEach(function(it){ if(it[field]) s[it[field]]=1; }); return Object.keys(s).length; }
+function groupSales(items,field){
+  var g={};
+  items.forEach(function(it){
+    var k=it[field]; k=(k==null||k==='')?'Unknown':String(k);
+    var o=g[k]||(g[k]={key:k,label:k,orders:0,qty:0,net:0,_docs:{}});
+    if(it.document_no && !o._docs[it.document_no]){ o._docs[it.document_no]=1; o.orders++; }
+    o.qty+=it.qty||0; o.net+=(it.net!=null?it.net:(it.gross||0)*0.97);
+  });
+  return Object.keys(g).map(function(k){ var o=g[k]; delete o._docs; return o; }).sort(function(a,b){return b.net-a.net;});
+}
+
 var DASH = window.DASH || {};
 var OWN = DASH.owners || {};
 function ownerName(id){ return OWN[String(id)] || (id? ('User '+String(id).slice(-6)) : '(unassigned)'); }
 
 /* ---------- map positional rows to objects ---------- */
-function pd(a){return {id:a[0],name:a[1],owner:a[2],created:a[3],stage:a[4],prob:a[5],leadSource:a[6],reasonLoss:a[7],trigger:a[8],utmSource:a[9],utmMedium:a[10],numAct:a[11]||0,mobile:a[12]||''};}
-function pc(a){return {id:a[0],owner:a[1],created:a[2],type:a[3],dur:a[4]||0,start:a[5],whatId:a[6]||'',phone:a[7]||''};}
-function pt(a){return {id:a[0],owner:a[1],created:a[2],status:a[3],due:a[4],closed:a[5]};}
+function pd(a){return {id:a[0],name:a[1],owner:a[2],created:a[3],stage:a[4],prob:a[5],leadSource:a[6],reasonLoss:a[7],trigger:a[8],utmSource:a[9],utmMedium:a[10],numAct:a[11]||0,mobile:a[12]||'',city:a[13]||'',state:a[14]||''};}
+function pc(a){return {id:a[0],owner:a[1],created:a[2],type:a[3],dur:a[4]||0,start:a[5],whatId:a[6]||'',phone:a[7]||'',result:a[8]||''};}
+function pt(a){return {id:a[0],owner:a[1],created:a[2],status:a[3],due:a[4],closed:a[5],whatId:a[6]||''};}
 function po(a){return {id:a[0],owner:a[1],created:a[2],channel:a[3],atype:a[4]};}
 function pe(a){return {id:a[0],owner:a[1],created:a[2],start:a[3],end:a[4],title:a[5]};}
 var DEALS=(DASH.deals||[]).map(pd), CALLS=(DASH.calls||[]).map(pc), TASKS=(DASH.tasks||[]).map(pt),
@@ -66,21 +96,49 @@ function normTrig(t){ if(!t)return '(none)'; var x=(''+t).toLowerCase();
 }
 function clean(v){ v=(v==null?'':(''+v)).trim(); return v===''?'(none)':v; }
 function cleanTitle(v){ v=clean(v); return v; }
+/* Owner-Performance drill-down channel bucket for a deal: trigger first, then
+   lead source / UTM source for the social/search sources trigger doesn't cover. */
+function channelOf(d){
+  var t=normTrig(d.trigger);
+  if(t==='Checkout'||t==='ATC'||t==='WhatsApp'||t==='Website'||t==='Signup'||t==='Purchase'||t==='ProductView') return t;
+  var ls=(clean(d.leadSource)+' '+clean(d.utmSource)).toLowerCase();
+  if(ls.indexOf('instagram')>=0) return 'Instagram';
+  if(ls.indexOf('facebook')>=0) return 'Facebook';
+  if(ls.indexOf('google')>=0) return 'Google';
+  return 'Others';
+}
 
 /* ---------- filter state ---------- */
 var minDate='2026-05-31', maxDate=(function(){var mx='2026-05-31';DEALS.forEach(function(d){var k=dayKey(d.created);if(k>mx)mx=k;});CALLS.forEach(function(c){var k=dayKey(c.created);if(k>mx)mx=k;});return mx;})();
-var F={ from:minDate, to:maxDate, preset:'7', owners:new Set(), stage:'', trigger:'', leadSource:'', utmSource:'', utmMedium:'', callType:'', taskStatus:'', compare:false };
+var F={ from:minDate, to:maxDate, preset:'yest', owners:new Set(), stage:new Set(), trigger:new Set(), leadSource:new Set(), utmSource:'', utmMedium:'', callType:'', taskStatus:'', compare:false };
 
 function inDate(created){ var k=dayKey(created); return k>=F.from && k<=F.to; }
 function inR(created,from,to){ var k=dayKey(created); return k>=(from||F.from) && k<=(to||F.to); }
 function ownerOk(id){ return F.owners.size===0 || F.owners.has(String(id)); }
+function toggleSet(set,val){ if(set.has(val))set.delete(val); else set.add(val); }
 
-function fDeals(from,to){ return DEALS.filter(function(d){ return inR(d.created,from,to)&&ownerOk(d.owner)
-  &&(!F.stage||d.stage===F.stage)
-  &&(!F.trigger||normTrig(d.trigger)===F.trigger)
-  &&(!F.leadSource||clean(d.leadSource).toLowerCase()===F.leadSource.toLowerCase())
+/* Same mobile number, same calendar day = one customer entered twice (agent double-entry,
+   duplicate webhook, etc.) — keep only the latest-created deal of the pair/group, drop the
+   rest. Deals with no mobile on file can't be matched this way, so they're never dropped.
+   Calls are untouched by this — it only thins the deals list every table/tab reads via
+   fDeals(), never the CALLS array, so call counts stay exactly as recorded. */
+function dedupeDailyByMobile(arr){
+  var latestByKey={};
+  arr.forEach(function(d){
+    if(!d.mobile) return;
+    var key=dayKey(d.created)+'|'+d.mobile;
+    if(!latestByKey[key] || D(d.created)>D(latestByKey[key].created)) latestByKey[key]=d;
+  });
+  var keepId={}; Object.keys(latestByKey).forEach(function(k){ keepId[latestByKey[k].id]=true; });
+  return arr.filter(function(d){ return !d.mobile || keepId[d.id]; });
+}
+function fDealsRaw(from,to){ return DEALS.filter(function(d){ return inR(d.created,from,to)&&ownerOk(d.owner)
+  &&(!F.stage.size||F.stage.has(d.stage))
+  &&(!F.trigger.size||F.trigger.has(normTrig(d.trigger)))
+  &&(!F.leadSource.size||F.leadSource.has(clean(d.leadSource)))
   &&(!F.utmSource||clean(d.utmSource).toLowerCase()===F.utmSource.toLowerCase())
   &&(!F.utmMedium||clean(d.utmMedium).toLowerCase()===F.utmMedium.toLowerCase()); }); }
+function fDeals(from,to){ return dedupeDailyByMobile(fDealsRaw(from,to)); }
 function fCalls(from,to){ return CALLS.filter(function(c){ return inR(c.created,from,to)&&ownerOk(c.owner)&&(!F.callType||c.type===F.callType); }); }
 function fTasks(from,to){ return TASKS.filter(function(t){ return inR(t.created,from,to)&&ownerOk(t.owner)&&(!F.taskStatus||t.status===F.taskStatus); }); }
 function fOnline(from,to){ return ONLINE.filter(function(o){ return inR(o.created,from,to)&&ownerOk(o.owner); }); }
@@ -92,14 +150,14 @@ function ceTotalRange(from,to){ var cats=CE.cats||[], tot=0; cats.forEach(functi
 function periodMetrics(from,to){
   var dl=fDeals(from,to), cl=fCalls(from,to), tk=fTasks(from,to), on=fOnline(from,to), ev=fEvents(from,to);
   var contacted=joinDeals(dl).filter(function(j){return j.contacted;}).length;
-  return { deals:dl.length, unique:uniqueDeals(dl), calls:cl.length, connected:cl.filter(function(c){return c.dur>0;}).length,
+  return { deals:dl.length, calls:cl.length, connected:cl.filter(function(c){return c.dur>0;}).length,
     contact:pct(contacted,dl.length), won:dl.filter(isWon).length, tasks:tk.length, meetings:ev.length, chats:on.length, ce:ceTotalRange(from,to) }; }
 function renderCompareBand(v){
   var pp=prevPeriod(); var cur=periodMetrics(F.from,F.to), prev=periodMetrics(pp.from,pp.to);
   var band=el('div','panel');
   band.innerHTML='<div class="phead"><div><h3>⇄ Period Comparison</h3><div class="hint">'+fmtDay(F.from)+' – '+fmtDay(F.to)+'  vs  previous '+pp.len+' day'+(pp.len===1?'':'s')+' ('+fmtDay(pp.from)+' – '+fmtDay(pp.to)+')</div></div></div>';
   var row=el('div','kpis');
-  var items=[['Deals','deals',0],['Unique Deals','unique',0],['Calls','calls',0],['Connected','connected',0],['Contact Rate','contact',1],['Won Deals','won',0],['Tasks','tasks',0],['Customer Events','ce',0]];
+  var items=[['Deals','deals',0],['Calls','calls',0],['Connected','connected',0],['Contact Rate','contact',1],['Won Deals','won',0],['Tasks','tasks',0],['Customer Events','ce',0]];
   items.forEach(function(it){ var c=cur[it[1]], p=prev[it[1]], isPct=it[2];
     var dir=(c>p)?'up':(c<p)?'down':''; var arrow=c>p?'▲':c<p?'▼':'–';
     var curStr=isPct?p1(c)+'%':num(c), prevStr=isPct?p1(p)+'%':num(p);
@@ -119,7 +177,20 @@ CALLS.forEach(function(c){
   if(c.whatId && dealIdSet.has(c.whatId)){ (idxWhat[c.whatId]=idxWhat[c.whatId]||[]).push(c); }
   if(c.phone){ (idxPhone[c.phone]=idxPhone[c.phone]||[]).push(c); }
 });
-/* For a set of deals, compute matched calls (created >= deal.created) + first call + response */
+/* Task->Deal link (Zoho What_Id). Only populated when the data source captures it
+   (live CRM_API/BigQuery feed) — the static snapshot pulled Tasks without What_Id,
+   so TASKS_LINKED stays false there and task-before-call analysis is honestly gated off.
+   Rebuilt by rebuildTaskIndex() — called here at module load AND again from hydrate()
+   whenever a live CRM_API refresh replaces TASKS/dealIdSet with fresh data. */
+var taskIdxWhat={}, TASKS_LINKED=false;
+function rebuildTaskIndex(){
+  taskIdxWhat={};
+  TASKS.forEach(function(t){ if(t.whatId && dealIdSet.has(t.whatId)){ (taskIdxWhat[t.whatId]=taskIdxWhat[t.whatId]||[]).push(t); } });
+  TASKS_LINKED = TASKS.some(function(t){ return !!t.whatId; });
+}
+rebuildTaskIndex();
+/* For a set of deals, compute matched calls (created >= deal.created) + first call + response
+   + matched tasks (any Task whose What_Id points at the deal) + task-before-first-call flag */
 function joinDeals(deals){
   var out=[];
   deals.forEach(function(d){
@@ -129,7 +200,13 @@ function joinDeals(deals){
     var dc=D(d.created), after=[], first=null;
     cand.forEach(function(c){ var ct=D(c.created); if(ct&&dc&&ct>=dc){ after.push(c); if(!first||ct<D(first.created))first=c; } });
     var frt = first? (D(first.created)-dc)/60000 : null; // minutes
-    out.push({deal:d, calls:after, nCalls:after.length, first:first, frt:frt, contacted:after.length>0});
+    var dtasks=taskIdxWhat[d.id]||[];
+    var firstTask=null; dtasks.forEach(function(t){ if(!firstTask||D(t.created)<D(firstTask.created))firstTask=t; });
+    var taskBeforeCall = !!(firstTask && first && D(firstTask.created) < D(first.created));
+    var taskNoCallYet = !!(firstTask && !first);
+    out.push({deal:d, calls:after, nCalls:after.length, first:first, frt:frt, contacted:after.length>0,
+      tasks:dtasks, nTasks:dtasks.length, hasTask:dtasks.length>0, firstTask:firstTask,
+      taskBeforeCall:taskBeforeCall, taskNoCallYet:taskNoCallYet});
   });
   return out;
 }
@@ -211,10 +288,436 @@ function donut(host, items, opts){
 }
 
 /* ---------- KPI + panel + table builders ---------- */
-function kpi(k,v,d,dcls,accent){ var e=el('div','kpi'); e.innerHTML='<div class="accent" style="background:'+(accent||'var(--acc)')+'"></div><div class="k">'+esc(k)+'</div><div class="v">'+v+'</div>'+(d?'<div class="d '+(dcls||'')+'">'+d+'</div>':''); return e; }
-function kpiRow(list){ var g=el('div','kpis'); list.forEach(function(x){ g.appendChild(kpi(x[0],x[1],x[2],x[3],x[4])); }); return g; }
-function panel(title,hint){ var p=el('div','panel'); var h=el('div','phead'); h.appendChild(el('div',null,'<h3>'+esc(title)+'</h3>'+(hint?'<div class="hint">'+esc(hint)+'</div>':''))); p.appendChild(h); var body=el('div','chart'); p.appendChild(body); p.__body=body; p.__head=h; return p; }
-function addExport(p, name, headers, rows){ var b=el('button','mini','⭳ CSV'); b.onclick=function(){ exportCSV(name,headers,rows); }; p.__head.appendChild(b); }
+/* ===== BI Info-Panel engine (ⓘ) — business-intelligence explainer modal, wired into every kpi()/panel() ===== */
+var INFO = {};   // key -> content object, populated by Object.assign(INFO,{...}) blocks below.
+Object.assign(INFO, {
+  'command.task_assigned_before_call': {
+    name:'Task Assigned Before Call', tabLabel:'Command Center · Section 14',
+    what:'Flags a deal whenever a Task was created for it before its first call went out. It measures whether agents are logging a follow-up task ahead of actually calling the customer.',
+    importance:'A high rate can mean agents are deferring calls in favour of scheduling reminders, which delays first contact and hurts SLA/coverage. A low rate means agents mostly call first and only create tasks afterwards.',
+    formula:'For each deal: taskBeforeCall = (earliest linked Task\'s Created Time) &lt; (first linked Call\'s Created Time). Requires Task→Deal linking via Zoho <code>What_Id</code> — only available on the live BigQuery feed, not the static snapshot.',
+    interpretation:'Read together with "Task Assigned, No Call Yet" below (task exists but the deal still has zero calls) — that subset is the more urgent one to chase.',
+    related:'Pending First Calls, SLA %, Owner Performance'
+  },
+  'command.deals_w_task_before_call': {
+    name:'Deals w/ Task Before Call', tabLabel:'Command Center · Section 14',
+    what:'Count (and % of all deals in the selected range) where a Task was logged before the deal\'s first call.',
+    formula:'COUNT(deals where taskBeforeCall = true) / COUNT(all deals in range)',
+    interpretation:'Rising over time can indicate agents are prioritising task-scheduling over immediate outreach — cross-check the Agent-wise table below for which owners drive it.'
+  },
+  'command.task_assigned_no_call_yet': {
+    name:'Task Assigned, No Call Yet', tabLabel:'Command Center · Section 14',
+    what:'Deals that have a Task logged but have NOT been called at all yet in the selected range.',
+    importance:'The highest-risk of the group — a task/reminder was planned but never executed, and the customer has heard nothing since inquiry.',
+    actions:'Prioritise this list ahead of the general Pending First Calls queue, since a task already exists for these deals — someone intended to call and hasn\'t yet.'
+  },
+  'command.time_wise_hour_of_day_ist': {
+    name:'Task Before Call — Time-wise', tabLabel:'Command Center · Section 14',
+    what:'Task-before-call metric grouped by the hour of day (IST) the deal was created, 12 AM–11 PM.',
+    interpretation:'Use this to spot hours where agents default to scheduling a task instead of calling immediately — often late-evening/early-morning hours with lower live-agent availability.'
+  },
+  'command.agent_wise': {
+    name:'Task Before Call — Agent-wise', tabLabel:'Command Center · Section 14',
+    what:'Task-before-call metric grouped by deal owner (agent), sorted by highest count first.',
+    importance:'Identifies which agents more often log a task before calling — useful for coaching on immediate-response discipline.'
+  },
+  'command.deal_trigger_wise': {
+    name:'Task Before Call — Deal Trigger-wise', tabLabel:'Command Center · Section 14',
+    what:'Task-before-call metric grouped by the Deal Trigger Event (e.g. ATC, Checkout, ProductView, Signup, WhatsApp) that created the deal.',
+    interpretation:'Some triggers (e.g. Checkout/Purchase) may warrant an immediate call rather than a scheduled task given higher intent — compare rates across triggers to see where policy isn\'t being followed.'
+  },
+  'command.biz_connected30': {
+    name:'Connected (>30s)', tabLabel:'Command Center · Section 3 (Business vs Non-Business)',
+    what:'Number of calls in this window lasting longer than 30 seconds — a simple proxy for a real connected conversation rather than a ring/voicemail/instant hang-up.',
+    formula:'COUNT(calls where Call_Duration_in_seconds &gt; 30)'
+  },
+  'command.biz_talk': {
+    name:'Total Talk Time', tabLabel:'Command Center · Section 3 (Business vs Non-Business)',
+    what:'Sum of call duration across all calls in this window, shown as HH:MM:SS.',
+    formula:'SUM(Call_Duration_in_seconds)'
+  },
+  'command.deals_created': {
+    name:'Deals Created', tabLabel:'Command Center · KPI Strip',
+    what:'Total number of Deals created in Zoho CRM during the selected date range and filters — every new lead that entered the pipeline as a Deal record.',
+    importance:'This is the volume denominator behind almost every other KPI on this dashboard (Call Coverage, SLA %, Unique Deals Called) — a swing here changes how those percentages should be read even if the underlying process hasn\'t changed.',
+    formula:'COUNT(Deals where Created_Time falls in the selected range, after owner/stage/source filters)',
+    interpretation:'Compare against Calls Done and Call Coverage together — a spike in Deals Created without a matching rise in Calls Done is usually the first sign the team is falling behind on outreach.',
+    related:'Calls Done, Call Coverage, Unique Deals Called'
+  },
+  'command.calls_done': {
+    name:'Calls Done', tabLabel:'Command Center · KPI Strip',
+    what:'Total number of Calls logged (outbound, inbound and missed) in the selected window, regardless of whether the call reached the customer.',
+    importance:'A raw activity/effort metric, not an outcome metric — pair it with "Connected (>30s)" and Call Coverage to see how much of this dialling actually reached someone.',
+    formula:'COUNT(Calls where Created_Time falls in the selected range)',
+    interpretation:'High Calls Done with low Call Coverage usually means agents are re-dialling the same deals rather than reaching new ones — check the Owner Performance table (Section 5) for who is driving it.',
+    related:'Call Coverage, Unique Deals Called, Connected (>30s)'
+  },
+  'command.unique_deals_called': {
+    name:'Unique Deals Called', tabLabel:'Command Center · KPI Strip',
+    what:'Count of distinct deals that received at least one call in the selected window — a deal dialled 5 times still counts once.',
+    importance:'The real "reach" number: how many different customers actually got a call, independent of how many total dial attempts it took.',
+    formula:'COUNT(DISTINCT deal.id where the deal has ≥1 linked Call in range)',
+    interpretation:'This is the numerator behind Call Coverage % (Unique Deals Called ÷ Deals Created). If Calls Done keeps rising but this stays flat, effort isn\'t converting into new reach.',
+    related:'Call Coverage, Deals Created, Pending First Calls'
+  },
+  'command.pending_first_calls': {
+    name:'Pending First Calls', tabLabel:'Command Center · KPI Strip',
+    what:'Deals in the selected window that have NOT yet received a single call — no first-contact attempt has happened.',
+    importance:'The core backlog metric. Every deal counted here is a lead going cold with zero outreach, which directly hurts Call Coverage and, eventually, win rate.',
+    formula:'Step-by-step, per deal: (1) find candidate calls two ways — every Call whose <code>What_Id</code> points at this Deal\'s id, PLUS every Call whose phone number (parsed from the Call Subject, since To/From_Number are often blank) matches this deal\'s Mobile; (2) merge and de-duplicate those into one candidate list; (3) keep only calls whose Created_Time is at/after the deal\'s Created_Time (a call logged before the deal existed can\'t be its first-contact call); (4) if that filtered list is empty, the deal is "pending" — zero real first-contact calls linked to it. Pending First Calls = COUNT(deals where step 4 is empty), scoped to the selected date range and any active owner/stage/source filters.',
+    interpretation:'A deal only leaves this bucket once a call is found linking back to it — cross-check the Hourly Connectivity heatmap (Section 4) and Owner Performance (Section 5) to see which hours or owners are driving the backlog before assigning blame to overall headcount.',
+    actions:'Triage this list first — the longer a deal sits here, the more it overlaps with Overdue Deals (Section 6) and the higher the risk of losing an interested customer.',
+    related:'Overdue Deals, Call Coverage, Owner Performance'
+  },
+  'command.avg_first_response': {
+    name:'Avg First Response', tabLabel:'Command Center · KPI Strip',
+    what:'Mean time from a deal being created to its first outbound call, averaged across all deals in the window that have been called at least once.',
+    importance:'First-response time is one of the strongest predictors of conversion for inbound sales leads — the odds of qualifying a lead typically drop sharply once the first response takes more than 5–30 minutes.',
+    formula:'AVG(first_call.Created_Time − deal.Created_Time) across contacted deals',
+    interpretation:'Averages hide outliers — always read this next to Median First Response and Max First Response; a low average with a very high max usually means a handful of deals were badly delayed.',
+    related:'Median First Response, Max First Response, SLA %'
+  },
+  'command.median_first_response': {
+    name:'Median First Response', tabLabel:'Command Center · KPI Strip',
+    what:'The middle value of first-response time across contacted deals — half of deals were called faster than this, half slower.',
+    importance:'More robust than the average against a handful of extreme delays, so it better reflects the "typical" customer experience.',
+    formula:'MEDIAN(first_call.Created_Time − deal.Created_Time) across contacted deals',
+    interpretation:'If the median is much lower than Avg First Response, a small number of very late calls are dragging the average up — check Max First Response and the Overdue Deals table to find them.',
+    related:'Avg First Response, Max First Response'
+  },
+  'command.max_first_response': {
+    name:'Max First Response', tabLabel:'Command Center · KPI Strip',
+    what:'The single slowest first-response time recorded for any contacted deal in the selected window.',
+    importance:'Flags the worst-case customer experience — the one deal that waited longest before ever being called.',
+    formula:'MAX(first_call.Created_Time − deal.Created_Time) across contacted deals',
+    interpretation:'A Max much higher than the Median points to an isolated miss (e.g. a deal assigned to an unavailable owner) rather than a systemic problem — check Owner Performance to identify who owned it.',
+    related:'Median First Response, Owner Performance'
+  },
+  'command.call_coverage': {
+    name:'Call Coverage', tabLabel:'Command Center · KPI Strip',
+    what:'The percentage of deals created in this window that have received at least one call.',
+    importance:'The single best "are we actually working the pipeline" number — a deal with zero calls has effectively zero chance of converting, no matter how good its lead quality is.',
+    formula:'Unique Deals Called ÷ Deals Created × 100, target 90%',
+    interpretation:'Different from SLA %: Coverage asks "did we call at all", SLA % asks "did we call fast enough". A deal can be fully covered but still be an SLA breach if the call was late.',
+    related:'Unique Deals Called, SLA %, Pending First Calls'
+  },
+  'command.sla': {
+    name:'SLA %', tabLabel:'Command Center · KPI Strip',
+    what:'The percentage of contacted deals whose first call happened within the 30-minute response-time SLA.',
+    importance:'Measures speed, not just whether a call happened — a deal counted in Call Coverage can still fail SLA if the first call came late.',
+    formula:'COUNT(deals where first-response time ≤ 30 min) ÷ COUNT(contacted deals) × 100, target 80%',
+    interpretation:'Read alongside Avg/Median First Response for the underlying timing distribution, and Overdue Deals for the exact list of breaches.',
+    related:'Call Coverage, Overdue Deals, Avg First Response'
+  },
+  'command.overdue_deals': {
+    name:'Overdue Deals', tabLabel:'Command Center · KPI Strip',
+    what:'Deals in the selected window that are either (a) contacted later than 30 minutes after creation, or (b) still uncalled and already older than 30 minutes.',
+    importance:'The action list — every deal counted here has already breached the response-time SLA and needs manager attention now, not eventually.',
+    formula:'COUNT(deals where (contacted AND first-response &gt; 30min) OR (not contacted AND age &gt; 30min))',
+    actions:'Work this list directly via the "Overdue Deals" table (Section 6) — it\'s the same set, ranked with owner and priority.',
+    related:'Pending First Calls, SLA %'
+  },
+  'command.meetings_scheduled': {
+    name:'Meetings Scheduled', tabLabel:'Command Center · KPI Strip',
+    what:'Count of Zoho Events (meetings) with a start time in the selected window, regardless of whether they\'ve happened yet.',
+    importance:'The deeper-funnel counterpart to calls — tracks how many customer meetings the team has on the books.',
+    formula:'COUNT(Events where Start_DateTime falls in the selected range)',
+    interpretation:'Zoho Events here are owner-level and NOT linked to a specific Deal record, so this can\'t be broken down per-deal or tied to a Meeting→Sale conversion rate — read it as a team-level activity count, not a pipeline metric.',
+    related:'Meetings Completed, Meetings Pending'
+  },
+  'command.meetings_completed': {
+    name:'Meetings Completed', tabLabel:'Command Center · KPI Strip',
+    what:'Meetings from the selected window whose scheduled start time has already passed (start &lt; reference time).',
+    formula:'COUNT(Events where Start_DateTime &lt; reference time)',
+    interpretation:'Shown with a completion % of Meetings Scheduled. Because Events aren\'t deal-linked, this can\'t confirm whether a completed meeting actually led to a sale.',
+    related:'Meetings Scheduled'
+  },
+  'command.meetings_pending': {
+    name:'Meetings Pending', tabLabel:'Command Center · KPI Strip',
+    what:'Meetings from the selected window that are still upcoming — start time has not yet passed.',
+    formula:'COUNT(Events where Start_DateTime ≥ reference time)',
+    related:'Meetings Scheduled, Meetings Completed'
+  },
+  'command.meetings_missed': {
+    name:'Meetings Missed', tabLabel:'Command Center · KPI Strip',
+    what:'Intended to count meetings that were scheduled but never attended (a no-show).',
+    importance:'Shown as "n/a" on purpose — Zoho Events has no outcome/status field distinguishing "attended" from "no-show", so this can\'t be computed honestly from the current data model.',
+    interpretation:'See Meetings Completed for the closest available proxy (elapsed time only, not confirmed attendance). Fixing this properly needs a status field added to the Events module in Zoho.',
+    related:'Meetings Completed, Meetings Scheduled'
+  },
+  'command.call_duration_analysis': {
+    name:'Call Duration Analysis', tabLabel:'Command Center · Section 15',
+    what:'Buckets every call in the selected window by how long it actually lasted, from 0 seconds up to 30+ seconds.',
+    importance:'Duration is the only reliable signal Zoho captures about what happened on a call — there is no telephony status field (no Busy/Failed/Voicemail/Cancelled/Not-Answered taxonomy in this CRM), so duration buckets are the closest honest proxy for call quality.',
+    impactTemplate:'A pipeline full of very short calls (0-10s) usually means dials aren\'t reaching people — every one of those is a customer who got zero real outreach despite showing as "called" in Call Coverage.',
+    formula:'For every Call in range: bucket = 0s if Call_Duration_in_seconds=0; 1-5s if ≤5; 6-10s if ≤10; 11-15s if ≤15; 16-20s if ≤20; 21-30s if ≤30; otherwise &gt;30s.',
+    dataSource:'<b>Calls table:</b> Call_Duration_in_seconds, Call_Type, Call_Result, Owner, Created_Time',
+    columnExplain:[['Call_Duration_in_seconds','Actual connected duration of the call, in seconds — 0 means the call never connected.'],['Call_Type','Outbound / Inbound / Missed — a reliable Zoho field, shown as a separate cross-cut.'],['Call_Result','An optional sales-disposition note the agent can type (Interested / Not interested / etc.) — only set on a small minority of calls, not a technical status.']],
+    benchmark:'No industry-standard threshold applies to raw duration buckets — read this next to Connected (>0s) % and the Zero-Second Calls section instead of a fixed target.',
+    actionsTemplate:'If 0-10s buckets are large relative to total calls, check the Zero-Second Calls section (⑯) for the specific agents driving it before assuming a data-quality issue.',
+    suggestedQuestions:['How many zero-second calls today?','What % of calls are actually connected?','Top agent by calls']
+  },
+  'command.dur_total_calls': {
+    name:'Total Calls', tabLabel:'Command Center · Section 15',
+    what:'Every Call record logged in the selected window, regardless of duration or direction.',
+    formula:'COUNT(Calls where Created_Time falls in the selected range)',
+    related:'Connected (>0s), Not Connected (0s)'
+  },
+  'command.dur_connected': {
+    name:'Connected (>0s)', tabLabel:'Command Center · Section 15',
+    what:'Calls with any nonzero duration — the call reached someone and lasted at least 1 second.',
+    formula:'COUNT(calls where Call_Duration_in_seconds &gt; 0)',
+    interpretation:'This is a looser definition than the "Connected (>30s)" column used elsewhere in Command Center (Sections 3-5, 14) — that one requires 30+ seconds as a proxy for a real conversation. Use whichever matches the question: "did it connect at all" vs "was it a real conversation".',
+    related:'Not Connected (0s), Zero-Second Calls'
+  },
+  'command.dur_not_connected': {
+    name:'Not Connected (0s)', tabLabel:'Command Center · Section 15',
+    what:'Calls logged with exactly 0 seconds of duration — dialed but never actually connected.',
+    formula:'COUNT(calls where Call_Duration_in_seconds = 0)',
+    importance:'Every one of these represents dialling effort that produced zero customer contact — see Section ⑯ (Zero-Second Calls) for the full breakdown.',
+    related:'Zero-Second Calls (Section 16), Connected (>0s)'
+  },
+  'command.call_duration_agentwise': {
+    name:'Call Duration — Agent-wise', tabLabel:'Command Center · Section 15',
+    what:'The same duration buckets as above, split out per agent (owner of the call), sorted by total call volume.',
+    importance:'Lets you compare not just how many calls each agent makes, but how many of those calls are substantive vs. instant/very short.',
+    dataSource:'<b>Calls table:</b> Owner, Call_Duration_in_seconds',
+    suggestedQuestions:['Top agent by calls','Average first response']
+  },
+  'command.call_outcome_disposition': {
+    name:'Call Outcome — agent-logged (Call_Result)', tabLabel:'Command Center · Section 15',
+    what:'The real Call_Result field from Zoho where an agent has typed a sales disposition for the call (Interested, Not interested, Requested callback, Invalid number, No response/Busy, etc.).',
+    importance:'This is genuinely useful qualitative signal where present, but it is agent-entered and optional — it is NOT a telephony connection status, and most calls don\'t have it filled in.',
+    impactTemplate:'Treat this panel as a sample, not a full picture — a high "Not interested" share among the calls that DO have this field set is still useful context for coaching, but says nothing about the majority of calls with no disposition logged.',
+    dataSource:'<b>Calls table:</b> Call_Result',
+    columnExplain:[['Call_Result','Free-text/picklist sales disposition typed by the agent after the call — optional, so only a minority of calls have it set.']],
+    warningsTemplate:'Do not confuse this with a "Busy/Failed/Voicemail" telephony taxonomy — Zoho does not track that for this org. This panel only appears at all when at least one call has Call_Result set.'
+  },
+  'command.call_duration_trend': {
+    name:'Call Duration — 30-day Trend', tabLabel:'Command Center · Section 15',
+    what:'Daily Connected % and Zero-Second % over the last 30 days (ending on the selected "to" date), so you can see whether call quality is improving or slipping over time.',
+    formula:'Per day: Connected % = calls with duration&gt;0 ÷ total calls that day; Zero-Second % = calls with duration=0 ÷ total calls that day.',
+    interpretation:'A rising Zero-Second % line alongside a flat or rising total-call-volume line is the clearest sign of "more dialling, not more reaching" — cross-check against the Agent-wise table for who is driving it.',
+    suggestedQuestions:['How many zero-second calls today?']
+  },
+  'command.zero_second_calls': {
+    name:'Zero-Second Calls', tabLabel:'Command Center · Section 16',
+    what:'Calls that were dialed but never connected at all — Call_Duration_in_seconds recorded as exactly 0.',
+    importance:'The clearest "wasted dial" signal in this data model — a zero-second call gives the customer zero chance to engage, no matter how it\'s counted elsewhere (it still counts toward Call Coverage and Calls Done).',
+    impactTemplate:'A high zero-second rate inflates Call Coverage and Calls Done without any real customer contact happening — those KPIs can look healthy while actual response quality is poor.',
+    formula:'COUNT(calls where Call_Duration_in_seconds = 0), and % = that ÷ Total Calls in the same window.',
+    dataSource:'<b>Calls table:</b> Call_Duration_in_seconds, Owner, Created_Time',
+    columnExplain:[['Call_Duration_in_seconds','0 means the call was logged but never actually connected — no ring answered, instant hang-up, or a misdial.']],
+    benchmark:'No universal telephony-industry figure applies here since this is CRM-logged duration, not a dialer\'s connect rate — the ⚠ agent flag at >15% of that agent\'s calls is a working threshold, not an external standard; adjust it if it doesn\'t match your team\'s reality.',
+    actionsTemplate:'Review the flagged (⚠) agents in the table below first — a sustained high zero-second rate for one agent is worth a direct conversation before assuming it\'s a systemic dialer/network issue.',
+    warningsTemplate:'Root cause (misdial, instant hang-up, wrong number, network drop) is not captured by any Zoho field for this org — this metric flags WHERE to look, not WHY it happened.',
+    suggestedQuestions:['How many zero-second calls today?','Top agent by calls']
+  },
+  'command.zero_second_calls_kpi': {
+    name:'Total Zero-Second Calls', tabLabel:'Command Center · Section 16',
+    what:'Count and % of all calls in the selected window with exactly 0 seconds duration.',
+    formula:'COUNT(calls where Call_Duration_in_seconds = 0) ÷ Total Calls × 100',
+    related:'Not Connected (0s), Call Duration Analysis'
+  },
+  'command.deals_never_called': {
+    name:'Deals Created But Never Called', tabLabel:'Command Center · Section 17',
+    what:'Deals created in the selected window that have ZERO calls linked to them — ever, checked against the full call history, not just the calls that happen to fall inside the selected date range.',
+    importance:'This is the highest-risk backlog on the whole dashboard: every row is a lead that has never once been spoken to. It overlaps with but is stricter than "Pending First Calls" — this table specifically confirms no call exists at all, not just none yet in the current window.',
+    impactTemplate:'Each of these deals has had zero opportunity to convert. The longer a deal sits here, the colder the lead gets and the more likely the customer has already bought elsewhere.',
+    formula:'For each deal created in range: join against ALL calls (via What_Id link or matching Mobile number, not date-restricted) — if zero matching calls exist, the deal appears here. Sorted by longest-waiting first.',
+    dataSource:'<b>Deals table:</b> id, Deal_Name, Owner, Created_Time, Lead_Source, Deal_Trigger_Event, Probability · <b>Calls table:</b> What_Id, Mobile-matched phone · <b>Tasks table:</b> Created_Time, What_Id (live feed only)',
+    columnExplain:[['Deal ID','Unique Zoho record ID for the deal.'],['Task Created','When a follow-up Task was logged for this deal, if any — only available when the live CRM feed with Task→Deal linking is connected; shows "—" on the static snapshot.'],['Hours Since Created','How long ago the deal was created, in hours, relative to now (or end of the selected day if looking at a past date).'],['Priority','High/Medium/Low, based on deal Probability and how long it has been waiting — reuses the same priority logic as the Deal Quality tab.'],['Reason','Lead Source and Deal Trigger Event shown together as context for WHY this lead came in — not a diagnosis of why it wasn\'t called.'],['SLA Status','Breach if the deal has been waiting longer than the 30-minute first-response SLA, else Within SLA.']],
+    benchmark:'Target is 0 — every deal here should ideally be called well within the 30-minute SLA window used elsewhere on this dashboard.',
+    actionsTemplate:'Triage by Priority first, then by Hours Since Created — a High-priority deal waiting 48 hours is more urgent than a Low-priority deal waiting 2 hours.',
+    suggestedQuestions:['How many deals never received a call?','Top agent by calls']
+  },
+  'command.deals_never_called_kpi': {
+    name:'Deals Never Called', tabLabel:'Command Center · Section 17',
+    what:'Count and % of deals created in the selected window with zero calls ever linked to them.',
+    formula:'COUNT(deals with 0 matched calls, all-time) ÷ Deals Created in range × 100',
+    related:'Pending First Calls, Call Coverage'
+  }
+});
+/* Cross-scope refs: assigned once the Section-11 IIFE defines these (see near its SLA_MIN/dayMetrics/opsModel/reportModel).
+   Declaring here (outer scope) lets the generic info-panel engine call them for ANY tab, since they read the shared
+   global filter state F rather than being tab-specific. */
+var SLA_MIN, SLA_TARGET, COVER_TARGET, dayMetricsFn, opsModelFn, reportModelFn, askAIFn;
+function slugify(s){ return (String(s==null?'':s).replace(/<[^>]*>/g,'').toLowerCase().match(/[a-z0-9]+/g)||['m']).join('_'); }
+function infoBtnHTML(key){ return key?(' <button type="button" class="info-ico" data-info="'+esc(key)+'" title="What is this?" aria-label="Explain this metric">ⓘ</button>'):''; }
+function lbl(text,key){ return {html:esc(text)+infoBtnHTML(key), text:text}; }
+
+function ensureInfoModal(){
+  if(document.getElementById('infoModalBg')) return;
+  var bg=el('div','info-modal-bg'); bg.id='infoModalBg';
+  bg.innerHTML='<div class="info-modal-card" id="infoModalCard" role="dialog" aria-modal="true"></div>';
+  bg.addEventListener('click',function(e){ if(e.target===bg) closeInfo(); });
+  document.body.appendChild(bg);
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeInfo(); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest && e.target.closest('.info-ico');
+    if(b){ e.preventDefault(); e.stopPropagation(); openInfo(b.getAttribute('data-info')); return; }
+    var q=e.target.closest && e.target.closest('.im-qchip');
+    if(q){ e.preventDefault(); e.stopPropagation(); var qt=q.getAttribute('data-q'); closeInfo(); if(askAIFn) askAIFn(qt); }
+  });
+  (function(){ var st=el('style'); st.textContent=
+    '.info-ico{background:none;border:none;cursor:pointer;font-size:13px;color:var(--tx3);vertical-align:middle;padding:0 2px;line-height:1;transition:color .15s}'+
+    '.info-ico:hover{color:var(--acc)}'+
+    '.kpi .k{display:inline-flex;align-items:center;gap:2px}'+
+    '.info-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:none;align-items:center;justify-content:center;padding:18px}'+
+    '.info-modal-bg.open{display:flex}'+
+    '.info-modal-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;max-width:720px;width:100%;max-height:88vh;overflow:auto;padding:26px 24px 22px;box-shadow:0 20px 60px rgba(0,0,0,.35);color:var(--tx)}'+
+    '.info-modal-card h2{margin:0 0 4px;font-size:17px;padding-right:26px}'+
+    '.info-modal-card .im-sec{margin:14px 0}'+
+    '.info-modal-card .im-sec h4{margin:0 0 6px;font-size:12.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--tx2)}'+
+    '.info-modal-card .im-sec .body{font-size:13px;line-height:1.65;color:var(--tx)}'+
+    '.info-modal-card .im-sec ul,.info-modal-card .im-sec ol{margin:2px 0;padding-left:18px}'+
+    '.info-modal-card .im-sec li{margin:3px 0}'+
+    '.info-modal-card .im-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;line-height:1;color:var(--tx2);cursor:pointer}'+
+    '.info-modal-card .im-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin:6px 0}'+
+    '.info-modal-card .im-grid .c{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}'+
+    '.info-modal-card .im-grid .c .t{font-size:10px;text-transform:uppercase;color:var(--tx3)}'+
+    '.info-modal-card .im-grid .c .v{font-size:14px;font-weight:700;margin-top:2px}'+
+    '.info-modal-card .im-missing{color:var(--tx3);font-size:13px;padding:20px 0;text-align:center}'+
+    '.info-modal-card .im-sec dl{margin:4px 0;display:grid;grid-template-columns:max-content 1fr;gap:4px 12px}'+
+    '.info-modal-card .im-sec dt{font-weight:700;color:var(--tx);white-space:nowrap}'+
+    '.info-modal-card .im-sec dd{margin:0;color:var(--tx2)}'+
+    '.im-qchips{display:flex;flex-wrap:wrap;gap:7px}'+
+    '.im-qchip{background:var(--bg2);border:1px solid var(--line);color:var(--acc);padding:6px 11px;border-radius:20px;font-size:12px;cursor:pointer;transition:all .15s}'+
+    '.im-qchip:hover{border-color:var(--acc);background:rgba(79,140,255,.08)}';
+    document.head.appendChild(st);
+  })();
+}
+var IM_ICON={what:'📖',importance:'🎯',current:'📊',insight:'🤖',root:'🔍',impact:'⚠',actions:'✅',formula:'🧮',interpretation:'📈',benchmark:'🏆',trend:'📅',warnings:'🚨',related:'🔗',depts:'👥',best:'💡',exec:'📝',dataSource:'🗄️',columnExplain:'📋',suggestedQuestions:'💬'};
+var IM_TITLE={what:'What is this',importance:'Business Importance',current:'Current Performance',insight:'AI Insight',root:'Root Cause',impact:'Business Impact',actions:'Recommended Actions',formula:'Formula',interpretation:'Interpretation Guide',benchmark:'Healthy Benchmark',trend:'Historical Trend',warnings:'Warning Signals',related:'Related Metrics',depts:'Responsible Teams',best:'Best Practices',exec:'Executive Summary',dataSource:'Data Source',columnExplain:'Column Explanation',suggestedQuestions:'Suggested Questions'};
+function imSec(key,html){ if(!html)return ''; return '<div class="im-sec"><h4>'+IM_ICON[key]+' '+IM_TITLE[key]+'</h4><div class="body">'+html+'</div></div>'; }
+/* Renders m.columnExplain when given as an array of [name,desc] pairs (preferred — avoids hand-written <dl> markup);
+   also accepts a pre-built HTML string for backward compatibility. */
+function imColumnExplain(v){ if(!v)return ''; if(typeof v==='string')return v; var dl='<dl>'; v.forEach(function(pair){ dl+='<dt>'+esc(pair[0])+'</dt><dd>'+esc(pair[1])+'</dd>'; }); return dl+'</dl>'; }
+/* Suggested-question chips: clicking one closes the info modal and asks the real Ask-AI assistant (askAIFn,
+   wired from buildAssistant()) — never a fake canned answer. */
+function imQuestions(qs){ if(!qs||!qs.length) return ''; var chips=qs.map(function(q){ return '<button type="button" class="im-qchip" data-q="'+esc(q)+'">'+esc(q)+' →</button>'; }).join('');
+  return '<div class="im-sec"><h4>'+IM_ICON.suggestedQuestions+' '+IM_TITLE.suggestedQuestions+'</h4><div class="body im-qchips">'+chips+'</div></div>'; }
+/* Global BI tokens — computed fresh (from the CURRENT filters F) every time a modal opens, so every metric's
+   templates can reference real cross-cutting context (best/worst owner, peak backlog hour, ...) even metrics
+   that don't have their own trend field. Missing/inapplicable values resolve to '—', never fabricated. */
+function imContext(){
+  var t={dateRange:fmtDay(F.from)+' – '+fmtDay(F.to), scope:(F.owners.size?F.owners.size+' owner(s) selected':'all owners')};
+  try{ if(opsModelFn){ var M=opsModelFn();
+    t.bestOwner=M.best?M.best.name:'—'; t.worstOwner=M.worst?M.worst.name:'—'; t.mostPendingOwner=M.mostPending?M.mostPending.name:'—';
+    t.peakBacklogHour=M.peakBacklog?hr12(M.peakBacklog.hour):'—'; t.peakWorkloadHour=M.peakWorkload?hr12(M.peakWorkload.hour):'—';
+    t.topOverdueSource=(M.odSrc&&M.odSrc[0])?M.odSrc[0].label:'—';
+    t.overdueCount=num(M.overdueCnt); t.pendingCount=num(M.pendingCnt); t.dealsCount=num(M.deals); t.callsCount=num(M.calls);
+    t.coveragePct=p1(M.coverage)+'%'; t.slaPct=p1(M.slaPct)+'%'; t.avgFrtNice=fmtMinNice(M.avgFrt); t.medFrtNice=fmtMinNice(M.medFrt);
+  } }catch(e){}
+  try{ var dl=fDeals(), cl=fCalls(), tk=fTasks(), on=fOnline(), ev=fEvents();
+    var joined=joinDeals(dl), contacted=joined.filter(function(j){return j.contacted;});
+    t.contactRatePct=p1(pct(contacted.length,dl.length))+'%';
+    var won=dl.filter(isWon), lost=dl.filter(function(d){return (d.stage||'').toLowerCase().indexOf('lost')>=0;});
+    t.wonCount=num(won.length); t.lostCount=num(lost.length); t.winRatePct=p1(pct(won.length,(won.length+lost.length)||1))+'%';
+    t.totalTasks=num(tk.length); t.overdueTasks=num(tk.filter(function(x){return !isDone(x)&&x.due&&dayKey(x.due)<dayKey(maxDate);}).length);
+    t.totalChats=num(on.length); t.totalEvents=num(ev.length); t.totalMeetings=num(ev.length); t.totalCalls=num(cl.length);
+  }catch(e){}
+  return t;
+}
+function fillTokens(str,ctx){ if(!str)return ''; return String(str).replace(/\{\{(\w+)\}\}/g,function(_,k){ return (ctx[k]!=null?ctx[k]:'—'); }); }
+/* Generic 4-window trend block (Current / Yesterday / Last 7 Days / Last 30 Days / Target) for any metric whose
+   value is a field on dayMetrics()'s result shape ({deals,calls,contacted,pending,coverage,avgFrt,medFrt,slaPct,meetings}).
+   Metrics without a natural dayMetrics field (e.g. Overdue Deals, Meetings Missed) pass trendField=null and fall
+   back to the registry's static "currentStatic" text — never fabricated. */
+function trendBlock(fieldName, kind, target, higherIsBetter){
+  if(!fieldName || !dayMetricsFn) return null;
+  try{
+    function fmt(x){ if(x==null)return '—'; if(kind==='percent')return p1(x)+'%'; if(kind==='minutes')return fmtMinNice(x); if(kind==='count')return num(Math.round(x)); return String(x); }
+    var to=F.to; var yestD=D(to); yestD.setDate(yestD.getDate()-1); var yest=ymd(yestD);
+    var w7d=D(to); w7d.setDate(w7d.getDate()-6); var w30d=D(to); w30d.setDate(w30d.getDate()-29);
+    var cur=dayMetricsFn(F.from,F.to)[fieldName], y=dayMetricsFn(yest,yest)[fieldName],
+        w7=dayMetricsFn(ymd(w7d),to)[fieldName], w30=dayMetricsFn(ymd(w30d),to)[fieldName];
+    higherIsBetter=(higherIsBetter!==false);
+    var diff=(cur!=null&&y!=null)?cur-y:null;
+    var trendWord=diff==null?'flat':(diff>0?'up':(diff<0?'down':'flat'));
+    var gap=(target!=null&&cur!=null)?(higherIsBetter?(target-cur):(cur-target)):null;
+    var html='<div class="im-grid">'+
+      '<div class="c"><div class="t">Current</div><div class="v">'+fmt(cur)+'</div></div>'+
+      '<div class="c"><div class="t">Yesterday</div><div class="v">'+fmt(y)+'</div></div>'+
+      '<div class="c"><div class="t">Last 7 Days</div><div class="v">'+fmt(w7)+'</div></div>'+
+      '<div class="c"><div class="t">Last 30 Days</div><div class="v">'+fmt(w30)+'</div></div>'+
+      (target!=null?('<div class="c"><div class="t">Target</div><div class="v">'+fmt(target)+'</div></div>'):'')+
+      '</div>'+(gap!=null?('<div style="font-size:12.5px;margin-top:6px;color:'+(gap>0?'var(--bad)':'var(--good)')+'">'+(gap>0?('Gap to target: '+fmt(Math.abs(gap))):'On or above target')+'</div>'):'');
+    return {html:html, cur:cur, y:y, w7:w7, w30:w30, diff:diff, trendWord:trendWord, gap:gap, fmt:fmt};
+  }catch(e){ return null; }
+}
+function renderInfoHTML(key){
+  var m=INFO[key];
+  if(!m) return '<button class="im-close" onclick="closeInfo()">&times;</button><div class="im-missing">No business-intelligence explanation has been written yet for this metric.<br><span style="font-size:11px">(key: '+esc(key)+')</span></div>';
+  var ctx=imContext();
+  var tb = m.trendField ? trendBlock(m.trendField, m.trendKind, m.target, m.higherIsBetter) : null;
+  var html='<button class="im-close" onclick="closeInfo()">&times;</button>';
+  html+='<h2>'+esc(m.name||key)+'</h2>';
+  if(m.tabLabel) html+='<div style="font-size:11.5px;color:var(--tx3);margin-bottom:6px">'+esc(m.tabLabel)+'</div>';
+  html+=imSec('what',m.what);
+  html+=imSec('importance',m.importance);
+  html+=imSec('impact', fillTokens(m.impactTemplate,ctx));
+  html+=imSec('formula',m.formula);
+  html+=imSec('dataSource',m.dataSource);
+  html+=imSec('columnExplain', imColumnExplain(m.columnExplain));
+  html+=imSec('current', (tb&&tb.html) ? tb.html : (m.currentStatic||''));
+  html+=imSec('benchmark',m.benchmark);
+  html+=imSec('actions', fillTokens(m.actionsTemplate,ctx));
+  html+=imSec('insight', fillTokens(m.insightTemplate,ctx));
+  html+=imSec('root', fillTokens(m.rootCauseTemplate,ctx));
+  html+=imSec('interpretation',m.interpretation);
+  html+=imSec('warnings', fillTokens(m.warningsTemplate,ctx));
+  html+=imSec('related',m.related);
+  html+=imSec('depts',m.depts);
+  html+=imSec('best',m.best);
+  html+=imSec('trend', (tb?('<p>Recent direction: <b>'+tb.trendWord+'</b> vs yesterday ('+tb.fmt(tb.cur)+' now, '+tb.fmt(tb.y)+' yesterday).</p>'):'')+(m.trend||''));
+  html+=imSec('exec', fillTokens(m.execTemplate,ctx));
+  html+=imQuestions(m.suggestedQuestions);
+  return html;
+}
+function openInfo(key){ ensureInfoModal(); document.getElementById('infoModalCard').innerHTML=renderInfoHTML(key); document.getElementById('infoModalBg').classList.add('open'); }
+function closeInfo(){ var bg=document.getElementById('infoModalBg'); if(bg) bg.classList.remove('open'); }
+window.closeInfo=closeInfo; /* referenced by the inline onclick on the × button */
+
+/* Generic row-level drill-down: reuses the info-modal chrome (.info-modal-bg/.info-modal-card) at a wider
+   width, with a sortable/exportable table() inside instead of BI-explainer text. Used by Command Center
+   KPIs/alerts/table rows that need to show "these N records" without discarding the current filter state. */
+function ensureDrillModal(){
+  if(gid('drillModalBg')) return;
+  var bg=el('div','info-modal-bg'); bg.id='drillModalBg';
+  bg.innerHTML='<div class="info-modal-card" id="drillModalCard" style="max-width:980px" role="dialog" aria-modal="true"></div>';
+  bg.addEventListener('click',function(e){ if(e.target===bg) closeDrill(); });
+  document.body.appendChild(bg);
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeDrill(); });
+}
+function openDrill(title, headers, rows, opts){
+  ensureDrillModal();
+  opts=opts||{key:'drill_'+slugify(title)};
+  var name=opts.key||slugify(title);
+  var plainRows=rows.map(function(r){ return r.map(function(c){ return (c&&c.text!=null)?c.text:(c&&c.html!=null?String(c.html).replace(/<[^>]+>/g,''):c); }); });
+  var card=gid('drillModalCard');
+  card.innerHTML='<button class="im-close" onclick="closeDrill()">&times;</button><h2>'+esc(title)+'</h2>'+
+    '<div style="display:flex;align-items:center;gap:8px;margin:6px 0 2px;flex-wrap:wrap">'+
+      '<button class="mini" id="drillDlXl">⭳ Download Excel</button>'+
+      '<button class="mini" id="drillDlCsv">⭳ Download CSV</button>'+
+    '</div>'+
+    '<div id="drillBody" style="margin-top:6px"></div>';
+  table(gid('drillBody'), headers, rows, opts);
+  gid('drillDlXl').onclick=function(){ exportExcelSimple(name, headers, plainRows); };
+  gid('drillDlCsv').onclick=function(){ exportCSV(name, headers, plainRows); };
+  gid('drillModalBg').classList.add('open');
+}
+function closeDrill(){ var bg=gid('drillModalBg'); if(bg) bg.classList.remove('open'); }
+window.closeDrill=closeDrill;
+
+function kpi(k,v,d,dcls,accent,infoKey){ infoKey=infoKey||(active+'.'+slugify(k)); var e=el('div','kpi'); e.innerHTML='<div class="accent" style="background:'+(accent||'var(--acc)')+'"></div><div class="k">'+esc(k)+infoBtnHTML(infoKey)+'</div><div class="v">'+v+'</div>'+(d?'<div class="d '+(dcls||'')+'">'+d+'</div>':''); return e; }
+function kpiRow(list){ var g=el('div','kpis'); list.forEach(function(x){ g.appendChild(kpi(x[0],x[1],x[2],x[3],x[4],x[5])); }); return g; }
+function panel(title,hint,infoKey){ infoKey=infoKey||(active+'.'+slugify(title)); var p=el('div','panel'); var h=el('div','phead'); h.appendChild(el('div',null,'<h3>'+esc(title)+infoBtnHTML(infoKey)+'</h3>'+(hint?'<div class="hint">'+esc(hint)+'</div>':''))); p.appendChild(h); var body=el('div','chart'); p.appendChild(body); p.__body=body; p.__head=h; return p; }
+function addExport(p, name, headers, rows){
+  var b=el('button','mini','⭳ CSV'); b.onclick=function(){ exportCSV(name,headers,rows); }; p.__head.appendChild(b);
+  var bx=el('button','mini','⭳ Excel'); bx.onclick=function(){ exportExcelSimple(name,headers,rows); }; p.__head.appendChild(bx);
+}
+function median(arr){ if(!arr||!arr.length)return null; var a=arr.slice().sort(function(x,y){return x-y;}); var n=a.length,h=Math.floor(n/2); return n%2?a[h]:(a[h-1]+a[h])/2; }
 
 var sortState={};
 function table(host, headers, rows, opts){
@@ -262,6 +765,16 @@ function exportCSV(name, headers, rows){
   var blob=new Blob([lines.join('\r\n')],{type:'text/csv;charset=utf-8;'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name+'.csv'; a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);},500);
 }
 function csvCell(v){ v=(v==null?'':''+v); if(/[",\n]/.test(v))return '"'+v.replace(/"/g,'""')+'"'; return v; }
+function exportExcelSimple(name, headers, rows){
+  function xcell(v){ return '<Cell><Data ss:Type="String">'+esc(v==null?'':''+v).replace(/\r?\n/g,'&#10;')+'</Data></Cell>'; }
+  function rowCell(c){ return (c&&c.text!=null)?c.text:(c&&c.html!=null?String(c.html).replace(/<[^>]+>/g,''):c); }
+  var head='<Row>'+headers.map(function(h){return xcell(h);}).join('')+'</Row>';
+  var body=rows.map(function(r){ return '<Row>'+r.map(function(c){return xcell(rowCell(c));}).join('')+'</Row>'; }).join('');
+  var xml='<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>'+
+    '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">'+
+    '<Worksheet ss:Name="'+esc(name).slice(0,31)+'"><Table>'+head+body+'</Table></Worksheet></Workbook>';
+  var blob=new Blob([xml],{type:'application/vnd.ms-excel'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name+'.xls'; a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);},500);
+}
 
 /* trend helper: counts by day/week/month for an array using created */
 function trend(arr, gran, dateFn){ dateFn=dateFn||function(x){return x.created;}; var keyFn=gran==='month'?monthKey:gran==='week'?weekStart:dayKey; var m={}; arr.forEach(function(x){ var k=keyFn(dateFn(x)); if(k)m[k]=(m[k]||0)+1; }); var keys=Object.keys(m).sort(); return {keys:keys,vals:keys.map(function(k){return m[k];}),map:m}; }
@@ -284,18 +797,54 @@ var active='dvc';
 function ownerItems(arr){ return toItems(groupBy(arr,function(x){return ownerName(x.owner);})); }
 
 /* ---- Overview ---- */
+/* green/yellow/red by threshold. higherBetter: v>=warnAt→good, >=badAt→warn, else bad. Else inverted (lower is better). */
+function semColor(v,warnAt,badAt,higherBetter){
+  if(v==null) return 'var(--tx3)';
+  if(higherBetter) return v>=warnAt?'var(--good)':(v>=badAt?'var(--warn)':'var(--bad)');
+  return v<=warnAt?'var(--good)':(v<=badAt?'var(--warn)':'var(--bad)');
+}
 function renderOverview(v){
   var dl=fDeals(), cl=fCalls(), tk=fTasks(), on=fOnline(), ev=fEvents();
-  var joined=joinDeals(dl); var contacted=joined.filter(function(j){return j.contacted;}).length;
+  var joined=joinDeals(dl); var contactedJ=joined.filter(function(j){return j.contacted;}); var contacted=contactedJ.length;
   var conn=cl.filter(function(c){return c.dur>0;}).length;
-  var uniq=uniqueDeals(dl);
+  var dupRemoved=fDealsRaw().length-dl.length;
   v.appendChild(kpiRow([
-    ['Total Deals',num(dl.length),'unique: '+num(uniq),'','var(--c1)'],
+    ['Total Deals',num(dl.length),(dupRemoved>0?(num(dupRemoved)+' same-day duplicate(s) removed'):'no duplicates found'),'','var(--c1)'],
     ['Total Calls',num(cl.length),num(conn)+' connected','','var(--c2)'],
     ['Contact Rate',p1(pct(contacted,dl.length))+'%',num(contacted)+' deals reached','','var(--c4)'],
     ['Tasks',num(tk.length),num(tk.filter(isDone).length)+' completed','','var(--c3)'],
     ['Meetings',num(ev.length),'store visits / calls','','var(--c6)'],
     ['Chats',num(on.length),'omnichannel','','var(--c5)']
+  ]));
+  /* ---- Executive Summary: management KPI strip, color-coded green/yellow/red ---- */
+  var pendingJ=joined.filter(function(j){return !j.contacted;});
+  var maxT=D(maxDate);
+  function ageMin(j){ return (maxT-D(j.deal.created))/60000; }
+  var p30=pendingJ.filter(function(j){return ageMin(j)>30;}).length;
+  var p1h=pendingJ.filter(function(j){return ageMin(j)>60;}).length;
+  var p4h=pendingJ.filter(function(j){return ageMin(j)>240;}).length;
+  var p1d=pendingJ.filter(function(j){return ageMin(j)>1440;}).length;
+  var frts=contactedJ.map(function(j){return j.frt;}).filter(function(x){return x!=null&&x>=0;});
+  var avgFrt=frts.length?frts.reduce(function(s,x){return s+x;},0)/frts.length:null;
+  var medFrt=median(frts);
+  var winRate=pct(dl.filter(isWon).length,dl.length);
+  var avgTalk=conn?cl.filter(function(c){return c.dur>0;}).reduce(function(s,c){return s+c.dur;},0)/conn:0;
+  v.appendChild(el('div','note','<b>Executive Summary</b> — reflects the active date/stage/owner filters above (not necessarily calendar "today" unless the Today preset is selected). Green/Yellow/Red bands: Contact Rate & Win Rate — good ≥ shown threshold; Avg/Median FRT & Pending buckets — good the lower the better. Orders/Revenue are gated: this dataset has no Deal↔Sale join yet.'));
+  v.appendChild(kpiRow([
+    ["Today's Deals",num(dl.length),'in selected range','','var(--c1)'],
+    ["Today's Calls",num(cl.length),'in selected range','','var(--c2)'],
+    ['Connected Calls',num(conn),p1(pct(conn,cl.length))+'% of calls','',semColor(pct(conn,cl.length),50,30,true)],
+    ['Pending Calls',num(pendingJ.length),'deals never reached','',semColor(pendingJ.length,Math.max(5,Math.round(dl.length*0.1)),Math.max(15,Math.round(dl.length*0.25)),false)],
+    ['Orders','—','no Deal↔Sale join','','var(--tx3)'],
+    ['Revenue','—','no Deal↔Sale join','','var(--tx3)'],
+    ['Win Rate',p1(winRate)+'%',num(dl.filter(isWon).length)+' won','',semColor(winRate,15,8,true)],
+    ['Average FRT',avgFrt==null?'—':fmtDur(avgFrt),'first response','',semColor(avgFrt,15,60,false)],
+    ['Median FRT',medFrt==null?'—':fmtDur(medFrt),'first response','',semColor(medFrt,15,60,false)],
+    ['Average Talk Time',hms(avgTalk),'connected calls only','','var(--c4)'],
+    ['Pending >30 Min',num(p30),'not yet contacted','',semColor(p30,3,10,false)],
+    ['Pending >1 Hour',num(p1h),'not yet contacted','',semColor(p1h,2,8,false)],
+    ['Pending >4 Hours',num(p4h),'not yet contacted','',semColor(p4h,1,5,false)],
+    ['Pending >1 Day',num(p1d),'not yet contacted','',semColor(p1d,0,3,false)]
   ]));
   var g=el('div','grid g2');
   var p1p=panel('Deals vs Calls — Daily Trend','Created per day'); g.appendChild(p1p);
@@ -305,7 +854,7 @@ function renderOverview(v){
     {name:'Deals',color:'var(--c1)',data:keys.map(function(k){return td.map[k]||0;})},
     {name:'Calls',color:'var(--c2)',data:keys.map(function(k){return tc.map[k]||0;})}
   ]);
-  var p2=panel('Deals by Stage'); g.appendChild(p2); donut(p2.__body, toItems(groupBy(dl,function(d){return d.stage||'(none)';})),{center:'deals',onClick:function(k){F.stage=(F.stage===k?'':k);sync();}});
+  var p2=panel('Deals by Stage'); g.appendChild(p2); donut(p2.__body, toItems(groupBy(dl,function(d){return d.stage||'(none)';})),{center:'deals',onClick:function(k){toggleSet(F.stage,k);sync();}});
   var p3=panel('Deals by Owner'); g.appendChild(p3); hbar(p3.__body, ownerItems(dl), {onClick:toggleOwner});
   var p4=panel('Calls by Owner'); g.appendChild(p4); hbar(p4.__body, ownerItems(cl), {onClick:toggleOwner});
   v.appendChild(g);
@@ -317,18 +866,15 @@ function renderOverview(v){
 }
 function pickGran(from,to){ var days=(D(to)-D(from))/86400000; return days>150?'month':days>70?'week':'day'; }
 function isDone(t){ var s=(t.status||'').toLowerCase(); return s.indexOf('complet')>=0||s.indexOf('closed')>=0; }
-function uniqueDeals(arr){ var s={}; arr.forEach(function(d){ s[dayKey(d.created)+'|'+(d.mobile||d.id)]=1; }); return Object.keys(s).length; }
-
 /* ---- Deals (Dashboard 1) ---- */
 function renderDeals(v){
-  var dl=fDeals(); var uniq=uniqueDeals(dl); var dups=dl.length-uniq;
+  var dl=fDeals(); var dups=fDealsRaw().length-dl.length;
   var lost=dl.filter(function(d){return (d.stage||'').toLowerCase().indexOf('lost')>=0;});
   var won=dl.filter(function(d){return (d.stage||'').toLowerCase().indexOf('won')>=0;});
   var avgAct=dl.length?dl.reduce(function(s,d){return s+(+d.numAct||0);},0)/dl.length:0;
   v.appendChild(kpiRow([
-    ['Total Deals',num(dl.length),'','','var(--c1)'],
-    ['Unique Deals',num(uniq),'DATE(create)+mobile10','','var(--c2)'],
-    ['Duplicate Leads',num(dups),p1(pct(dups,dl.length))+'% of total','','var(--c5)'],
+    ['Total Deals',num(dl.length),'duplicates already removed','','var(--c1)'],
+    ['Duplicates Removed',num(dups),'same-day+mobile, latest kept','','var(--c5)'],
     ['Closed Won',num(won.length),p1(pct(won.length,dl.length))+'% win','up','var(--good)'],
     ['Lost Deals',num(lost.length),p1(pct(lost.length,dl.length))+'%','down','var(--bad)'],
     ['Avg Activities / Deal',p1(avgAct),'Number_of_activity','','var(--c3)']
@@ -336,9 +882,9 @@ function renderDeals(v){
   var gran=pickGran(F.from,F.to);
   var g1=el('div','grid g2');
   var pOwn=panel('Deals by Owner'); g1.appendChild(pOwn); var ownIt=ownerItems(dl); hbar(pOwn.__body,ownIt,{onClick:toggleOwner}); addExport(pOwn,'deals_by_owner',['Owner','Deals'],ownIt.map(function(x){return[x.label,x.value];}));
-  var pStage=panel('Deals by Stage'); g1.appendChild(pStage); donut(pStage.__body,toItems(groupBy(dl,function(d){return d.stage||'(none)';})),{center:'deals',onClick:function(k){F.stage=(F.stage===k?'':k);sync();}});
-  var pTrig=panel('Deals by Trigger Event'); g1.appendChild(pTrig); var trigIt=toItems(groupBy(dl,function(d){return normTrig(d.trigger);})); hbar(pTrig.__body,trigIt,{onClick:function(k){F.trigger=(F.trigger===k?'':k);sync();}});
-  var pSrc=panel('Deals by Lead Source'); g1.appendChild(pSrc); hbar(pSrc.__body,toItems(groupBy(dl,function(d){return clean(d.leadSource);})),{onClick:function(k){F.leadSource=(F.leadSource==='(none)'?'':(k==='(none)'?'':k))===''?'':k; if(k==='(none)')F.leadSource='';else F.leadSource=(F.leadSource===k?'':k); sync();}});
+  var pStage=panel('Deals by Stage'); g1.appendChild(pStage); donut(pStage.__body,toItems(groupBy(dl,function(d){return d.stage||'(none)';})),{center:'deals',onClick:function(k){toggleSet(F.stage,k);sync();}});
+  var pTrig=panel('Deals by Trigger Event'); g1.appendChild(pTrig); var trigIt=toItems(groupBy(dl,function(d){return normTrig(d.trigger);})); hbar(pTrig.__body,trigIt,{onClick:function(k){toggleSet(F.trigger,k);sync();}});
+  var pSrc=panel('Deals by Lead Source'); g1.appendChild(pSrc); hbar(pSrc.__body,toItems(groupBy(dl,function(d){return clean(d.leadSource);})),{onClick:function(k){if(k==='(none)')return; toggleSet(F.leadSource,k); sync();}});
   var pUtmS=panel('Deals by UTM Source'); g1.appendChild(pUtmS); hbar(pUtmS.__body,toItems(groupBy(dl,function(d){return clean(d.utmSource);})),{});
   var pUtmM=panel('Deals by UTM Medium'); g1.appendChild(pUtmM); hbar(pUtmM.__body,toItems(groupBy(dl,function(d){return clean(d.utmMedium);})),{});
   v.appendChild(g1);
@@ -380,6 +926,21 @@ function renderDeals(v){
 }
 function stagePill(s){ var x=(s||'').toLowerCase(); var cls=x.indexOf('won')>=0?'pill-won':x.indexOf('lost')>=0?'pill-lost':'pill-open'; return {html:'<span class="tag2 '+cls+'">'+esc(s||'—')+'</span>', text:s}; }
 function isWon(d){ return (d.stage||'').toLowerCase().indexOf('won')>=0; }
+function isLost(d){ return (d.stage||'').toLowerCase().indexOf('lost')>=0; }
+/* Store mapping: only these 5 CRM owner accounts are confirmed real stores (mirrors dcs.js
+   STORE_OWNERNAME_TO_CODE) — HO/FCS sales codes have no CRM owner and are intentionally excluded. */
+var STORE_CODE_NAME={CS1:'Chembur',PN1:'Pune',BO1:'Borivali',N18:'Noida',PV1:'Pashchim Vihar'};
+var STORE_OWNERNAME_TO_CODE={'Chembur Store':'CS1','Pune Store':'PN1','Borivali Team':'BO1','Borivali Store':'BO1','Noida Store':'N18','Pashchim Vihar':'PV1'};
+function storeOf(ownerId){ var code=STORE_OWNERNAME_TO_CODE[ownerName(ownerId)]; return code?STORE_CODE_NAME[code]:null; }
+/* Video Call / Store Visit are not real Zoho fields — regex-classified from the Event title (mirrors dcs.js classifyEvent). */
+function classifyEvent(title){ var t=(title||'').toLowerCase().trim();
+  if(/trial at home|try at home|\btah\b/.test(t)) return 'TAH';
+  if(/video/.test(t)) return 'Video Call';
+  if(/visit|\bsv\b/.test(t)) return 'Store Visit';
+  return 'Meeting';
+}
+/* Row builder for the openDrill() modal — takes plain deal objects (id/name/owner/stage/prob/mobile/trigger/created). */
+function drillRows(deals){ return deals.map(function(d){ return [d.id,esc(d.name||'—'),ownerName(d.owner),esc(d.stage||'—'),(d.prob==null?'—':d.prob+'%'),d.mobile||'—',normTrig(d.trigger),fmtDT(d.created)]; }); }
 function hourOf(iso){ var h=parseInt(String(iso).slice(11,13),10); return (h>=0&&h<24)?h:0; }
 
 /* Deal time-slots (merged from old dashboard): 4 working blocks 9AM-9PM + off-hours, bucketed by Created time (IST) */
@@ -395,12 +956,18 @@ function dealTimeSlots(dl){
   return {slots:slots,tot:tot};
 }
 
-/* ---- Agents (merged: per-agent performance master, from old Overview "Agents" table) ---- */
+/* ---- Agents / Owner Performance (merged: per-agent performance master, from old Overview "Agents" table) ---- */
+var CHAN_ORDER=['Website','ATC','Checkout','WhatsApp','Instagram','Facebook','Google','Signup','Purchase','ProductView','Others'];
+var agentSort={c:1,dir:-1}, agentExpanded={}, agentSearch='';
+function freshChanRow(){ return {deals:0,won:0,contacted:0,frt:[],calls:0,conn:0,talk:0}; }
 function renderAgents(v){
   var dl=fDeals(), cl=fCalls(), tk=fTasks(), ev=fEvents(), on=fOnline();
   var joined=joinDeals(dl);
-  var m={}; function row(id){ return m[id]||(m[id]={deals:0,won:0,contacted:0,frt:[],calls:0,conn:0,talk:0,meet:0,tasks:0,online:0}); }
-  joined.forEach(function(j){ var r=row(j.deal.owner); r.deals++; if(isWon(j.deal))r.won++; if(j.contacted){r.contacted++; if(j.frt!=null)r.frt.push(j.frt);} });
+  var m={}; function row(id){ return m[id]||(m[id]={deals:0,won:0,contacted:0,frt:[],calls:0,conn:0,talk:0,meet:0,tasks:0,online:0,chan:{}}); }
+  joined.forEach(function(j){ var r=row(j.deal.owner); r.deals++; if(isWon(j.deal))r.won++; if(j.contacted){r.contacted++; if(j.frt!=null)r.frt.push(j.frt);}
+    var ch=channelOf(j.deal); var cr=r.chan[ch]||(r.chan[ch]=freshChanRow()); cr.deals++; if(isWon(j.deal))cr.won++;
+    cr.calls+=j.nCalls; cr.talk+=j.calls.reduce(function(s,c){return s+(c.dur||0);},0); cr.conn+=j.calls.filter(function(c){return c.dur>0;}).length;
+    if(j.contacted){cr.contacted++; if(j.frt!=null)cr.frt.push(j.frt);} });
   cl.forEach(function(c){ var r=row(c.owner); r.calls++; if(c.dur>0)r.conn++; r.talk+=c.dur||0; });
   ev.forEach(function(e){ row(e.owner).meet++; });
   tk.forEach(function(t){ row(t.owner).tasks++; });
@@ -413,14 +980,63 @@ function renderAgents(v){
     ['Meetings',num(ev.length),'','','var(--c6)'],
     ['Tasks',num(tk.length),'','','var(--c3)']
   ]));
-  v.appendChild(el('div','note','Per-agent performance rollup from live Zoho data — deals, won, contact rate, first response, calls, connected calls, talk time, meetings, tasks and chats, per owner.'));
-  var p=panel('Agent Performance','Sortable · click a column header'); v.appendChild(p);
-  var rows=Object.keys(m).map(function(id){ var r=m[id]; var af=r.frt.length?r.frt.reduce(function(s,x){return s+x;},0)/r.frt.length:null;
-    return [ownerName(id), r.deals, r.won, {html:p1(pct(r.contacted,r.deals))+'%',text:p1(pct(r.contacted,r.deals))}, {html:af==null?'—':fmtDur(af),text:af==null?'':p1(af)}, r.calls, r.conn, {html:hms(r.talk),text:r.talk}, r.meet, r.tasks, r.online]; })
-    .sort(function(a,b){return b[1]-a[1];});
-  table(p.__body,['Agent','Deals','Won','Contact %','Avg Resp','Calls','Connected','Talk Time','Meetings','Tasks','Chats'],rows,{key:'agents',numCols:[1,2,5,6,7,8,9,10]});
-  addExport(p,'agent_performance',['Agent','Deals','Won','ContactPct','AvgRespMin','Calls','Connected','TalkSec','Meetings','Tasks','Chats'],
-    Object.keys(m).map(function(id){var r=m[id];var af=r.frt.length?r.frt.reduce(function(s,x){return s+x;},0)/r.frt.length:'';return [ownerName(id),r.deals,r.won,p1(pct(r.contacted,r.deals)),af===''?'':p1(af),r.calls,r.conn,r.talk,r.meet,r.tasks,r.online];}));
+  v.appendChild(el('div','note','Per-agent performance rollup from live Zoho data — deals, won, contact rate, first response (avg/median/max), calls, connected calls, talk time, pending, meetings, tasks and chats, per owner. Click ▶ to expand an owner into their Website / ATC / Checkout / WhatsApp / Instagram / Facebook / Google / Others deal-channel breakdown. Orders/Revenue aren\'t shown here — this dataset has no Deal↔Sale join yet (see the Deals × Calls tab\'s data-source note); Meetings/Tasks/Chats are owner-level in Zoho, not linked to a specific deal, so they aren\'t split per channel.'));
+  var p=panel('Owner Performance','Sortable · click a column header · search below · ▶ expands channel drill-down'); v.appendChild(p);
+  var srch=el('input'); srch.type='text'; srch.placeholder='Search owner…'; srch.value=agentSearch;
+  srch.style.cssText='width:220px;margin-bottom:10px;background:var(--bg2);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:6px 9px;font-size:12.5px';
+  srch.oninput=function(){ agentSearch=srch.value; drawAgentsTable(); };
+  p.__body.appendChild(srch);
+  var tblHost=el('div'); p.__body.appendChild(tblHost);
+  function drawAgentsTable(){
+    var ql=(agentSearch||'').toLowerCase();
+    var ids=Object.keys(m).filter(function(id){ return !ql || ownerName(id).toLowerCase().indexOf(ql)>=0; });
+    var rowsData=ids.map(function(id){ var r=m[id];
+      var af=r.frt.length?r.frt.reduce(function(s,x){return s+x;},0)/r.frt.length:null;
+      var mf=median(r.frt); var mx=r.frt.length?Math.max.apply(null,r.frt):null;
+      var pending=r.deals-r.contacted;
+      return {id:id,name:ownerName(id),deals:r.deals,won:r.won,winRate:pct(r.won,r.deals),contactRate:pct(r.contacted,r.deals),
+        calls:r.calls,conn:r.conn,talk:r.talk,pending:pending,af:af,mf:mf,mx:mx,meet:r.meet,tasks:r.tasks,online:r.online,chan:r.chan}; });
+    var cols=[ {k:'name',n:'Owner'}, {k:'deals',n:'Deals',num:1}, {k:'won',n:'Won',num:1}, {k:'winRate',n:'Win Rate',num:1},
+      {k:'contactRate',n:'Contact %',num:1}, {k:'calls',n:'Calls',num:1}, {k:'conn',n:'Connected',num:1}, {k:'talk',n:'Talk Time',num:1},
+      {k:'pending',n:'Pending',num:1}, {k:'af',n:'Avg FRT',num:1}, {k:'mf',n:'Median FRT',num:1}, {k:'mx',n:'Max Delay',num:1},
+      {k:'meet',n:'Meetings',num:1}, {k:'tasks',n:'Tasks',num:1}, {k:'online',n:'Chats',num:1} ];
+    rowsData.sort(function(a,b){ var x=a[cols[agentSort.c].k], y=b[cols[agentSort.c].k]; if(x==null)x=-1; if(y==null)y=-1;
+      return typeof x==='string'?(String(x).localeCompare(String(y))*agentSort.dir):((x-y)*agentSort.dir); });
+    tblHost.innerHTML='';
+    var wrap=el('div','tblwrap'); var t=el('table'); var thead=el('thead'); var trh=el('tr');
+    trh.appendChild(el('th','',''));
+    cols.forEach(function(cdef,ci){ var th=el('th',null,esc(cdef.n)+(agentSort.c===ci?(agentSort.dir>0?' ▲':' ▼'):''));
+      th.onclick=function(){ agentSort={c:ci,dir:(agentSort.c===ci)?-agentSort.dir:(cdef.num?-1:1)}; drawAgentsTable(); }; trh.appendChild(th); });
+    thead.appendChild(trh); t.appendChild(thead);
+    var tb=el('tbody');
+    rowsData.forEach(function(r){
+      var trr=el('tr'); var tdExp=el('td'); var btn=el('button','mini', agentExpanded[r.id]?'▼':'▶');
+      btn.onclick=function(){ agentExpanded[r.id]=!agentExpanded[r.id]; drawAgentsTable(); }; tdExp.appendChild(btn); trr.appendChild(tdExp);
+      [r.name, num(r.deals), num(r.won), p1(r.winRate)+'%', p1(r.contactRate)+'%', num(r.calls), num(r.conn), hms(r.talk),
+       num(r.pending), r.af==null?'—':fmtDur(r.af), r.mf==null?'—':fmtDur(r.mf), r.mx==null?'—':fmtDur(r.mx),
+       num(r.meet), num(r.tasks), num(r.online)].forEach(function(c,ci){ var td=el('td',ci>0?'right':null); td.innerHTML=esc(c); trr.appendChild(td); });
+      tb.appendChild(trr);
+      if(agentExpanded[r.id]){
+        var etr=el('tr'); var etd=el('td'); etd.colSpan=cols.length+1; etd.style.cssText='background:var(--bg2);padding:10px 14px';
+        var chanRows=CHAN_ORDER.filter(function(c){return r.chan[c];}).map(function(c){ var cr=r.chan[c];
+          var caf=cr.frt.length?cr.frt.reduce(function(s,x){return s+x;},0)/cr.frt.length:null; var cmf=median(cr.frt);
+          return [c, num(cr.deals), num(cr.calls), num(cr.conn), p1(pct(cr.contacted,cr.deals))+'%', '—', '—', '—',
+            num(cr.deals-cr.contacted), caf==null?'—':fmtDur(caf), cmf==null?'—':fmtDur(cmf), hms(cr.talk), p1(pct(cr.won,cr.deals))+'%']; });
+        var mini=el('div'); mini.innerHTML='<div style="font-weight:700;margin-bottom:6px">'+esc(r.name)+' — by deal channel</div>';
+        etd.appendChild(mini);
+        table(mini, ['Channel','Deals','Calls','Connected','Contact %','Meetings','Orders','Revenue','Pending','Avg FRT','Median FRT','Talk Time','Win Rate'],
+          chanRows, {key:'agentchan_'+r.id,numCols:[1,2,3,8,11]});
+        if(!chanRows.length) mini.appendChild(el('div','hint','No channel-attributed deals for this owner in range.'));
+        mini.appendChild(el('div','hint','Meetings/Orders/Revenue are gated here — not linked to a specific deal/channel in this data source.'));
+        etr.appendChild(etd); tb.appendChild(etr);
+      }
+    });
+    t.appendChild(tb); wrap.appendChild(t); tblHost.appendChild(wrap);
+  }
+  drawAgentsTable();
+  addExport(p,'agent_performance',['Agent','Deals','Won','WinRatePct','ContactPct','Calls','Connected','TalkSec','Pending','AvgFRTmin','MedianFRTmin','MaxDelayMin','Meetings','Tasks','Chats'],
+    Object.keys(m).map(function(id){var r=m[id];var af=r.frt.length?r.frt.reduce(function(s,x){return s+x;},0)/r.frt.length:'';var mf=median(r.frt);var mx=r.frt.length?Math.max.apply(null,r.frt):'';
+      return [ownerName(id),r.deals,r.won,p1(pct(r.won,r.deals)),p1(pct(r.contacted,r.deals)),r.calls,r.conn,r.talk,r.deals-r.contacted,af===''?'':p1(af),mf==null?'':p1(mf),mx===''?'':p1(mx),r.meet,r.tasks,r.online];}));
   var g=el('div','grid g2');
   var pd=panel('Deals by Agent'); g.appendChild(pd); hbar(pd.__body, Object.keys(m).map(function(id){return{key:ownerName(id),label:ownerName(id),value:m[id].deals};}).sort(function(a,b){return b.value-a.value;}),{onClick:toggleOwner});
   var pw=panel('Won Deals by Agent'); g.appendChild(pw); hbar(pw.__body, Object.keys(m).map(function(id){return{key:ownerName(id),label:ownerName(id),value:m[id].won};}).filter(function(x){return x.value>0;}).sort(function(a,b){return b.value-a.value;}),{color:'var(--good)',onClick:toggleOwner});
@@ -534,11 +1150,23 @@ function renderDVC(v){
   v.appendChild(kpiRow([
     ['Total Deals',num(dl.length),'','','var(--c1)'],
     ['Deals Contacted',num(contacted.length),'≥1 call after creation','up','var(--good)'],
-    ['Not Contacted',num(notContacted),p1(pct(notContacted,dl.length))+'%','down','var(--bad)'],
-    ['Contact Rate',p1(pct(contacted.length,dl.length))+'%','','','var(--c4)'],
+    ['Not Contacted',num(notContacted),p1(pct(notContacted,dl.length))+'%','down',semColor(pct(notContacted,dl.length),20,40,false)],
+    ['Contact Rate',p1(pct(contacted.length,dl.length))+'%','','',semColor(pct(contacted.length,dl.length),50,30,true)],
     ['Avg Calls / Deal',p1(dl.length?totCalls/dl.length:0),num(totCalls)+' matched calls','','var(--c2)']
   ]));
   v.appendChild(el('div','note','<b>Join logic:</b> a deal is matched to calls by <b>What_Id → Deal</b> link and by <b>RIGHT(Mobile,10)</b> (phone parsed from the call subject). “First response” = time from deal creation to the first call after it. Response metrics use all calls (not date-filtered) so times stay accurate.'));
+  // Pending backlog, colour-coded — same green/yellow/red convention as the Overview tab's Executive Summary
+  var pendingJ=joined.filter(function(j){return !j.contacted;});
+  var maxTd=D(maxDate);
+  function ageMinD(j){ return (maxTd-D(j.deal.created))/60000; }
+  var dp30=pendingJ.filter(function(j){return ageMinD(j)>30;}).length, dp1h=pendingJ.filter(function(j){return ageMinD(j)>60;}).length,
+      dp4h=pendingJ.filter(function(j){return ageMinD(j)>240;}).length, dp1d=pendingJ.filter(function(j){return ageMinD(j)>1440;}).length;
+  v.appendChild(kpiRow([
+    ['Pending >30 Min',num(dp30),'not yet contacted','',semColor(dp30,3,10,false)],
+    ['Pending >1 Hour',num(dp1h),'not yet contacted','',semColor(dp1h,2,8,false)],
+    ['Pending >4 Hours',num(dp4h),'not yet contacted','',semColor(dp4h,1,5,false)],
+    ['Pending >1 Day',num(dp1d),'not yet contacted','',semColor(dp1d,0,3,false)]
+  ]));
   // First Call Response During Working Hours — replaces the old Avg/Median FRT + buckets
   var wh=whAnalysis(dl), whb=wh.buckets, totWh=wh.total, totC=0,fsum=0,fn=0;
   whb.forEach(function(b){ totC+=b.contacted; fsum+=b.frtSum; fn+=b.frtN; });
@@ -552,7 +1180,7 @@ function renderDVC(v){
     ['Fastest Response Hour',fast?fast.label:'—',fast?fmtMinNice(fast.avgFrt):'','up','var(--good)'],
     ['Slowest Response Hour',slow?slow.label:'—',slow?fmtMinNice(slow.avgFrt):'','down','var(--bad)'],
     ['Avg First Call (biz hrs)',fn?fmtMinNice(fsum/fn):'—','outgoing calls only','','var(--c3)'],
-    ['Business-Hour Contact Rate',p1(pct(totC,totWh))+'%',num(totC)+' contacted','','var(--c2)']
+    ['Business-Hour Contact Rate',p1(pct(totC,totWh))+'%',num(totC)+' contacted','',semColor(pct(totC,totWh),50,30,true)]
   ]));
   var pWH=panel('First Call Response During Working Hours (10:00 AM – 9:00 PM)','Avg minutes to the first OUTGOING call after deal creation, by hour (IST). Bar height = avg first-call time · number above each bar = deals created · matched by mobile RIGHT(10) + deal link. Hover for details; click a bar to drill into its deals.');
   v.appendChild(pWH);
@@ -581,12 +1209,7 @@ function renderDVC(v){
   table(pTe.__body,['Trigger Event','Deals','Calls','Avg Calls/Deal','Avg First Resp','Contact %'],trows,{key:'trg',numCols:[1,2,3]});
   addExport(pTe,'trigger_analysis',['Trigger','Deals','Calls','AvgCallsPerDeal','AvgFirstRespMin','ContactPct'],Object.keys(trg).map(function(t){var o=trg[t];var af=o.frt.length?o.frt.reduce(function(s,x){return s+x;},0)/o.frt.length:0;return[t,o.d,o.calls,p1(o.d?o.calls/o.d:0),p1(af),p1(pct(o.c,o.d))];}));
 
-  var pOa=panel('Owner Analysis'); v.appendChild(pOa);
-  var talkOa={}; fCalls().forEach(function(c){var n=ownerName(c.owner); talkOa[n]=(talkOa[n]||0)+(c.dur||0);});
-  var oa={}; joined.forEach(function(j){var n=ownerName(j.deal.owner); var o=oa[n]||(oa[n]={d:0,c:0,calls:0,frt:[]}); o.d++; o.calls+=j.nCalls; if(j.contacted){o.c++; if(j.frt!=null)o.frt.push(j.frt);} });
-  var orows=Object.keys(oa).map(function(n){var o=oa[n];var af=o.frt.length?o.frt.reduce(function(s,x){return s+x;},0)/o.frt.length:0;var tk=talkOa[n]||0;return [n,o.d,o.calls,{html:hms(tk),text:tk},p1(o.d?o.calls/o.d:0),fmtDur(af),p1(pct(o.c,o.d))+'%'];}).sort(function(a,b){return b[1]-a[1];});
-  table(pOa.__body,['Owner','Deals','Calls','Talk Time','Avg Calls','Avg Resp','Contact %'],orows,{key:'oa',numCols:[1,2,3,4]});
-  addExport(pOa,'owner_analysis',['Owner','Deals','Calls','TalkTimeSec','AvgCalls','AvgRespMin','ContactPct'],Object.keys(oa).map(function(n){var o=oa[n];var af=o.frt.length?o.frt.reduce(function(s,x){return s+x;},0)/o.frt.length:0;return[n,o.d,o.calls,talkOa[n]||0,p1(o.d?o.calls/o.d:0),p1(af),p1(pct(o.c,o.d))];}));
+  v.appendChild(el('div','note','<b>Owner Analysis</b> now lives on the <b>Agents</b> tab\'s Owner Performance table — removed the smaller, duplicate version that used to be here. That table has everything this one had (Deals/Calls/Talk Time/Avg Calls/Avg Resp/Contact %) plus Won, Win Rate, Pending, Median FRT, Max Delay, and a per-channel drill-down.'));
 
   var pNc=panel('Uncontacted Deals','Deals with no call after creation — action list'); v.appendChild(pNc);
   var nc=joined.filter(function(j){return !j.contacted;}).map(function(j){return [esc(j.deal.name),ownerName(j.deal.owner),stagePill(j.deal.stage),normTrig(j.deal.trigger),j.deal.mobile||'—',fmtDT(j.deal.created)];});
@@ -1282,7 +1905,7 @@ function buildFilters(){
   // presets
   var pg=el('div','fgroup'); pg.appendChild(el('label',null,'Date Range (quick)'));
   var pr=el('div','presets');
-  [['all','All'],['today','Today'],['yest','Yesterday'],['7','7d'],['30','30d'],['tw','This wk'],['tm','This mo'],['lm','Last mo']].forEach(function(p){ var b=el('button',F.preset===p[0]?'on':'',p[1]); b.onclick=function(){setPreset(p[0]);}; pr.appendChild(b); });
+  [['all','All'],['today','Today'],['yest','Yesterday'],['7','Last 7d'],['30','Last 30d'],['tw','Weekly'],['tm','Monthly (MTD)'],['lm','Last mo'],['qtr','Quarterly'],['hy','Half Yearly'],['yr','Yearly']].forEach(function(p){ var b=el('button',F.preset===p[0]?'on':'',p[1]); b.onclick=function(){setPreset(p[0]);}; pr.appendChild(b); });
   var cb=el('button',F.preset===''?'on':'','◆ Custom'); cb.title='Active when you pick your own From/To dates'; cb.onclick=function(){ F.preset=''; sync(); }; pr.appendChild(cb);
   pg.appendChild(pr); row.appendChild(pg);
   // custom dates — free choice ("according to me"): no min/max lock, auto-clamped so From<=To
@@ -1294,9 +1917,9 @@ function buildFilters(){
   row.appendChild(ownerMulti());
   // ALL filters live inside the collapsible panel; the bar shows a summary + a single toggle
   var dateOn=(F.preset!=='all'||F.from!==minDate||F.to!==maxDate);
-  var applied=[F.stage,F.trigger,F.leadSource,F.utmSource,F.utmMedium,F.callType,F.taskStatus].filter(Boolean).length+(F.owners.size?1:0)+(dateOn?1:0)+(F.compare?1:0);
+  var applied=(F.stage.size?1:0)+(F.trigger.size?1:0)+(F.leadSource.size?1:0)+[F.utmSource,F.utmMedium,F.callType,F.taskStatus].filter(Boolean).length+(F.owners.size?1:0)+(dateOn?1:0)+(F.compare?1:0);
   var dlabel=dateOn?(fmtDay(F.from)+' → '+fmtDay(F.to)):'All dates · since 31 May 2026';
-  var summ=el('div','filt-summary'); summ.innerHTML='<span class="fs-lbl">Showing</span> <b>'+esc(dlabel)+'</b>'+(F.owners.size?' · <b>'+F.owners.size+'</b> owner(s)':'')+(F.compare?' · <b>compare on</b>':'')+(applied?'':' · <span style="color:var(--tx3)">no filters applied</span>');
+  var summ=el('div','filt-summary'); summ.innerHTML='<span class="fs-lbl">Showing</span> <b>'+esc(dlabel)+'</b>'+(F.owners.size?' · <b>'+F.owners.size+'</b> owner(s)':'')+(F.stage.size?' · <b>'+F.stage.size+'</b> stage(s)':'')+(F.compare?' · <b>compare on</b>':'')+(applied?'':' · <span style="color:var(--tx3)">no filters applied</span>');
   top.appendChild(summ);
   var advBtn=el('button','adv-toggle'+(advOpen?' open':''));
   advBtn.innerHTML='<span>⚙ Filters</span>'+(applied?'<span class="applied">'+applied+' applied</span>':'<span class="cnt">open to filter</span>')+'<span class="arr">▾</span>';
@@ -1307,9 +1930,11 @@ function buildFilters(){
   var adv=el('div','frow-adv'+(advOpen?' open':''));
   adv.appendChild(row);
   var arow=el('div','row');
-  arow.appendChild(selGroup('Stage','stage',distinct(DEALS,function(d){return d.stage;})));
-  arow.appendChild(selGroup('Trigger','trigger',distinct(DEALS,function(d){return normTrig(d.trigger);})));
-  arow.appendChild(selGroup('Lead Source','leadSource',distinct(DEALS,function(d){return clean(d.leadSource);}).filter(function(x){return x!=='(none)';})));
+  arow.appendChild(multiGroup('Stage',F.stage,distinct(DEALS,function(d){return d.stage;})));
+  arow.appendChild(multiGroup('Trigger Event',F.trigger,distinct(DEALS,function(d){return normTrig(d.trigger);})));
+  arow.appendChild(multiGroup('Lead Source',F.leadSource,distinct(DEALS,function(d){return clean(d.leadSource);}).filter(function(x){return x!=='(none)';})));
+  arow.appendChild(gatedGroup('Store','Store_Assigned isn’t captured in this dashboard’s data feed yet — the field exists in Zoho but needs a small addition to the CRM bundle API before it can be filtered here.'));
+  arow.appendChild(gatedGroup('Campaign','UTM Campaign isn’t captured in this dashboard’s data feed yet — UTM Source/Medium below are the closest available proxies.'));
   arow.appendChild(selGroup('UTM Source','utmSource',distinct(DEALS,function(d){return clean(d.utmSource);}).filter(function(x){return x!=='(none)';})));
   arow.appendChild(selGroup('UTM Medium','utmMedium',distinct(DEALS,function(d){return clean(d.utmMedium);}).filter(function(x){return x!=='(none)';})));
   arow.appendChild(selGroup('Call Type','callType',distinct(CALLS,function(c){return c.type;})));
@@ -1318,27 +1943,64 @@ function buildFilters(){
   advBtn.onclick=function(){ advOpen=!advOpen; advBtn.classList.toggle('open',advOpen); adv.classList.toggle('open',advOpen); };
 }
 function selGroup(label,key,opts){ var g=el('div','fgroup'); g.appendChild(el('label',null,label)); var s=el('select'); s.appendChild(new Option('All','')); opts.forEach(function(o){ var op=new Option(o,o); if(F[key]===o)op.selected=true; s.appendChild(op); }); s.onchange=function(){F[key]=s.value;sync();}; g.appendChild(s); return g; }
-function ownerMulti(){
-  var g=el('div','fgroup'); g.appendChild(el('label',null,'Owner'));
-  var m=el('div','multi'); var tag=el('span','tag', F.owners.size?F.owners.size+' selected':'All owners'); m.appendChild(tag);
+/* Generic multi-select: search box + checkboxes + Select all / Clear all. Used for
+   Stage/Trigger/Lead Source/Owner — `set` is one of F's Set fields, mutated in place. */
+function multiGroup(label,set,opts,labelFn){
+  labelFn=labelFn||function(x){return x;};
+  var g=el('div','fgroup'); g.appendChild(el('label',null,label));
+  var m=el('div','multi'); var tag=el('span','tag', set.size?set.size+' selected':'All'); m.appendChild(tag);
   var pop=el('div','pop');
-  var ids=distinct(DEALS.concat(CALLS),function(x){return x.owner;});
-  ids.sort(function(a,b){return ownerName(a).localeCompare(ownerName(b));});
-  ids.forEach(function(id){ var lab=el('label'); var cb=el('input'); cb.type='checkbox'; cb.checked=F.owners.has(id); cb.onchange=function(ev){ ev.stopPropagation(); if(cb.checked)F.owners.add(id);else F.owners.delete(id); sync(); }; lab.appendChild(cb); lab.appendChild(document.createTextNode(' '+ownerName(id))); pop.appendChild(lab); });
+  var search=el('input'); search.type='text'; search.placeholder='Search '+label.toLowerCase()+'…';
+  search.style.cssText='width:100%;box-sizing:border-box;margin-bottom:6px';
+  search.onclick=function(ev){ ev.stopPropagation(); };
+  pop.appendChild(search);
+  var bar=el('div'); bar.style.cssText='display:flex;gap:6px;margin-bottom:6px';
+  var selAll=el('button','mini','Select all'); selAll.type='button';
+  var clrAll=el('button','mini','Clear all'); clrAll.type='button';
+  bar.appendChild(selAll); bar.appendChild(clrAll); pop.appendChild(bar);
+  var list=el('div'); pop.appendChild(list);
+  function renderList(q){
+    list.innerHTML=''; var ql=(q||'').toLowerCase(); var shown=0;
+    opts.forEach(function(o){ var disp=labelFn(o); if(ql && disp.toLowerCase().indexOf(ql)<0) return; shown++;
+      var lab=el('label'); var cb=el('input'); cb.type='checkbox'; cb.checked=set.has(o);
+      cb.onchange=function(ev){ ev.stopPropagation(); if(cb.checked)set.add(o); else set.delete(o); sync(); };
+      lab.appendChild(cb); lab.appendChild(document.createTextNode(' '+disp)); list.appendChild(lab); });
+    if(!shown) list.appendChild(el('div','hint','No matches'));
+  }
+  search.oninput=function(){ renderList(search.value); };
+  selAll.onclick=function(ev){ ev.stopPropagation(); opts.forEach(function(o){set.add(o);}); sync(); };
+  clrAll.onclick=function(ev){ ev.stopPropagation(); set.clear(); sync(); };
+  renderList('');
   m.appendChild(pop);
-  m.onclick=function(e){ if(e.target.tagName==='INPUT')return; m.classList.toggle('open'); };
+  m.onclick=function(e){ if(e.target.tagName==='INPUT')return; m.classList.toggle('open'); if(m.classList.contains('open'))search.focus(); };
   document.addEventListener('click',function(e){ if(!m.contains(e.target))m.classList.remove('open'); });
   return g.appendChild(m), g;
+}
+/* A filter group that's visibly present but disabled — for fields the spec asks for
+   that aren't in this dashboard's current data feed. Honest > fabricated. */
+function gatedGroup(label,reason){
+  var g=el('div','fgroup'); g.appendChild(el('label',null,label));
+  var m=el('div','multi'); m.style.cssText='opacity:.55;cursor:not-allowed'; m.title=reason;
+  m.appendChild(el('span','tag','🔒 Not available'));
+  g.appendChild(m); return g;
+}
+function ownerMulti(){
+  var ids=distinct(DEALS.concat(CALLS),function(x){return x.owner;});
+  ids.sort(function(a,b){return ownerName(a).localeCompare(ownerName(b));});
+  return multiGroup('Owner',F.owners,ids,ownerName);
 }
 function chips(){
   var c=document.getElementById('chipbar'); c.innerHTML='';
   var items=[];
   if(F.preset!=='all'||F.from!==minDate||F.to!==maxDate) items.push(['Date',fmtDay(F.from)+' → '+fmtDay(F.to),function(){setPreset('all');}]);
   F.owners.forEach(function(id){ items.push(['Owner',ownerName(id),function(){F.owners.delete(id);sync();}]); });
-  ['stage','trigger','leadSource','utmSource','utmMedium','callType','taskStatus'].forEach(function(k){ if(F[k])items.push([k,F[k],function(){F[k]='';sync();}]); });
+  F.stage.forEach(function(s){ items.push(['Stage',s,function(){F.stage.delete(s);sync();}]); });
+  F.trigger.forEach(function(t){ items.push(['Trigger',t,function(){F.trigger.delete(t);sync();}]); });
+  F.leadSource.forEach(function(l){ items.push(['Lead Source',l,function(){F.leadSource.delete(l);sync();}]); });
+  ['utmSource','utmMedium','callType','taskStatus'].forEach(function(k){ if(F[k])items.push([k,F[k],function(){F[k]='';sync();}]); });
   if(!items.length){ c.appendChild(el('span','chip','<b>All data</b> · since 31 May 2026')); return; }
   items.forEach(function(it){ var ch=el('span','chip','<b>'+esc(it[0])+':</b> '+esc(it[1])+' <span class="x">✕</span>'); ch.querySelector('.x').onclick=it[2]; c.appendChild(ch); });
-  var clr=el('button','clearall','Clear all'); clr.onclick=function(){ F.owners.clear(); ['stage','trigger','leadSource','utmSource','utmMedium','callType','taskStatus'].forEach(function(k){F[k]='';}); setPreset('all'); }; c.appendChild(clr);
+  var clr=el('button','clearall','Clear all'); clr.onclick=function(){ F.owners.clear(); F.stage.clear(); F.trigger.clear(); F.leadSource.clear(); ['utmSource','utmMedium','callType','taskStatus'].forEach(function(k){F[k]='';}); setPreset('all'); }; c.appendChild(clr);
 }
 function presetRange(p){ var to=maxDate, r={from:F.from,to:F.to};
   if(p==='all'){r.from=minDate;r.to=maxDate;}
@@ -1349,6 +2011,9 @@ function presetRange(p){ var to=maxDate, r={from:F.from,to:F.to};
   else if(p==='tw'){var dw=D(to);var wd=(dw.getDay()+6)%7;dw.setDate(dw.getDate()-wd);r.from=ymd(dw);r.to=to;}
   else if(p==='tm'){r.from=to.slice(0,7)+'-01';r.to=to;}
   else if(p==='lm'){var d3=D(to.slice(0,7)+'-01');d3.setMonth(d3.getMonth()-1);var s=ymd(d3);var e=D(to.slice(0,7)+'-01');e.setDate(0);r.from=s;r.to=ymd(e);}
+  else if(p==='qtr'){var dq=D(to);var qm=Math.floor(dq.getMonth()/3)*3;r.from=ymd(new Date(dq.getFullYear(),qm,1));r.to=to;}
+  else if(p==='hy'){var dh=D(to);var hm=dh.getMonth()<6?0:6;r.from=ymd(new Date(dh.getFullYear(),hm,1));r.to=to;}
+  else if(p==='yr'){r.from=to.slice(0,4)+'-01-01';r.to=to;}
   return r;
 }
 function setPreset(p){ F.preset=p; var r=presetRange(p); F.from=r.from; F.to=r.to; sync(); }
@@ -1368,14 +2033,15 @@ function assistantAnswer(q){
   var dl=fDeals(), cl=fCalls(), tk=fTasks(), ev=fEvents(), on=fOnline();
   var joined=joinDeals(dl); var contacted=joined.filter(function(j){return j.contacted;}).length;
   var has=function(){ for(var i=0;i<arguments.length;i++){ if(t.indexOf(' '+arguments[i]+' ')>=0 || t.indexOf(arguments[i])>=0) return true; } return false; };
-  var scope='current filters · '+fmtDay(F.from)+' → '+fmtDay(F.to)+(F.owners.size?' · '+F.owners.size+' owner(s)':'')+(F.stage?' · '+F.stage:'')+(F.trigger?' · '+F.trigger:'');
+  var scope='current filters · '+fmtDay(F.from)+' → '+fmtDay(F.to)+(F.owners.size?' · '+F.owners.size+' owner(s)':'')+(F.stage.size?' · '+Array.from(F.stage).join(', '):'')+(F.trigger.size?' · '+Array.from(F.trigger).join(', '):'');
   function wrap(html){ return html+'<div class="amini">Scope: '+esc(scope)+'</div>'; }
 
   if(has('help','what can you','examples','hi','hello')|| t.trim()===''){
     return wrap('I answer from the live Zoho snapshot, respecting your current filters. Try:<ul>'+
       '<li>“What’s the contact rate?”</li><li>“How many won deals?”</li><li>“Top agent by calls”</li>'+
       '<li>“Deals for Sheetal Parve”</li><li>“Average first response time”</li><li>“Overdue tasks”</li>'+
-      '<li>“Best time-slot for connectivity”</li><li>“Deals by stage”</li><li>“Customer events / signups”</li></ul>');
+      '<li>“Best time-slot for connectivity”</li><li>“Deals by stage”</li><li>“Customer events / signups”</li>'+
+      '<li>“How many zero-second calls today?”</li><li>“How many deals never received a call?”</li></ul>');
   }
 
   // owner detection — match against agents actually present in the data (most-active first)
@@ -1409,6 +2075,69 @@ function assistantAnswer(q){
       num(tk.filter(function(x){return x.owner===ownerId;}).length)+' tasks · '+num(ev.filter(function(x){return x.owner===ownerId;}).length)+' meetings.');
   }
 
+  // ---- Control Room questions (backed by the richer Command Center model, exposed via opsModelFn) ----
+  if(has('weakest store','store weak','which store')){
+    var M=opsModelFn?opsModelFn():null;
+    if(!M||!M.storeRows.length) return wrap('No store-mapped data in range — only 5 CRM owner accounts map to a real store today.');
+    var ws=M.storeRows.filter(function(s){return s.deals>=3;}).sort(function(a,b){return a.conversion-b.conversion;})[0]||M.storeRows[0];
+    return wrap('<b>'+esc(ws.store)+'</b> is the weakest store right now — '+p1(ws.conversion)+'% conversion on '+num(ws.deals)+' deals.');
+  }
+  if(has('video call')&&has('yesterday')){
+    var yk1=dayKey(ymd(new Date(D(F.to).getTime()-86400000)));
+    var vcY=fEvents().filter(function(e){return dayKey(e.created)===yk1&&classifyEvent(e.title)==='Video Call';});
+    var byOwn1=toItems(groupBy(vcY,function(e){return ownerName(e.owner);}));
+    if(!byOwn1.length) return wrap('No video calls logged yesterday.');
+    return wrap('<b>Video calls raised yesterday:</b><ul>'+byOwn1.map(function(x){return '<li>'+esc(x.label)+': '+num(x.value)+'</li>';}).join('')+'</ul>');
+  }
+  if(has('visited store')||(has('store visit')&&has('yesterday'))){
+    var yk2=dayKey(ymd(new Date(D(F.to).getTime()-86400000)));
+    var svY=fEvents().filter(function(e){return dayKey(e.created)===yk2&&classifyEvent(e.title)==='Store Visit';});
+    var byOwn2=toItems(groupBy(svY,function(e){return ownerName(e.owner);}));
+    if(!byOwn2.length) return wrap('No store visits logged yesterday.');
+    return wrap('<b>Store visits yesterday:</b><ul>'+byOwn2.map(function(x){return '<li>'+esc(x.label)+': '+num(x.value)+'</li>';}).join('')+'</ul>');
+  }
+  if(has('today with yesterday','today vs yesterday','compare today')){
+    var td=dayMetricsFn?dayMetricsFn(maxDate,maxDate):null, yd=dayMetricsFn?dayMetricsFn(ymd(new Date(D(maxDate).getTime()-86400000)),ymd(new Date(D(maxDate).getTime()-86400000))):null;
+    if(!td||!yd) return wrap('Comparison isn\'t available right now.');
+    return wrap('<b>Today vs Yesterday:</b><ul><li>Deals: '+num(td.deals)+' vs '+num(yd.deals)+'</li><li>Coverage: '+p1(td.coverage)+'% vs '+p1(yd.coverage)+'%</li><li>SLA: '+p1(td.slaPct)+'% vs '+p1(yd.slaPct)+'%</li><li>Avg FRT: '+fmtDur(td.avgFrt)+' vs '+fmtDur(yd.avgFrt)+'</li></ul>');
+  }
+  if(has('this week with last week','week vs last week','compare this week')){
+    var tw=dayMetricsFn?dayMetricsFn(ymd(new Date(D(maxDate).getTime()-6*86400000)),maxDate):null;
+    var lwEnd=ymd(new Date(D(maxDate).getTime()-7*86400000)), lwStart=ymd(new Date(D(maxDate).getTime()-13*86400000));
+    var lw=dayMetricsFn?dayMetricsFn(lwStart,lwEnd):null;
+    if(!tw||!lw) return wrap('Comparison isn\'t available right now.');
+    return wrap('<b>This week vs Last week:</b><ul><li>Deals: '+num(tw.deals)+' vs '+num(lw.deals)+'</li><li>Coverage: '+p1(tw.coverage)+'% vs '+p1(lw.coverage)+'%</li><li>SLA: '+p1(tw.slaPct)+'% vs '+p1(lw.slaPct)+'%</li></ul>');
+  }
+  if(has('needs attention','owner needs attention','which owner')){
+    var M2=opsModelFn?opsModelFn():null; if(!M2||!M2.ranking.length) return wrap('Not enough owner data in range.');
+    var w2=M2.ranking[M2.ranking.length-1];
+    return wrap('<b>'+esc(w2.owner)+'</b> needs the most attention right now — Owner Score '+w2.score+'/100, '+p1(w2.contactRate)+'% contact rate.');
+  }
+  if(has('action plan')&&has('tomorrow')){
+    var M3=opsModelFn?opsModelFn():null; if(!M3) return wrap('Not available right now.');
+    var acts=[]; if(M3.pendingCnt) acts.push(num(M3.pendingCnt)+' pending first calls'); if(M3.followupTomorrow) acts.push(num(M3.followupTomorrow)+"  tomorrow's follow-ups");
+    if(M3.stages.length) acts.push('clear the '+esc(M3.stages[0].stage)+' backlog ('+num(M3.stages[0].deals)+' deals)');
+    if(!acts.length) acts.push('no urgent items — maintain current pace');
+    return wrap("<b>Tomorrow's action plan:</b><ul>"+acts.map(function(a){return '<li>'+a+'</li>';}).join('')+'</ul>');
+  }
+  if(has('why')&&(has('sales low')||has('conversion falling')||has('conversion drop')||has('sales down'))){
+    var M4=opsModelFn?opsModelFn():null; if(!M4) return wrap('Not available right now.');
+    var reasons=[]; if(M4.pendingCnt) reasons.push(num(M4.pendingCnt)+" deals haven't been called yet");
+    if(M4.stages.length) reasons.push('the '+esc(M4.stages[0].stage)+' stage has the largest backlog ('+num(M4.stages[0].deals)+' deals)');
+    if(M4.lostByReason.length) reasons.push('the top loss reason is "'+esc(M4.lostByReason[0].reason)+'" ('+num(M4.lostByReason[0].count)+' deals)');
+    if(!reasons.length) reasons.push('no major gaps detected in the current window');
+    return wrap('<b>Likely reasons:</b><ul>'+reasons.map(function(r){return '<li>'+r+'</li>';}).join('')+'</ul>');
+  }
+  if(has('immediate action','need action','deals at risk','which deals')){
+    var M5=opsModelFn?opsModelFn():null; if(!M5||!M5.alerts.length) return wrap('No urgent items right now.');
+    var reds=M5.alerts.filter(function(a){return a.sev==='red';});
+    if(!reds.length) return wrap('No red-tier alerts right now — check the Critical Alert Center for orange/yellow items.');
+    return wrap('<b>Needs immediate action:</b><ul>'+reds.map(function(a){return '<li>'+esc(a.text)+'</li>';}).join('')+'</ul>');
+  }
+  if(has('what is happening','happening today',"today's summary",'business summary','today summary')){
+    var M6=opsModelFn?opsModelFn():null; if(!M6) return wrap('Not available right now.');
+    return wrap('<b>'+num(M6.deals)+'</b> deals created, <b>'+num(M6.calls)+'</b> calls made, <b>'+p1(M6.slaPct)+'%</b> contact rate, <b>'+num(M6.pendingCnt)+'</b> not called. Pipeline Health Score '+M6.pipelineScore+'/100 · Team Health Score '+M6.teamScore+'/100.');
+  }
   if(has('contact rate','contacted','reached','connectivity')){
     return wrap('Contact rate is <b>'+p1(pct(contacted,dl.length))+'%</b> — '+num(contacted)+' of '+num(dl.length)+' deals reached by a call after creation.');
   }
@@ -1431,8 +2160,10 @@ function assistantAnswer(q){
     var cats=CE.cats||[], catTot={}, total=0; cats.forEach(function(c){ catTot[c]=0; var m=(CE.byCatDay||{})[c]||{}; Object.keys(m).forEach(function(day){ if(day>=F.from&&day<=F.to){catTot[c]+=m[day]; total+=m[day];} }); });
     return wrap('<b>'+num(total)+' customer events</b> in range:<ul>'+cats.map(function(c){return '<li>'+c+': '+num(catTot[c])+'</li>';}).join('')+'</ul>');
   }
+  if(has('zero second','zero-second','0 second','0-second')){ var zc=cl.filter(function(c){return c.dur===0;}); return wrap('<b>'+num(zc.length)+'</b> zero-second calls — '+p1(pct(zc.length,cl.length||1))+'% of '+num(cl.length)+' total calls in range.'); }
+  if(has('never called','never received a call','no call ever','not called','never call')){ var nc=joined.filter(function(j){return !j.contacted;}); return wrap('<b>'+num(nc.length)+'</b> deals created in range have never received a call — '+p1(pct(nc.length,dl.length||1))+'% of '+num(dl.length)+' deals created.'); }
   if(has('call')){ var conn=cl.filter(function(c){return c.dur>0;}).length; return wrap('<b>'+num(cl.length)+'</b> calls — '+num(conn)+' connected, '+num(cl.filter(function(c){return (c.type||'').toLowerCase().indexOf('miss')>=0;}).length)+' missed · talk time '+hms(cl.reduce(function(s,c){return s+(c.dur||0);},0))+'.'); }
-  if(has('deal','lead','unique','duplicate','how many','total')){ var uq=uniqueDeals(dl); return wrap('<b>'+num(dl.length)+'</b> deals — '+num(uq)+' unique, '+num(dl.length-uq)+' duplicates · contact rate '+p1(pct(contacted,dl.length))+'% · '+num(dl.filter(isWon).length)+' won.'); }
+  if(has('deal','lead','unique','duplicate','how many','total')){ var dupsRemoved=fDealsRaw(F.from,F.to).length-dl.length; return wrap('<b>'+num(dl.length)+'</b> deals (same-day+mobile duplicates already removed — '+num(dupsRemoved)+' dropped) · contact rate '+p1(pct(contacted,dl.length))+'% · '+num(dl.filter(isWon).length)+' won.'); }
 
   return wrap('I couldn’t map that to the data. I can answer about <b>deals, calls, contact rate, first response, won/lost, agents</b> (top or by name), <b>stages, triggers, lead sources, tasks, meetings, chats, customer events</b> and <b>time-slots</b>. Try “top agent by won” or “contact rate”.');
 }
@@ -1451,6 +2182,7 @@ function buildAssistant(){
   gid('askClose').onclick=function(){ panel.classList.remove('open'); };
   gid('askForm').onsubmit=function(e){ e.preventDefault(); var q=gid('askInput').value; gid('askInput').value=''; ask(q); };
   var sc=gid('askSugg'); ['Contact rate?','Top agent by won','Average first response','Overdue tasks','Deals by stage','Best time-slot'].forEach(function(s){ var b=el('button',null,s); b.onclick=function(){ ask(s); }; sc.appendChild(b); });
+  askAIFn=function(q){ panel.classList.add('open'); ask(q); }; /* exposed so info-modal "Suggested Questions" chips can pipe straight into the real assistant */
 }
 
 /* ============================ SECTION 11 — Export & Sharing ============================
@@ -1466,9 +2198,9 @@ function buildAssistant(){
      • Executive Report — one-page summary for senior management
      • Scheduled Reports — client-persisted configurator (delivery runs on the backend)   */
 (function(){
-  var SLA_MIN=30;          // first-response SLA threshold (minutes) — matches "Overdue (>30 min)"
-  var SLA_TARGET=80;       // owner SLA-compliance target (%)
-  var COVER_TARGET=90;     // call-coverage target (%)
+  SLA_MIN=30;          // first-response SLA threshold (minutes) — matches "Overdue (>30 min)". (outer-scope var — see info-panel engine)
+  SLA_TARGET=80;       // owner SLA-compliance target (%)
+  COVER_TARGET=90;     // call-coverage target (%)
   var MIN_OWNER_DEALS=5;   // ignore tiny-volume owners when picking best / lowest SLA
   var BRAND='Lucira Jewelry', REPORT_TITLE='Daily Deals vs Calls — Executive Report';
   var RC=['#2563eb','#0d9488','#d97706','#9333ea','#e11d48','#0284c7','#65a30d','#ea580c'];
@@ -1476,6 +2208,7 @@ function buildAssistant(){
   /* ---------- shared model (respects current filters) ---------- */
   function reportModel(){
     var dl=fDeals(), cl=fCalls(), tk=fTasks(), ev=fEvents(), on=fOnline();
+    var dupRemoved=fDealsRaw().length-dl.length;
     var joined=joinDeals(dl);
     var contacted=joined.filter(function(j){return j.contacted;});
     var pending=joined.filter(function(j){return !j.contacted;});
@@ -1517,14 +2250,15 @@ function buildAssistant(){
     var td=trend(dl,gran), tc=trend(cl,gran), tkeys=mergeKeys(td.keys,tc.keys);
 
     return { dl:dl, cl:cl, tk:tk, ev:ev, on:on, joined:joined, contacted:contacted, pending:pending, overdue:overdue,
-      deals:dl.length, calls:cl.length, connCalls:connCalls, coverage:coverage, avgFrt:avgFrt, medFrt:medFrt, won:won,
+      deals:dl.length, dupRemoved:dupRemoved, calls:cl.length, connCalls:connCalls, coverage:coverage, avgFrt:avgFrt, medFrt:medFrt, won:won,
       pendingCnt:pending.length, overdueCnt:overdue.length, owners:owners, best:best, worst:worst,
       wh:wh, odSrc:odSrc, odTrig:odTrig, peakBackHr:peakBackHr, before5:before5, after5:after5,
       gran:gran, trendKeys:tkeys, trendLabels:fmtKeys(tkeys,gran),
       trendDeals:tkeys.map(function(k){return td.map[k]||0;}), trendCalls:tkeys.map(function(k){return tc.map[k]||0;}),
       from:F.from, to:F.to, ownersActive:owners.length, generated:new Date(),
-      scope:(F.owners.size?F.owners.size+' owner(s)':'all owners')+(F.stage?' · '+F.stage:'')+(F.trigger?' · '+F.trigger:'')+(F.leadSource?' · '+F.leadSource:'') };
+      scope:(F.owners.size?F.owners.size+' owner(s)':'all owners')+(F.stage.size?' · '+Array.from(F.stage).join(', '):'')+(F.trigger.size?' · '+Array.from(F.trigger).join(', '):'')+(F.leadSource.size?' · '+Array.from(F.leadSource).join(', '):'') };
   }
+  reportModelFn=reportModel; /* expose to the outer-scope info-panel engine (imContext/trendBlock) */
 
   /* ---------- narrative generators (rule-based, grounded on the model) ---------- */
   function execSummary(M){
@@ -1685,7 +2419,7 @@ function buildAssistant(){
 
   function buildReportDoc(M, mode){
     var isExec=(mode==='exec');
-    var kpis=[ kpiTile('Deals Created',num(M.deals),'unique '+num(uniqueDeals(M.dl))),
+    var kpis=[ kpiTile('Deals Created',num(M.deals),(M.dupRemoved>0?(num(M.dupRemoved)+' same-day duplicate(s) removed'):'no duplicates found')),
       kpiTile('Calls Made',num(M.calls),num(M.connCalls)+' connected'),
       kpiTile('Call Coverage',p1(M.coverage)+'%','target '+COVER_TARGET+'%'),
       kpiTile('Avg First Response',fmtMinNice(M.avgFrt),'median '+fmtMinNice(M.medFrt)),
@@ -1949,7 +2683,7 @@ function buildAssistant(){
 
     // KPI strip
     v.appendChild(kpiRow([
-      ['Deals Created',num(M.deals),'unique '+num(uniqueDeals(M.dl)),'','var(--c1)'],
+      ['Deals Created',num(M.deals),(M.dupRemoved>0?(num(M.dupRemoved)+' same-day duplicate(s) removed'):'no duplicates found'),'','var(--c1)'],
       ['Calls Made',num(M.calls),num(M.connCalls)+' connected','','var(--c2)'],
       ['Call Coverage',p1(M.coverage)+'%','target '+COVER_TARGET+'%',(M.coverage>=COVER_TARGET?'up':'down'),'var(--c4)'],
       ['Avg 1st Response',fmtMinNice(M.avgFrt),'median '+fmtMinNice(M.medFrt),'','var(--c3)'],
@@ -2030,7 +2764,7 @@ function buildAssistant(){
      in this dataset are owner-level with no outcome field and are NOT deal-linked, so meeting "Missed" and
      deal↔meeting metrics are surfaced as not-tracked rather than faked. */
   var BIZ_LO=10, BIZ_HI=20;                 // business hours: 10 AM – 8 PM
-  function ccScope(){ return (F.owners.size?F.owners.size+' owner(s)':'all owners')+(F.stage?' · '+F.stage:'')+(F.leadSource?' · '+F.leadSource:''); }
+  function ccScope(){ return (F.owners.size?F.owners.size+' owner(s)':'all owners')+(F.stage.size?' · '+Array.from(F.stage).join(', '):'')+(F.leadSource.size?' · '+Array.from(F.leadSource).join(', '):''); }
   function refNow(){ var real=new Date(); var end=D(F.to+'T23:59:59'); return (end && end<real)?end:real; }
   function covColor(p){ return p>=90?'var(--good)':p>=70?'#84cc16':p>=50?'var(--warn)':'var(--bad)'; }
   function delayColor(m){ return m==null?'var(--tx3)':m<10?'var(--good)':m<30?'var(--warn)':m<60?'var(--c8)':'var(--bad)'; }
@@ -2048,9 +2782,11 @@ function buildAssistant(){
     var sm=c.filter(function(x){return x.frt!=null&&x.frt<=SLA_MIN;}).length;
     return {deals:dl.length,calls:cl.length,contacted:c.length,pending:dl.length-c.length,coverage:pct(c.length,dl.length||1),avgFrt:avg,medFrt:med,slaPct:pct(sm,dl.length||1),meetings:ev.length};
   }
+  dayMetricsFn=dayMetrics; /* expose to the outer-scope info-panel engine (trendBlock) */
 
   function opsModel(){
-    var dl=fDeals(), cl=fCalls(), tk=fTasks(), ev=fEvents();
+    var dl=fDeals(), cl=fCalls(), tk=fTasks(), ev=fEvents(), on=fOnline();
+    var dupRemoved=fDealsRaw().length-dl.length;
     var joined=joinDeals(dl), ref=refNow();
     joined.forEach(function(j){ j._delay = j.contacted ? j.frt : Math.max(0,(ref-D(j.deal.created))/60000); });
     var contacted=joined.filter(function(j){return j.contacted;});
@@ -2078,15 +2814,16 @@ function buildAssistant(){
       var con=jd.filter(function(j){return j.contacted;});
       var f=con.map(function(j){return j.frt;}).filter(function(x){return x!=null;});
       var sm=con.filter(function(j){return j.frt!=null&&j.frt<=SLA_MIN;}).length;
-      return {deals:jd.length,calls:cc.length,avgFrt:f.length?f.reduce(function(s,x){return s+x;},0)/f.length:0,coverage:pct(con.length,jd.length||1),slaPct:pct(sm,jd.length||1),pending:jd.length-con.length}; }
+      var connected30=cc.filter(function(c){return c.dur>30;}).length, talk=cc.reduce(function(s,c){return s+(c.dur||0);},0);
+      return {deals:jd.length,calls:cc.length,connected30:connected30,talk:talk,avgFrt:f.length?f.reduce(function(s,x){return s+x;},0)/f.length:0,coverage:pct(con.length,jd.length||1),slaPct:pct(sm,jd.length||1),pending:jd.length-con.length}; }
     var biz=part(true), nonbiz=part(false);
 
     var hourly=[]; for(var h=BIZ_LO;h<=BIZ_HI;h++){
       var jd=joined.filter(function(j){return hourOf(j.deal.created)===h;});
-      var cc=cl.filter(function(c){return hourOf(c.created)===h;}).length;
+      var ccArr=cl.filter(function(c){return hourOf(c.created)===h;});
       var con=jd.filter(function(j){return j.contacted;});
       var f=con.map(function(j){return j.frt;}).filter(function(x){return x!=null;});
-      hourly.push({hour:h,label:hr12(h),deals:jd.length,calls:cc,avgFrt:f.length?f.reduce(function(s,x){return s+x;},0)/f.length:null,pending:jd.length-con.length,coverage:pct(con.length,jd.length||1)});
+      hourly.push({hour:h,label:hr12(h),deals:jd.length,calls:ccArr.length,connected30:ccArr.filter(function(c){return c.dur>30;}).length,talk:ccArr.reduce(function(s,c){return s+(c.dur||0);},0),avgFrt:f.length?f.reduce(function(s,x){return s+x;},0)/f.length:null,pending:jd.length-con.length,coverage:pct(con.length,jd.length||1)});
     }
     var peakBacklog=hourly.slice().sort(function(a,b){return b.pending-a.pending;})[0];
     var peakWorkload=hourly.slice().sort(function(a,b){return b.deals-a.deals;})[0];
@@ -2096,7 +2833,7 @@ function buildAssistant(){
     joined.forEach(function(j){ var id=j.deal.owner; var o=om[id]||(om[id]={id:id,name:ownerName(id),deals:0,contacted:0,pending:0,sla:0,frt:[],delays:[]});
       o.deals++; o.delays.push(j._delay==null?0:j._delay);
       if(j.contacted){ o.contacted++; if(j.frt!=null){o.frt.push(j.frt); if(j.frt<=SLA_MIN)o.sla++;} } else o.pending++; });
-    var owners=Object.keys(om).map(function(id){ var o=om[id]; var oc=cl.filter(function(c){return c.owner===id;}); o.calls=oc.length; o.talk=oc.reduce(function(s,c){return s+(c.dur||0);},0);
+    var owners=Object.keys(om).map(function(id){ var o=om[id]; var oc=cl.filter(function(c){return c.owner===id;}); o.calls=oc.length; o.talk=oc.reduce(function(s,c){return s+(c.dur||0);},0); o.connected30=oc.filter(function(c){return c.dur>30;}).length;
       var f=o.frt.slice().sort(function(a,b){return a-b;});
       o.avgFrt=f.length?f.reduce(function(s,x){return s+x;},0)/f.length:null; o.medFrt=f.length?f[Math.floor(f.length/2)]:null;
       o.maxDelay=o.delays.length?Math.max.apply(null,o.delays):0; o.callsPerDeal=o.deals?o.calls/o.deals:0;
@@ -2121,15 +2858,270 @@ function buildAssistant(){
     var days=[]; for(var i=29;i>=0;i--){ var dd=D(F.to); dd.setDate(dd.getDate()-i); days.push(ymd(dd)); }
     var series=days.map(function(day){ return dayMetrics(day,day); });
 
+    /* ===================================================================================
+       EXTENDED AGGREGATES — AI Sales & Operations Control Room (22-section redesign)
+       Every field below is computed from real CRM fields already parsed above (dl/cl/tk/ev/on/
+       joined). Where the spec asked for something this Zoho org doesn't track (Store_Assigned,
+       Deal Amount, per-deal meeting/follow-up link, stage-transition timestamps), the value is
+       either a clearly-labelled proxy or omitted with a disclaimer in the UI — never fabricated.
+       =================================================================================== */
+    var WORK_LO=10, WORK_HI=21; // 10 AM – 9 PM, per the Control Room spec (distinct from the 10–8 "biz" window the legacy PDF/Excel exports above still use)
+    function inWorkHours(iso){ var h=hourOf(iso); return h>=WORK_LO&&h<WORK_HI; }
+    function isWhatsApp(d){ return normTrig(d.trigger)==='WhatsApp'; }
+    var openDeals=dl.filter(function(d){ return !isWon(d)&&!isLost(d); });
+    var wonDeals=dl.filter(isWon), lostDeals=dl.filter(isLost);
+    var totalActivities=dl.reduce(function(s,d){ return s+(+d.numAct||0); },0);
+    var totalTalk=cl.reduce(function(s,c){ return s+(c.dur||0); },0), connected30Cnt=cl.filter(function(c){return c.dur>30;}).length;
+    var waCount=dl.filter(isWhatsApp).length, otherCount=dl.length-waCount;
+    var workingHourDeals=dl.filter(function(d){return inWorkHours(d.created);}).length, nonWorkingHourDeals=dl.length-workingHourDeals;
+    var storeVisitEvents=ev.filter(function(e){return classifyEvent(e.title)==='Store Visit';});
+    var videoCallEvents=ev.filter(function(e){return classifyEvent(e.title)==='Video Call';});
+    var todayKey=ymd(ref), tmrwKey=ymd(new Date(ref.getTime()+86400000)), yestKey=ymd(new Date(ref.getTime()-86400000));
+    var followupToday=tk.filter(function(t){return t.due&&dayKey(t.due)===todayKey&&!isDone(t);}).length;
+    var followupTomorrow=tk.filter(function(t){return t.due&&dayKey(t.due)===tmrwKey&&!isDone(t);}).length;
+
+    /* ---- per-owner extensions (won/lost/whatsapp/work-hour/activity split, store, score) ---- */
+    var allAct=tk.concat(on).concat(ev);
+    var taskNoCallRows=[]; // raw dump backing the "Task Created, No Call" drill-down, for cross-verification
+    joined.forEach(function(j){ var o=om[j.deal.owner]; if(!o) return;
+      if(isWon(j.deal)) o.won=(o.won||0)+1; if(isLost(j.deal)) o.lost=(o.lost||0)+1;
+      if(isWhatsApp(j.deal)) o.wa=(o.wa||0)+1; else o.other=(o.other||0)+1;
+      if(inWorkHours(j.deal.created)) o.workHr=(o.workHr||0)+1; else o.nonWorkHr=(o.nonWorkHr||0)+1;
+      o.acts=(o.acts||0)+(+j.deal.numAct||0);
+      if(j.contacted&&j.frt!=null){ if(j.frt<=30) o.first30=(o.first30||0)+1; else o.firstAfter30=(o.firstAfter30||0)+1; }
+      if(!isWhatsApp(j.deal)) o.callsNotConn=(o.callsNotConn||0)+j.calls.filter(function(c){return !(c.dur>0);}).length;
+      /* "Task Created, No Call" excludes WhatsApp deals — a WhatsApp lead's task-without-a-phone-call
+         isn't a coaching gap the same way a phone lead's is, per the business rule used everywhere
+         else in this table (WhatsApp Deals/Other Deals, Calls Not Connected, etc.). */
+      if(inWorkHours(j.deal.created) && !isWhatsApp(j.deal) && j.hasTask && !j.contacted){
+        o.taskNoCall=(o.taskNoCall||0)+1;
+        taskNoCallRows.push(j.deal);
+      }
+    });
+    /* Due Today / Overdue — deliberately computed against ALL of that owner's eligible Open/WIP
+       deals (ignoring the report's date-range filter — only owner/stage/trigger/source/UTM filters
+       still apply, via the same fDeals() but with the date bound removed) and against the REAL
+       current date (`realTodayKey`), never the possibly-past `ref`/`todayKey` the rest of this model
+       uses. Rationale: a follow-up due yesterday and still pending must stay Overdue today, tomorrow,
+       and every day after that — regardless of which date range the user has selected — until its
+       Task is marked complete. It only ever disappears when the linked Task is completed, and a
+       deal counts once even with several qualifying Tasks (.some(), not a per-task count). Deal-linked
+       (needs Zoho Task.What_Id) — honestly 0 if TASKS_LINKED is false on this data source. */
+    var realTodayKey=ymd(new Date());
+    joinDeals(fDeals('2000-01-01','2099-12-31')).forEach(function(j){
+      var o=om[j.deal.owner]; if(!o) return;
+      if(isWon(j.deal)||isLost(j.deal)) return;           // Closed deals never count — Open/WIP only
+      if(dayKey(j.deal.created)>=realTodayKey) return;    // deal must have been created before today
+      var dueToday=j.tasks.some(function(t){ return t.due&&dayKey(t.due)===realTodayKey&&!isDone(t); });
+      if(dueToday) o.dueDealsToday=(o.dueDealsToday||0)+1;
+      var overdueTask=j.tasks.some(function(t){ return t.due&&dayKey(t.due)<realTodayKey&&!isDone(t); });
+      if(overdueTask) o.overdueDeals=(o.overdueDeals||0)+1;
+    });
+    owners.forEach(function(o){
+      var oc=cl.filter(function(c){return c.owner===o.id;});
+      o.longestCall=oc.length?Math.max.apply(null,oc.map(function(c){return c.dur||0;})):0;
+      o.avgTalk=o.calls?o.talk/o.calls:0;
+      o.conv=pct(o.won||0,((o.won||0)+(o.lost||0))||1);
+      o.avgActPerDeal=o.deals?(o.acts||0)/o.deals:0;
+      o.videoCalls=ev.filter(function(e){return e.owner===o.id&&classifyEvent(e.title)==='Video Call';}).length;
+      o.storeVisits=ev.filter(function(e){return e.owner===o.id&&classifyEvent(e.title)==='Store Visit';}).length;
+      o.store=storeOf(o.id);
+      var ot=tk.filter(function(t){return t.owner===o.id;});
+      o.followupToday=ot.filter(function(t){return t.due&&dayKey(t.due)===todayKey&&!isDone(t);}).length;
+      o.followupTomorrow=ot.filter(function(t){return t.due&&dayKey(t.due)===tmrwKey&&!isDone(t);}).length;
+      o.overdueFollowup=ot.filter(function(t){return t.due&&dayKey(t.due)<todayKey&&!isDone(t);}).length;
+      o.completedFollowup=ot.filter(isDone).length;
+      o.actToday=allAct.filter(function(x){return x.owner===o.id&&dayKey(x.created)===todayKey;}).length;
+      o.actYesterday=allAct.filter(function(x){return x.owner===o.id&&dayKey(x.created)===yestKey;}).length;
+      /* Owner Score (0-100): only signals with real, available data go in — there is no revenue field to weight against. */
+      var frtScore=o.avgFrt==null?50:Math.max(0,100-Math.min(100,(o.avgFrt/SLA_MIN)*50));
+      var engScore=Math.min(1,o.callsPerDeal/2)*100;
+      var delayScore=Math.max(0,100-Math.min(100,(o.maxDelay/120)*100));
+      o.score=Math.round(o.slaPct*0.30+o.coverage*0.25+frtScore*0.20+engScore*0.15+delayScore*0.10);
+    });
+
+    /* ---- pipeline health (cross-sectional snapshot by current stage — Zoho has no stage-transition timestamps in this feed, so this can't be a true funnel) ---- */
+    var stageMap={};
+    openDeals.forEach(function(d){ var k=d.stage||'(none)'; var s=stageMap[k]||(stageMap[k]={stage:k,deals:0,daySum:0,callSum:0,actSum:0,waiting7:0});
+      s.deals++; var days=(ref-D(d.created))/86400000; s.daySum+=days; s.actSum+=(+d.numAct||0); if(days>=7)s.waiting7++; });
+    joined.forEach(function(j){ var s=stageMap[j.deal.stage||'(none)']; if(s) s.callSum+=j.nCalls; });
+    var stages=Object.keys(stageMap).map(function(k){ var s=stageMap[k];
+      return {stage:s.stage,deals:s.deals,pct:pct(s.deals,openDeals.length||1),avgDays:s.deals?s.daySum/s.deals:0,avgCalls:s.deals?s.callSum/s.deals:0,avgActs:s.deals?s.actSum/s.deals:0,stuck7Pct:pct(s.waiting7,s.deals||1)};
+    }).sort(function(a,b){return b.deals-a.deals;});
+    var stageAging=Object.keys(stageMap).map(function(k){ var s=stageMap[k];
+      var ds=openDeals.filter(function(d){return (d.stage||'(none)')===k;}).map(function(d){return (ref-D(d.created))/86400000;});
+      return {stage:k,avgDays:s.deals?s.daySum/s.deals:0,maxDays:ds.length?Math.max.apply(null,ds):0,waiting:s.deals};
+    }).sort(function(a,b){return b.avgDays-a.avgDays;});
+
+    /* ---- lead leakage: lost deals by Zoho's own Reason For Loss field ---- */
+    var leakMap={};
+    lostDeals.forEach(function(d){ var k=clean(d.reasonLoss); var s=leakMap[k]||(leakMap[k]={reason:k,deals:[],daySum:0}); s.deals.push(d); s.daySum+=(ref-D(d.created))/86400000; });
+    function leakAction(reason){ var r=(reason||'').toLowerCase();
+      if(/price|cost|budget|expensive/.test(r)) return 'Route to a manager for a price/discount review before the next similar lead.';
+      if(/no response|not reachable|unreachable|switch ?off/.test(r)) return 'Add to a re-engagement call list — try an alternate channel (WhatsApp/email).';
+      if(/competitor|other (jeweller|brand|store)/.test(r)) return 'Capture competitor detail on the next similar deal; consider a retention offer.';
+      if(/design|not (interested|liked)|quality/.test(r)) return 'Share with merchandising — recurring product-fit objection.';
+      if(/delay|time|slow/.test(r)) return 'Tighten first-response SLA for this lead source — delay-driven loss.';
+      return 'Manager review — reason needs manual follow-up.';
+    }
+    var leakage=Object.keys(leakMap).map(function(k){ var s=leakMap[k]; var byOwner=toItems(groupBy(s.deals,function(d){return ownerName(d.owner);}));
+      return {reason:s.reason,count:s.deals.length,pct:pct(s.deals.length,lostDeals.length||1),owner:byOwner[0]?byOwner[0].label:'—',avgDays:s.deals.length?s.daySum/s.deals.length:0,action:leakAction(s.reason)};
+    }).sort(function(a,b){return b.count-a.count;});
+
+    /* ---- no-call dashboard (all-time contact status, owner-level) ---- */
+    var noCallByOwner=owners.map(function(o){ return {owner:o.name,deals:o.deals,neverCalled:o.pending,pct:pct(o.pending,o.deals||1)}; }).sort(function(a,b){return b.neverCalled-a.neverCalled;});
+
+    /* ---- follow-up dashboard (Task.due, owner-level — per-deal needs the Task→Deal ETL fix already written, see hint in UI) ---- */
+    var followupByOwner=owners.map(function(o){ return {owner:o.name,today:o.followupToday||0,tomorrow:o.followupTomorrow||0,overdue:o.overdueFollowup||0,completed:o.completedFollowup||0}; }).sort(function(a,b){return (b.today+b.overdue)-(a.today+a.overdue);});
+
+    /* ---- working / non-working hour performance (WhatsApp deals excluded, per the spec's business rule) ---- */
+    function hourPerf(inWork){
+      var jd=joined.filter(function(j){return inWorkHours(j.deal.created)===inWork && !isWhatsApp(j.deal);});
+      var byOwner={};
+      jd.forEach(function(j){ var k=j.deal.owner; var o=byOwner[k]||(byOwner[k]={owner:ownerName(k),ownerId:k,deals:0,contacted:0,stageMap:{}});
+        o.deals++; if(j.contacted)o.contacted++; var sk=j.deal.stage||'(none)'; o.stageMap[sk]=(o.stageMap[sk]||0)+1; });
+      var rows=Object.keys(byOwner).map(function(k){ var o=byOwner[k];
+        var oc=cl.filter(function(c){return c.owner===k && inWorkHours(c.created)===inWork;});
+        o.calls=oc.length; o.connected30=oc.filter(function(c){return c.dur>30;}).length;
+        o.topStages=Object.keys(o.stageMap).map(function(s){return s+':'+o.stageMap[s];}).sort(function(a,b){return (+b.split(':')[1])-(+a.split(':')[1]);}).slice(0,3).join(', ');
+        o.contactRate=pct(o.contacted,o.deals||1); return o; }).sort(function(a,b){return b.deals-a.deals;});
+      return {deals:jd.length,rows:rows};
+    }
+    var workHourPerf=hourPerf(true), nonWorkHourPerf=hourPerf(false);
+
+    /* ---- hourly operations (full 24h, richer than the legacy `hourly` above which the PDF export still uses) ---- */
+    var hourlyOps=[]; for(var hh2=0; hh2<24; hh2++){
+      var jd2=joined.filter(function(j){return hourOf(j.deal.created)===hh2;});
+      var cc2=cl.filter(function(c){return hourOf(c.created)===hh2;});
+      var con2=jd2.filter(function(j){return j.contacted;});
+      var f2=con2.map(function(j){return j.frt;}).filter(function(x){return x!=null;});
+      var acts2=tk.filter(function(t){return hourOf(t.created)===hh2;}).length + on.filter(function(o2){return hourOf(o2.created)===hh2;}).length + ev.filter(function(e){return hourOf(e.created)===hh2;}).length;
+      var talk2=cc2.reduce(function(s,c){return s+(c.dur||0);},0);
+      hourlyOps.push({hour:hh2,label:hr12(hh2),deals:jd2.length,calls:cc2.length,connected30:cc2.filter(function(c){return c.dur>30;}).length,
+        notCalled:jd2.length-con2.length,activities:acts2,
+        storeVisits:ev.filter(function(e){return hourOf(e.created)===hh2&&classifyEvent(e.title)==='Store Visit';}).length,
+        videoCalls:ev.filter(function(e){return hourOf(e.created)===hh2&&classifyEvent(e.title)==='Video Call';}).length,
+        avgFrt:f2.length?f2.reduce(function(s,x){return s+x;},0)/f2.length:null, talk:talk2, avgTalk:cc2.length?talk2/cc2.length:0});
+    }
+
+    /* ---- store performance (only 5 CRM owner accounts map to a confirmed real store — see storeOf()) ---- */
+    var storeGroups={}; Object.keys(STORE_CODE_NAME).forEach(function(c){ storeGroups[STORE_CODE_NAME[c]]={store:STORE_CODE_NAME[c],deals:0,calls:0,won:0,lost:0,frt:[],acts:0,storeVisits:0,videoCalls:0,pendingFollowup:0}; });
+    storeGroups['Unmapped']={store:'Unmapped (owner not a store account)',deals:0,calls:0,won:0,lost:0,frt:[],acts:0,storeVisits:0,videoCalls:0,pendingFollowup:0};
+    owners.forEach(function(o){ var g=storeGroups[o.store||'Unmapped']; if(!g)return;
+      g.deals+=o.deals; g.calls+=o.calls; g.won+=(o.won||0); g.lost+=(o.lost||0); if(o.avgFrt!=null)g.frt.push(o.avgFrt);
+      g.acts+=(o.acts||0); g.storeVisits+=(o.storeVisits||0); g.videoCalls+=(o.videoCalls||0); g.pendingFollowup+=(o.followupToday||0)+(o.overdueFollowup||0); });
+    var storeRows=Object.keys(storeGroups).map(function(k){ var g=storeGroups[k];
+      return {store:g.store,deals:g.deals,calls:g.calls,conversion:pct(g.won,(g.won+g.lost)||1),avgResponse:g.frt.length?g.frt.reduce(function(s,x){return s+x;},0)/g.frt.length:null,activities:g.acts,storeVisits:g.storeVisits,videoCalls:g.videoCalls,pendingFollowup:g.pendingFollowup};
+    }).filter(function(r){return r.deals>0;}).sort(function(a,b){return b.deals-a.deals;});
+
+    /* ---- store visit & video call dashboard (owner-level; Events carry no status field, so "Cancelled" isn't trackable) ---- */
+    var storeVisitByOwner=owners.map(function(o){
+      var oev=ev.filter(function(e){return e.owner===o.id;});
+      var completed=oev.filter(function(e){return e.start&&D(e.start)<ref;}).length, pendingEv=oev.filter(function(e){return e.start&&D(e.start)>=ref;}).length;
+      var physical=oev.filter(function(e){var c=classifyEvent(e.title); return c==='Meeting'||c==='TAH';}).length;
+      return {owner:o.name,storeVisits:o.storeVisits||0,videoCalls:o.videoCalls||0,physical:physical,completed:completed,pending:pendingEv};
+    }).filter(function(r){return r.storeVisits||r.videoCalls||r.physical;}).sort(function(a,b){return (b.storeVisits+b.videoCalls+b.physical)-(a.storeVisits+a.videoCalls+a.physical);});
+
+    var lostByReason=leakage.map(function(l){ return {reason:l.reason,count:l.count,pct:l.pct,owner:l.owner}; });
+
+    /* ---- priority opportunities (no Deal Amount field exists — ranked by probability, engagement & urgency, never revenue) ---- */
+    function topN(list,n){ return list.slice(0,n); }
+    var highValue=topN(openDeals.filter(function(d){return (d.prob||0)>=70;}).sort(function(a,b){return (b.prob||0)-(a.prob||0);}),10);
+    var closingToday=topN(openDeals.filter(function(d){return (d.prob||0)>=80;}).sort(function(a,b){return (b.prob||0)-(a.prob||0);}),10);
+    var needsFollowup=topN(joined.filter(function(j){return !isWon(j.deal)&&!isLost(j.deal)&&j._delay>SLA_MIN&&(j.deal.prob||0)>=40;}).sort(function(a,b){return (b.deal.prob||0)-(a.deal.prob||0);}).map(function(j){return j.deal;}),10);
+    var atRisk=topN(openDeals.filter(function(d){var days=(ref-D(d.created))/86400000; return days>=7&&(+d.numAct||0)<=1;}).sort(function(a,b){return D(b.created)-D(a.created);}),10);
+    var reactivating=topN(joined.filter(function(j){ if(isWon(j.deal)||isLost(j.deal)||!j.calls.length)return false;
+      var lastCall=j.calls.reduce(function(a,b){return D(b.created)>D(a.created)?b:a;});
+      var gapDays=(D(lastCall.created)-D(j.deal.created))/86400000;
+      return gapDays>=5 && (ref-D(lastCall.created))/86400000<=1; }).map(function(j){return j.deal;}),10);
+
+    /* ---- owner ranking ---- */
+    var ranking=owners.slice().sort(function(a,b){return (b.score||0)-(a.score||0);}).map(function(o,i){return {rank:i+1,owner:o.name,contactRate:o.coverage,conversion:o.conv,activities:o.avgActPerDeal,followup:(o.followupToday||0)+(o.overdueFollowup||0),score:o.score};});
+
+    /* ---- composite health scores (real fields only — no revenue input exists in this org's CRM) ---- */
+    var teamScore=owners.length?Math.round(owners.reduce(function(s,o){return s+(o.score||0)*o.deals;},0)/(owners.reduce(function(s,o){return s+o.deals;},0)||1)):0;
+    var pipelineScore=Math.round(coverage*0.25+slaPct*0.25+Math.max(0,100-pct(pending.length,dl.length||1))*0.20+Math.max(0,100-pct(overdue.length,dl.length||1))*0.20+meet.conversion*0.10);
+
+    /* ---- critical alert center ---- */
+    function asDealList(list){ return list.map(function(x){return x&&x.deal?x.deal:x;}); }
+    var alerts=[];
+    /* "Never Received a First Call" is scoped to working-hour deals (10 AM–9 PM) and excludes
+       WhatsApp-triggered deals, per explicit user request — a WhatsApp lead isn't worked the same
+       way a phone lead is, and off-hour deals haven't had a fair chance at a call yet. This scoping
+       is local to this one alert; it does NOT change the dashboard-wide `pending`/Pending Calls figures. */
+    var neverCalledWH=pending.filter(function(j){ return inWorkHours(j.deal.created) && !isWhatsApp(j.deal); });
+    if(neverCalledWH.length) alerts.push({sev:'red',text:num(neverCalledWH.length)+' deals have never received a first call.',rows:asDealList(neverCalledWH)});
+    var stuck3=openDeals.filter(function(d){return (ref-D(d.created))/86400000>=3;});
+    if(stuck3.length) alerts.push({sev:'orange',text:num(stuck3.length)+' deals have been stuck for 3+ days with no resolution.',rows:stuck3});
+    var stuck7=openDeals.filter(function(d){return (ref-D(d.created))/86400000>=7;});
+    if(stuck7.length) alerts.push({sev:'red',text:num(stuck7.length)+' deals have been stuck for 7+ days — high risk of loss.',rows:stuck7});
+    var propStage=stages.filter(function(s){return /propos/i.test(s.stage);})[0];
+    if(propStage&&propStage.deals) alerts.push({sev:'orange',text:'"'+propStage.stage+'" stage has the largest backlog ('+num(propStage.deals)+' deals, '+p1(propStage.pct)+'% of open pipeline).'});
+    var hvNoAct=openDeals.filter(function(d){return (d.prob||0)>=70 && (+d.numAct||0)===0;});
+    if(hvNoAct.length) alerts.push({sev:'red',text:num(hvNoAct.length)+' high-probability deals (≥70%) have zero recorded activity.',rows:hvNoAct});
+    var belowTargetOwners=owners.filter(function(o){return o.deals>=MIN_OWNER_DEALS&&o.slaPct<SLA_TARGET;});
+    if(belowTargetOwners.length) alerts.push({sev:'orange',text:num(belowTargetOwners.length)+' owner(s) below the '+SLA_TARGET+'% contact-rate target: '+belowTargetOwners.slice(0,3).map(function(o){return o.name;}).join(', ')+(belowTargetOwners.length>3?'…':'')+'.'});
+    var belowTargetStores=storeRows.filter(function(s){return s.deals>=5 && s.conversion<30;});
+    if(belowTargetStores.length) alerts.push({sev:'orange',text:num(belowTargetStores.length)+' store(s) below 30% conversion: '+belowTargetStores.map(function(s){return s.store;}).join(', ')+'.'});
+    var vcPending=videoCallEvents.filter(function(e){return e.start&&D(e.start)>=ref;}).length;
+    if(vcPending) alerts.push({sev:'yellow',text:num(vcPending)+' video calls scheduled but not yet completed.'});
+    var svPending=storeVisitEvents.filter(function(e){return e.start&&D(e.start)>=ref;}).length;
+    if(svPending) alerts.push({sev:'yellow',text:num(svPending)+' store visits scheduled but not yet completed.'});
+    var waiting24=pending.filter(function(j){return j._delay>=1440;});
+    if(waiting24.length) alerts.push({sev:'red',text:num(waiting24.length)+' customers have been waiting more than 24 hours for a first response.',rows:asDealList(waiting24)});
+    if(!alerts.length) alerts.push({sev:'green',text:'All clear — no critical gaps detected for '+(F.from===F.to?'today':'this period')+'.'});
+
+    /* City-wise / State-wise Performance (Section 4b/4c, rendered in renderCommand) — same
+       metric set and computation as the Owner Performance block above (om/owners), just
+       grouped by Deal Address_City / Address_State instead of Owner. */
+    function buildBucketPerf(keyFn, unmatchedLabel){
+      var bm={};
+      joined.forEach(function(j){
+        var k=keyFn(j.deal)||unmatchedLabel;
+        var o=bm[k]||(bm[k]={name:k,deals:0,workHr:0,nonWorkHr:0,wa:0,other:0,acts:0,first30:0,firstAfter30:0,calls:0,talk:0,connected30:0,callsNotConn:0,taskNoCall:0,dueDealsToday:0,overdueDeals:0});
+        o.deals++;
+        if(isWhatsApp(j.deal)) o.wa++; else o.other++;
+        if(inWorkHours(j.deal.created)) o.workHr++; else o.nonWorkHr++;
+        o.acts+=(+j.deal.numAct||0);
+        if(j.contacted&&j.frt!=null){ if(j.frt<=30) o.first30++; else o.firstAfter30++; }
+        o.calls+=j.calls.length;
+        o.talk+=j.calls.reduce(function(s,c){return s+(c.dur||0);},0);
+        o.connected30+=j.calls.filter(function(c){return c.dur>30;}).length;
+        if(!isWhatsApp(j.deal)) o.callsNotConn+=j.calls.filter(function(c){return !(c.dur>0);}).length;
+        if(inWorkHours(j.deal.created)&&!isWhatsApp(j.deal)&&j.hasTask&&!j.contacted) o.taskNoCall++;
+      });
+      joinDeals(fDeals('2000-01-01','2099-12-31')).forEach(function(j){
+        var k=keyFn(j.deal)||unmatchedLabel; var o=bm[k]; if(!o) return;
+        if(isWon(j.deal)||isLost(j.deal)) return;
+        if(dayKey(j.deal.created)>=realTodayKey) return;
+        if(j.tasks.some(function(t){return t.due&&dayKey(t.due)===realTodayKey&&!isDone(t);})) o.dueDealsToday++;
+        if(j.tasks.some(function(t){return t.due&&dayKey(t.due)<realTodayKey&&!isDone(t);})) o.overdueDeals++;
+      });
+      return Object.keys(bm).map(function(k){return bm[k];}).sort(function(a,b){return b.deals-a.deals;});
+    }
+    var cityPerf=buildBucketPerf(function(d){return (d.city||'').trim();}, '(Not Captured)');
+    var statePerf=buildBucketPerf(function(d){return (d.state||'').trim();}, '(Not Captured)');
+
     return { from:F.from, to:F.to, single:(F.from===F.to), generated:new Date(), scope:ccScope(), ref:ref,
-      dl:dl, cl:cl, tk:tk, ev:ev, joined:joined, contacted:contacted, pending:pending, overdue:overdue,
-      deals:dl.length, calls:cl.length, uniqueCalled:contacted.length, pendingCnt:pending.length,
+      cityPerf:cityPerf, statePerf:statePerf,
+      dl:dl, cl:cl, tk:tk, ev:ev, on:on, joined:joined, contacted:contacted, pending:pending, overdue:overdue,
+      deals:dl.length, dupRemoved:dupRemoved, calls:cl.length, uniqueCalled:contacted.length, pendingCnt:pending.length,
       avgFrt:avgFrt, medFrt:medFrt, maxFrt:maxFrt, coverage:coverage, slaPct:slaPct, overdueCnt:overdue.length,
       dist:dist, prevDist:prevDist, prevAvg:prevAvg, prevCov:prevCov,
       biz:biz, nonbiz:nonbiz, hourly:hourly, peakBacklog:peakBacklog, peakWorkload:peakWorkload, lowProd:lowProd,
       owners:owners, best:best, worst:worst, mostPending:mostPending, srcDelay:srcDelay, stageDelay:stageDelay, odSrc:odSrc,
-      meet:meet, trend1:trend1, trend7:trend7, trend30:trend30, series:series, days:days };
+      meet:meet, trend1:trend1, trend7:trend7, trend30:trend30, series:series, days:days,
+      openDeals:openDeals, wonDeals:wonDeals, lostDeals:lostDeals, totalActivities:totalActivities, totalTalk:totalTalk, connected30Cnt:connected30Cnt,
+      waCount:waCount, otherCount:otherCount, workingHourDeals:workingHourDeals, nonWorkingHourDeals:nonWorkingHourDeals,
+      storeVisitsCnt:storeVisitEvents.length, videoCallsCnt:videoCallEvents.length, followupToday:followupToday, followupTomorrow:followupTomorrow,
+      wonCnt:wonDeals.length, lostCnt:lostDeals.length, convPct:pct(wonDeals.length,(wonDeals.length+lostDeals.length)||1),
+      stages:stages, stageAging:stageAging, leakage:leakage, noCallByOwner:noCallByOwner, followupByOwner:followupByOwner,
+      workHourPerf:workHourPerf, nonWorkHourPerf:nonWorkHourPerf, hourlyOps:hourlyOps,
+      storeRows:storeRows, storeVisitByOwner:storeVisitByOwner, lostByReason:lostByReason,
+      highValue:highValue, closingToday:closingToday, needsFollowup:needsFollowup, atRisk:atRisk, reactivating:reactivating,
+      ranking:ranking, teamScore:teamScore, pipelineScore:pipelineScore, alerts:alerts, taskNoCallRows:taskNoCallRows };
   }
+  opsModelFn=opsModel; /* expose to the outer-scope info-panel engine (imContext/trendBlock) */
 
   /* ---------- ops narrative generators ---------- */
   function avgCov(hrs){ var t=hrs.reduce(function(s,x){return s+x.deals;},0), c=hrs.reduce(function(s,x){return s+x.deals*x.coverage/100;},0); return t?100*c/t:0; }
@@ -2174,18 +3166,17 @@ function buildAssistant(){
     if(!a.length) a.push(['green','All clear — no urgent operational gaps.']);
     return a;
   }
-  function opsGaps(M){ var g=[];
-    if(M.peakBacklog) g.push(['Max backlog hour', hr12(M.peakBacklog.hour)+'–'+hr12(M.peakBacklog.hour+1)+' · '+num(M.peakBacklog.pending)+' pending']);
-    if(M.mostPending) g.push(['Owner highest pending', M.mostPending.name+' · '+num(M.mostPending.pending)]);
-    if(M.srcDelay.length) g.push(['Lead source most delays', M.srcDelay[0].key+' · '+num(M.srcDelay[0].over)+' overdue']);
-    if(M.stageDelay.length) g.push(['Stage most delay', M.stageDelay[0].key+' · avg '+fmtMinNice(M.stageDelay[0].avg)]);
-    g.push(['Average FRT trend', (M.prevAvg?((M.avgFrt>M.prevAvg?'▲ ':'▼ ')+fmtMinNice(M.avgFrt)+' (prev '+fmtMinNice(M.prevAvg)+')'):fmtMinNice(M.avgFrt))]);
-    if(M.peakWorkload) g.push(['Peak workload hour', hr12(M.peakWorkload.hour)+'–'+hr12(M.peakWorkload.hour+1)+' · '+num(M.peakWorkload.deals)+' deals']);
-    if(M.lowProd) g.push(['Lowest productivity hour', hr12(M.lowProd.hour)+'–'+hr12(M.lowProd.hour+1)+' · '+p1(M.lowProd.coverage)+'% coverage']);
-    g.push(['Delay trend', (M.avgFrt>M.prevAvg?'▲ increasing':'▼ improving')+' vs previous period']);
-    var reps=M.owners.filter(function(o){return o.deals>=MIN_OWNER_DEALS && o.slaPct<SLA_TARGET;});
-    g.push(['SLA breaches (owners)', num(reps.length)+' owner(s) below '+SLA_TARGET+'%']);
-    return g;
+  function opsAlerts(M){ return M.alerts; }
+  function opsExecSummary(M){ var p=[];
+    p.push('<b>'+(M.single?fmtDay(M.to):fmtDay(M.from)+'–'+fmtDay(M.to))+':</b> '+num(M.deals)+' deals created, '+num(M.calls)+' calls made, '+num(M.contacted.length)+' connected — a '+p1(M.slaPct)+'% 30-min contact rate.');
+    if(M.pendingCnt) p.push(num(M.pendingCnt)+' deals have not been called yet.');
+    if(M.stages.length){ var top=M.stages[0]; p.push('<b>'+esc(top.stage)+'</b> stage has the largest backlog ('+num(top.deals)+' deals, '+p1(top.pct)+'% of open pipeline).'); }
+    var weakestStore=M.storeRows.filter(function(s){return s.deals>=3;}).sort(function(a,b){return a.conversion-b.conversion;})[0];
+    if(weakestStore) p.push('<b>'+esc(weakestStore.store)+'</b> is the weakest store today ('+p1(weakestStore.conversion)+'% conversion).');
+    if(M.ranking.length) p.push('<b>'+esc(M.ranking[0].owner)+'</b> is the best performer (Owner Score '+M.ranking[0].score+'/100).');
+    p.push('Pipeline Health Score: <b>'+M.pipelineScore+'/100</b> · Team Health Score: <b>'+M.teamScore+'/100</b>.');
+    var recs=opsRecs(M).slice(0,2); if(recs.length) p.push('<u>Immediate recommendation:</u> '+recs.join(' '));
+    return p.join(' ');
   }
   function crmWhatsapp(M){ var L=[];
     L.push('📅 *Daily CRM Report*'); L.push('_'+(M.single?fmtDay(M.to):(fmtDay(M.from)+' – '+fmtDay(M.to)))+' · '+M.scope+'_'); L.push('');
@@ -2237,156 +3228,241 @@ function buildAssistant(){
     '.cc-act{display:flex;gap:10px;align-items:flex-start;padding:9px 13px;border-radius:9px;margin:6px 0;font-size:13px;border:1px solid var(--line);color:var(--tx)}'+
     '.cc-act .dot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex:0 0 auto}'+
     '.cc-act.red{background:rgba(255,107,107,.10)}.cc-act.red .dot{background:var(--bad)}'+
+    '.cc-act.orange{background:rgba(234,88,12,.10)}.cc-act.orange .dot{background:var(--c8)}'+
     '.cc-act.yellow{background:rgba(244,183,64,.10)}.cc-act.yellow .dot{background:var(--warn)}'+
     '.cc-act.green{background:rgba(34,197,94,.10)}.cc-act.green .dot{background:var(--good)}'+
     '.cc-heat td.h{color:#08210f;font-weight:750;text-align:center;border-radius:4px}'+
     '.brief-box{white-space:pre-wrap;font:12.5px/1.55 ui-monospace,Menlo,Consolas,monospace;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:14px;color:var(--tx);max-height:440px;overflow:auto}'+
-    '.cc-medal{font-size:13px;margin-right:4px}';
+    '.cc-medal{font-size:13px;margin-right:4px}'+
+    '.cc-alert-btn{margin-left:8px;font-size:11.5px}';
     document.head.appendChild(st);
   })();
 
-  /* ---------- Command Center render ---------- */
+  /* ---------- Command Center render: AI Sales & Operations Control Room (22 sections) ---------- */
   function renderCommand(v){
     var M=opsModel();
     // Day quick-bar + export row
     var bar=el('div','cc-daybar');
     var seg=el('div','cc-seg');
     [['today','Today'],['yest','Yesterday'],['7','Last 7d'],['30','Last 30d']].forEach(function(p){ var b=el('button',F.preset===p[0]?'on':'',p[1]); b.onclick=function(){ setPreset(p[0]); }; seg.appendChild(b); });
-    bar.appendChild(el('span','',null)); bar.lastChild.style.cssText='font-size:12.5px;color:var(--tx2)'; bar.lastChild.innerHTML='<b style="color:var(--tx)">Operations for</b> '+esc(M.single?fmtDay(M.to):fmtDay(M.from)+' → '+fmtDay(M.to))+' · '+esc(M.scope);
+    var customOn=(F.preset==='');
+    var cbtn=el('button',customOn?'on':'','◆ Custom'); cbtn.title='Pick your own From/To dates'; cbtn.onclick=function(){ F.preset=''; sync(); }; seg.appendChild(cbtn);
+    bar.appendChild(el('span','',null)); bar.lastChild.style.cssText='font-size:12.5px;color:var(--tx2)'; bar.lastChild.innerHTML='<b style="color:var(--tx)">Control Room for</b> '+esc(M.single?fmtDay(M.to):fmtDay(M.from)+' → '+fmtDay(M.to))+' · '+esc(M.scope);
     bar.appendChild(seg);
+    if(customOn){
+      var dr=el('div','cc-seg'); dr.style.cssText='gap:6px;align-items:center;padding:5px 9px';
+      var dinCss='background:var(--bg2);border:1px solid var(--line);color:var(--tx);border-radius:6px;padding:4px 7px;font-size:12px';
+      var fi=el('input'); fi.type='date'; fi.value=F.from; fi.style.cssText=dinCss;
+      fi.onchange=function(){ var v=fi.value||minDate; F.from=v; if(F.to<F.from)F.to=F.from; F.preset=''; sync(); };
+      var ti=el('input'); ti.type='date'; ti.value=F.to; ti.style.cssText=dinCss;
+      ti.onchange=function(){ var v=ti.value||maxDate; F.to=v; if(F.to<F.from)F.from=F.to; F.preset=''; sync(); };
+      dr.appendChild(fi); dr.appendChild(el('span','',null)); dr.lastChild.style.cssText='color:var(--tx3);font-size:12px'; dr.lastChild.textContent='→'; dr.appendChild(ti);
+      bar.appendChild(dr);
+    }
     var exp=el('div','cc-exp');
     [['🧾 PDF',opsPDF],['📊 Excel',opsExcel],['🖨️ Print',function(){window.print();}],['🖼️ PNG',opsPNG],['💬 WhatsApp',function(){ copyText(crmWhatsapp(opsModel()),function(){toast('CRM summary copied ✓');}); }]].forEach(function(a){ var b=el('button','hbtn',a[0]); b.onclick=a[1]; exp.appendChild(b); });
     bar.appendChild(exp);
     v.appendChild(bar);
 
-    // TOP KPI SUMMARY (14)
+    // ===== SECTION 1 — Executive KPI Cards =====
     v.appendChild(kpiRow([
-      ['Deals Created',num(M.deals),'','','var(--c1)'],
-      ['Calls Done',num(M.calls),'','','var(--c2)'],
-      ['Unique Deals Called',num(M.uniqueCalled),'≥1 first call','','var(--c6)'],
-      ['Pending First Calls',num(M.pendingCnt),'no call yet','down','var(--warn)'],
-      ['Avg First Response',fmtMinNice(M.avgFrt),'','','var(--c3)'],
-      ['Median First Response',fmtMinNice(M.medFrt),'','','var(--c3)'],
-      ['Max First Response',fmtMinNice(M.maxFrt),'','down','var(--c8)'],
-      ['Call Coverage',p1(M.coverage)+'%','target '+COVER_TARGET+'%',(M.coverage>=COVER_TARGET?'up':'down'),'var(--c4)'],
-      ['SLA %',p1(M.slaPct)+'%','≤'+SLA_MIN+'m · target '+SLA_TARGET+'%',(M.slaPct>=SLA_TARGET?'up':'down'),'var(--acc2)'],
-      ['Overdue Deals',num(M.overdueCnt),'>'+SLA_MIN+'m',(M.overdueCnt?'down':'up'),'var(--bad)'],
-      ['Meetings Scheduled',num(M.meet.scheduled),'','','var(--c5)'],
-      ['Meetings Completed',num(M.meet.completed),p1(M.meet.conversion)+'%','up','var(--good)'],
-      ['Meetings Pending',num(M.meet.pending),'upcoming','','var(--warn)'],
-      ['Meetings Missed',(M.meet.missed==null?'n/a':num(M.meet.missed)),'not tracked','','var(--tx3)']
+      ['Total Deals',num(M.deals),(M.dupRemoved>0?(num(M.dupRemoved)+' same-day duplicate(s) removed'):'no duplicates found'),'','var(--c1)'],
+      ['Working Hour Deals',num(M.workingHourDeals),'10AM–9PM · time split','','var(--c2)'],
+      ['Non Working Hour Deals',num(M.nonWorkingHourDeals),'9PM–10AM · time split','','var(--c2)'],
+      ['WhatsApp Deals',num(M.waCount),'channel split','','var(--c5)'],
+      ['Other Deals',num(M.otherCount),'channel split','','var(--c5)'],
+      ['Total Calls',num(M.calls),'','','var(--c3)'],
+      ['Connected Calls (>30s)',num(M.connected30Cnt),p1(pct(M.connected30Cnt,M.calls||1))+'%','up','var(--good)'],
+      ['Deals Not Called',num(M.pendingCnt),'no call yet','down','var(--warn)'],
+      ['30-Min Contact Rate %',p1(M.slaPct)+'%','target '+SLA_TARGET+'%',(M.slaPct>=SLA_TARGET?'up':'down'),'var(--acc2)'],
+      ["Today's Follow-up",num(M.followupToday),'owner-level','','var(--c6)'],
+      ["Tomorrow's Follow-up",num(M.followupTomorrow),'owner-level','','var(--c6)'],
+      ['Total Activities',num(M.totalActivities),'CRM Activities field','','var(--c4)'],
+      ['Store Visits',num(M.storeVisitsCnt),'from Event titles','','var(--c8)'],
+      ['Video Calls',num(M.videoCallsCnt),'from Event titles','','var(--c8)'],
+      ['Won Deals',num(M.wonCnt),'','up','var(--good)'],
+      ['Lost Deals',num(M.lostCnt),'','down','var(--bad)'],
+      ['Conversion %',p1(M.convPct)+'%','won / (won+lost)','','var(--acc)'],
+      ['Total Talk Time',hms(M.totalTalk),'','','var(--c2)'],
+      ['Average Talk Time',hms(M.calls?M.totalTalk/M.calls:0),'','','var(--c2)'],
+      ['Revenue Health Score','Not tracked','Deal Amount isn\'t recorded in this CRM','','var(--tx3)']
     ]));
 
-    // SECTION 1 — Business summary
-    var p1p=panel('① '+(M.single?'Day':'Period')+' Business Summary','Auto-generated executive summary'); v.appendChild(p1p);
-    p1p.__body.innerHTML='<div class="cc-exec">'+opsSummary(M)+'</div>';
+    // ===== SECTION 2 — AI Executive Summary =====
+    var p1p=panel('🧠 AI Executive Summary',(M.single?"Today's Summary":'Period Summary')+' · Auto-generated from the live filtered data'); v.appendChild(p1p);
+    p1p.__body.innerHTML='<div class="cc-exec">'+opsExecSummary(M)+'</div>';
 
-    // SECTION 2 — First Response Analysis
-    var p2=panel('② First Response Analysis','Deals created in the selected window, by time-to-first-call. Delay buckets highlighted.'); v.appendChild(p2);
-    var total=M.joined.length||1, ckey={}; M.dist.forEach(function(b){ ckey[b.label]=isDelayBucket(b.label)?(b.label==='No First Call Yet'?'var(--bad)':'var(--c8)'):'var(--good)'; });
-    hbar(p2.__body, M.dist.map(function(b){return {key:b.label,label:b.label,value:b.count};}), {max:11, colorByKey:ckey, fmt:function(x){return num(x)+' ('+p1(pct(x,total))+'%)';}});
-    var pdMap={}; M.prevDist.forEach(function(b){pdMap[b.label]=b.count;});
-    var d2rows=M.dist.map(function(b){ var prev=pdMap[b.label]||0, dlt=b.count-prev, hl=isDelayBucket(b.label);
-      return [ hl?{html:'<b style="color:'+(b.label==='No First Call Yet'?'var(--bad)':'var(--c8)')+'">'+esc(b.label)+'</b>',text:b.label}:b.label,
-        b.count, p1(pct(b.count,total))+'%', prev, (dlt>0?'+':'')+dlt ]; });
-    table(p2.__body,['Bucket','Deals','%','Prev','Δ'],d2rows,{key:'frtdist',numCols:[1,3,4]});
-
-    // SECTION 3 — Business vs Non-business
-    var p3=panel('③ Business vs Non-Business Hours','Business = 10 AM–8 PM · Non-business = 8 PM–10 AM'); v.appendChild(p3);
-    table(p3.__body,['Metric','Business (10 AM–8 PM)','Non-Business (8 PM–10 AM)'],[
-      ['Deals Created',num(M.biz.deals),num(M.nonbiz.deals)],
-      ['Calls Done',num(M.biz.calls),num(M.nonbiz.calls)],
-      ['Average FRT',fmtMinNice(M.biz.avgFrt),fmtMinNice(M.nonbiz.avgFrt)],
-      ['Coverage %',p1(M.biz.coverage)+'%',p1(M.nonbiz.coverage)+'%'],
-      ['SLA %',p1(M.biz.slaPct)+'%',p1(M.nonbiz.slaPct)+'%'],
-      ['Pending Calls',num(M.biz.pending),num(M.nonbiz.pending)]
-    ],{key:'bizsplit'});
-
-    // SECTION 4 — Hourly connectivity (heatmap)
-    var p4=panel('④ Hourly Connectivity','Green = good · Yellow = medium · Red = problem. Highest-backlog hour flagged.'); v.appendChild(p4);
-    p4.__body.appendChild(ccHourlyTable(M));
-
-    // SECTION 5 — Owner performance
-    var p5=panel('⑤ Owner Performance','Ranked by SLR%. 🏆 best · ⚠ worst.'); v.appendChild(p5);
-    var orows=M.owners.map(function(o){ var medal=(M.best&&o.id===M.best.id)?'<span class="cc-medal">🏆</span>':(M.worst&&o.id===M.worst.id)?'<span class="cc-medal">⚠</span>':'';
-      return [ {html:medal+esc(o.name),text:o.name}, o.deals, o.calls, {html:hms(o.talk||0),text:o.talk||0}, o.pending, (o.avgFrt==null?'—':fmtMinNice(o.avgFrt)), (o.medFrt==null?'—':fmtMinNice(o.medFrt)), fmtMinNice(o.maxDelay), p1(o.callsPerDeal), {html:'<b style="color:'+(o.slaPct<SLA_TARGET?'var(--bad)':'var(--good)')+'">'+p1(o.slaPct)+'%</b>',text:p1(o.slaPct)} ]; });
-    table(p5.__body,['Owner','Deals','Calls','Talk Time','Pending','Avg FRT','Median FRT','Max Delay','Calls/Deal','SLA %'],orows,{key:'ccown',numCols:[1,2,3,4,8]});
-    addExport(p5,'owner_performance',['Owner','Deals','Calls','TalkTimeSec','Pending','AvgFRTmin','MedianFRTmin','MaxDelayMin','CallsPerDeal','SLApct'],M.owners.map(function(o){return [o.name,o.deals,o.calls,o.talk||0,o.pending,(o.avgFrt==null?'':p1(o.avgFrt)),(o.medFrt==null?'':p1(o.medFrt)),p1(o.maxDelay),p1(o.callsPerDeal),p1(o.slaPct)];}));
-
-    // SECTION 6 — Overdue deals
-    var p6=panel('⑥ Overdue Deals','Green <10m · Yellow 10–30m · Orange 30–60m · Red >60m. Delay measured to '+(M.single?'end of day / now':'now')+'.'); v.appendChild(p6);
-    var od=M.overdue.slice().sort(function(a,b){return (b._delay||0)-(a._delay||0);});
-    var orws=od.slice(0,400).map(function(j){ var col=delayColor(j._delay);
-      return [ j.deal.id, esc(j.deal.name||'—'), ownerName(j.deal.owner), fmtDT(j.deal.created), fmtMinNice(j._delay),
-        {html:'<b style="color:'+col+'">'+fmtMinNice(j._delay)+'</b>',text:p1(j._delay||0)}, clean(j.deal.leadSource), esc(j.deal.stage||'—'),
-        {html:'<span class="tag2 '+(j._delay>60?'pill-lost':j._delay>30?'pill-open':'pill-won')+'">'+(j._delay>60?'High':j._delay>30?'Medium':'Low')+'</span>',text:(j._delay>60?'High':j._delay>30?'Medium':'Low')},
-        '—','—', (j.contacted?'Called late':'Awaiting call') ]; });
-    table(p6.__body,['Deal ID','Customer','Owner','Created','Waiting Since','Current Delay','Lead Source','Stage','Priority','Meeting','Next Follow-up','Status'],orws,{key:'ccover',numCols:[5],limit:250});
-    addExport(p6,'overdue_deals',['DealID','Customer','Owner','Created','CurrentDelayMin','LeadSource','Stage','Priority','Status'],od.map(function(j){return [j.deal.id,j.deal.name,ownerName(j.deal.owner),j.deal.created,p1(j._delay||0),clean(j.deal.leadSource),j.deal.stage,(j._delay>60?'High':j._delay>30?'Medium':'Low'),(j.contacted?'Called late':'Awaiting call')];}));
-    p6.__body.appendChild(el('div','hint','“Meeting” &amp; “Next Follow-up” are not linked per-deal in Zoho (Events are owner-level, no per-deal link/outcome field) — shown as “—”.'));
-
-    // SECTION 7 — Meeting analysis
-    var p7=panel('⑦ Meeting Analysis','Zoho Events (owner-level). Completed = start time already passed; Pending = upcoming.'); v.appendChild(p7);
-    var m7=el('div','kpis');
-    [['Scheduled',num(M.meet.scheduled),'','var(--c5)'],['Completed',num(M.meet.completed),p1(M.meet.conversion)+'% conversion','var(--good)'],['Pending',num(M.meet.pending),'upcoming','var(--warn)'],['Missed','n/a','not tracked','var(--tx3)']].forEach(function(x){ m7.appendChild(kpi(x[0],x[1],x[2],'',x[3])); });
-    p7.__body.appendChild(m7);
-    var mBy=toItems(groupBy(M.ev,function(e){return ownerName(e.owner);}));
-    if(mBy.length){ var mp=el('div','chart'); p7.__body.appendChild(mp); hbar(mp, mBy, {color:'var(--c5)',onClick:toggleOwner}); }
-    p7.__body.appendChild(el('div','note','<b>Not available in this dataset:</b> Meeting-to-Sale %, Deals with/without Meeting, and avg first-call→meeting / creation→meeting times — Zoho Events here carry no per-deal link or outcome field, so these would be guesses. Connect a deal-linked meeting source to enable them.'));
-
-    // SECTION 8 — Gap analysis
-    var p8=panel('⑧ Gap Analysis','Auto-detected operational bottlenecks'); v.appendChild(p8);
-    var g8=el('div','cc-cards'); opsGaps(M).forEach(function(gp){ var c=el('div','cc-card'); c.innerHTML='<div class="t">'+esc(gp[0])+'</div><div class="val">'+gp[1]+'</div>'; g8.appendChild(c); }); p8.__body.appendChild(g8);
-
-    // SECTION 9 — AI insights
-    var p9=panel('⑨ AI Insights','Auto-generated business insights'); v.appendChild(p9);
-    var g9=el('div','cc-cards'); opsInsights(M).forEach(function(x){ var c=el('div','cc-card ins'); c.innerHTML='<div class="val">💡 '+x+'</div>'; g9.appendChild(c); }); p9.__body.appendChild(g9);
-
-    // SECTION 10 — Recommendations
-    var p10=panel('⑩ AI Recommendations','Suggested next actions'); v.appendChild(p10);
-    var g10=el('div','cc-cards'); opsRecs(M).forEach(function(x){ var c=el('div','cc-card'); c.style.borderLeft='3px solid var(--acc2)'; c.innerHTML='<div class="val">✅ '+esc(x)+'</div>'; g10.appendChild(c); }); p10.__body.appendChild(g10);
-
-    // SECTION 11 — Today's action items
-    var p11=panel("⑪ Today's Action Items",'Red = urgent · Yellow = attention · Green = clear'); v.appendChild(p11);
-    opsActions(M).forEach(function(a){ var c=el('div','cc-act '+a[0]); c.innerHTML='<span class="dot"></span><span>'+esc(stripTags(a[1]))+'</span>'; p11.__body.appendChild(c); });
-
-    // SECTION 12 — Trend analysis
-    var p12=panel('⑫ Trend Analysis','Selected day vs last 7 vs last 30 days'); v.appendChild(p12);
-    table(p12.__body,['Metric',(M.single?'Selected Day':'Selected'),'Last 7 Days','Last 30 Days'],[
-      ['Call Coverage %',p1(M.trend1.coverage)+'%',p1(M.trend7.coverage)+'%',p1(M.trend30.coverage)+'%'],
-      ['Average FRT',fmtMinNice(M.trend1.avgFrt),fmtMinNice(M.trend7.avgFrt),fmtMinNice(M.trend30.avgFrt)],
-      ['Pending Deals',num(M.trend1.pending),num(M.trend7.pending),num(M.trend30.pending)],
-      ['SLA %',p1(M.trend1.slaPct)+'%',p1(M.trend7.slaPct)+'%',p1(M.trend30.slaPct)+'%'],
-      ['Meetings',num(M.trend1.meetings),num(M.trend7.meetings),num(M.trend30.meetings)]
-    ],{key:'cctrend'});
-    var g12=el('div','grid g2');
-    var t1=panel('Call Coverage & SLA — 30-day trend'); g12.appendChild(t1);
-    lineChart(t1.__body, M.days.map(fmtDay), [{name:'Coverage %',color:'var(--c4)',data:M.series.map(function(s){return +p1(s.coverage);})},{name:'SLA %',color:'var(--c2)',data:M.series.map(function(s){return +p1(s.slaPct);})}],{legend:true});
-    var t2=panel('Avg FRT & Pending — 30-day trend'); g12.appendChild(t2);
-    lineChart(t2.__body, M.days.map(fmtDay), [{name:'Avg FRT (min)',color:'var(--c3)',data:M.series.map(function(s){return +p1(s.avgFrt);})},{name:'Pending',color:'var(--bad)',data:M.series.map(function(s){return s.pending;})}],{legend:true});
-    v.appendChild(g12);
-
-    // SECTION 13 — Manager morning brief
-    var p13=panel('⑬ Manager Morning Brief','Ready for WhatsApp &amp; Email'); v.appendChild(p13);
-    var brief=managerBrief(M); var bb=el('div','brief-box'); bb.textContent=brief; p13.__body.appendChild(bb);
-    var bbar=el('div'); bbar.style.cssText='display:flex;gap:8px;margin-top:10px;flex-wrap:wrap';
-    var cpb=el('button','mini','📋 Copy brief'); cpb.onclick=function(){ copyText(managerBrief(opsModel()),function(){toast('Brief copied ✓');}); };
-    var wab=el('a','mini'); wab.textContent='💬 Send on WhatsApp'; wab.href='https://wa.me/?text='+encodeURIComponent(brief); wab.target='_blank'; wab.style.textDecoration='none';
-    bbar.appendChild(cpb); bbar.appendChild(wab); p13.__body.appendChild(bbar);
-  }
-
-  function ccHourlyTable(M){
-    var wrap=el('div','tblwrap');
-    var h='<table class="cc-heat"><thead><tr><th>Hour</th><th class="right">Deals</th><th class="right">Calls</th><th class="right">Avg FRT</th><th class="right">Pending</th><th class="right">Coverage</th></tr></thead><tbody>';
-    var maxBack=M.peakBacklog?M.peakBacklog.pending:0;
-    M.hourly.forEach(function(x){ var flag=(maxBack>0&&x.pending===maxBack);
-      h+='<tr'+(flag?' style="outline:2px solid var(--bad);outline-offset:-2px"':'')+'><td><b>'+esc(x.label)+'</b>'+(flag?' 🔴':'')+'</td>'+
-        '<td class="right">'+num(x.deals)+'</td><td class="right">'+num(x.calls)+'</td>'+
-        '<td class="right">'+(x.avgFrt==null?'—':fmtMinNice(x.avgFrt))+'</td>'+
-        '<td class="right">'+num(x.pending)+'</td>'+
-        '<td class="h" style="background:'+(x.deals?covColor(x.coverage):'var(--bg2)')+'">'+(x.deals?p1(x.coverage)+'%':'—')+'</td></tr>';
+    // ===== SECTION 3 — Critical Alert Center =====
+    var p2=panel('🚨 Critical Alert Center','Always visible · Red = critical · Orange = attention · Yellow = monitor · Green = clear.'); v.appendChild(p2);
+    opsAlerts(M).forEach(function(a){ var c=el('div','cc-act '+a.sev); var hasRows=a.rows&&a.rows.length;
+      c.innerHTML='<span class="dot"></span><span>'+esc(a.text)+(hasRows?' <button class="mini cc-alert-btn">View '+num(a.rows.length)+' →</button>':'')+'</span>';
+      if(hasRows){ c.querySelector('button').onclick=function(){ openDrill(a.text,['Deal ID','Customer','Owner','Stage','Prob','Mobile','Trigger Event','Created'],drillRows(a.rows)); }; }
+      p2.__body.appendChild(c);
     });
-    h+='</tbody></table>'; wrap.innerHTML=h; return wrap;
+
+    // ===== SECTION 4 — Owner Performance =====
+    var p3=panel('👥 Owner Performance','WhatsApp broken out per the business rule · First Call = earliest call after Deal Creation · talk time in HH:MM:SS · "Call Not Connected" excludes WhatsApp deals · "Task Created, No Call" = a follow-up task exists but the deal was never actually dialed, for leads received 10AM-9PM · "Due Today"/"Overdue" are based on Open/WIP deals created before the REAL current date and ignore the date-range filter above — an overdue follow-up stays Overdue every day until its Task is completed, never reset by changing the date range. 🏆 top Owner Score · ⚠ needs coaching.'); v.appendChild(p3);
+    var bestO=M.ranking[0]?M.ranking[0].owner:null, worstO=M.ranking.length?M.ranking[M.ranking.length-1].owner:null;
+    var ownHeaders=['Owner','Total Deals','Working Hr Deals','WhatsApp Deals','Other Deals','1st Call <30m','1st Call >30m','Total Calls','Talk Time','Connected Calls','Call Not Connected (excl. WhatsApp)','Customer Activity','Due Today','Overdue','Task Created, No Call (10AM-9PM)'];
+    var ownRows=M.owners.map(function(o){ var medal=(o.name===bestO)?'🏆 ':(o.name===worstO)?'⚠ ':'';
+      return [ {html:medal+esc(o.name),text:o.name}, o.deals, o.workHr||0, o.wa||0, o.other||0,
+        o.first30||0, o.firstAfter30||0, o.calls, {html:hms(o.talk||0),text:o.talk||0}, o.connected30||0,
+        {html:(o.callsNotConn?'<b style="color:var(--bad)">'+o.callsNotConn+'</b>':'0'),text:o.callsNotConn||0},
+        o.acts||0,
+        o.dueDealsToday||0,
+        {html:(o.overdueDeals?'<b style="color:var(--bad)">'+o.overdueDeals+'</b>':'0'),text:o.overdueDeals||0},
+        {html:(o.taskNoCall?'<b style="color:var(--bad)">'+o.taskNoCall+'</b>':'0'),text:o.taskNoCall||0} ]; });
+    table(p3.__body,ownHeaders,ownRows,{key:'own3',numCols:[1,2,3,4,5,6,7,9,10,11,12,13,14]});
+    addExport(p3,'owner_performance',ownHeaders,M.owners.map(function(o){return [o.name,o.deals,o.workHr||0,o.wa||0,o.other||0,o.first30||0,o.firstAfter30||0,o.calls,o.talk||0,o.connected30||0,o.callsNotConn||0,o.acts||0,o.dueDealsToday||0,o.overdueDeals||0,o.taskNoCall||0];}));
+    if(M.taskNoCallRows.length){
+      var tnBtn=el('button','mini','🔍 View Raw Data — Task Created, No Call ('+num(M.taskNoCallRows.length)+')');
+      tnBtn.title='Every deal counted in the "Task Created, No Call" column, for cross-verification (WhatsApp deals already excluded)';
+      tnBtn.onclick=function(){ openDrill('Task Created, No Call — raw dump ('+num(M.taskNoCallRows.length)+' deals, WhatsApp excluded)', ['Deal ID','Customer','Owner','Stage','Prob','Mobile','Trigger Event','Created'], drillRows(M.taskNoCallRows)); };
+      p3.__head.appendChild(tnBtn);
+    }
+    if(!TASKS_LINKED) p3.__body.appendChild(el('div','hint','⚠ "Due Today", "Overdue", and "Task Created, No Call" need Task→Deal linking (Zoho What_Id) — this data source doesn\'t have it yet, so these columns show 0 for everyone.'));
+
+    // ===== SECTION 4b/4c — City-wise / State-wise Performance =====
+    // Same metric set as Owner Performance above, just grouped by Deal Address_City /
+    // Address_State instead of Owner. Computed in opsModel() (M.cityPerf/M.statePerf) —
+    // same place Owner Performance's own M.owners comes from — this block only renders.
+    // Neither address field is populated on cdc_deals itself (checked live via BigQuery,
+    // 2026-08-11: 0 of 21,565) — city/state here come from a LEFT JOIN to a separate live
+    // Deals table (Lucira_Prod.lucira_zoho_Deals) added to /api/crm-bundle, matched by Deal
+    // ID (~66% of cdc_deals ids find a match there). Deals with no match, or whose matched
+    // row has a blank Address_City/State, land in a single "(Not Captured)" bucket — never
+    // guessed at.
+    function bucketPerfRow(o){ return [ esc(o.name), o.deals, p1(pct(o.deals,M.deals||1))+'%', o.workHr||0, o.wa||0, o.other||0,
+      o.first30||0, o.firstAfter30||0, o.calls, {html:hms(o.talk||0),text:o.talk||0}, o.connected30||0,
+      {html:(o.callsNotConn?'<b style="color:var(--bad)">'+o.callsNotConn+'</b>':'0'),text:o.callsNotConn||0},
+      o.acts||0, o.dueDealsToday||0,
+      {html:(o.overdueDeals?'<b style="color:var(--bad)">'+o.overdueDeals+'</b>':'0'),text:o.overdueDeals||0},
+      {html:(o.taskNoCall?'<b style="color:var(--bad)">'+o.taskNoCall+'</b>':'0'),text:o.taskNoCall||0} ]; }
+    function bucketExportRow(o){ return [o.name,o.deals,p1(pct(o.deals,M.deals||1)),o.workHr||0,o.wa||0,o.other||0,o.first30||0,o.firstAfter30||0,o.calls,o.talk||0,o.connected30||0,o.callsNotConn||0,o.acts||0,o.dueDealsToday||0,o.overdueDeals||0,o.taskNoCall||0]; }
+    function dropUncaptured(perf){ return perf.filter(function(o){return o.name.indexOf('Not Captured')<0;}); }
+    function coverageHint(field,perf){
+      var nc=perf.filter(function(o){return o.name.indexOf('Not Captured')>=0;})[0];
+      var ncDeals=nc?nc.deals:0, capturedPct=p1(pct(M.deals-ncDeals,M.deals||1));
+      return '⚠ '+field+' comes from a separate live Deals table (Lucira_Prod.lucira_zoho_Deals, joined by Deal ID) — cdc_deals\' own copy of this field is 0% populated. '+capturedPct+'% of deals in range ('+num(M.deals-ncDeals)+' of '+num(M.deals)+') have a real value; the rest fall into the single "(Not Captured)" bucket below.';
+    }
+
+    var p3b=panel('🏙️ City-wise Performance','Same columns as Owner Performance above, grouped by Deal Address_City instead of Owner. Blank/uncaptured-city deals are excluded from this table — see the coverage note below.'); v.appendChild(p3b);
+    var cityHeaders=ownHeaders.slice(); cityHeaders[0]='City'; cityHeaders.splice(2,0,'% of Total Deals');
+    var cityPerfCaptured=dropUncaptured(M.cityPerf);
+    table(p3b.__body,cityHeaders,cityPerfCaptured.map(bucketPerfRow),{key:'city4',numCols:[1,2,3,4,5,6,7,8,10,11,12,13,14,15]});
+    addExport(p3b,'city_wise_performance',cityHeaders,cityPerfCaptured.map(bucketExportRow));
+    p3b.__body.appendChild(el('div','hint',coverageHint('Address_City',M.cityPerf)));
+
+    var p3c=panel('🗺️ State-wise Performance','Same columns as Owner Performance above, grouped by Deal Address_State instead of Owner.'); v.appendChild(p3c);
+    var stateHeaders=ownHeaders.slice(); stateHeaders[0]='State'; stateHeaders.splice(2,0,'% of Total Deals');
+    table(p3c.__body,stateHeaders,M.statePerf.map(bucketPerfRow),{key:'state4',numCols:[1,2,3,4,5,6,7,8,10,11,12,13,14,15]});
+    addExport(p3c,'state_wise_performance',stateHeaders,M.statePerf.map(bucketExportRow));
+    p3c.__body.appendChild(el('div','hint',coverageHint('Address_State',M.statePerf)));
+
+    // ===== SECTION 5 — Pipeline Health =====
+    var p4=panel('🧭 Pipeline Health','Cross-sectional snapshot of open deals by current stage — Zoho doesn\'t record stage-transition timestamps in this feed, so "Conversion to Next Stage" can\'t be computed and isn\'t shown. "Leak Risk %" = share of that stage\'s deals inactive 7+ days, the best available leak signal.'); v.appendChild(p4);
+    var stageRows=M.stages.map(function(s){ return [esc(s.stage), s.deals, p1(s.pct)+'%', p1(s.avgDays), p1(s.avgCalls), p1(s.avgActs),
+      {html:'<b style="color:'+semColor(100-s.stuck7Pct,70,40,true)+'">'+p1(s.stuck7Pct)+'%</b>',text:p1(s.stuck7Pct)} ]; });
+    table(p4.__body,['Stage','Deals','% of Open Pipeline','Avg Days in Stage','Avg Calls','Avg Activities','Leak Risk % (stuck 7d+)'],stageRows,{key:'pipeline',numCols:[1,2,3,4,5,6]});
+    addExport(p4,'pipeline_health',['Stage','Deals','Pct','AvgDays','AvgCalls','AvgActs','LeakRisk7dPct'],M.stages.map(function(s){return [s.stage,s.deals,p1(s.pct),p1(s.avgDays),p1(s.avgCalls),p1(s.avgActs),p1(s.stuck7Pct)];}));
+    if(M.stages.length){ var worstStage=M.stages.slice().sort(function(a,b){return b.stuck7Pct-a.stuck7Pct;})[0];
+      p4.__body.appendChild(el('div','hint','💡 AI: <b>'+esc(worstStage.stage)+'</b> has the highest leak risk ('+p1(worstStage.stuck7Pct)+'% of its deals inactive 7+ days) — likely cause: low average activity ('+p1(worstStage.avgActs)+'/deal) and calls ('+p1(worstStage.avgCalls)+'/deal) relative to other stages.'));
+    }
+
+    // ===== SECTION 6 — Lead Leakage =====
+    var p5=panel('💸 Lead Leakage','Lost deals grouped by Zoho\'s own Reason For Loss field.'); v.appendChild(p5);
+    var leakRows=M.leakage.map(function(l){ return [esc(l.reason), l.count, p1(l.pct)+'%', esc(l.owner), p1(l.avgDays), l.action]; });
+    table(p5.__body,['Reason','Deals Lost','% of Lost','Top Owner','Avg Days to Loss','Recommended Action'],leakRows,{key:'leak',numCols:[1,2,4]});
+    addExport(p5,'lead_leakage',['Reason','DealsLost','Pct','TopOwner','AvgDaysToLoss','RecommendedAction'],M.leakage.map(function(l){return [l.reason,l.count,p1(l.pct),l.owner,p1(l.avgDays),l.action];}));
+
+    // ===== SECTION 7 — Stage Aging =====
+    var p6=panel('⏳ Stage Aging','How long open deals have been sitting, per current stage.'); v.appendChild(p6);
+    var agingRows=M.stageAging.map(function(s){ return [esc(s.stage), p1(s.avgDays), p1(s.maxDays), s.waiting]; });
+    table(p6.__body,['Stage','Avg Days','Max Days','Deals Waiting'],agingRows,{key:'aging',numCols:[1,2,3]});
+    addExport(p6,'stage_aging',['Stage','AvgDays','MaxDays','DealsWaiting'],M.stageAging.map(function(s){return [s.stage,p1(s.avgDays),p1(s.maxDays),s.waiting];}));
+
+    // ===== SECTION 8 — No Call Dashboard =====
+    var p7=panel('📵 No-Call Dashboard','Deals that have never received a single call, all-time (not just this window).'); v.appendChild(p7);
+    var ncRows=M.noCallByOwner.map(function(r){ return [esc(r.owner), r.deals, {html:'<b style="color:'+semColor(100-r.pct,80,50,true)+'">'+r.neverCalled+'</b>',text:r.neverCalled}, p1(r.pct)+'%']; });
+    table(p7.__body,['Owner','Deals','Never Called','Percentage'],ncRows,{key:'nocall',numCols:[1,2,3]});
+    addExport(p7,'no_call_by_owner',['Owner','Deals','NeverCalled','Pct'],M.noCallByOwner.map(function(r){return [r.owner,r.deals,r.neverCalled,p1(r.pct)];}));
+
+    // ===== SECTION 9 — Follow-up Dashboard =====
+    var p8=panel('📅 Follow-up Dashboard','Owner/day level — per-deal follow-up needs the Task→Deal ETL fix (already written, not yet deployed to this snapshot).'); v.appendChild(p8);
+    var fuRows=M.followupByOwner.map(function(r){ return [esc(r.owner), r.today, r.tomorrow, {html:'<b style="color:'+(r.overdue?'var(--bad)':'var(--good)')+'">'+r.overdue+'</b>',text:r.overdue}, r.completed]; });
+    table(p8.__body,['Owner',"Today's Follow-up","Tomorrow's Follow-up",'Overdue','Completed'],fuRows,{key:'followup',numCols:[1,2,3,4]});
+    addExport(p8,'followup_by_owner',['Owner','Today','Tomorrow','Overdue','Completed'],M.followupByOwner.map(function(r){return [r.owner,r.today,r.tomorrow,r.overdue,r.completed];}));
+
+    // ===== SECTION 10/11 — Working / Non-Working Hour Performance =====
+    function workPerfPanel(icon,title,hint,perf,key){
+      var p=panel(icon+' '+title,hint); v.appendChild(p);
+      p.__body.appendChild(kpiRow([['Deals in window',num(perf.deals),'','','var(--c4)']]));
+      var rows=perf.rows.map(function(r){ return [esc(r.owner), r.topStages||'—', r.deals, r.calls, r.connected30, p1(r.contactRate)+'%']; });
+      table(p.__body,['Owner','Top Stages','Total Deals','Total Calls','Connected Calls','30-Min Contact %'],rows,{key:key,numCols:[2,3,4,5]});
+      addExport(p,key,['Owner','TopStages','TotalDeals','TotalCalls','ConnectedCalls','ContactRatePct'],perf.rows.map(function(r){return [r.owner,r.topStages||'',r.deals,r.calls,r.connected30,p1(r.contactRate)];}));
+    }
+    workPerfPanel('🌞','Working Hour Performance','10 AM – 9 PM · WhatsApp deals excluded per the business rule.',M.workHourPerf,'workhour');
+    workPerfPanel('🌙','Non-Working Hour Performance','9 PM – 10 AM · WhatsApp deals excluded per the business rule.',M.nonWorkHourPerf,'nonworkhour');
+
+    // ===== SECTION 12 — Hourly Operations Dashboard =====
+    var p9=panel('🕐 Hourly Operations Dashboard','One row per hour of the day (IST).'); v.appendChild(p9);
+    var hoRows=M.hourlyOps.map(function(h){ return [h.label, h.deals, h.calls, h.connected30||0, h.activities,
+      h.storeVisits, h.videoCalls, (h.avgFrt==null?'—':fmtMinNice(h.avgFrt)), {html:hms(h.talk||0),text:h.talk||0}, {html:hms(h.avgTalk||0),text:h.avgTalk||0} ]; });
+    table(p9.__body,['Hour','Deals Created','Calls Made','Connected Calls','Activities','Store Visits','Video Calls','Avg Response Time','Total Talk Time','Avg Talk Time'],hoRows,{key:'hourlyops',numCols:[1,2,3,4,5,6,8,9]});
+    addExport(p9,'hourly_operations',['Hour','DealsCreated','CallsMade','ConnectedCalls','Activities','StoreVisits','VideoCalls','AvgResponseMin','TalkTimeSec','AvgTalkSec'],M.hourlyOps.map(function(h){return [h.label,h.deals,h.calls,h.connected30||0,h.activities,h.storeVisits,h.videoCalls,(h.avgFrt==null?'':p1(h.avgFrt)),h.talk||0,p1(h.avgTalk||0)];}));
+
+    // ===== SECTION 13 — Store Performance =====
+    var p10=panel('🏬 Store Performance','Only 5 CRM owner accounts map to a confirmed real store — unmapped owners are excluded from this table until Zoho gets a real Store_Assigned field synced into the ETL feed.'); v.appendChild(p10);
+    var storeRowsMapped=M.storeRows.filter(function(s){return s.store.indexOf('Unmapped')<0;});
+    var stRows=storeRowsMapped.map(function(s){ return [esc(s.store), s.deals, p1(pct(s.deals,M.deals||1))+'%', s.calls, {html:'<b style="color:'+semColor(s.conversion,40,20,true)+'">'+p1(s.conversion)+'%</b>',text:p1(s.conversion)}, (s.avgResponse==null?'—':fmtMinNice(s.avgResponse)), s.activities, s.storeVisits, s.videoCalls]; });
+    table(p10.__body,['Store','Deals','% of Total Deals','Calls','Conversion','Avg Response','Activities','Store Visits','Video Calls'],stRows,{key:'store',numCols:[1,2,3,4,5,6,7,8]});
+    addExport(p10,'store_performance',['Store','Deals','PctOfTotalDeals','Calls','ConversionPct','AvgResponseMin','Activities','StoreVisits','VideoCalls'],storeRowsMapped.map(function(s){return [s.store,s.deals,p1(pct(s.deals,M.deals||1)),s.calls,p1(s.conversion),(s.avgResponse==null?'':p1(s.avgResponse)),s.activities,s.storeVisits,s.videoCalls];}));
+
+    // ===== SECTION 14 — Store Visit & Video Call Dashboard =====
+    var p11=panel('🎥 Store Visit & Video Call Dashboard','Owner-level, classified from Zoho Event titles (no dedicated field exists). "Cancelled" isn\'t shown — Events carry no status/outcome field in this feed. Use the date bar above to see a specific day\'s visits/meetings.'); v.appendChild(p11);
+    var svRows=M.storeVisitByOwner.map(function(r){ return [esc(r.owner), r.storeVisits, r.videoCalls, r.physical, r.completed, '—']; });
+    table(p11.__body,['Owner','Store Visits','Video Calls','Physical Meetings','Completed','Cancelled'],svRows,{key:'storevisit',numCols:[1,2,3,4]});
+    addExport(p11,'store_visit_video_call',['Owner','StoreVisits','VideoCalls','PhysicalMeetings','Completed'],M.storeVisitByOwner.map(function(r){return [r.owner,r.storeVisits,r.videoCalls,r.physical,r.completed];}));
+
+    // ===== SECTION 15 — Lost Opportunity Dashboard =====
+    var p12=panel('📉 Lost Opportunity Dashboard','Average Deal Value isn\'t shown — Zoho has no Amount field populated in this org.'); v.appendChild(p12);
+    var loRows=M.lostByReason.map(function(l){ return [esc(l.reason), l.count, p1(l.pct)+'%', esc(l.owner), '—']; });
+    table(p12.__body,['Reason','Count','Percentage','Top Owner','Avg Deal Value'],loRows,{key:'lostopp',numCols:[1,2]});
+    addExport(p12,'lost_opportunity',['Reason','Count','Pct','TopOwner'],M.lostByReason.map(function(l){return [l.reason,l.count,p1(l.pct),l.owner];}));
+
+    // ===== SECTION 16 — Call Quality Dashboard =====
+    var p13=panel('📞 Call Quality Dashboard','Zoho has no telephony outcome field in this org — "Connected" means duration > 0s.'); v.appendChild(p13);
+    var cqRows=M.owners.slice().sort(function(a,b){return b.calls-a.calls;}).map(function(o){ return [esc(o.name), o.calls, o.connected30||0, hms(o.calls?Math.round((o.talk||0)/o.calls):0), {html:hms(o.talk||0),text:o.talk||0}, hms(o.longestCall||0), (o.avgFrt==null?'—':fmtMinNice(o.avgFrt))]; });
+    table(p13.__body,['Owner','Calls','Connected (>30s)','Avg Duration','Total Talk Time','Longest Call','Avg First Response'],cqRows,{key:'callquality',numCols:[1,2,4]});
+    addExport(p13,'call_quality',['Owner','Calls','Connected30s','AvgDurationSec','TalkTimeSec','LongestCallSec','AvgFirstResponseMin'],M.owners.map(function(o){return [o.name,o.calls,o.connected30||0,(o.calls?Math.round((o.talk||0)/o.calls):0),o.talk||0,o.longestCall||0,(o.avgFrt==null?'':p1(o.avgFrt))];}));
+
+    // ===== SECTION 17 — Priority Opportunities (spec's "Top Opportunity Dashboard") =====
+    var p14=panel('⭐ Priority Opportunities','Deal value isn\'t tracked in this CRM — ranked by stage probability, engagement and urgency, never revenue.'); v.appendChild(p14);
+    function miniTable(host,title,list){ host.appendChild(el('div','hint','<b>'+esc(title)+'</b>'));
+      if(!list.length){ host.appendChild(el('div','hint','None in the current window.')); return; }
+      var rows=list.map(function(d){ return [esc(d.name||'—'), ownerName(d.owner), esc(d.stage||'—'), (d.prob==null?'—':d.prob+'%'), fmtDT(d.created)]; });
+      var wrap=el('div'); host.appendChild(wrap); table(wrap,['Deal','Owner','Stage','Prob','Created'],rows,{key:'pri_'+slugify(title),numCols:[3]});
+    }
+    miniTable(p14.__body,'High-Probability Deals (≥70%)',M.highValue);
+    miniTable(p14.__body,'Likely to Close Today (≥80%)',M.closingToday);
+    miniTable(p14.__body,'Needs Immediate Follow-up (overdue + ≥40% prob)',M.needsFollowup);
+    miniTable(p14.__body,'At Risk (7d+ old, ≤1 activity)',M.atRisk);
+    miniTable(p14.__body,'Inactive Customers Re-activating (recent call after a gap)',M.reactivating);
+
+    // ===== SECTION 19 — AI Business Assistant =====
+    var p16=panel('🤖 AI Business Assistant','Ask about today\'s numbers, owners, stores or trends — answers are computed live from the filtered CRM data (rule-based, not a hosted LLM).'); v.appendChild(p16);
+    var chatLog=el('div'); chatLog.style.cssText='max-height:260px;overflow:auto;margin-bottom:10px'; p16.__body.appendChild(chatLog);
+    function pushChat(q,a){ var qd=el('div'); qd.style.cssText='margin:6px 0;font-weight:700;color:var(--tx)'; qd.textContent='You: '+q; chatLog.appendChild(qd);
+      var ad=el('div'); ad.style.cssText='margin:0 0 10px;color:var(--tx2);white-space:pre-wrap'; ad.innerHTML='🤖 '+a; chatLog.appendChild(ad); chatLog.scrollTop=chatLog.scrollHeight; }
+    var chatRow=el('div'); chatRow.style.cssText='display:flex;gap:8px';
+    var chatInput=el('input'); chatInput.type='text'; chatInput.placeholder='e.g. Why are sales low today?'; chatInput.style.cssText='flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--tx)';
+    var chatBtn=el('button','mini','Ask');
+    function ask2(){ var q=chatInput.value.trim(); if(!q)return; pushChat(q,assistantAnswer(q)); chatInput.value=''; }
+    chatBtn.onclick=ask2; chatInput.onkeydown=function(e){ if(e.key==='Enter')ask2(); };
+    chatRow.appendChild(chatInput); chatRow.appendChild(chatBtn); p16.__body.appendChild(chatRow);
+    var chipRow=el('div'); chipRow.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-top:10px';
+    ['What is happening today?','Why are sales low?','Which owner needs attention?','Which store is weakest?',"Give tomorrow's action plan"].forEach(function(qq){ var b=el('button','mini',qq); b.onclick=function(){ chatInput.value=qq; ask2(); }; chipRow.appendChild(b); });
+    p16.__body.appendChild(chipRow);
   }
 
   /* ---------- ops exports (reuse Section-11 helpers) ---------- */
@@ -2522,6 +3598,7 @@ function hydrate(b){
   dealIdSet=new Set(DEALS.map(function(d){return d.id;}));
   idxWhat={}; idxPhone={};
   CALLS.forEach(function(c){ if(c.whatId&&dealIdSet.has(c.whatId)){(idxWhat[c.whatId]=idxWhat[c.whatId]||[]).push(c);} if(c.phone){(idxPhone[c.phone]=idxPhone[c.phone]||[]).push(c);} });
+  rebuildTaskIndex();
   _mobCount=null; _activeOwners=null;
 }
 function totalRecords(){ return DEALS.length+CALLS.length+TASKS.length+ONLINE.length+EVENTS.length; }
@@ -2551,8 +3628,8 @@ function renderFreshbar(){
 var LIVE={ mode:(CONFIG.CRM_API?'live':'snapshot'), lastSync:null, error:null, autoMs:0, timer:null, delta:null, records:0 };
 
 /* persist filters across snapshot-mode reloads so a refresh never loses the user's view */
-function saveF(){ try{ sessionStorage.setItem('dvc_F', JSON.stringify({from:F.from,to:F.to,preset:F.preset,owners:Array.prototype.slice.call(F.owners),stage:F.stage,trigger:F.trigger,leadSource:F.leadSource,utmSource:F.utmSource,utmMedium:F.utmMedium,callType:F.callType,taskStatus:F.taskStatus,compare:F.compare})); }catch(e){} }
-function restoreF(){ try{ var s=sessionStorage.getItem('dvc_F'); if(!s)return; var o=JSON.parse(s); F.from=o.from||F.from; F.to=o.to||F.to; F.preset=(o.preset!=null?o.preset:F.preset); F.owners=new Set(o.owners||[]); ['stage','trigger','leadSource','utmSource','utmMedium','callType','taskStatus'].forEach(function(k){F[k]=o[k]||'';}); F.compare=!!o.compare; }catch(e){} }
+function saveF(){ try{ sessionStorage.setItem('dvc_F', JSON.stringify({from:F.from,to:F.to,preset:F.preset,owners:Array.prototype.slice.call(F.owners),stage:Array.from(F.stage),trigger:Array.from(F.trigger),leadSource:Array.from(F.leadSource),utmSource:F.utmSource,utmMedium:F.utmMedium,callType:F.callType,taskStatus:F.taskStatus,compare:F.compare})); }catch(e){} }
+function restoreF(){ try{ var s=sessionStorage.getItem('dvc_F'); if(!s)return; var o=JSON.parse(s); F.from=o.from||F.from; F.to=o.to||F.to; F.preset=(o.preset!=null?o.preset:F.preset); F.owners=new Set(o.owners||[]); F.stage=new Set(o.stage||[]); F.trigger=new Set(o.trigger||[]); F.leadSource=new Set(o.leadSource||[]); ['utmSource','utmMedium','callType','taskStatus'].forEach(function(k){F[k]=o[k]||'';}); F.compare=!!o.compare; }catch(e){} }
 window.addEventListener('beforeunload',saveF);
 
 function syncNow(auto){
@@ -2620,5 +3697,7 @@ if(F.preset){ var _pr=presetRange(F.preset); F.from=_pr.from; F.to=_pr.to; }
 setAuto(CONFIG.AUTO_MS||0);
 
 buildTabs(); buildFilters(); chips(); render(); buildAssistant();
+ensureInfoModal();   // wire up the ⓘ info-button click delegation at boot (openInfo() alone never runs first)
 if(LIVE.mode==='live') syncNow(true);   // fetch fresh data immediately when a live API is configured
+loadSalesData();   // independent fetch — Command Center's Sales Breakdown re-renders itself once this resolves
 })();

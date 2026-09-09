@@ -12,6 +12,7 @@
   --acc:#4f8cff; --acc2:#22d3a8; --warn:#f4b740; --bad:#ff5d6c; --good:#22c55e;
   --c1:#4f8cff; --c2:#22d3a8; --c3:#f4b740; --c4:#c084fc; --c5:#fb7185; --c6:#38bdf8; --c7:#a3e635; --c8:#f97316;
   --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.25);
+  --brand-brown:#8b6f56; --brand-brown-dark:#6e5744; --brand-mauve:#a05a64; --brand-mauve-light:#d9b8b4; --brand-cream:#fff8f0;
 }
 :root[data-theme="light"]{
   --bg:#f3f5fa; --bg2:#eceff5; --card:#ffffff; --card2:#f7f9fc; --line:#e2e7f0;
@@ -32,19 +33,26 @@ h1,h2,h3{margin:0 0 4px}
 /* boot */
 #boot{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;transition:opacity .4s}
 #boot.hide{opacity:0;pointer-events:none}
-.bootmark{width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:26px;color:#fff;box-shadow:0 8px 30px rgba(79,140,255,.4)}
+.bootmark{width:64px;height:64px;border-radius:16px;background:var(--brand-cream);border:1.5px solid var(--brand-mauve);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:26px;color:var(--brand-brown);box-shadow:none}
 .bootbar{width:220px;height:4px;background:var(--line);border-radius:4px;overflow:hidden}
 .bootbar i{display:block;height:100%;width:30%;background:linear-gradient(90deg,var(--acc),var(--acc2));animation:load 1.1s ease-in-out infinite}
 @keyframes load{0%{margin-left:-30%}100%{margin-left:100%}}
 .boottxt{color:var(--tx2);font-size:13px;letter-spacing:.3px}
 
 /* header */
-header.top{position:sticky;top:0;z-index:60;background:linear-gradient(180deg,var(--bg) 70%,rgba(0,0,0,0));padding:14px 20px 8px;border-bottom:1px solid var(--line)}
+header.top{position:sticky;top:0;z-index:60;background:var(--brand-brown);border-bottom:2px solid var(--brand-brown-dark);backdrop-filter:none;padding:14px 20px 8px}
 .top .bar{max-width:1560px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:10px}
-.logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff}
-.brandtx b{font-size:15px;letter-spacing:.2px}
-.brandtx div{font-size:11px;color:var(--tx2)}
+.logo{width:36px;height:36px;border-radius:50%/42%;background:var(--brand-cream);border:1.5px solid var(--brand-mauve);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--brand-brown);position:relative}
+.logo::after{content:'';position:absolute;bottom:5px;left:50%;width:4px;height:4px;background:var(--brand-mauve);transform:translateX(-50%) rotate(45deg)}
+.brandtx b{font-size:15px;letter-spacing:.2px;color:var(--brand-cream)}
+.brandtx div{font-size:11px;color:rgba(255,248,240,.72)}
+.dotless{position:relative;display:inline-block;font-style:normal}
+.dotless::before{content:'';position:absolute;top:-.6em;left:50%;width:4px;height:4px;background:var(--brand-mauve-light);transform:translateX(-50%) rotate(45deg)}
+header.top .btn{background:rgba(255,255,255,.12);color:var(--brand-cream);border-color:rgba(255,255,255,.28)}
+header.top .btn:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.5)}
+header.top .btn.primary{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff}
+header.top .btn.wa{background:#25D366;color:#fff}
 .grow{flex:1}
 .pill{padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:var(--card2);color:var(--tx2);display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .pill.live{color:var(--good);border-color:var(--good)}
@@ -119,7 +127,6 @@ table.dt tr:hover td{background:var(--card2)}
 table.dt tfoot td{font-weight:800;background:var(--card2);position:sticky;bottom:0}
 .num{text-align:right;font-family:'JetBrains Mono',monospace}
 .badge{padding:2px 7px;border-radius:6px;font-size:11px;font-weight:700}
-.badge.red{background:rgba(255,93,108,.15);color:var(--bad)}
 .badge.grn{background:rgba(34,197,94,.15);color:var(--good)}
 .badge.ylw{background:rgba(244,183,64,.15);color:var(--warn)}
 .gap{color:var(--tx3);font-style:italic}
@@ -140,6 +147,12 @@ table.dt tfoot td{font-weight:800;background:var(--card2);position:sticky;bottom
 
 /* heat table */
 .heat td.hc{text-align:center;font-family:'JetBrains Mono',monospace}
+
+/* date-range segmented control (Agent Performance / Trigger Event / AI Insights sections) */
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{background:var(--card2);border:none;color:var(--tx2);padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--acc);color:#fff}
 
 /* assistant FAB */
 #askFab{position:fixed;right:22px;bottom:22px;z-index:90;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;cursor:pointer;box-shadow:0 10px 30px rgba(79,140,255,.5);border:none}
@@ -166,7 +179,7 @@ table.dt tfoot td{font-weight:800;background:var(--card2);position:sticky;bottom
 
 <header class="top">
   <div class="bar">
-    <div class="brand"><div class="logo">L</div><div class="brandtx"><b>Lucira Jewelry</b><div>Deals vs Calls vs Sales Performance</div></div></div>
+    <div class="brand"><div class="logo">L</div><div class="brandtx"><b>Luc<span class="dotless">ı</span>rá Jewelry</b><div>Deals vs Calls vs Sales Performance</div></div></div>
     <span class="pill" id="freshPill"><span class="dot"></span> loading…</span>
     <div class="grow"></div>
     <select id="autoRefreshSel" class="btn" style="cursor:pointer">
@@ -278,10 +291,99 @@ table.dt tfoot td{font-weight:800;background:var(--card2);position:sticky;bottom
       <div class="card"><h3>Agent Ranking (by Deals Handled) <span class="info-ico" data-info="v_agent_rank">i</span></h3><div id="chAgentRank"></div></div>
       <div class="card"><h3>Store Ranking (by Revenue) <span class="info-ico" data-info="v_store_rank">i</span></h3><div id="chStoreRank"></div></div>
       <div class="card" style="grid-column:1/-1"><h3>Conversion Funnel: Deal → Call → Meeting → Store Visit → Sale <span class="info-ico" data-info="v_funnel">i</span></h3><div id="chFunnel"></div><div class="note">Stages from <b>Meeting</b> onward are owner/company-level (Zoho Meetings are not linked to individual Deals in this data model) — treat as directional, not a strict per-deal waterfall.</div></div>
-      <div class="card" style="grid-column:1/-1"><h3>Daily Hourly Breakdown (Yesterday) — Deals / Calls / Connected Time by Agent <span class="secsub" id="agHourlySub"></span> <span class="info-ico" data-info="v_heat_agent">i</span></h3><div id="chHeatAgent"></div><div style="margin-top:8px"><button class="btn" id="agHourlyCsvBtn">⬇ Export CSV</button></div></div>
+      <div class="card" style="grid-column:1/-1"><h3>Hourly Talk Time Trend (Yesterday) <span class="info-ico" data-info="v_hourly_talktime_trend">i</span></h3><div id="chHourlyTalkTrend"></div></div>
+      <div class="card" style="grid-column:1/-1">
+        <h3>Overall Call Dump — Talk Time Cross-Check <span class="info-ico" data-info="call_dump">i</span></h3>
+        <div class="hint" id="callDumpHint"></div>
+        <div class="tblwrap"><table class="dt" id="tblCallDump"></table></div>
+        <div style="margin-top:8px"><button class="btn" data-csv="tblCallDump" data-name="call_dump">⬇ Export CSV</button></div>
+      </div>
+      <div class="card" style="grid-column:1/-1"><h3>Daily Hourly Breakdown (Yesterday) — Deals / Calls / Not Dialed / Connected Time by Agent <span class="secsub" id="agHourlySub"></span> <span class="info-ico" data-info="v_heat_agent">i</span></h3><div id="chHeatAgent"></div><div style="margin-top:8px"><button class="btn" id="agHourlyCsvBtn">⬇ Export CSV</button></div></div>
       <div class="card"><h3>Heatmap — Revenue by Store × Day of Week <span class="info-ico" data-info="v_heat_store">i</span></h3><div id="chHeatStore"></div></div>
       <div class="card"><h3>Top 10 Agents <span class="info-ico" data-info="v_top_agents">i</span></h3><div id="chTop10Agents"></div></div>
       <div class="card"><h3>Top 10 Stores <span class="info-ico" data-info="v_top_stores">i</span></h3><div id="chTop10Stores"></div></div>
+    </div>
+  </section>
+
+  <div class="card" style="border-color:var(--warn);margin-top:26px">
+    <h3>ⓘ Agent Performance — Additional Honesty Notes</h3>
+    <div style="font-size:12.3px;color:var(--tx2);line-height:1.6">
+      <b>Modified Deals</b> needs each Deal's <code>Modified_Time</code> field. It exists in the raw BigQuery CDC data but the live bundle query does not extract it yet, so this column reads <b>N/A</b>, not zero, until that backend query is updated and redeployed. &nbsp;
+      <b>Deal Trigger Event buckets</b> below use this CRM's <em>real</em> <code>Deal_Trigger_Event</code> vocabulary (WhatsApp, Chat, Payment, Checkout, Add to Cart, Abandoned Cart, Product View, Signup, Login, Forms, Schemes, Fresh, Closed) — an e-commerce funnel-event field, not a contact-channel field. There is no "Store Visit"/"Video Call"/"Phone Call"/"Reminder"/"Follow-up" vocabulary anywhere in this CRM's Deal data (those only exist as Zoho Meeting sub-types, already shown separately in Section 1/9). &nbsp;
+      <b>Activities</b> = Calls + Tasks linked to a Deal via <code>What_Id</code>; Zoho Meetings and Notes are not linked to Deals in this feed, so they're excluded rather than guessed.
+    </div>
+  </div>
+
+  <div class="filterbar" id="filterbarExt">
+    <label>Date Filter (Agent Performance)
+      <div class="seg" id="segRangeExt">
+        <button data-m="yesterday" class="on">Yesterday</button>
+        <button data-m="last7">Last 7 Days</button>
+        <button data-m="last30">Last 30 Days</button>
+        <button data-m="custom">Custom Range</button>
+      </div>
+    </label>
+    <label id="lblFromExt" style="display:none">From<input type="date" id="fFromExt"></label>
+    <label id="lblToExt" style="display:none">To<input type="date" id="fToExt"></label>
+    <span class="grow"></span>
+    <span class="chip" id="rangeSub">—</span>
+  </div>
+
+  <section id="secAgentExt">
+    <div class="sechead"><span class="secnum">9</span><h2>Agent Wise Performance Table</h2><span class="secsub" id="agentPerfExtSub"></span><span class="info-ico" data-info="secAgentExt">i</span></div>
+    <div class="grid g3" id="kpiGridExt" style="margin-bottom:14px"></div>
+    <div class="card"><div class="tblwrap"><table class="dt" id="tblAgentPerfExt"></table></div>
+      <div style="margin-top:8px"><button class="btn" data-csv="tblAgentPerfExt" data-name="agent_wise_performance">⬇ Export CSV</button></div>
+    </div>
+  </section>
+
+  <section id="secTrigExt">
+    <div class="sechead"><span class="secnum">10</span><h2>Deal Trigger Event Table</h2><span class="secsub" id="trigExtSub"></span><span class="info-ico" data-info="secTrigExt">i</span></div>
+    <div class="card"><div class="tblwrap"><table class="dt" id="tblTrigExt"></table></div>
+      <div style="margin-top:8px"><button class="btn" data-csv="tblTrigExt" data-name="deal_trigger_events">⬇ Export CSV</button></div>
+    </div>
+  </section>
+
+  <section id="secAiExt">
+    <div class="sechead"><span class="secnum">11</span><h2>AI Insights — Agent Performance</h2><span class="info-ico" data-info="secAiExt">i</span></div>
+    <div class="card"><div class="ilist" id="insightsListExt"></div></div>
+    <div class="note">Ask the <b>Ask AI Assistant</b> (bottom-right) about these directly — e.g. "Show WhatsApp deals", "Which agent modified the highest number of deals?", "What should be today's priority?"</div>
+  </section>
+
+  <section id="secConv">
+    <div class="sechead"><span class="secnum">12</span><h2>Deal → Sale Conversion (Same-Day, Mobile+Date Match)</h2><span class="secsub" id="convSub"></span><span class="info-ico" data-info="secConv">i</span></div>
+    <div id="convGate" class="gatebox" style="margin-bottom:10px;display:none"></div>
+    <div class="note" style="margin-bottom:10px">Unique deals = deduped by <b>Mobile Number + Created Date</b> (latest deal per mobile per day wins) — applied to <i>every</i> metric on this page, not just this section. A deal counts as <b>converted</b> only if that same mobile number also has a Sales record on the <b>exact same day</b>. Uses the same date range as the Agent Wise Performance table above.</div>
+    <div class="grid g3" id="kpiGridConv" style="margin-bottom:14px"></div>
+    <div class="card">
+      <h3>Agent-Wise Sales (Deal-Linked) <span class="info-ico" data-info="tblConvAgent">i</span></h3>
+      <div class="tblwrap"><table class="dt" id="tblConvAgent"></table></div>
+      <div style="margin-top:8px"><button class="btn" data-csv="tblConvAgent" data-name="deal_sale_agent_wise">⬇ Export CSV</button></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h3>Day-wise Sales Trend (Deal-Linked) <span class="info-ico" data-info="chConvTrend">i</span></h3>
+      <div id="chConvTrend"></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h3>Deal vs Sale Comparison <span class="info-ico" data-info="tblConvCompare">i</span></h3>
+      <div class="tblwrap"><table class="dt" id="tblConvCompare"></table></div>
+      <div style="margin-top:8px"><button class="btn" data-csv="tblConvCompare" data-name="deal_vs_sale_comparison">⬇ Export CSV</button></div>
+    </div>
+  </section>
+
+  <section id="secLeadsDump">
+    <div class="sechead"><span class="secnum">13</span><h2>City-Wise Leads Dump</h2><span class="secsub" id="secLeadsDumpSub">Loading…</span><span class="info-ico" data-info="secLeadsDump">i</span></div>
+    <div class="card" id="leadsDumpCard">
+      <div id="leadsDumpGate" class="gatebox" style="margin-bottom:10px">Loading city-wise leads data from a separate endpoint…</div>
+      <h3>City-Wise Leads Summary <span class="info-ico" data-info="tblLeadsCitySummary">i</span></h3>
+      <div class="tblwrap"><table class="dt" id="tblLeadsCitySummary"></table></div>
+      <div style="margin-top:8px"><button class="btn" data-csv="tblLeadsCitySummary" data-name="city_wise_leads_summary">⬇ Export CSV</button></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h3>City-Wise Leads — Raw Dump <span class="info-ico" data-info="tblLeadsRawDump">i</span></h3>
+      <div class="hint" id="leadsRawHint"></div>
+      <div class="tblwrap"><table class="dt" id="tblLeadsRawDump"></table></div>
+      <div style="margin-top:8px"><button class="btn" id="leadsRawCsvBtn">⬇ Export CSV (all rows)</button></div>
     </div>
   </section>
 

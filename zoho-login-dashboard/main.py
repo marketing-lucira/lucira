@@ -269,6 +269,11 @@ def run_sync() -> dict:
         result["cdc"] = sync_customer_events(at)
     except Exception as e:
         result["cdc_error"] = str(e)
+    # full rebuild-and-replace for the last few days of Deals (never break the rest of sync)
+    try:
+        result["deals_recent_rebuild"] = rebuild_deals_recent(at)
+    except Exception as e:
+        result["deals_recent_rebuild_error"] = str(e)
     return result
 
 
@@ -506,6 +511,119 @@ def _module_conf(module: str):
         return CE_FIELDS, CE_TABLE, _ce_schema(), _norm_event, "customer_events"
     conf = CDC_MODULES[module]
     return conf["fields"], conf["table"], _cdc_schema(), _norm_cdc, conf["table"]
+
+
+# --------------------------------------------------------------------------- #
+# Deals recent-window rebuild — deliberately NOT cursor/incremental.
+# Every /sync run re-fetches ALL Deals created in the last REBUILD_DAYS days
+# (00:00 IST of day-N -> now), de-dupes by id, and REPLACES that whole window
+# in cdc_deals (delete + insert in one script, never append). Covers "today"
+# plus a couple of trailing days so a deal edited just after midnight rollover
+# still gets swept up, not just brand-new creations. Runs alongside (not
+# instead of) the Modified_Time cursor+MERGE sync that sync_module() still
+# does for every module including Deals, so older history is untouched — a
+# full re-pull of the whole table isn't possible anyway (Zoho's /search caps
+# out around 2000 records per query, far below total Deals volume).
+# --------------------------------------------------------------------------- #
+REBUILD_DAYS = 3   # today + 2 trailing days
+
+
+def _ist_recent_window(days_back: int = REBUILD_DAYS) -> tuple[str, str]:
+    now_ist = dt.datetime.utcnow() + dt.timedelta(hours=5, minutes=30)
+    start = (now_ist - dt.timedelta(days=days_back - 1)).replace(
+        hour=0, minute=0, second=0, microsecond=0)
+    return (start.strftime("%Y-%m-%dT%H:%M:%S+05:30"),
+            now_ist.strftime("%Y-%m-%dT%H:%M:%S+05:30"))
+
+
+def _fetch_deals_full_day(access_token: str, start_iso: str,
+                          max_pages: int = 20) -> list[dict]:
+    """Full pull of ALL Deals with Created_Time >= start_iso, via the same
+    Get-Records API _fetch_module_since already uses (reads the primary
+    datastore live, no search-index lag, no extra OAuth scope beyond what's
+    already granted). Sorted desc by Created_Time, paginated, stops as soon as
+    it passes below the window start — mirrors _fetch_module_since's own
+    stop-early pattern, just keyed on Created_Time instead of Modified_Time.
+
+    (Tried Zoho's /search endpoint first: it reads from a search index that
+    lags several minutes behind live writes and was undercounting same-day
+    deals during a burst of inbound-call auto-created deals. Tried COQL next:
+    401'd — this OAuth connection's scopes don't include ZohoCRM.coql.READ.
+    Get Records needs neither extra scope nor index catch-up.)"""
+    headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
+    out, page = [], 1
+    while page <= max_pages:
+        resp = requests.get(
+            f"{API_BASE}/crm/v8/Deals",
+            headers=headers,
+            params={"fields": CDC_MODULES["Deals"]["fields"], "per_page": 200,
+                    "sort_by": "Created_Time", "sort_order": "desc", "page": page},
+            timeout=60,
+        )
+        if resp.status_code == 204:
+            break
+        resp.raise_for_status()
+        body = resp.json()
+        stop = False
+        for r in body.get("data", []):
+            if (r.get("Created_Time") or "") < start_iso:
+                stop = True
+                break
+            out.append(r)
+        info = body.get("info", {})
+        if stop or not info.get("more_records"):
+            break
+        page += 1
+    return out
+
+
+def rebuild_deals_recent(access_token: str, days_back: int = REBUILD_DAYS) -> dict:
+    """Rebuild-and-replace the last `days_back` days of cdc_deals (by
+    Created_Time). Never appends: if the fetch comes back empty (Zoho hiccup,
+    not genuinely zero deals), it skips the delete/insert entirely rather than
+    risk wiping real data."""
+    start_iso, end_iso = _ist_recent_window(days_back)
+    start_str, end_str = start_iso[:10], end_iso[:10]
+    rows = _fetch_deals_full_day(access_token, start_iso)
+    if not rows:
+        return {"window": f"{start_str}..{end_str}", "skipped": "fetch returned 0 rows"}
+
+    synced_at = dt.datetime.utcnow().isoformat() + "Z"
+    seen, uniq = set(), []
+    for r in rows:
+        n = _norm_cdc(r, synced_at)
+        if n["id"] not in seen:
+            seen.add(n["id"]); uniq.append(n)
+
+    table = CDC_MODULES["Deals"]["table"]
+    schema = _cdc_schema()
+    tmp = f"{PROJECT}.{DATASET}.{table}_recent_staging"
+    obj = f"exports/{table}/recent_rebuild_{synced_at}.json"
+    _gcs.bucket(GCS_BUCKET).blob(obj).upload_from_string(
+        "\n".join(json.dumps(r, ensure_ascii=False) for r in uniq),
+        content_type="application/x-ndjson")
+    _bq.load_table_from_uri(
+        f"gs://{GCS_BUCKET}/{obj}", tmp,
+        job_config=bigquery.LoadJobConfig(
+            source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+            schema=schema,
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE),
+    ).result()
+
+    cols = ", ".join(f.name for f in schema)
+    target = f"{PROJECT}.{DATASET}.{table}"
+    # Single script = one atomic transaction: delete the window's rows, insert
+    # the fresh deduped set. Two separate queries could leave the window empty
+    # if the process died in between; BEGIN/COMMIT makes that impossible.
+    _bq.query(f"""
+        BEGIN TRANSACTION;
+        DELETE FROM `{target}`
+          WHERE DATE(created_time, 'Asia/Kolkata') BETWEEN '{start_str}' AND '{end_str}';
+        INSERT INTO `{target}` ({cols}) SELECT {cols} FROM `{tmp}`;
+        COMMIT TRANSACTION;
+    """).result()
+    _bq.delete_table(tmp, not_found_ok=True)
+    return {"window": f"{start_str}..{end_str}", "fetched": len(rows), "rebuilt": len(uniq)}
 
 
 def sync_module(access_token: str, module: str, since_iso: str | None = None) -> dict:
@@ -978,7 +1096,7 @@ def _sync_status():
         "first_snapshot": _ist_str(r["first_snapshot"], "%d %b %Y %H:%M"),
         "snapshot_rows": r["snapshot_rows"],
         "sync_runs": r["sync_runs"],
-        "cadence": os.environ.get("SYNC_CADENCE", "every 15 min (Asia/Kolkata)"),
+        "cadence": os.environ.get("SYNC_CADENCE", "every 30 min (Asia/Kolkata)"),
         "scheduler_job": "zoho-sync",
     }
 
@@ -1119,7 +1237,7 @@ def api_crm_bundle():
     """LIVE data feed for the Deals VS Call dashboard.
 
     Rebuilds the SAME positional bundle as dashboard/data.js — but straight from
-    the cdc_* BigQuery tables (synced from Zoho every 15 min) — so Deals VS Call
+    the cdc_* BigQuery tables (synced from Zoho every 30 min) — so Deals VS Call
     is always current instead of frozen on a static snapshot. Wired on the client
     via CONFIG.CRM_API (window.CRM_API_BASE injected in deals_vs_call.html)."""
     cutoff = os.environ.get("CRM_CUTOFF", "2026-05-31")
@@ -1128,20 +1246,30 @@ def api_crm_bundle():
     rng = f"DATE(created_time,'{TZ}') >= '{cutoff}'"
     rows = lambda sql: list(_bq.query(sql).result())
     try:
+        # Address_City/Address_State are 0% populated on cdc_deals itself (checked live via bq,
+        # 2026-08-11) — left-joined here from Lucira_Prod.lucira_zoho_Deals, a separate live
+        # Deals export that DOES carry real address columns (~14% of its rows; ~66% of cdc_deals
+        # ids find a match there by id). Feeds pd()'s city/state fields in app.js so the
+        # City-wise/State-wise Performance tables (next to Owner Performance) stop always
+        # reading "(Not Captured)". No match / blank Address_City still yields '' — never guessed.
         deals = [[r["id"], r["name"], r["owner"], r["created"], r["stage"], r["prob"],
                   r["lead_source"], r["reason_loss"], r["trigger"], r["utm_source"],
-                  r["utm_medium"], r["num_act"] or 0, r["mobile"] or ""] for r in rows(f"""
-            SELECT id, JSON_VALUE(data,'$.Deal_Name') name, owner_id owner, {ts} created,
-                   JSON_VALUE(data,'$.Stage') stage,
-                   SAFE_CAST(JSON_VALUE(data,'$.Probability') AS FLOAT64) prob,
-                   JSON_VALUE(data,'$.Lead_Source') lead_source,
-                   JSON_VALUE(data,'$.Reason_For_Loss__s') reason_loss,
-                   JSON_VALUE(data,'$.Deal_Trigger_Event') trigger,
-                   JSON_VALUE(data,'$.UTM_Source') utm_source,
-                   JSON_VALUE(data,'$.UTM_Medium') utm_medium,
-                   SAFE_CAST(JSON_VALUE(data,'$.Number_of_activity') AS INT64) num_act,
-                   RIGHT(REGEXP_REPLACE(COALESCE(JSON_VALUE(data,'$.Mobile'),''),r'[^0-9]',''),10) mobile
-            FROM {P}cdc_deals` WHERE {rng}""")]
+                  r["utm_medium"], r["num_act"] or 0, r["mobile"] or "",
+                  r["city"] or "", r["state"] or ""] for r in rows(f"""
+            SELECT d.id, JSON_VALUE(d.data,'$.Deal_Name') name, d.owner_id owner, {ts.replace('created_time','d.created_time')} created,
+                   JSON_VALUE(d.data,'$.Stage') stage,
+                   SAFE_CAST(JSON_VALUE(d.data,'$.Probability') AS FLOAT64) prob,
+                   JSON_VALUE(d.data,'$.Lead_Source') lead_source,
+                   JSON_VALUE(d.data,'$.Reason_For_Loss__s') reason_loss,
+                   JSON_VALUE(d.data,'$.Deal_Trigger_Event') trigger,
+                   JSON_VALUE(d.data,'$.UTM_Source') utm_source,
+                   JSON_VALUE(d.data,'$.UTM_Medium') utm_medium,
+                   SAFE_CAST(JSON_VALUE(d.data,'$.Number_of_activity') AS INT64) num_act,
+                   RIGHT(REGEXP_REPLACE(COALESCE(JSON_VALUE(d.data,'$.Mobile'),''),r'[^0-9]',''),10) mobile,
+                   INITCAP(TRIM(loc.Address_City)) city, loc.Address_State state
+            FROM {P}cdc_deals` d
+            LEFT JOIN `lucirajewelry-prod.Lucira_Prod.lucira_zoho_Deals` loc ON d.id = loc.id
+            WHERE {rng.replace('created_time','d.created_time')}""")]
         calls = [[r["id"], r["owner"], r["created"], r["type"], r["dur"] or 0,
                   r["cstart"], r["what_id"] or "", r["phone"] or "", r["result"] or ""] for r in rows(f"""
             SELECT id, owner_id owner, {ts} created,

@@ -55,7 +55,7 @@ function csvOf(rows){ return rows.map(function(r){return r.map(function(v){ v=(v
 function tableToCsv(id){ var t=document.getElementById(id); if(!t)return ''; var rows=[]; t.querySelectorAll('tr').forEach(function(tr){ var r=[]; tr.querySelectorAll('th,td').forEach(function(td){ r.push(td.textContent.trim()); }); rows.push(r); }); return csvOf(rows); }
 
 /* ---------- CRM parsers (matches dashboard/data.js positional schema) ---------- */
-function pd(a){ return {id:a[0],name:a[1],owner:a[2],created:a[3],stage:a[4],prob:a[5],leadSource:a[6],reasonLoss:a[7],trigger:a[8],utmSource:a[9],utmMedium:a[10],numAct:a[11]||0,mobile:normPhone(a[12])}; }
+function pd(a){ return {id:a[0],name:a[1],owner:a[2],created:a[3],stage:a[4],prob:a[5],leadSource:a[6],reasonLoss:a[7],trigger:a[8],utmSource:a[9],utmMedium:a[10],numAct:a[11]||0,mobile:normPhone(a[12]),modified:a[13]||null}; }
 function pc(a){ return {id:a[0],owner:a[1],created:a[2],type:a[3],dur:a[4]||0,start:a[5],whatId:a[6]||'',phone:normPhone(a[7])}; }
 function pt(a){ return {id:a[0],owner:a[1],created:a[2],status:a[3],due:a[4],closed:a[5],whatId:a[6]||''}; }
 function po(a){ return {id:a[0],owner:a[1],created:a[2],channel:a[3],atype:a[4]}; }
@@ -81,12 +81,37 @@ var DATA=null; // built by buildData()
 function ownerName(id){ return (DATA.owners[id])||id||'—'; }
 function storeCodeOfOwner(id){ return STORE_OWNERNAME_TO_CODE[ownerName(id)]||null; }
 
+/* Global unique-deal rule (client spec): one deal per Mobile Number + Created Date
+   (calendar day, not owner-scoped — unlike dedupeByMobileDay() below which is owner-scoped
+   for the Agent Performance table only). When the same mobile has 2+ deals the same day,
+   keep only the latest (by Modified_Time if present, else Created_Time); the rest are
+   dropped from EVERY metric in the dashboard, not just this one. Deals with no mobile number
+   can't be safely matched against each other, so they pass through unduped (each counted
+   individually) and are simply excluded from the mobile-keyed Sales join later. */
+function dedupeDealsGlobal(deals){
+  var byKey={}, noMobile=[];
+  deals.forEach(function(d){
+    if(!d.mobile){ noMobile.push(d); return; }
+    var key=d.mobile+'|'+ymd(d.created);
+    var cur=byKey[key];
+    if(!cur){ byKey[key]=d; return; }
+    var tCur=cur.modified||cur.created, tNew=d.modified||d.created;
+    if(tNew>tCur) byKey[key]=d;
+  });
+  return Object.keys(byKey).map(function(k){return byKey[k];}).concat(noMobile);
+}
+
 function buildData(raw){
   raw=raw||window.DASH||{owners:{},deals:[],calls:[],tasks:[],online:[],events:[]};
   var D={ owners:raw.owners||{}, meta:raw.meta||{}, deals:(raw.deals||[]).map(pd), calls:(raw.calls||[]).map(pc), tasks:(raw.tasks||[]).map(pt), online:(raw.online||[]).map(po), events:(raw.events||[]).map(pe), sales:null, salesMeta:null };
+  D.dealsRawCount = D.deals.length;
+  D.deals = dedupeDealsGlobal(D.deals);
+  D.dupDealsRemoved = D.dealsRawCount - D.deals.length;
   // indices
   D.idxWhat={}; D.calls.forEach(function(c){ if(c.whatId){ (D.idxWhat[c.whatId]=D.idxWhat[c.whatId]||[]).push(c); } });
   D.idxPhone={}; D.calls.forEach(function(c){ if(c.phone){ (D.idxPhone[c.phone]=D.idxPhone[c.phone]||[]).push(c); } });
+  D.idxWhatTask={}; D.tasks.forEach(function(t){ if(t.whatId){ (D.idxWhatTask[t.whatId]=D.idxWhatTask[t.whatId]||[]).push(t); } });
+  D.hasModified = D.deals.some(function(d){ return !!d.modified; });
   // crm max date across all modules
   var maxD=null;
   [D.deals,D.calls,D.tasks,D.events].forEach(function(arr){ arr.forEach(function(r){ var d=r.created; if(d && (!maxD||d>maxD)) maxD=d; }); });
@@ -106,6 +131,179 @@ function joinDeal(D,deal){
   var first=calls[0]||null;
   var frt = first? diffMin(deal.created, first.created) : null;
   return {deal:deal,calls:calls,connected:connected,first:first,frt:frt,contacted:calls.length>0};
+}
+
+/* ================= AGENT PERFORMANCE TABLE (extended) ================= */
+/* Adds the metrics from the client's later "Agent Performance Dashboard" spec that Section 1
+   doesn't cover: mobile+date deduped Assigned Deals split into two shift windows, WhatsApp
+   Deals (via Deal_Trigger_Event, not Lead_Source), a strict 30-min First-Response SLA,
+   Activities (Calls+Tasks linked to a Deal), Total Talk Time, Modified Deals and Old
+   Customer Activities. Runs over a user-picked date range (Yesterday/Last 7/Last 30/Custom)
+   instead of Section 1's single reference day, and sums per-day so the "same mobile number
+   twice in one day" dedup rule is applied one calendar day at a time, as specified. */
+
+/* Deal_Trigger_Event bucketing — based on the REAL distinct values found in this CRM's Deals
+   export (etl/raw/Deals.json): Payment, Fresh, ProductView/NitroProductView, Forms, Checkout,
+   ATC/Add to Cart, Login, WhatsApp/Whatsapp Chat/chat, Purchase, Signup, AbandonedCart, Closed,
+   Schemes. This is an e-commerce funnel-event field, NOT a contact-channel field — there is no
+   "Store Visit"/"Video Call"/"Phone Call"/"Reminder"/"Follow-up" vocabulary in this CRM.
+   classifyEvent() above (Zoho Meeting titles) is the only real source for Store Visit/Video
+   Call/TAH — those are meeting sub-types, unrelated to Deal_Trigger_Event. */
+var TRIGGER_BUCKETS=['WhatsApp','Chat','Payment','Checkout','Add to Cart','Abandoned Cart','Product View','Signup','Login','Forms','Schemes','Fresh','Closed','Other'];
+function classifyTrigger(t){
+  var s=(t||'').toLowerCase().trim();
+  if(!s) return 'Other';
+  if(s.indexOf('whatsapp')>=0) return 'WhatsApp';
+  if(s.indexOf('chat')>=0) return 'Chat';
+  if(s.indexOf('payment')>=0 || s.indexOf('purchase')>=0) return 'Payment';
+  if(s.indexOf('checkout')>=0) return 'Checkout';
+  if(s.indexOf('abandon')>=0) return 'Abandoned Cart';
+  if(s.indexOf('atc')>=0 || s.indexOf('cart')>=0) return 'Add to Cart';
+  if(s.indexOf('productview')>=0 || s.indexOf('product view')>=0 || s.indexOf('nitro')>=0) return 'Product View';
+  if(s.indexOf('sign up')>=0 || s.indexOf('signup')>=0 || s.indexOf('singup')>=0) return 'Signup';
+  if(s.indexOf('login')>=0) return 'Login';
+  if(s.indexOf('form')>=0) return 'Forms';
+  if(s.indexOf('scheme')>=0) return 'Schemes';
+  if(s.indexOf('fresh')>=0) return 'Fresh';
+  if(s.indexOf('closed')>=0) return 'Closed';
+  return 'Other';
+}
+
+function dealTasksFor(D,deal){ return D.idxWhatTask[deal.id]||[]; }
+/* Activities on a deal, dated `day` = Calls + Tasks linked via What_Id. Zoho Meetings have no
+   What_Id on this feed (can't be tied to a Deal) and there is no Notes module pulled at all —
+   both are excluded from Activities, not silently invented. */
+function dealActivitiesOnDay(D,deal,day){
+  var c=joinDeal(D,deal).calls.filter(function(x){ return ymd(x.created)===day; }).length;
+  var t=dealTasksFor(D,deal).filter(function(x){ return ymd(x.created)===day; }).length;
+  return c+t;
+}
+/* Distinct Mobile + Date dedup, latest-created wins per the client's spec. Deals with no
+   mobile can't be safely deduped against each other, so they pass through individually. */
+function dedupeByMobileDay(deals){
+  var byKey={}, out=[];
+  deals.forEach(function(d){
+    if(!d.mobile){ out.push(d); return; }
+    var key=d.owner+'|'+d.mobile+'|'+ymd(d.created);
+    if(!byKey[key] || d.created>byKey[key].created) byKey[key]=d;
+  });
+  Object.keys(byKey).forEach(function(k){ out.push(byKey[k]); });
+  return out;
+}
+function inWindowA(ts){ var h=hourOf(ts); return h>=10 && h<21; } // 10:00–21:00
+function windowADeals(deals,day){ return deals.filter(function(d){ return ymd(d.created)===day && inWindowA(d.created); }); }
+/* 21:00 on `day` -> 10:00 the next day — spans midnight, so both calendar days must be scanned */
+function windowBDeals(ownerAllDeals,day){
+  var nextDay=addDays(day,1);
+  return ownerAllDeals.filter(function(d){
+    var dd=ymd(d.created);
+    if(dd===day && hourOf(d.created)>=21) return true;
+    if(dd===nextDay && hourOf(d.created)<10) return true;
+    return false;
+  });
+}
+function agentDayMetricsExt(D,owner,day,F){
+  var ownerDeals=D.deals.filter(function(d){ return d.owner===owner && dealPassF(d,F); });
+  var todays=ownerDeals.filter(function(d){ return ymd(d.created)===day; });
+  var winA=dedupeByMobileDay(windowADeals(todays,day));
+  var winB=dedupeByMobileDay(windowBDeals(ownerDeals,day));
+  var assigned=winA.concat(winB);
+  var waDeals=assigned.filter(function(d){ return classifyTrigger(d.trigger)==='WhatsApp'; }).length;
+
+  var callsToday=D.calls.filter(function(c){ return c.owner===owner && ymd(c.created)===day && callPassF(c,F); });
+  var totalCalls=callsToday.length;
+  var connected=callsToday.filter(function(c){ return c.dur>30; }).length;
+  var notConnected=callsToday.filter(function(c){ return c.dur===0; }).length;
+  var talkSecs=callsToday.filter(function(c){ return c.dur>30; }).reduce(function(a,c){return a+c.dur;},0);
+
+  var frts=winA.map(function(d){ return joinDeal(D,d).frt; });
+  var within30=frts.filter(function(f){ return f!=null && f>=0 && f<=30; }).length;
+  var after30=frts.filter(function(f){ return f!=null && f>=0 && f>30; }).length;
+
+  var totalActivities=ownerDeals.reduce(function(a,d){ return a+dealActivitiesOnDay(D,d,day); },0);
+  var oldCustomerActivities=ownerDeals.filter(function(d){ return ymd(d.created)<day; })
+    .reduce(function(a,d){ return a+dealActivitiesOnDay(D,d,day); },0);
+  var modifiedDeals = D.hasModified
+    ? ownerDeals.filter(function(d){ return ymd(d.created)<day && d.modified && ymd(d.modified)===day; }).length
+    : null; // null = gated — Modified_Time isn't exposed by the live bundle yet, see honesty note
+
+  return {
+    assigned:assigned.length, winA:winA.length, winB:winB.length, waDeals:waDeals,
+    totalCalls:totalCalls, connected:connected, notConnected:notConnected, talkSecs:talkSecs,
+    within30:within30, after30:after30, frtBase:winA.length,
+    totalActivities:totalActivities, oldCustomerActivities:oldCustomerActivities,
+    modifiedDeals:modifiedDeals, assignedDealsForTrigger:assigned
+  };
+}
+function sumMetricsExt(rows){
+  var s={ assigned:0,winA:0,winB:0,waDeals:0,totalCalls:0,connected:0,notConnected:0,talkSecs:0,
+    within30:0,after30:0,frtBase:0,totalActivities:0,oldCustomerActivities:0,modifiedDeals:0,modifiedGated:false,
+    assignedDealsForTrigger:[] };
+  rows.forEach(function(r){
+    s.assigned+=r.assigned; s.winA+=r.winA; s.winB+=r.winB; s.waDeals+=r.waDeals;
+    s.totalCalls+=r.totalCalls; s.connected+=r.connected; s.notConnected+=r.notConnected; s.talkSecs+=r.talkSecs;
+    s.within30+=r.within30; s.after30+=r.after30; s.frtBase+=r.frtBase;
+    s.totalActivities+=r.totalActivities; s.oldCustomerActivities+=r.oldCustomerActivities;
+    if(r.modifiedDeals==null) s.modifiedGated=true; else s.modifiedDeals+=r.modifiedDeals;
+    s.assignedDealsForTrigger=s.assignedDealsForTrigger.concat(r.assignedDealsForTrigger);
+  });
+  return s;
+}
+function buildAgentPerfExt(D,from,to,F){
+  var days=[]; var d=from; while(d<=to){ days.push(d); d=addDays(d,1); }
+  var owners=activeOwners(D).filter(function(o){ return !F.agents.size || F.agents.has(o); });
+  var rows=owners.map(function(o){
+    var perDay=days.map(function(day){ return agentDayMetricsExt(D,o,day,F); });
+    var s=sumMetricsExt(perDay);
+    return {
+      owner:o, name:ownerName(o),
+      assigned:s.assigned, winA:s.winA, winB:s.winB, waDeals:s.waDeals,
+      totalCalls:s.totalCalls, connected:s.connected, notConnected:s.notConnected,
+      connectedPct:pct(s.connected,s.totalCalls),
+      within30:s.within30, after30:s.after30, frtBase:s.frtBase, slaPct:pct(s.within30,s.frtBase),
+      totalActivities:s.totalActivities, avgActivitiesPerDeal: s.assigned? s.totalActivities/s.assigned : null,
+      talkSecs:s.talkSecs, modifiedDeals:s.modifiedGated?null:s.modifiedDeals,
+      oldCustomerActivities:s.oldCustomerActivities,
+      assignedDealsForTrigger:s.assignedDealsForTrigger
+    };
+  }).filter(function(r){ return r.assigned>0 || r.totalCalls>0 || r.totalActivities>0; });
+  rows.sort(function(a,b){ return b.assigned-a.assigned; });
+  return rows;
+}
+function buildTriggerTableExt(rows){
+  return rows.map(function(r){
+    var buckets={}; TRIGGER_BUCKETS.forEach(function(b){ buckets[b]=0; });
+    r.assignedDealsForTrigger.forEach(function(d){ buckets[classifyTrigger(d.trigger)]++; });
+    return { name:r.name, total:r.assignedDealsForTrigger.length, buckets:buckets };
+  }).filter(function(r){ return r.total>0; }).sort(function(a,b){ return b.total-a.total; });
+}
+function buildInsightsExt(rows,rangeLabel){
+  var out=[];
+  if(!rows.length){ out.push({t:'ℹ️',c:'warn',h:'No agent activity found for '+rangeLabel+'.'}); return out; }
+  function top(arr,keyFn,filterFn){ var f=filterFn?arr.filter(filterFn):arr.slice(); if(!f.length)return null; return f.reduce(function(a,b){ return keyFn(b)>keyFn(a)?b:a; }); }
+  function bottom(arr,keyFn,filterFn){ var f=filterFn?arr.filter(filterFn):arr.slice(); if(!f.length)return null; return f.reduce(function(a,b){ return keyFn(b)<keyFn(a)?b:a; }); }
+  var mostDeals=top(rows,function(r){return r.assigned;},function(r){return r.assigned>0;});
+  if(mostDeals) out.push({t:'🏆',c:'pos',h:mostDeals.name+' received the highest number of deals ('+fmtInt(mostDeals.assigned)+') in '+rangeLabel+'.'});
+  var bestSla=top(rows,function(r){return r.slaPct==null?-1:r.slaPct;});
+  if(bestSla && bestSla.slaPct!=null) out.push({t:'⚡',c:'pos',h:bestSla.name+' has the best 30-minute response SLA at '+fmtPct(bestSla.slaPct,0)+'.'});
+  var missedSla=rows.filter(function(r){ return r.after30>0; }).sort(function(a,b){return b.after30-a.after30;});
+  if(missedSla.length) out.push({t:'⏰',c:'neg',h:missedSla.length+' agent(s) missed the 30-minute SLA on at least one deal — worst: '+missedSla[0].name+' ('+fmtInt(missedSla[0].after30)+' late first-calls).'});
+  else out.push({t:'✅',c:'pos',h:'No agent missed the 30-minute first-response SLA in '+rangeLabel+'.'});
+  var lowestConn=bottom(rows,function(r){return r.connectedPct==null?101:r.connectedPct;},function(r){return r.totalCalls>0;});
+  if(lowestConn) out.push({t:'📉',c:'warn',h:lowestConn.name+' has the lowest Connected % at '+fmtPct(lowestConn.connectedPct,0)+' — review call quality/timing.'});
+  var mostTalk=top(rows,function(r){return r.talkSecs;},function(r){return r.talkSecs>0;});
+  if(mostTalk) out.push({t:'📞',c:'pos',h:mostTalk.name+' logged the highest talk time: '+fmtHMS(mostTalk.talkSecs)+'.'});
+  var mostAct=top(rows,function(r){return r.totalActivities;},function(r){return r.totalActivities>0;});
+  if(mostAct) out.push({t:'🔥',c:'pos',h:mostAct.name+' performed the most activities ('+fmtInt(mostAct.totalActivities)+').'});
+  var mostOld=top(rows,function(r){return r.oldCustomerActivities;},function(r){return r.oldCustomerActivities>0;});
+  if(mostOld) out.push({t:'👥',c:'pos',h:mostOld.name+' followed up with old customers the most ('+fmtInt(mostOld.oldCustomerActivities)+' activities on pre-existing deals).'});
+  else out.push({t:'👥',c:'warn',h:'No follow-up activity was logged on older (pre-existing) deals in '+rangeLabel+'.'});
+  var pending=rows.reduce(function(a,r){return a+Math.max(0,r.winA-r.within30-r.after30);},0);
+  out.push({t:'📋',c:'warn',h:fmtInt(pending)+' deal(s) assigned in the 10AM–9PM window still have no first call logged yet.'});
+  var priority=rows.slice().sort(function(a,b){ var pa=Math.max(0,a.winA-a.within30-a.after30), pb=Math.max(0,b.winA-b.within30-b.after30); return pb-pa; })[0];
+  if(priority) out.push({t:'🎯',c:'warn',h:'Prioritize '+priority.name+' today — carries the largest pool of not-yet-called deals in the 10AM–9PM window.'});
+  out.push({t:'🧭',c:'pos',h:'Management focus today: close the SLA gap'+(missedSla.length?' with '+missedSla[0].name:'')+' and follow up on the '+fmtInt(pending)+' deal(s) with no first call yet.'});
+  return out;
 }
 
 /* ---------- Sales loader ---------- */
@@ -165,7 +363,22 @@ function buildAgentPerf(D,day,F){
     });
     var evTypes={ 'Meeting':0,'Store Visit':0,'Video Call':0,'TAH':0 };
     evDay.forEach(function(e){ evTypes[classifyEvent(e.title)]++; });
-    var won=assigned.filter(function(d){ return d.stage==='Closed Won'; }).length; // real, per-agent conversion signal straight from the Deal's own Stage — no cross-system join needed
+    /* Order Convert = unique CUSTOMERS (deduped by Mobile) whose deal is Stage="Closed Won" and
+       whose Modified_Time — the real closing/follow-up date, not Created_Time — falls on `day`.
+       Two fixes over the old logic: (1) it no longer counts a same-day-created deal as "won" just
+       because its CURRENT stage happens to read Closed Won at whatever later date the snapshot was
+       pulled — it now requires the close to have actually landed on `day` (Modified_Time), same gate
+       already used for old deals; (2) a customer with 2+ duplicate deals closing the same day is one
+       converted order, not two — deduped by Mobile before counting. Gated N/A (like Modified Deals)
+       when the data source doesn't expose Modified_Time yet, falling back to the old "created today,
+       currently Closed Won" signal (still mobile-deduped) so the column never goes blank. */
+    var wonOwnerDeals = D.hasModified ? D.deals.filter(function(d){
+      return d.owner===o && d.stage==='Closed Won' && d.modified && ymd(d.modified)===day && dealPassF(d,F);
+    }) : assigned.filter(function(d){ return d.stage==='Closed Won'; });
+    var wonSeen={}, wonUnique=[];
+    wonOwnerDeals.forEach(function(d){ var k=d.mobile||('__nomobile_'+d.id); if(!wonSeen[k]){ wonSeen[k]=1; wonUnique.push(d); } });
+    var won = wonUnique.filter(function(d){ return ymd(d.created)===day; }).length;
+    var oldWon = D.hasModified ? wonUnique.filter(function(d){ return ymd(d.created)<day; }).length : null;
     rows.push({
       owner:o, name:ownerName(o),
       dealsAssigned:assigned.length,
@@ -176,7 +389,7 @@ function buildAgentPerf(D,day,F){
       avgFrtBiz:avg(frtsBiz), avgFrtNonBiz:avg(frtsNonBiz), avgFrtAll:avg(frtsBiz.concat(frtsNonBiz)),
       meetings: evDay.length,
       storeVisits: evTypes['Store Visit'], videoCalls: evTypes['Video Call'], tah: evTypes['TAH'],
-      won:won, winRate:pct(won,assigned.length)
+      won:won, oldWon:oldWon, wonTotal:(oldWon==null?won:won+oldWon), winRate:pct(won,assigned.length)
     });
   });
   rows.sort(function(a,b){ return b.dealsAssigned-a.dealsAssigned; });
@@ -193,6 +406,19 @@ function buildFrtDetail(D,day,F){
     var j=joinDeal(D,d);
     var h=hourOf(d.created);
     return { dealId:d.id, name:d.name, owner:ownerName(d.owner), stage:d.stage, mobile:d.mobile, created:d.created, firstCall:j.first?j.first.created:null, frtSecs:j.frt!=null?j.frt*60:null, window:(h>=10&&h<20)?'10AM-8PM':'8PM-10AM' };
+  });
+  rows.sort(function(a,b){ return a.created<b.created?-1:1; });
+  return rows;
+}
+
+/* Overall Call Dump (cross-check for the Hourly Talk Time Trend chart) — one row per call
+   logged on the reference day, so every "Connected (>=30s)" total in the trend line can be
+   verified against real records instead of trusting the aggregate. */
+function buildCallDump(D,day,F){
+  var calls=D.calls.filter(function(c){ return ymd(c.created)===day && callPassF(c,F); });
+  var rows=calls.map(function(c){
+    var dur=c.dur||0;
+    return { callId:c.id, owner:ownerName(c.owner), type:c.type||'N/A', created:c.created, hour:hourOf(c.created), durSecs:dur, connected:dur>=30 };
   });
   rows.sort(function(a,b){ return a.created<b.created?-1:1; });
   return rows;
@@ -254,6 +480,74 @@ function buildTrends(D,S,fromD,toD,F){
   return out;
 }
 
+/* ================= Section 12: Deal → Sale Conversion (Same-Day, Mobile+Date) =================
+   Client spec: dedupe deals (dedupeDealsGlobal, applied once in buildData — every metric in
+   this file already runs on unique deals), then map each unique deal to the Sales table using
+   Mobile Number + Date (Day-wise) — a deal counts as converted ONLY if that same mobile number
+   also has a Sales row on the SAME calendar day (confirmed with the client: same-day match,
+   not any-time). Sales are grouped by Mobile + Sale Date FIRST — one customer's multiple
+   line-items/orders on the same day (a single bill can be several rows in Sales_overview_table)
+   collapse into ONE sale event with a summed amount, so a multi-item bill isn't miscounted as
+   several conversions. Needs `customer_mobile` on the Sales snapshot (see sales-reporting-api/
+   main.py) — if that field isn't present yet (old snapshot), hasMobileData is false and the UI
+   shows an honest gate instead of a fake zero. */
+function buildSalesByMobileDay(items){
+  var m={};
+  (items||[]).forEach(function(it){
+    if(it.sale_type==='Return') return; // a return is not a conversion event
+    var mob=normPhone(it.customer_mobile||'');
+    if(mob.length!==10) return; // no verified mobile on this row — can't be mobile-joined
+    var key=mob+'|'+it.date;
+    var e=m[key]||(m[key]={mobile:mob,date:it.date,gross:0,net:0,qty:0,orders:{},lines:0});
+    e.gross+=it.gross||0; e.net+=(it.net!=null?it.net:(it.gross||0)*0.97); e.qty+=it.qty||0;
+    if(it.document_no) e.orders[it.document_no]=1;
+    e.lines++;
+  });
+  return m;
+}
+function buildDealSaleConversion(D,S,fromD,toD,F){
+  var hasMobileData=(S.items||[]).some(function(it){return normPhone(it.customer_mobile||'').length===10;});
+  var byMobileDay=buildSalesByMobileDay(S.items);
+  var deals=D.deals.filter(function(d){ return d.mobile && inRange(d.created,fromD,toD) && dealPassF(d,F); });
+  var matched=[]; // [{deal,sale}]
+  deals.forEach(function(d){
+    var s=byMobileDay[d.mobile+'|'+ymd(d.created)];
+    if(s) matched.push({deal:d,sale:s});
+  });
+  var custSet={}; deals.forEach(function(d){custSet[d.mobile]=1;});
+  var convCustSet={}; matched.forEach(function(m){convCustSet[m.deal.mobile]=1;});
+  var totalSalesAmt=matched.reduce(function(a,m){return a+m.sale.net;},0);
+  var byAgent={};
+  matched.forEach(function(m){
+    var o=m.deal.owner, e=byAgent[o]||(byAgent[o]={owner:o,name:ownerName(o),sales:0,amount:0});
+    e.sales++; e.amount+=m.sale.net;
+  });
+  var dealsPerAgent={};
+  deals.forEach(function(d){ dealsPerAgent[d.owner]=(dealsPerAgent[d.owner]||0)+1; });
+  var agentRows=Object.keys(byAgent).map(function(o){
+    var e=byAgent[o]; return {owner:o,name:e.name,deals:dealsPerAgent[o]||0,sales:e.sales,amount:e.amount,convPct:pct(e.sales,dealsPerAgent[o]||0)};
+  }).sort(function(a,b){return b.amount-a.amount;});
+  var days=[]; var d=fromD; while(d<=toD){ days.push(d); d=addDays(d,1); }
+  var dealsByDay={}; deals.forEach(function(dl){ var k=ymd(dl.created); dealsByDay[k]=(dealsByDay[k]||0)+1; });
+  var matchedByDay={}; matched.forEach(function(m){ var k=ymd(m.deal.created); var e=matchedByDay[k]||(matchedByDay[k]={count:0,amount:0}); e.count++; e.amount+=m.sale.net; });
+  var dayRows=days.map(function(day){
+    var dl=dealsByDay[day]||0, mm=matchedByDay[day]||{count:0,amount:0};
+    return {day:day,deals:dl,sales:mm.count,amount:mm.amount,convPct:pct(mm.count,dl)};
+  });
+  return {
+    hasMobileData:hasMobileData,
+    totalUniqueDeals:deals.length,
+    dupDealsRemoved:D.dupDealsRemoved,
+    sameDaySales:matched.length,
+    totalSalesAmount:totalSalesAmt,
+    convertedCustomers:Object.keys(convCustSet).length,
+    totalCustomers:Object.keys(custSet).length,
+    conversionPct:pct(Object.keys(convCustSet).length,Object.keys(custSet).length),
+    agentRows:agentRows,
+    dayRows:dayRows
+  };
+}
+
 /* ================= CHART HELPERS (hand-rolled SVG, no CDN) ================= */
 function svg(w,h,inner){ return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" style="overflow:visible">'+inner+'</svg>'; }
 function hbar(items,opts){ // items: [{label,value,color}]
@@ -269,17 +563,26 @@ function hbar(items,opts){ // items: [{label,value,color}]
   });
   return '<div style="overflow-x:auto"><svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'">'+inner+'</svg></div>';
 }
-function lineChart(series,opts){ // series: [{x,y}], opts:{color,y2,color2}
-  opts=opts||{}; var w=600,h=180,pad=30;
+function lineChart(series,opts){ // series: [{x,y}], opts:{color,y2,color2,dataLabels,labelFmt}
+  opts=opts||{}; var w=600, h=opts.dataLabels?230:180, pad=30;
+  var padTop=opts.dataLabels?40:pad, padBottom=opts.dataLabels?42:pad; // extra headroom so labels never crowd the line/edges
   var ys=series.map(function(p){return p.y;}); if(opts.y2) series.forEach(function(p){ys.push(p.y2);});
-  var maxY=Math.max.apply(null,ys.concat([1]))*1.15, minY=0;
+  var maxY=Math.max.apply(null,ys.concat([1]))*(opts.dataLabels?1.3:1.15), minY=0;
   var n=series.length||1;
-  function xy(i,v){ var x=pad+(w-pad*2)*(i/(n-1||1)); var y=h-pad-(h-pad*1.4)*((v-minY)/(maxY-minY||1)); return [x,y]; }
+  function xy(i,v){ var x=pad+(w-pad*2)*(i/(n-1||1)); var y=h-padBottom-(h-padTop-padBottom)*((v-minY)/(maxY-minY||1)); return [x,y]; }
   function path(key,color){ var d=''; series.forEach(function(p,i){ var xy_=xy(i,p[key]); d+=(i===0?'M':'L')+xy_[0].toFixed(1)+' '+xy_[1].toFixed(1)+' '; }); return '<path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="2.2"></path>'; }
-  var grid=''; for(var g=0;g<=3;g++){ var gy=pad+(h-pad*1.4)*g/3; grid+='<line x1="'+pad+'" y1="'+gy+'" x2="'+(w-pad)+'" y2="'+gy+'" stroke="var(--line)" stroke-width="1"></line>'; }
+  var grid=''; for(var g=0;g<=3;g++){ var gy=padTop+(h-padTop-padBottom)*g/3; grid+='<line x1="'+pad+'" y1="'+gy+'" x2="'+(w-pad)+'" y2="'+gy+'" stroke="var(--line)" stroke-width="1"></line>'; }
   var xlabels=''; var stepN=Math.max(1,Math.round(n/6));
-  series.forEach(function(p,i){ if(i%stepN===0||i===n-1){ var xy_=xy(i,0); xlabels+='<text x="'+xy_[0]+'" y="'+(h-6)+'" font-size="9" fill="var(--tx3)" text-anchor="middle">'+p.x.slice(5)+'</text>'; } });
-  var inner=grid+path('y',opts.color||'var(--c1)')+(opts.y2!=null?path('y2',opts.color2||'var(--c2)'):'')+xlabels;
+  series.forEach(function(p,i){ if(i%stepN===0||i===n-1){ var xy_=xy(i,0); var lbl=/^\d{4}-\d{2}-\d{2}/.test(p.x)?p.x.slice(5):p.x; xlabels+='<text x="'+xy_[0]+'" y="'+(h-padBottom+16)+'" font-size="9" fill="var(--tx3)" text-anchor="middle">'+lbl+'</text>'; } });
+  var dlabels='';
+  if(opts.dataLabels){ var fmt=opts.labelFmt||function(v){return v;};
+    series.forEach(function(p,i){ if(!p.y) return; var xy_=xy(i,p.y);
+      var prevV=i>0?series[i-1].y:p.y, nextV=i<n-1?series[i+1].y:p.y;
+      var isValley = p.y<=prevV && p.y<=nextV && !(p.y>=prevV && p.y>=nextV); // dip surrounded by higher/equal neighbours -> label goes below, else above
+      var ly = isValley ? xy_[1]+20 : xy_[1]-14;
+      if(ly<padTop-22) ly=xy_[1]+20; if(ly>h-padBottom+18) ly=xy_[1]-14;
+      dlabels+='<text x="'+xy_[0].toFixed(1)+'" y="'+ly.toFixed(1)+'" font-size="10" fill="'+(opts.color||'var(--c1)')+'" text-anchor="middle" font-weight="700">'+fmt(p.y)+'</text>'; }); }
+  var inner=grid+path('y',opts.color||'var(--c1)')+(opts.y2!=null?path('y2',opts.color2||'var(--c2)'):'')+xlabels+dlabels;
   return '<div style="overflow-x:auto">'+svg(w,h,inner)+'</div>'+(opts.legend?('<div style="font-size:11px;color:var(--tx2);margin-top:4px">'+opts.legend+'</div>'):'');
 }
 function donut(segs){ // segs:[{label,value,color}]
@@ -302,7 +605,7 @@ function heatTable(rowsLabels,colsLabels,matrix,opts){ // matrix[r][c]
 /* ================= INFO REGISTRY ================= */
 var INFO={
  datasources:{title:'Data Sources & Honesty Notes',what:'This dashboard blends two real, independently-refreshed sources: the Zoho CRM snapshot (Deals/Calls/Tasks/Meetings, dashboard/data.js) and the live Sales reporting-layer snapshot (BigQuery, refreshed daily 10:00 IST).',why:'A CEO-facing report must never silently mix stale or fabricated numbers with real ones — every figure here traces to a real field, or is explicitly marked as unavailable.',formula:'CRM "yesterday/today" are resolved relative to the latest date actually present in the loaded CRM snapshot, not the browser\'s wall clock — see the freshness pill.',impact:'If you see "—" or a dashed note on a metric, it means the underlying Zoho field genuinely was not present in this data pull (e.g. Store_Assigned, Task→Deal linking, walk-in tracking) — not a bug.',action:'To unlock the gated metrics, re-run the CRM ETL including Store_Assigned/Store_Executive on Deals and What_Id on Tasks, and wire a verified mobile-number column into the Sales customer identity.',practice:'Treat gated cells as a to-do list for the data team, not as zero.',benchmark:'n/a'},
- sec1:{title:'Section 1 — Yesterday Agent Performance',what:'Per-agent scorecard for deals assigned and calls made on the reference day.',why:'This is the single table Sales Heads use every morning to see who is following up and who is not.',formula:'Deals Assigned = Deals where Created_Time = reference day, grouped by Owner. Calls/Connected = calls made that day by that owner (Connected = duration &gt;= 30s). Contact Rate = Connected/Total Calls. Order Convert = COUNT(Deals) WHERE Stage="Closed Won" (real per-agent conversion signal, taken straight from the Deal — note: a deal created yesterday won\'t usually flip to Closed Won the same day, so this will often be low/zero and rise on later days as those deals close). Win Rate % = Order Convert/Deals Assigned.',impact:'Agents with high "Deals Not Called" and low Contact Rate are actively losing pipeline.',action:'Escalate any agent with Deals Not Called &gt; 3 for same-day follow-up.',practice:'Review this table before 10 AM daily.',benchmark:'Contact rate target ≥ 60%; First Call Time target ≤ 30 minutes.'},
+ sec1:{title:'Section 1 — Yesterday Agent Performance',what:'Per-agent scorecard for deals assigned and calls made on the reference day.',why:'This is the single table Sales Heads use every morning to see who is following up and who is not.',formula:'Deals Assigned = Deals where Created_Time = reference day, grouped by Owner. Calls/Connected = calls made that day by that owner (Connected = duration &gt;= 30s). Contact Rate = Connected/Total Calls. Order Convert = COUNT(DISTINCT Mobile) WHERE Stage="Closed Won" AND Modified_Time (closing/follow-up date) = reference day — deduped per customer so a repeat close for the same mobile number the same day is one order, not two. Win Rate % = Order Convert/Deals Assigned.',impact:'Agents with high "Deals Not Called" and low Contact Rate are actively losing pipeline.',action:'Escalate any agent with Deals Not Called &gt; 3 for same-day follow-up.',practice:'Review this table before 10 AM daily.',benchmark:'Contact rate target ≥ 60%; First Call Time target ≤ 30 minutes.'},
  frt_detail:{title:'Deal-Level Dump — First Response Time Cross-Check',what:'Every deal created on the reference day, one row per deal, with its Deal ID, Owner, Stage, Mobile, Created time, which time Window it falls in (10AM-8PM vs 8PM-10AM — matching the two split Avg First Call columns in Section 1), first linked Call time, and FRT (time between the two) in HH:MM:SS.',why:'The two "Avg First Call" KPIs are each just one averaged number — this table lets you verify either one against real records, or spot which specific deals are dragging an average up.',formula:'FRT = first linked Call\'s Created time − Deal\'s Created time. A linked Call is found via What_Id or matching mobile number. Window = Business (10:00-20:00) if the deal\'s Created hour falls in that range, else Non-Business (20:00-10:00).',impact:'A row flagged "⚠ anomaly" (negative FRT) means the matched call actually happened BEFORE the deal was created — almost always the same phone number being reused for an earlier, unrelated deal, not a real early response. These are excluded from both Avg First Call averages automatically.',action:'Search the Deal ID in Zoho to confirm; a "No call yet" row is a live pipeline gap, worth calling now.',practice:'Filter/sort by the Window column to isolate just the business-hours or just the overnight deals.',benchmark:'Target ≤ 30 minutes per deal.'},
  sec3:{title:'Section 3 — Store Performance',what:'Meetings/visits (from Zoho, attributed via store-owner accounts) alongside real Sales revenue by store code from the BigQuery reporting layer.',why:'Shows which physical stores are converting footfall/engagement into revenue.',formula:'Revenue/Orders = Sales snapshot rows for that store code within the selected period (Returns excluded). Conversion % = Orders ÷ (Yesterday Meetings + Today Store Visits).',impact:'Low conversion despite high meeting volume flags in-store execution issues, not lead-gen issues.',action:'Coach the store team, not the online agents, when this ratio is weak.',practice:'"Walk-ins" is intentionally left blank — no walk-in tracking field exists in either Zoho or the Sales table today.',benchmark:'Target store conversion ≥ 25% of meetings+visits.'},
  sec4:{title:'Section 4 — Yesterday Sale Dump (Store vs Online-Agent Sales)',what:'Per-store split of yesterday\'s real Sales rows into Store-channel vs Online-channel.',why:'Shows how much of each store\'s daily sale is walk-in/human-assisted vs originated by an online JC agent\'s lead.',formula:'Total Sale Count = distinct orders at that store yesterday (Returns excluded). Store Sale = orders with Sales.channel = Store or TAH. Online Agent Sale = orders with Sales.channel = Online.',impact:'"Online Agent Sale" is a PROXY, not per-agent attribution — the Sales table has no salesperson field, so it cannot tell you it was specifically Shamwail vs Farha vs Sheetal vs Shreekant\'s lead, only that the order came in via the Online channel.',action:'To get true per-agent credit, the Sales table needs a salesperson/lead-owner column added at the source.',practice:'Respects the Store filter — narrow to specific stores from the filter drawer.',benchmark:'n/a.'},
@@ -318,6 +621,8 @@ var INFO={
  v_agent_rank:{title:'Agent Ranking',what:'Agents ranked by total deals handled in the selected trend window.',why:'Quick view of workload distribution.',formula:'COUNT(Deals) GROUP BY Owner over the trend window.',impact:'—',action:'—',practice:'—',benchmark:'—'},
  v_store_rank:{title:'Store Ranking',what:'Stores ranked by net revenue in the selected period.',why:'—',formula:'SUM(net) GROUP BY store code.',impact:'—',action:'—',practice:'—',benchmark:'—'},
  v_funnel:{title:'Conversion Funnel',what:'Deal → Contacted → Meeting (any type) → Store Visit → Sale (company-level).',why:'Shows where the largest drop-off is.',formula:'Each stage counted independently over the trend window; Meeting/Store Visit/Sale stages are NOT deal-linked (see Section 4 note) so treat this as directional volume, not a strict per-lead waterfall.',impact:'A big drop between Contacted and Meeting suggests a hand-off problem to appointment-setting.',action:'—',practice:'—',benchmark:'—'},
+ v_hourly_talktime_trend:{title:'Hourly Talk Time Trend (Yesterday)',what:'Total connected talk time (sum of call duration for calls ≥30s, across all agents) for each hour from 10:00–21:00 IST on the reference day, plotted as a trend line with each point labelled in HH:MM:SS.',why:'Shows which hours of the day generate the most real conversation time company-wide, at a glance next to the per-agent breakdown table below.',formula:'For each hour h: SUM(duration) WHERE duration≥30s AND HOUR(Created)=h AND date=yesterday, summed across all agents.',impact:'A dip in a normally-busy hour (e.g. 11AM-1PM or 5-8PM) signals reduced calling activity or connectivity that hour — cross-check the per-agent table below to see who was inactive.',action:'—',practice:'Respects the Agent filter — same reference day and filter as the Daily Hourly Breakdown table below it.',benchmark:'—'},
+ call_dump:{title:'Overall Call Dump — Talk Time Cross-Check',what:'Every call logged on the reference day, one row per call, so the Hourly Talk Time Trend above can be verified against real records instead of trusting the aggregate.',why:'The trend line only sums calls lasting ≥30 seconds — this dump shows every call including the ones that got excluded, and exactly why (the Connected column).',formula:'One row per Call record WHERE date(Created)=yesterday. Connected (>=30s) = duration >= 30 seconds — the same rule used to build the hourly totals above.',impact:'A row with Connected=No still counts toward "Calls Made" everywhere else on this dashboard, but never toward talk time — use this to explain any gap between call volume and talk-time totals for a given hour/agent.',action:'Search the Call ID in Zoho to confirm a specific record.',practice:'Respects the Agent filter — same reference day and filter as the chart above it.',benchmark:'—'},
  v_heat_agent:{title:'Daily Hourly Breakdown — Deals / Calls / Connected Time by Agent',what:'For the reference "yesterday" only (not the rolling trend window), each agent × each hour from 10:00–21:00 IST shows 3 numbers: Deals created that hour, Calls dialled that hour, and Connected Time (sum of call duration for calls ≥30s, formatted HH:MM:SS).',why:'Built for daily team sharing — screenshot this table each morning to show exactly when each agent worked and how much talk-time they logged, hour by hour.',formula:'Deals = COUNT(Deals) WHERE Owner=agent AND HOUR(Created)=h AND date=yesterday. Calls = COUNT(Calls) same slice. Connected Time = SUM(duration) WHERE duration≥30s, same slice.',impact:'A cell with Calls&gt;0 but Time=00:00:00 means every call that hour was under 30 seconds — likely not a real conversation.',action:'Shift call blocks toward customer-favourable hours (typically 11AM-1PM & 5-8PM) if a whole hour column is consistently weak across agents.',practice:'Respects the Agent filter — narrow to specific agents from the filter drawer before sharing a smaller team\'s numbers.',benchmark:'—'},
  v_heat_store:{title:'Revenue Heatmap — Store × Day of Week',what:'Net revenue by store and weekday over the trend window.',why:'Surfaces weekday patterns per store (e.g. weekend-heavy stores).',formula:'SUM(net) GROUP BY store, DOW(date).',impact:'—',action:'Staff stores according to their real weekday demand curve.',practice:'—',benchmark:'—'},
  v_top_agents:{title:'Top 10 Agents',what:'Top agents by deals handled in the trend window.',why:'—',formula:'—',impact:'—',action:'—',practice:'—',benchmark:'—'},
@@ -329,12 +634,34 @@ var INFO={
  k_storevisits:{title:'Store Visits',what:'Meetings classified as Store Visit by title keyword.',formula:'title contains "visit"/"sv".',why:'—',impact:'—',action:'—',practice:'—',benchmark:'—'},
  k_video:{title:'Video Calls',what:'Meetings classified as Video Call by title keyword.',formula:'title contains "video".',why:'—',impact:'—',action:'—',practice:'—',benchmark:'—'},
  k_tah:{title:'TAH (Try At Home)',what:'Meetings classified as TAH by title keyword.',formula:'title contains "tah"/"trial at home"/"try at home".',why:'—',impact:'—',action:'—',practice:'—',benchmark:'—'},
- k_won:{title:'Order Convert',what:'Company-wide count of yesterday\'s deals whose Stage is now "Closed Won" (i.e. the order converted).',formula:'COUNT(Deals WHERE Created date=yesterday AND Stage="Closed Won").',why:'A real, verifiable conversion signal straight from Zoho — no cross-system join needed (unlike Sales revenue, which would require matching Sales customer_id to a Deal, and that join does not exist today).',impact:'Deals rarely close the same day they\'re created, so this is often low/zero when checked the very next morning — it rises retroactively as those deals progress and close in the following days.',action:'Don\'t read a low number here as "no sales yesterday" — check back on this same date a few days later for the fuller picture.',practice:'—',benchmark:'—'},
- k_winrate:{title:'Win Rate %',what:'Won ÷ Yesterday Deals, company-wide.',formula:'Won / Deals Assigned.',why:'Real conversion rate computed entirely from Zoho Deal Stage — no external join required.',impact:'Same caveat as Won: deals created yesterday rarely close yesterday, so this is naturally low/zero on a next-morning check and should be read alongside older cohorts, not in isolation.',action:'Track this same date\'s cohort again a week or two later to see its true win rate mature.',practice:'—',benchmark:'—'},
+ k_sales:{title:'Sales (Orders)',what:'Distinct Sales orders yesterday, company-wide.',formula:'COUNT(DISTINCT document_no WHERE date=yesterday, sale_type != Return).',why:'—',impact:'Cannot be split by agent/deal — no verified customer join exists between CRM and Sales (see data note).',action:'—',practice:'—',benchmark:'—'},
+ k_revenue:{title:'Revenue',what:'Net sales revenue yesterday, company-wide.',formula:'SUM(net) WHERE date=yesterday, sale_type != Return.',why:'—',impact:'—',action:'—',practice:'Sales data can lag several days — if 0/—, check the freshness pill for the Sales as-of date.',benchmark:'—'},
+ k_conv:{title:'Deal → Sale Conversion % (indicative)',what:'Sales orders ÷ Yesterday deals, company-wide.',formula:'Orders / Deals.',why:'A rough directional ratio only.',impact:'NOT a verified attribution — the Sales table\'s customer_id is an internal party ID, not a phone number, so individual orders cannot be traced back to individual Deals today.',action:'To make this a true conversion rate, add a mobile-number column to the Sales customer identity (it was built once already — see project history — but the change did not survive the last daily refresh).',practice:'Present this number as "indicative" to leadership, never as a hard conversion rate.',benchmark:'—'},
+ k_won:{title:'Order Convert',what:'Company-wide count of unique customers (deduped by Mobile) whose deal is now Stage "Closed Won" AND whose Modified_Time (closing/follow-up date) falls on this day — whether that deal was created on this day or created earlier and only closed on this day (see the "of which: Old Deal" column in Agent Performance for that second group).',formula:'COUNT(DISTINCT Mobile) WHERE Stage="Closed Won" AND Modified date=day.',why:'A real, verifiable conversion signal straight from Zoho — no cross-system join needed (unlike Sales revenue, which would require matching Sales customer_id to a Deal, and that join does not exist today). Gating on the actual close date (not just "current stage reads Closed Won") and deduping by Mobile stops the same customer\'s duplicate deals from inflating the count.',impact:'If both this and "of which: Old Deal" are 0, that can still legitimately mean no closes landed on this day yet — it rises retroactively as more deals close in following days.',action:'Don\'t read a low number here as "no sales yesterday" — check back on this same date a few days later for the fuller picture.',practice:'—',benchmark:'—'},
+ k_winrate:{title:'Win Rate %',what:'Won ÷ Yesterday Deals, company-wide — scoped to deals both created AND closed on this same day, deduped by Mobile (excludes older deals counted in Order Convert, so the ratio stays a clean Won÷Assigned).',formula:'Won (created day=day AND Modified/closing date=day, deduped by Mobile) / Deals Assigned.',why:'Real conversion rate computed entirely from Zoho Deal Stage — no external join required.',impact:'Deals created yesterday rarely close yesterday, so this is naturally low/zero on a next-morning check and should be read alongside older cohorts, not in isolation.',action:'Track this same date\'s cohort again a week or two later to see its true win rate mature.',practice:'—',benchmark:'—'},
  k_notcalled:{title:'Deals Without Calls',what:'Yesterday\'s deals with zero matched calls.',formula:'Deals joined to Calls via What_Id or matching mobile number; zero matches = uncalled.',why:'Direct pipeline leakage indicator.',impact:'—',action:'Call these immediately — every hour uncalled measurably lowers close probability.',practice:'—',benchmark:'Target 0 by end of assignment day.'},
  k_duetoday:{title:'Today\'s Due Calls/Tasks',what:'Open tasks due today, company-wide.',formula:'COUNT(Tasks WHERE due=today AND status!=Completed).',why:'—',impact:'—',action:'—',practice:'—',benchmark:'—'},
  k_visitstoday:{title:'Today\'s Store Visits',what:'Meetings starting today classified as Store Visit.',formula:'—',why:'—',impact:'—',action:'—',practice:'—',benchmark:'—'},
- k_meetstoday:{title:'Today\'s Meetings',what:'All meetings starting today.',formula:'—',why:'—',impact:'—',action:'—',practice:'—',benchmark:'—'}
+ k_meetstoday:{title:'Today\'s Meetings',what:'All meetings starting today.',formula:'—',why:'—',impact:'—',action:'—',practice:'—',benchmark:'—'},
+ secAgentExt:{title:'Section 9 — Agent Wise Performance Table',what:'Per-agent scorecard over a picked date range (Yesterday by default, or Last 7/30 days, or a custom range), covering Assigned Deals (deduped by Mobile+Date, latest deal wins), the two shift windows, WhatsApp Deals, Calls, 30-minute First-Response SLA, Activities, Talk Time, Modified Deals and Old Customer Activities.',why:'Extends Section 1 with the exact metric set the client specified, aggregated over any range rather than a single day.',formula:'See each KPI card\'s own info icon; column-level formulas are documented in the honesty note above the table.',impact:'Modified Deals reads N/A until the backend query extracts Modified_Time — not fabricated as zero.',action:'—',practice:'Uses the same Agent filter as the rest of the dashboard (filter drawer).',benchmark:'30-min SLA target ≥ 80%.'},
+ secTrigExt:{title:'Section 10 — Deal Trigger Event Table',what:'Agent × Deal_Trigger_Event breakdown, bucketed on the REAL values found in this CRM (an e-commerce funnel vocabulary: WhatsApp, Chat, Payment, Checkout, Add to Cart, Abandoned Cart, Product View, Signup, Login, Forms, Schemes, Fresh, Closed).',why:'The client\'s original spec assumed contact-channel categories (Store Visit/Video Call/Phone Call/Reminder/Follow-up) that do not exist in Deal_Trigger_Event — this table shows what the field actually contains instead of forcing it into categories with no matching data.',formula:'COUNT(assigned deals) GROUP BY classifyTrigger(Deal_Trigger_Event), per agent, over the selected date range.',impact:'—',action:'—',practice:'—',benchmark:'—'},
+ secAiExt:{title:'Section 11 — AI Insights (Agent Performance)',what:'Rule-based narrative generated from the Agent Wise Performance Table above — highest-volume agent, best/missed SLA, lowest Connected %, highest talk time, most activities, most old-customer follow-up, pending deals, and a priority call for today.',why:'One-glance answers to the exact questions the client asked for.',formula:'Threshold/ranking rules over buildAgentPerfExt() — same computed model as the table, nothing separately fabricated.',impact:'—',action:'—',practice:'—',benchmark:'—'},
+ k_extassigned:{title:'Assigned Deals',what:'Deals assigned in the selected range, deduped by Mobile+Date (latest deal per mobile per day wins), split into 10AM–9PM and 9PM–10AM(next day) shift windows.',formula:'DISTINCT(Owner, Mobile, Created date), keep max(Created_Time) per group.',why:'—',impact:'—',action:'—',practice:'—',benchmark:'—'},
+ k_extconn:{title:'Connected %',what:'Connected Calls (duration &gt; 30s) ÷ Total Calls, for the selected range.',formula:'Connected/Total × 100.',why:'—',impact:'—',action:'—',practice:'—',benchmark:'—'},
+ k_extsla:{title:'30-min First Response SLA',what:'Of deals assigned in the 10AM–9PM window, the share whose first linked call happened within 30 minutes of Deal creation.',formula:'Calls Within 30 Min ÷ Total 10AM–9PM Assigned Deals × 100.',why:'—',impact:'—',action:'—',practice:'—',benchmark:'Target ≥ 80%.'},
+ k_extact:{title:'Total Activities',what:'Calls + Tasks linked to a Deal (via What_Id) dated within the selected range, across all of that agent\'s deals (including older ones).',formula:'COUNT(Calls)+COUNT(Tasks) WHERE What_Id=deal AND date in range.',why:'Zoho Meetings and Notes are not linked to Deals in this feed, so they are excluded, not invented.',impact:'—',action:'—',practice:'—',benchmark:'—'},
+ k_exttalk:{title:'Total Talk Time',what:'Sum of Connected (&gt;30s) call durations for the agent in the selected range, HH:MM:SS.',formula:'SUM(duration) WHERE duration&gt;30s.',why:'—',impact:'—',action:'—',practice:'—',benchmark:'—'},
+ k_extmod:{title:'Modified Deals',what:'Deals created before the reference day that were modified on it.',formula:'COUNT(Deals WHERE Created &lt; day AND Modified date = day).',why:'—',impact:'Currently gated: Modified_Time exists in the raw BigQuery data but is not yet extracted by the live bundle query — reads N/A rather than 0 until that backend change ships.',action:'Add JSON_VALUE(data,\'$.Modified_Time\') to the deals SELECT in zoho-crm-bundle-api/main.py (and the other two backends) and redeploy.',practice:'—',benchmark:'—'},
+ secConv:{title:'Section 12 — Deal → Sale Conversion (Same-Day, Mobile+Date Match)',what:'Maps unique Deals to the Sales table (Ornaverse ERP, via the sales-reporting-api snapshot) using Mobile Number + Date — a Deal only counts as converted if that same mobile number also has a Sales row on the exact same calendar day.',why:'Client-specified: remove duplicate deals, then join to real Sales using Mobile+Date to get a true (not indicative) Sales/Revenue/Conversion figure — closing the gap Section 1 and the KPI cards above leave gated.',formula:'Dedup: keep 1 deal per Mobile+Created-Date (latest Modified/Created time wins), applied globally to every metric in this dashboard. Join: Deal.mobile+Deal.created_date == Sale.customer_mobile+Sale.date (same day only, confirmed with the client — not any-time). Sales are first grouped by Mobile+Date so one multi-item bill = one sale event, amount summed.',impact:'This is a SAME-DAY conversion metric by design — a deal that converts to a sale 3 days later will correctly show as NOT converted here (see Deal vs Sale Comparison table for the day-by-day breakdown).',action:'Needs customer_mobile exposed on the Sales snapshot (sales-reporting-api/main.py) — if the gate note above is showing, that redeploy has not run yet.',practice:'Uses the same date-range control as the Agent Wise Performance table above (Yesterday/Last 7/Last 30/Custom).',benchmark:'—'},
+ k_convUnique:{title:'Total Unique Deals',what:'Deals in the selected range after the global Mobile+Date dedup (one deal per mobile per day, latest wins), that also carry a mobile number (a mobile is required to attempt the Sales join).',formula:'COUNT(deduped Deals WHERE created date in range AND mobile is present).',why:'—',impact:'—',action:'—',practice:'—',benchmark:'—'},
+ k_convDup:{title:'Duplicate Deals Removed',what:'Deals dropped by the global Mobile+Date dedup rule, across the ENTIRE loaded dataset (not scoped to the selected range — this is a one-time data-cleaning count).',formula:'Raw deal count − deduped deal count, keyed on Mobile+Created Date, latest (Modified_Time else Created_Time) kept.',why:'Transparency: shows how much of the raw feed was same-mobile-same-day duplicates before any metric was computed.',impact:'—',action:'—',practice:'—',benchmark:'—'},
+ k_convSameDay:{title:'Same Day Sales',what:'Count of unique deals (in the selected range) whose mobile number also has a Sales record on that exact same calendar day.',formula:'COUNT(deals WHERE EXISTS sale WHERE sale.customer_mobile=deal.mobile AND sale.date=deal.created_date).',why:'—',impact:'A multi-item bill on the same day is still ONE sale event here (sales pre-grouped by Mobile+Date), so this never over-counts a single visit as multiple conversions.',action:'—',practice:'—',benchmark:'—'},
+ k_convAmount:{title:'Total Sales Amount (Deal-Linked)',what:'Sum of net sales amount, but ONLY for the sale events matched to a unique deal by Mobile+Date — not company-wide revenue (that figure is in Section 5 / the WhatsApp report).',formula:'SUM(net) over matched (deal,sale) pairs for the selected range.',why:'Client explicitly asked for the deal-linked figure, distinct from total company revenue.',impact:'—',action:'—',practice:'—',benchmark:'—'},
+ k_convCust:{title:'Converted Customers',what:'Distinct mobile numbers, among this range\'s unique deals, that had a same-day sale.',formula:'COUNT(DISTINCT mobile WHERE matched).',why:'—',impact:'—',action:'—',practice:'—',benchmark:'—'},
+ k_convPct:{title:'Conversion %',what:'Converted Customers ÷ Total Unique Customers (distinct mobiles with a deal in range) × 100.',formula:'Converted Customers / Total Unique Customers × 100.',why:'Customer-based, not deal-based, so a customer with 2 deal-days in range isn\'t double-counted in the denominator.',impact:'—',action:'—',practice:'—',benchmark:'—'},
+ tblConvAgent:{title:'Agent-Wise Sales (Deal-Linked)',what:'Per-agent breakdown of the Deal→Sale conversion match: how many of that agent\'s unique deals converted same-day, and the linked sales amount.',formula:'GROUP BY Deal.owner over the matched (deal,sale) pairs.',why:'Attributes deal-linked revenue to the agent who owned the originating deal — something Section 4\'s company-wide "Online Agent Sale" proxy cannot do.',impact:'—',action:'—',practice:'—',benchmark:'—'},
+ chConvTrend:{title:'Day-wise Sales Trend (Deal-Linked)',what:'Deal-linked sales amount (net), one point per day in the selected range.',formula:'SUM(matched sale.net) GROUP BY deal.created_date.',why:'—',impact:'—',action:'—',practice:'—',benchmark:'—'},
+ tblConvCompare:{title:'Deal vs Sale Comparison',what:'Day-by-day: how many unique deals were created, how many converted same-day, and the resulting conversion % — the daily breakdown behind the range-level KPI cards above.',formula:'Per day: Unique Deals = COUNT(deduped deals that day). Same-Day Sales = COUNT(matched). Conversion % = Same-Day Sales ÷ Unique Deals.',why:'Lets you spot which specific days drove the range average, and see same-mobile deals that did NOT convert same-day (they may still convert later — this table only measures same-day).',impact:'—',action:'—',practice:'—',benchmark:'—'}
 };
 function openInfo(key){
   var d=INFO[key]; var bg=document.getElementById('infoModalBg'); var m=document.getElementById('infoModal');
@@ -354,6 +681,21 @@ document.addEventListener('click',function(e){
 
 /* ================= FILTER STATE ================= */
 var F={ agents:new Set(), stores:new Set(), sources:new Set(), campaigns:new Set(), triggers:new Set(), categories:new Set(), cities:new Set(), ctypes:new Set(), compare:false, trendWin:30, refDay:null };
+/* Separate date-range state for the Agent Wise Performance Table / Trigger Event Table /
+   extra AI Insights below — those need Yesterday(default)/Last 7/Last 30/Custom, distinct
+   from Section 1-9's single "Reference Today" day picker. Shares F.agents (same Agent filter
+   in the drawer applies to both). */
+var F2={ mode:'yesterday', from:null, to:null };
+function computeRange2(D){
+  var y=addDays(D.crmMaxDate,-1);
+  if(F2.mode==='yesterday') return {from:y,to:y,label:'Yesterday ('+y+')'};
+  if(F2.mode==='last7'){ var f7=addDays(y,-6); return {from:f7,to:y,label:'Last 7 Days ('+f7+' → '+y+')'}; }
+  if(F2.mode==='last30'){ var f30=addDays(y,-29); return {from:f30,to:y,label:'Last 30 Days ('+f30+' → '+y+')'}; }
+  var cf=F2.from||y, ct=F2.to||y; if(cf>ct){ var tmp=cf; cf=ct; ct=tmp; }
+  return {from:cf,to:ct,label:'Custom ('+cf+' → '+ct+')'};
+}
+var LAST_EXT_CTX=null; // backs the AI-assistant answers for the new questions
+var LAST_CONV_CTX=null; // backs Section 12 Deal→Sale Conversion CSV export + assistant answers
 
 function msbox(id,options,set){
   var box=document.getElementById(id); box.innerHTML='';
@@ -371,7 +713,7 @@ var LAST_AGENT_HOURLY=[], LAST_AGENT_HOURLY_HOURS=[], LAST_AGENT_HOURLY_DAY=null
 function table(id,headers,rows,fmt){
   var t=document.getElementById(id);
   var thead='<thead><tr>'+headers.map(function(h){return '<th>'+esc(h)+'</th>';}).join('')+'</tr></thead>';
-  var body='<tbody>'+rows.map(function(r){ return '<tr>'+r.map(function(v,i){ var cls=(fmt&&fmt[i]==='num')?' class="num"':''; var html=v; if(fmt&&fmt[i]==='badgeRed'&&v>0) html='<span class="badge red">'+v+'</span>'; return '<td'+cls+'>'+(html==null?'N/A':html)+'</td>'; }).join('')+'</tr>'; }).join('')+'</tbody>';
+  var body='<tbody>'+rows.map(function(r){ return '<tr>'+r.map(function(v,i){ var cls=(fmt&&fmt[i]==='num')?' class="num"':''; var html=v; if(fmt&&fmt[i]==='badgeRed'&&v>0) html='<b style="color:var(--bad)">'+v+'</b>'; return '<td'+cls+'>'+(html==null?'N/A':html)+'</td>'; }).join('')+'</tr>'; }).join('')+'</tbody>';
   t.innerHTML=thead+body;
   makeSortable(t);
 }
@@ -415,10 +757,10 @@ function renderAll(){
   // ===== Section 1 =====
   var ap=buildAgentPerf(D,day,F);
   document.getElementById('sec1sub').textContent='Reference day: '+day+' · '+ap.length+' active agents';
-  table('tblAgentPerf',['Agent','Deals Assigned','Total Calls','Connected>=30 sec','Contact Rate','Deals Not Called','Avg First Call 10AM-8PM (HH:MM:SS)','Avg First Call 8PM-10AM (HH:MM:SS)','Meetings','Store Visits','Video Calls','TAH','Order Convert','Win Rate %'],
-    ap.map(function(r){ return [esc(r.name), r.dealsAssigned, r.totalCalls, r.connectedCalls, fmtPct(r.contactRate), (r.dealsNotCalled>0?'<span class="badge red">'+r.dealsNotCalled+'</span>':r.dealsNotCalled), r.avgFrtBiz!=null?fmtHMS(r.avgFrtBiz*60):'<span class="gap">N/A</span>', r.avgFrtNonBiz!=null?fmtHMS(r.avgFrtNonBiz*60):'<span class="gap">N/A</span>', r.meetings, r.storeVisits, r.videoCalls, r.tah, r.won, fmtPct(r.winRate) ]; }),
-    [1,1,1,0,0,1,1,1,1,1,1,1,0]);
-  document.getElementById('sec1note').innerHTML='<b>Order Convert</b>/<b>Win Rate %</b> come straight from the Deal\'s own Stage field (Stage = "Closed Won") — a real, per-agent number, unlike Sales/Revenue which would need a Deal↔Sale customer join that does not exist in this data (Sales customer_id is an internal party ID, not a phone number). Company-wide Revenue figures are in Section 5 &amp; the WhatsApp report.';
+  table('tblAgentPerf',['Agent','Deals Assigned','Total Calls','Connected>=30 sec','Contact Rate','Avg First Call 10AM-8PM (HH:MM:SS)','Avg First Call 8PM-10AM (HH:MM:SS)','Meetings','Store Visits','Video Calls','TAH','Order Convert','of which: Old Deal','Win Rate %','Sales (Orders)','Revenue','Deal→Sale Conv.%'],
+    ap.map(function(r){ return [esc(r.name), r.dealsAssigned, r.totalCalls, r.connectedCalls, fmtPct(r.contactRate), r.avgFrtBiz!=null?fmtHMS(r.avgFrtBiz*60):'<span class="gap">N/A</span>', r.avgFrtNonBiz!=null?fmtHMS(r.avgFrtNonBiz*60):'<span class="gap">N/A</span>', r.meetings, r.storeVisits, r.videoCalls, r.tah, r.wonTotal, r.oldWon==null?'<span class="gap">N/A</span>':r.oldWon, fmtPct(r.winRate), '<span class="gap">N/A</span>', '<span class="gap">N/A</span>', '<span class="gap">N/A</span>' ]; }),
+    [1,1,1,0,1,1,1,1,1,1,1,1,0,0,0,0]);
+  document.getElementById('sec1note').innerHTML='<b>Order Convert</b> = unique customers (deduped by Mobile) whose deal is now Stage "Closed Won" <i>and</i> whose Modified_Time (closing/follow-up date) is '+day+' — whether that deal was created on '+day+' or created earlier and only closed on '+day+'. The <b>"of which: Old Deal"</b> column breaks out that second group so an old lead\'s sale is never silently missing from the day\'s total, and a customer with duplicate deals closing the same day is only ever counted once. <b>Win Rate %</b> stays scoped to deals both created AND closed on '+day+' (Won ÷ Deals Assigned) for a clean cohort rate. Both come straight from the Deal\'s own Stage/Modified_Time fields — real, per-agent numbers, unlike Sales/Revenue which would need a Deal↔Sale customer join that does not exist in this data (Sales customer_id is an internal party ID, not a phone number). The <b>Sales/Revenue/Conversion</b> columns are n/a per agent for that reason — see the ⓘ info icons and the data-source note above. Company-wide Sales/Revenue figures are in Section 5 &amp; the WhatsApp report.'+(ap.some(function(r){return r.oldWon==null;})?' <b style="color:var(--warn)">"of which: Old Deal" shows N/A, and Order Convert falls back to the old "created today, currently Closed Won" signal (still Mobile-deduped) — this data source doesn\'t expose Modified_Time yet.</b>':'');
 
   // ===== First Response Time deal-level dump (cross-check for both Avg First Call columns) =====
   var frtRows=buildFrtDetail(D,day,F);
@@ -463,7 +805,8 @@ function renderAll(){
   var evToday=D.events.filter(function(e){return ymd(e.start||e.created)===today && eventPassF(e,F);});
   var visitsToday=evToday.filter(function(e){return classifyEvent(e.title)==='Store Visit';}).length;
   var hasSalesYest = S.items.some(function(it){return it.date===day && salesPassF(it,F);});
-  var wonAll=apAll.reduce(function(a,r){return a+r.won;},0); // real, from Deal.Stage="Closed Won" — no Sales-table join needed
+  var wonAll=apAll.reduce(function(a,r){return a+r.wonTotal;},0); // real, from Deal.Stage="Closed Won" — includes old deals that closed on `day` (Modified_Time), not just same-day-created ones
+  var wonSameDay=apAll.reduce(function(a,r){return a+r.won;},0); // same-day-created cohort only — keeps Win Rate % as a clean Won÷Assigned ratio
   var kg=document.getElementById('kpiGrid');
   kg.innerHTML=[
     kpiCard('Yesterday Deals',fmtInt(totDeals),day,'k_dealsAssigned'),
@@ -473,8 +816,11 @@ function renderAll(){
     kpiCard('Store Visits',fmtInt(meetTypes['Store Visit']),'','k_storevisits'),
     kpiCard('Video Calls',fmtInt(meetTypes['Video Call']),'','k_video'),
     kpiCard('TAH',fmtInt(meetTypes['TAH']),'','k_tah'),
+    kpiCard('Sales (Orders)',hasSalesYest?fmtInt(Object.keys(ordersYest).length):'N/A',hasSalesYest?'matches current filters':'no sales data synced for '+day+' yet (through '+(S.meta.asOf||'?')+')','k_sales'),
+    kpiCard('Revenue',hasSalesYest?fmtMoney(revYest):'N/A','matches current filters','k_revenue'),
+    kpiCard('Deal→Sale Conv.% (indicative)',hasSalesYest?fmtPct(pct(Object.keys(ordersYest).length,totDeals)):'N/A','not a verified attribution','k_conv'),
     kpiCard('Order Convert',fmtInt(wonAll),day,'k_won'),
-    kpiCard('Win Rate %',fmtPct(pct(wonAll,totDeals)),'Won ÷ Deals','k_winrate'),
+    kpiCard('Win Rate %',fmtPct(pct(wonSameDay,totDeals)),'Won ÷ Deals','k_winrate'),
     kpiCard('Deals Without Calls',fmtInt(notCalledAll),'','k_notcalled',notCalledAll>5?'bad':(notCalledAll>0?'warn':'')),
     kpiCard("Today's Due Calls/Tasks",fmtInt(dueTodayAll),today,'k_duetoday'),
     kpiCard("Today's Store Visits",fmtInt(visitsToday),'','k_visitstoday'),
@@ -504,49 +850,46 @@ function renderAll(){
   document.getElementById('insightsList').innerHTML = insights.map(function(i){return '<div class="itm '+i.c+'"><span class="tag">'+i.t+'</span><span>'+i.h+'</span></div>';}).join('');
   document.getElementById('recsList').innerHTML = recs.map(function(r){return '<div class="itm"><span class="tag">➡</span><span>'+r+'</span></div>';}).join('');
 
-  // ===== Section 8: WhatsApp — mirrors current filters (built from the same F-filtered apAll/totals as everything else) =====
+  // ===== Section 8: WhatsApp =====
   var SLA_MIN=30;
   var withFrt=apAll.filter(function(a){return a.avgFrtAll!=null;});
   var slaAchievers=withFrt.filter(function(a){return a.avgFrtAll<=SLA_MIN;});
   var closestAgent=withFrt.slice().sort(function(a,b){return a.avgFrtAll-b.avgFrtAll;})[0];
   var bestContactAgent=apAll.filter(function(a){return a.totalCalls>=3;}).sort(function(a,b){return (b.contactRate||0)-(a.contactRate||0);})[0];
-
+  var bestContactLine = bestContactAgent
+    ? '⭐ '+bestContactAgent.name+' had the highest contact rate ('+fmtPct(bestContactAgent.contactRate,0)+'), but the first-call response time was '+(bestContactAgent.avgFrtAll!=null?fmtDurWords(bestContactAgent.avgFrtAll*60):'not available')+'.'
+    : null;
   var slaLine = slaAchievers.length
     ? '✅ '+(slaAchievers.length===1
         ? slaAchievers[0].name+' achieved the 30-minute SLA (avg first call '+fmtDurWords(slaAchievers[0].avgFrtAll*60)+').'
         : slaAchievers.length+' agent(s) achieved the 30-minute SLA: '+slaAchievers.map(function(a){return a.name;}).join(', ')+'.')
     : '❌ No agent achieved the 30-minute SLA.';
-  var bestContactLine = bestContactAgent
-    ? '⭐ '+bestContactAgent.name+' had the highest contact rate ('+fmtPct(bestContactAgent.contactRate,0)+'), but the first-call response time was '+(bestContactAgent.avgFrtAll!=null?fmtDurWords(bestContactAgent.avgFrtAll*60):'not available')+'.'
-    : null;
   var closestLine = (closestAgent && !slaAchievers.length)
     ? '⚠️ '+closestAgent.name+' was closest to the SLA with an average first call time of '+fmtDurWords(closestAgent.avgFrtAll*60)+'.'
     : null;
   var conversionLine = wonAll>0
-    ? '📈 '+fmtInt(wonAll)+' order(s) converted on '+day+' ('+fmtPct(pct(wonAll,totDeals))+' of deals) — keep up the follow-through.'
+    ? '📈 '+fmtInt(wonAll)+' order(s) converted on '+day+(wonAll>wonSameDay?' (incl. '+fmtInt(wonAll-wonSameDay)+' older lead(s) closing that day)':'')+' — keep up the follow-through.'
     : '📉 No orders were converted '+(day===D.crmMaxDate?'yesterday':'on '+day)+', indicating a need to improve both call quality and conversion.';
 
-  var wa = '*Deals vs Calls vs Sales — '+day+(F.agents.size?' (filtered: '+[...F.agents].map(ownerName).join(', ')+')':'')+'*\n\n'+
-    '*Overall Summary*\n\n'+
-    '🎯 Total Deals Assigned: '+fmtInt(totDeals)+'\n'+
-    '📞 Total Calls Made: '+fmtInt(totCallsArr.length)+'\n'+
-    '☎️ Connected Calls (≥30 sec): '+fmtInt(totConnected)+'\n'+
-    '📊 Overall Contact Rate: '+fmtPct(contactRate,2)+'\n'+
-    '⏳ Deals Not Called: '+fmtInt(notCalledAll)+'\n'+
-    '🛒 Orders Converted: '+fmtInt(wonAll)+'\n\n'+
-    '⚠️ *Key Observations*\n\n'+
+  var wa = '*Deals vs Calls vs Sales Report*\n'+day+(D.crmLive?' (live)':' (CRM snapshot day)')+'\n\n'+
+    'Yesterday Deals: '+fmtInt(totDeals)+'\n'+
+    'Calls: '+fmtInt(totCallsArr.length)+' | Connected (≥30s): '+fmtInt(totConnected)+' ('+fmtPct(contactRate)+')\n'+
+    'Meetings: '+fmtInt(evYest.length)+' | Store Visits: '+fmtInt(meetTypes['Store Visit'])+' | Video Calls: '+fmtInt(meetTypes['Video Call'])+' | TAH: '+fmtInt(meetTypes['TAH'])+'\n'+
+    'Sales: '+(hasSalesYest?fmtInt(Object.keys(ordersYest).length):'N/A')+' orders | Revenue: '+(hasSalesYest?fmtMoney(revYest):'N/A')+'\n'+
+    'Order Convert: '+fmtInt(wonAll)+' | Win Rate: '+fmtPct(pct(wonSameDay,totDeals))+'\n\n'+
+    "Today's Due Calls/Tasks: "+fmtInt(dueTodayAll)+'\n'+
+    "Today's Meetings: "+fmtInt(evToday.length)+' | Store Visits: '+fmtInt(visitsToday)+'\n\n'+
+    'Deals Without Calls: '+fmtInt(notCalledAll)+'\n\n'+
+    'Top Agent: '+(topAgent?topAgent.name+' ('+topAgent.dealsAssigned+' deals)':'N/A')+'\n'+
+    'Top Store (revenue, 7d): '+(revStore&&revStore.revenue>0?revStore.name+' ('+fmtMoney(revStore.revenue)+')':'N/A')+'\n'+
+    'Lowest Performer (contact rate): '+(worstAgent?worstAgent.name+' ('+fmtPct(worstAgent.contactRate)+')':'N/A')+'\n\n'+
+    '*Key Observations*\n'+
     'Target SLA: First call should be made within 30 minutes of deal assignment.\n'+
     slaLine+'\n'+
     (bestContactLine?bestContactLine+'\n':'')+
     (closestLine?closestLine+'\n':'')+
-    '🚨 '+fmtInt(notCalledAll)+' deals did not receive any call and require immediate follow-up.\n'+
     conversionLine+'\n\n'+
-    '🎯 *Today\'s Action Plan*\n\n'+
-    'Ensure 100% first calls are made within 30 minutes of deal assignment.\n'+
-    'Complete follow-up for all '+fmtInt(notCalledAll)+' uncalled deals.\n'+
-    'Increase connected calls (≥30 sec) through timely follow-ups.\n'+
-    'Focus on converting connected conversations into confirmed orders.\n\n'+
-    '_'+(D.crmLive?'Live':'Snapshot')+' · Generated automatically_';
+    '_Generated automatically · Sales data as of '+(S.meta.asOf||'N/A')+'_';
   document.getElementById('waBox').textContent=wa;
 
   // ===== Section 9: Visuals =====
@@ -575,20 +918,36 @@ function renderAll(){
     var callsDayArr=D.calls.filter(function(c){ return c.owner===o && ymd(c.created)===day && callPassF(c,F); });
     if(!dealsDay.length && !callsDayArr.length) return null;
     var hours=AH_HOURS.map(function(h){
-      var hd=dealsDay.filter(function(d){return hourOf(d.created)===h;}).length;
+      var hdArr=dealsDay.filter(function(d){return hourOf(d.created)===h;});
       var hc=callsDayArr.filter(function(c){return hourOf(c.created)===h;});
       var connSecs=hc.filter(function(c){return c.dur>=30;}).reduce(function(a,c){return a+c.dur;},0);
-      return {deals:hd,calls:hc.length,connSecs:connSecs};
+      var notDialed=hdArr.filter(function(d){return !joinDeal(D,d).contacted;}).length;
+      return {deals:hdArr.length,calls:hc.length,connSecs:connSecs,notDialed:notDialed};
     });
     return {owner:o,name:ownerName(o),hours:hours,totalCalls:callsDayArr.length,totalDeals:dealsDay.length};
   }).filter(Boolean).sort(function(a,b){return b.totalCalls-a.totalCalls;});
   LAST_AGENT_HOURLY=agHourly; LAST_AGENT_HOURLY_HOURS=AH_HOURS; LAST_AGENT_HOURLY_DAY=day;
+  var hourlyTalk=AH_HOURS.map(function(h,idx){ var sum=0; agHourly.forEach(function(r){sum+=r.hours[idx].connSecs;}); return {x:h+':00',y:sum}; });
+  var elHTT=document.getElementById('chHourlyTalkTrend');
+  if(elHTT) elHTT.innerHTML = hourlyTalk.some(function(p){return p.y>0;})
+    ? lineChart(hourlyTalk,{color:'var(--c3)',legend:'Total connected talk time (≥30s calls) per hour, '+day,dataLabels:true,labelFmt:fmtHMS})
+    : '<div class="note">No connected calls on '+day+' for the current filters.</div>';
+
+  // ===== Overall Call Dump (cross-check for the chart above) =====
+  var callDumpRows=buildCallDump(D,day,F);
+  var connCount=callDumpRows.filter(function(r){return r.connected;}).length;
+  document.getElementById('callDumpHint').innerHTML = 'Every call logged on '+day+', one row per call, so you can verify the Hourly Talk Time Trend above against real records. '+callDumpRows.length+' call(s) total, '+connCount+' connected (≥30s).';
+  table('tblCallDump',['Call ID','Owner','Type','Call Time','Hour (IST)','Duration (HH:MM:SS)','Connected (≥30s)'],
+    callDumpRows.map(function(r){
+      return [esc(r.callId), esc(r.owner), esc(r.type), r.created, r.hour+':00', fmtHMS(r.durSecs), r.connected?'<span class="badge grn">Yes</span>':'<span class="gap">No</span>'];
+    }),
+    [0,0,0,0,0,0,0]);
   var maxCallsCell=0; agHourly.forEach(function(r){r.hours.forEach(function(h){if(h.calls>maxCallsCell)maxCallsCell=h.calls;});});
   document.getElementById('agHourlySub').textContent='Reference day: '+day+' · 10:00–21:00 IST · '+agHourly.length+' agent(s)';
   document.getElementById('chHeatAgent').innerHTML = agHourly.length
     ? '<div class="tblwrap" style="max-height:520px"><table class="dt heat"><thead><tr><th>Agent</th>'+AH_HOURS.map(function(h){return '<th class="num">'+h+':00</th>';}).join('')+'</tr></thead><tbody>'+
       agHourly.map(function(r){ return '<tr><td>'+esc(r.name)+'</td>'+r.hours.map(function(hc){
-        return '<td class="hc" style="background:'+heatColor(hc.calls,maxCallsCell)+';text-align:left;line-height:1.45;white-space:nowrap;font-size:10.5px;font-family:\'JetBrains Mono\',monospace">Deals: '+hc.deals+'<br>Calls: '+hc.calls+'<br>Time: '+fmtHMS(hc.connSecs)+'</td>'; }).join('')+'</tr>'; }).join('')+
+        return '<td class="hc" style="background:'+heatColor(hc.calls,maxCallsCell)+';text-align:left;line-height:1.45;white-space:nowrap;font-size:10.5px;font-family:\'JetBrains Mono\',monospace">Deals: '+hc.deals+'<br>Calls: '+hc.calls+'<br>Not Dialed: '+hc.notDialed+'<br>Time: '+fmtHMS(hc.connSecs)+'</td>'; }).join('')+'</tr>'; }).join('')+
       '</tbody></table></div>'
     : '<div class="note">No agent activity on '+day+' for the current filters.</div>';
 
@@ -596,6 +955,78 @@ function renderAll(){
   var storeNames=sp.map(function(s){return s.name;});
   var mat2=storeNames.map(function(nm,i){ var code=sp[i].code; return dows.map(function(_,dw){ return Math.round(S.items.filter(function(it){return it.store===code && it.date>=trFrom && it.date<=trTo && it.sale_type!=='Return' && salesPassF(it,F) && dowOf(it.date+' 00:00:00')===dw;}).reduce(function(a,it){return a+(it.net||it.gross*0.97||0);},0)); }); });
   document.getElementById('chHeatStore').innerHTML = heatTable(storeNames,dows,mat2);
+
+  // ===== Agent Wise Performance Table + Deal Trigger Event Table + extra AI Insights =====
+  renderAgentPerfExt();
+}
+
+function renderAgentPerfExt(){
+  var D=DATA;
+  var range2=computeRange2(D);
+  var rows2=buildAgentPerfExt(D,range2.from,range2.to,F);
+  var trig2=buildTriggerTableExt(rows2);
+  var ins2=buildInsightsExt(rows2,range2.label);
+  LAST_EXT_CTX={rows:rows2,rangeLabel:range2.label};
+
+  document.getElementById('rangeSub').textContent=range2.label;
+  var totAssigned=rows2.reduce(function(a,r){return a+r.assigned;},0);
+  var totCalls=rows2.reduce(function(a,r){return a+r.totalCalls;},0);
+  var totConn=rows2.reduce(function(a,r){return a+r.connected;},0);
+  var totWithin30=rows2.reduce(function(a,r){return a+r.within30;},0);
+  var totFrtBase=rows2.reduce(function(a,r){return a+r.frtBase;},0);
+  var totAct=rows2.reduce(function(a,r){return a+r.totalActivities;},0);
+  var totTalk=rows2.reduce(function(a,r){return a+r.talkSecs;},0);
+  var anyGatedMod=rows2.some(function(r){return r.modifiedDeals==null;});
+  var totMod=anyGatedMod?null:rows2.reduce(function(a,r){return a+r.modifiedDeals;},0);
+  document.getElementById('kpiGridExt').innerHTML=[
+    kpiCard('Assigned Deals',fmtInt(totAssigned),'10AM–9PM: '+fmtInt(rows2.reduce(function(a,r){return a+r.winA;},0))+' · 9PM–10AM: '+fmtInt(rows2.reduce(function(a,r){return a+r.winB;},0)),'k_extassigned'),
+    kpiCard('Connected %',fmtPct(pct(totConn,totCalls),0),fmtInt(totCalls)+' calls','k_extconn'),
+    kpiCard('30-min SLA %',fmtPct(pct(totWithin30,totFrtBase),0),fmtInt(totWithin30)+'/'+fmtInt(totFrtBase)+' within 30 min','k_extsla',pct(totWithin30,totFrtBase)!=null&&pct(totWithin30,totFrtBase)<80?'bad':''),
+    kpiCard('Total Activities',fmtInt(totAct),'Avg/Deal: '+(totAssigned?(totAct/totAssigned).toFixed(2):'N/A'),'k_extact'),
+    kpiCard('Total Talk Time',fmtHMS(totTalk),'','k_exttalk'),
+    kpiCard('Modified Deals',totMod==null?'N/A':fmtInt(totMod),totMod==null?'gated — see honesty note':'','k_extmod')
+  ].join('');
+
+  document.getElementById('agentPerfExtSub').textContent=range2.label+' · '+rows2.length+' active agent(s)';
+  table('tblAgentPerfExt',['Agent Name','Assigned Deals','10AM–9PM Assigned','9PM–10AM Assigned','WhatsApp Deals','Total Calls','Connected Calls','Connected %','Calls Within 30 Min','Calls After 30 Min','Total Activities','Avg Activities/Deal','Total Talk Time','Modified Deals','Old Customer Activities'],
+    rows2.map(function(r){ return [esc(r.name), r.assigned, r.winA, r.winB, r.waDeals, r.totalCalls, r.connected, fmtPct(r.connectedPct), r.within30, r.after30, r.totalActivities, r.avgActivitiesPerDeal!=null?r.avgActivitiesPerDeal.toFixed(2):'N/A', fmtHMS(r.talkSecs), r.modifiedDeals==null?'<span class="gap">N/A</span>':r.modifiedDeals, r.oldCustomerActivities ]; }),
+    [1,1,1,1,1,1,0,1,1,1,0,0,0,1]);
+
+  document.getElementById('trigExtSub').textContent=range2.label+' · bucketed on the real Deal_Trigger_Event vocabulary — see honesty note';
+  table('tblTrigExt',['Agent Name','Total Trigger Events'].concat(TRIGGER_BUCKETS),
+    trig2.map(function(r){ return [esc(r.name), r.total].concat(TRIGGER_BUCKETS.map(function(b){ return r.buckets[b]; })); }),
+    [1].concat(TRIGGER_BUCKETS.map(function(){return 1;})));
+
+  document.getElementById('insightsListExt').innerHTML = ins2.map(function(i){return '<div class="itm '+i.c+'"><span class="tag">'+i.t+'</span><span>'+i.h+'</span></div>';}).join('');
+
+  // ===== Section 12: Deal → Sale Conversion (Same-Day, Mobile+Date) =====
+  var conv=buildDealSaleConversion(DATA,S,range2.from,range2.to,F);
+  LAST_CONV_CTX=conv;
+  document.getElementById('convSub').textContent=range2.label+(conv.hasMobileData?'':' · Sales snapshot has no customer_mobile field yet');
+  var gateConv=document.getElementById('convGate');
+  if(!conv.hasMobileData){
+    gateConv.style.display='';
+    gateConv.innerHTML='<b>Deal→Sale mobile match is not active yet:</b> the live Sales snapshot this dashboard reads does not currently expose a customer mobile number field. Sales_overview_table itself has one (Cus_mobile, 99.8% populated) — it just needs to be added to the sales-reporting-api snapshot and redeployed. Cards below read 0/N.A. honestly rather than a fabricated match.';
+  } else {
+    gateConv.style.display='none';
+  }
+  document.getElementById('kpiGridConv').innerHTML=[
+    kpiCard('Total Unique Deals',fmtInt(conv.totalUniqueDeals),range2.label,'k_convUnique'),
+    kpiCard('Duplicate Deals Removed',fmtInt(conv.dupDealsRemoved),'entire loaded dataset, not just this range','k_convDup'),
+    kpiCard('Same Day Sales',conv.hasMobileData?fmtInt(conv.sameDaySales):'N/A','deal + sale, same mobile + same day','k_convSameDay'),
+    kpiCard('Total Sales Amount (Deal-Linked)',conv.hasMobileData?fmtMoney(conv.totalSalesAmount):'N/A','net, matched sales only','k_convAmount'),
+    kpiCard('Converted Customers',conv.hasMobileData?fmtInt(conv.convertedCustomers):'N/A',conv.hasMobileData?('of '+fmtInt(conv.totalCustomers)+' unique customers'):'','k_convCust'),
+    kpiCard('Conversion %',conv.hasMobileData?fmtPct(conv.conversionPct):'N/A','converted customers ÷ unique customers','k_convPct')
+  ].join('');
+  table('tblConvAgent',['Agent','Unique Deals','Same-Day Sales','Sales Amount (Deal-Linked)','Conversion %'],
+    conv.agentRows.map(function(r){ return [esc(r.name), r.deals, r.sales, fmtMoney(r.amount), fmtPct(r.convPct)]; }),
+    [1,1,0,0]);
+  document.getElementById('chConvTrend').innerHTML = conv.hasMobileData
+    ? lineChart(conv.dayRows.map(function(r){return {x:r.day,y:r.amount};}),{color:'var(--c2)',legend:'Deal-linked sales amount/day (₹, net)'})
+    : '<div class="note">Activates once the Sales snapshot carries customer_mobile.</div>';
+  table('tblConvCompare',['Day','Unique Deals','Same-Day Sales','Conversion %'],
+    conv.dayRows.map(function(r){ return [r.day, r.deals, conv.hasMobileData?r.sales:'<span class="gap">N/A</span>', conv.hasMobileData?fmtPct(r.convPct):'<span class="gap">N/A</span>']; }),
+    [0,1,1,0]);
 }
 
 /* ================= FILTERS UI ================= */
@@ -626,11 +1057,67 @@ function wireFilters(){
   document.getElementById('fRefDayReset').onclick=function(){ F.refDay=null; dateIn.value=D.crmMaxDate; renderAll(); };
 }
 
+/* ================= AGENT PERFORMANCE DATE-RANGE FILTER ================= */
+function wireFilters2(){
+  var D=DATA;
+  var seg=document.getElementById('segRangeExt');
+  seg.querySelectorAll('button').forEach(function(b){
+    b.onclick=function(){
+      seg.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on'); F2.mode=b.getAttribute('data-m');
+      var isCustom=F2.mode==='custom';
+      document.getElementById('lblFromExt').style.display=isCustom?'flex':'none';
+      document.getElementById('lblToExt').style.display=isCustom?'flex':'none';
+      if(isCustom && !F2.from){ var y=addDays(D.crmMaxDate,-1); F2.from=y; F2.to=y; document.getElementById('fFromExt').value=y; document.getElementById('fToExt').value=y; }
+      renderAgentPerfExt();
+    };
+  });
+  var y=addDays(D.crmMaxDate,-1);
+  document.getElementById('fFromExt').max=y; document.getElementById('fToExt').max=y;
+  document.getElementById('fFromExt').onchange=function(e){ F2.from=e.target.value||null; renderAgentPerfExt(); };
+  document.getElementById('fToExt').onchange=function(e){ F2.to=e.target.value||null; renderAgentPerfExt(); };
+}
+
 /* ================= AI ASSISTANT ================= */
-var CHIPS=['Which agent missed most follow-ups yesterday?','Which store has the highest conversion?','Why did revenue drop yesterday?','Which meetings converted into sales?','How many deals had no call?',"Show today's pending store visits",'Compare yesterday vs last week','Suggest actions to improve conversion'];
+var CHIPS=['Which agent missed most follow-ups yesterday?','Which store has the highest conversion?','Why did revenue drop yesterday?','Which meetings converted into sales?','How many deals had no call?',"Show today's pending store visits",'Compare yesterday vs last week','Suggest actions to improve conversion',
+  'Which agent performed the best?','Show WhatsApp deals','Show deals where the first call was made after 30 minutes','Which agent worked on old customers?','Which agent modified the highest number of deals?',"What should be today's priority?"];
+function extRows(){ return LAST_EXT_CTX?LAST_EXT_CTX.rows:[]; }
+function extLabel(){ return LAST_EXT_CTX?LAST_EXT_CTX.rangeLabel:'the selected range'; }
+function assistantAnswerExt(ql){
+  var rows=extRows(), label=extLabel();
+  if(!rows.length) return null;
+  if(/best performer|performed the best|highest number of deal/.test(ql) && !/modif/.test(ql)){
+    var best=rows.slice().sort(function(a,b){return b.assigned-a.assigned;})[0];
+    return best.name+' performed best on volume with '+fmtInt(best.assigned)+' assigned deals'+(best.slaPct!=null?' and a '+fmtPct(best.slaPct,0)+' 30-min SLA':'')+' in '+label+' (Agent Wise Performance Table).';
+  }
+  if(/whatsapp deal/.test(ql)){
+    var wa=rows.reduce(function(a,r){return a+r.waDeals;},0);
+    var top3=rows.filter(function(r){return r.waDeals>0;}).sort(function(a,b){return b.waDeals-a.waDeals;}).slice(0,5);
+    return fmtInt(wa)+' WhatsApp-triggered deals in '+label+'.'+(top3.length?' Top: '+top3.map(function(r){return r.name+' ('+r.waDeals+')';}).join(', ')+'.':'');
+  }
+  if(/after 30 minutes|missed sla|late first/.test(ql)){
+    var late=rows.filter(function(r){return r.after30>0;}).sort(function(a,b){return b.after30-a.after30;});
+    return late.length? late.map(function(r){return r.name+' ('+r.after30+')';}).join(', ')+' had first calls made after 30 minutes in '+label+'.' : 'No deals had a first call after 30 minutes in '+label+'.';
+  }
+  if(/old customer/.test(ql)){
+    var oc=rows.filter(function(r){return r.oldCustomerActivities>0;}).sort(function(a,b){return b.oldCustomerActivities-a.oldCustomerActivities;});
+    return oc.length? oc[0].name+' worked on old customers the most ('+oc[0].oldCustomerActivities+' activities on pre-existing deals) in '+label+'.' : 'No activity logged on older deals in '+label+'.';
+  }
+  if(/modif/.test(ql)){
+    if(rows.every(function(r){return r.modifiedDeals==null;})) return 'Modified Deals is currently gated — the live feed does not yet expose each Deal\'s Modified_Time field, so this can\'t be answered accurately (see honesty note in the Agent Performance section).';
+    var mod=rows.slice().sort(function(a,b){return (b.modifiedDeals||0)-(a.modifiedDeals||0);})[0];
+    return mod.name+' modified the highest number of older deals ('+fmtInt(mod.modifiedDeals)+') in '+label+'.';
+  }
+  if(/today.?s priority|priorit/.test(ql)){
+    var p=rows.slice().sort(function(a,b){ var pa=Math.max(0,a.winA-a.within30-a.after30), pb=Math.max(0,b.winA-b.within30-b.after30); return pb-pa; })[0];
+    return p? 'Prioritize '+p.name+' today — carries the largest pool of not-yet-called deals in the 10AM–9PM window ('+label+').' : 'No clear priority signal for '+label+'.';
+  }
+  return null;
+}
 function assistantAnswer(q){
   var D=DATA; var today=F.refDay||D.crmMaxDate, day=addDays(today,-1); var ql=q.toLowerCase();
   var ap=buildAgentPerf(D,day,{agents:new Set()});
+  var extAns=assistantAnswerExt(ql); if(extAns) return extAns;
   if(/missed most follow-?ups|deals not called|no call/.test(ql)){
     var w=ap.slice().sort(function(a,b){return b.dealsNotCalled-a.dealsNotCalled;})[0];
     var total=ap.reduce(function(a,r){return a+r.dealsNotCalled;},0);
@@ -694,14 +1181,14 @@ function wireHeader(){
   document.getElementById('waSendBtn').onclick=function(){ var t=encodeURIComponent(document.getElementById('waBox').textContent); window.open('https://wa.me/?text='+t,'_blank'); };
   document.addEventListener('click',function(e){ var b=e.target.closest('[data-csv]'); if(b){ var csv=tableToCsv(b.getAttribute('data-csv')); downloadBlob(csv,b.getAttribute('data-name')+'.csv','text/csv'); } });
   var ahBtn=document.getElementById('agHourlyCsvBtn'); if(ahBtn) ahBtn.onclick=function(){
-    var rows=[['Agent','Hour','Deals','Calls','Connected Time (HH:MM:SS)']];
-    LAST_AGENT_HOURLY.forEach(function(r){ r.hours.forEach(function(hc,i){ rows.push([r.name, LAST_AGENT_HOURLY_HOURS[i]+':00', hc.deals, hc.calls, fmtHMS(hc.connSecs)]); }); });
+    var rows=[['Agent','Hour','Deals','Calls','Not Dialed','Connected Time (HH:MM:SS)']];
+    LAST_AGENT_HOURLY.forEach(function(r){ r.hours.forEach(function(hc,i){ rows.push([r.name, LAST_AGENT_HOURLY_HOURS[i]+':00', hc.deals, hc.calls, hc.notDialed, fmtHMS(hc.connSecs)]); }); });
     downloadBlob(csvOf(rows),'agent_hourly_'+(LAST_AGENT_HOURLY_DAY||'')+'.csv','text/csv');
   };
   document.getElementById('refreshBtn').onclick=function(){ refreshAll(true); };
   document.getElementById('autoRefreshSel').onchange=function(e){ CONFIG.AUTO_MS=parseInt(e.target.value,10)||0; scheduleAutoRefresh(); };
   var nav=document.getElementById('secnavIn');
-  var secs=[['sec1','① Yesterday Agents'],['sec3','② Stores'],['sec4','③ Sale Dump'],['sec5','④ KPIs'],['sec6','⑤ Insights'],['sec7','⑥ Recs'],['sec8','⑦ WhatsApp'],['sec9','⑧ Visuals']];
+  var secs=[['sec1','① Yesterday Agents'],['sec3','② Stores'],['sec4','③ Sale Dump'],['sec5','④ KPIs'],['sec6','⑤ Insights'],['sec7','⑥ Recs'],['sec8','⑦ WhatsApp'],['sec9','⑧ Visuals'],['secAgentExt','⑨ Agent Performance'],['secTrigExt','⑩ Trigger Events'],['secAiExt','⑪ AI Insights (Agents)'],['secConv','⑫ Deal→Sale Conversion']];
   nav.innerHTML=secs.map(function(s){return '<a href="#'+s[0]+'">'+s[1]+'</a>';}).join('');
 }
 function toast(msg){ var t=el('div',null,msg); t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line);padding:9px 16px;border-radius:20px;font-size:12.5px;z-index:300;box-shadow:var(--shadow)'; document.body.appendChild(t); setTimeout(function(){t.remove();},1800); }
@@ -732,7 +1219,7 @@ function boot(){
     if(crmBundle.live) _lastCrmSyncAt=Date.now();
     loadSales(function(sBundle){
       S=sBundle;
-      wireHeader(); wireFilters(); wireAssistant(); renderAll();
+      wireHeader(); wireFilters(); wireFilters2(); wireAssistant(); renderAll();
       document.getElementById('boot').classList.add('hide');
       scheduleAutoRefresh();
     });

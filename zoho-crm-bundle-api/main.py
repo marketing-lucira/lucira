@@ -3,7 +3,7 @@ Zoho CRM (via BigQuery CDC) -> public LIVE bundle API for standalone dashboards
 ================================================================================
 HTTP Cloud Function that reads the SAME `zoho_crm.cdc_*` BigQuery tables the
 zoho-login-dashboard Flask app's `/api/crm-bundle` route uses (synced from Zoho
-every 15 min by the existing `zoho-sync` Cloud Scheduler job) and returns the
+every 30 min by the existing `zoho-sync` Cloud Scheduler job) and returns the
 identical positional bundle shape `dashboard/data.js` / `window.DASH` expects.
 
 Unlike `/api/crm-bundle` (which lives inside the Basic-Auth-gated Flask app and
@@ -74,20 +74,31 @@ def _build_bundle(cutoff):
     rng = f"DATE(created_time,'{TZ}') >= '{cutoff}'"
     rows = lambda sql: list(_bq.query(sql).result())
 
+    # city/state: cdc_deals' own Address_City/Address_State are 0% populated (checked live
+    # 2026-08-11), so both come from a LEFT JOIN to a separate live Deals table
+    # (Lucira_Prod.lucira_zoho_Deals — same table leads_bundle() below reads directly),
+    # matched by Deal ID (~66% of cdc_deals ids find a match there). Unmatched or blank
+    # rows come through as "" and land in the dashboard's "(Not Captured)" bucket — never
+    # guessed at.
     deals = [[r["id"], r["name"], r["owner"], r["created"], r["stage"], r["prob"],
               r["lead_source"], r["reason_loss"], r["trigger"], r["utm_source"],
-              r["utm_medium"], r["num_act"] or 0, r["mobile"] or ""] for r in rows(f"""
-        SELECT id, JSON_VALUE(data,'$.Deal_Name') name, owner_id owner, {ts} created,
-               JSON_VALUE(data,'$.Stage') stage,
-               SAFE_CAST(JSON_VALUE(data,'$.Probability') AS FLOAT64) prob,
-               JSON_VALUE(data,'$.Lead_Source') lead_source,
-               JSON_VALUE(data,'$.Reason_For_Loss__s') reason_loss,
-               JSON_VALUE(data,'$.Deal_Trigger_Event') trigger,
-               JSON_VALUE(data,'$.UTM_Source') utm_source,
-               JSON_VALUE(data,'$.UTM_Medium') utm_medium,
-               SAFE_CAST(JSON_VALUE(data,'$.Number_of_activity') AS INT64) num_act,
-               RIGHT(REGEXP_REPLACE(COALESCE(JSON_VALUE(data,'$.Mobile'),''),r'[^0-9]',''),10) mobile
-        FROM {P}cdc_deals` WHERE {rng}""")]
+              r["utm_medium"], r["num_act"] or 0, r["mobile"] or "", r["city"] or "",
+              r["state"] or "", r["modified"] or ""] for r in rows(f"""
+        SELECT d.id, JSON_VALUE(d.data,'$.Deal_Name') name, d.owner_id owner, {ts.replace('created_time','d.created_time')} created,
+               JSON_VALUE(d.data,'$.Stage') stage,
+               SAFE_CAST(JSON_VALUE(d.data,'$.Probability') AS FLOAT64) prob,
+               JSON_VALUE(d.data,'$.Lead_Source') lead_source,
+               JSON_VALUE(d.data,'$.Reason_For_Loss__s') reason_loss,
+               JSON_VALUE(d.data,'$.Deal_Trigger_Event') trigger,
+               JSON_VALUE(d.data,'$.UTM_Source') utm_source,
+               JSON_VALUE(d.data,'$.UTM_Medium') utm_medium,
+               SAFE_CAST(JSON_VALUE(d.data,'$.Number_of_activity') AS INT64) num_act,
+               RIGHT(REGEXP_REPLACE(COALESCE(JSON_VALUE(d.data,'$.Mobile'),''),r'[^0-9]',''),10) mobile,
+               INITCAP(TRIM(c.Address_City)) city, c.Address_State state,
+               {ts.replace('created_time','d.modified_time')} modified
+        FROM {P}cdc_deals` d
+        LEFT JOIN `{PROJECT}.Lucira_Prod.lucira_zoho_Deals` c ON c.id = d.id
+        WHERE {rng.replace('created_time','d.created_time')}""")]
 
     calls = [[r["id"], r["owner"], r["created"], r["type"], r["dur"] or 0,
               r["cstart"], r["what_id"] or "", r["phone"] or "", r["result"] or ""] for r in rows(f"""
@@ -157,4 +168,123 @@ def crm_bundle(request):
     if cutoff == CUTOFF_DEFAULT:
         _cache["body"] = body
         _cache["at"] = now
+    return (jsonify(body), 200, CORS)
+
+
+# =============================================================================
+# [DELETED 2026-08-22, per explicit user request: "Ok lets delet everything in
+# this filed" — the "Customer Activity + Call Intelligence" rebuild of
+# dashboard/modified-deals-intelligence.html, its backend (this section:
+# activity_call_intel_bundle/_build_activity_call_intel_bundle) and its Cloud
+# Function (zoho-activity-call-intel-public) were all removed. Trigger: an
+# unresolved data-accuracy gap — the real Zoho Analytics "Customer Activities
+# - Today" export showed 59 rows for 2026-08-21, but this endpoint's
+# DATE(Last_Activity_Time)=today cohort returned 630-780+ for the same day even
+# after excluding same-day-created deals; several follow-up hypotheses (Task/
+# Call/Meeting linkage, owner, stage, Record_Type) were tested live against
+# BigQuery and each ruled out — the exact extra filter Zoho Analytics applies
+# was never identified. See session memory (lucira-modified-deals-intelligence)
+# for the full investigation before ever rebuilding this again — re-derive the
+# cohort definition from Zoho Analytics' own report criteria (screenshot the
+# report builder), not by re-guessing against the BigQuery replica alone.]
+# =============================================================================
+
+
+# =============================================================================
+# City-Wise Leads bundle — dashboard/deals-calls-sales.html's "City-Wise Leads
+# Dump" section. Deployed from this SAME source directory as a separate Cloud
+# Function (--entry-point=leads_bundle).
+#
+# Reads `Lucira_Prod.lucira_zoho_Deals` — a DIFFERENT Deals table from the
+# `zoho_crm.cdc_deals` feed every other endpoint in this file uses. Discovered
+# 2026-08-11 after confirming cdc_deals' own Address_City/Address_State are
+# 0% populated: this table has REAL, LIVE address data — Address_City/
+# Address_State/Address_Zip as first-class typed columns (not buried in a
+# JSON blob), 2,031/2,000 of 14,647 deals populated (~13.9%), and MAX(Creat_time)
+# is today (2026-08-11) with ~150-250 new deals/day — genuinely current, unlike
+# the earlier `zoho_crm.daily_leads` (a separate, stale Leads-module import
+# frozen at 2026-07-28) this endpoint used before. `Deal_Owner` here is already
+# a plain name (e.g. "Shreekant Balwat"), no id→name lookup needed. Only
+# deals with a non-blank Address_City are included in citySummary/raw; the
+# true totalDeals/dealsWithCity are still in meta so nothing is silently
+# hidden. City summary buckets by Stage: Closed Won / Closed Lost / Open
+# (Prospect + Add to Cart + Checkout + Payment — every other real Stage value
+# found live) — the raw dump keeps the exact original Stage string per row.
+#
+# Deploy:
+#   gcloud functions deploy zoho-leads-city-public \
+#       --gen2 --runtime=python312 --region=asia-south1 \
+#       --source=. --entry-point=leads_bundle --trigger-http --allow-unauthenticated \
+#       --memory=512Mi --timeout=120 --project=lucirajewelry-prod \
+#       --set-env-vars=BQ_PROJECT=lucirajewelry-prod,BQ_DATASET=zoho_crm
+# =============================================================================
+LEADS_CACHE_TTL = 300  # live/growing table now — shorter TTL than the old static-import source
+_leads_cache = {"at": 0, "body": None}
+DEALS_TABLE = "`lucirajewelry-prod.Lucira_Prod.lucira_zoho_Deals`"
+
+
+def _build_leads_bundle():
+    D = DEALS_TABLE
+    stage_bucket = """CASE
+      WHEN Stage = 'Closed Won' THEN 'Won'
+      WHEN Stage = 'Closed Lost' THEN 'Lost'
+      ELSE 'Open' END"""
+
+    meta_row = list(_bq.query(f"""
+        SELECT COUNT(*) total,
+               COUNTIF(Address_City IS NOT NULL AND TRIM(Address_City) != '') has_city,
+               CAST(MAX(Creat_time) AS STRING) max_created,
+               CAST(MIN(Creat_time) AS STRING) min_created
+        FROM {D}""").result())[0]
+
+    city_summary = [[r["city"], r["total"], r["won"], r["lost"], r["open"]]
+                     for r in _bq.query(f"""
+        SELECT INITCAP(TRIM(Address_City)) city, COUNT(*) total,
+               COUNTIF({stage_bucket} = 'Won') won,
+               COUNTIF({stage_bucket} = 'Lost') lost,
+               COUNTIF({stage_bucket} = 'Open') open
+        FROM {D}
+        WHERE Address_City IS NOT NULL AND TRIM(Address_City) != ''
+        GROUP BY city ORDER BY total DESC""").result()]
+
+    raw = [[r["id"], r["name"], r["mobile"] or "", r["city"], r["state"] or "",
+            r["source"] or "", r["stage"] or "", r["created"], r["owner"] or ""]
+           for r in _bq.query(f"""
+        SELECT id, Deal_Name name,
+               RIGHT(REGEXP_REPLACE(COALESCE(Mobile, ''), r'[^0-9]', ''), 10) mobile,
+               INITCAP(TRIM(Address_City)) city, Address_State state, Lead_Source source, Stage stage,
+               CAST(Creat_time AS STRING) created, Deal_Owner owner
+        FROM {D}
+        WHERE Address_City IS NOT NULL AND TRIM(Address_City) != ''
+        ORDER BY Creat_time DESC""").result()]
+
+    gen = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime("%Y-%m-%dT%H:%M:%S+05:30")
+    return {"citySummary": city_summary, "raw": raw,
+            "meta": {"generated": gen, "source": "bigquery.Lucira_Prod.lucira_zoho_Deals",
+                     "module": "Zoho Deals — separate live table with real Address_City/State (cdc_deals' own copy of those fields is 0% populated)",
+                     "stale": False, "maxCreated": meta_row["max_created"], "minCreated": meta_row["min_created"],
+                     "totalLeads": meta_row["total"], "leadsWithCity": meta_row["has_city"],
+                     "note": ("This reads a separate BigQuery table (Lucira_Prod.lucira_zoho_Deals) from the "
+                               "cdc_deals feed the rest of this dashboard uses — genuinely live, current through "
+                               "maxCreated. Only deals with a non-blank Address_City are included in citySummary/"
+                               "raw; totalLeads/leadsWithCity above are the true totals so nothing is silently "
+                               "hidden.")}}
+
+
+@functions_framework.http
+def leads_bundle(request):
+    if request.method == "OPTIONS":
+        return ("", 204, CORS)
+
+    now = time.time()
+    if _leads_cache["body"] and (now - _leads_cache["at"]) < LEADS_CACHE_TTL:
+        return (jsonify(_leads_cache["body"]), 200, CORS)
+
+    try:
+        body = _build_leads_bundle()
+    except Exception as e:
+        return (jsonify(error=str(e)), 500, CORS)
+
+    _leads_cache["body"] = body
+    _leads_cache["at"] = now
     return (jsonify(body), 200, CORS)

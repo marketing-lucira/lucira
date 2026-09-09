@@ -118,8 +118,8 @@ def crm_bundle(request):
         deals_raw = paginate(tok, "Deals", "id,Deal_Name,Owner.id,Created_Time,Mobile,Stage,Probability,"
                              "Lead_Source,Reason_For_Loss__s,Deal_Trigger_Event,UTM_Source,UTM_Medium,Number_of_activity")
         calls_raw = paginate(tok, "Calls", "id,Owner.id,Created_Time,Call_Type,Call_Duration_in_seconds,"
-                             "Call_Start_Time,Subject,What_Id")
-        tasks_raw = paginate(tok, "Tasks", "id,Owner.id,Created_Time,Status,Due_Date,Closed_Time")
+                             "Call_Start_Time,Subject,What_Id,Call_Result")
+        tasks_raw = paginate(tok, "Tasks", "id,Owner.id,Created_Time,Status,Due_Date,Closed_Time,What_Id")
         online_raw= paginate(tok, "Online_Activity_Logs", "id,Owner.id,Created_Time,Channel,Activity_Type")
         events_raw= paginate(tok, "Events", "id,Owner.id,Created_Time,Start_DateTime,End_DateTime,Event_Title")
         ce_raw    = paginate(tok, "Customer_Events", "Event_Type,Created_Time")
@@ -137,10 +137,11 @@ def crm_bundle(request):
         calls = [[r.get("id"), owner_id(r), ist(r.get("Created_Time")), r.get("Call_Type"),
                   int(r.get("Call_Duration_in_seconds") or 0), ist(r.get("Call_Start_Time")),
                   (r.get("What_Id") or {}).get("id","") if isinstance(r.get("What_Id"), dict) else "",
-                  phone_from_subject(r.get("Subject"))] for r in calls_raw]
+                  phone_from_subject(r.get("Subject")), r.get("Call_Result") or ""] for r in calls_raw]
 
         tasks = [[r.get("id"), owner_id(r), ist(r.get("Created_Time")), r.get("Status"), r.get("Due_Date"),
-                  ist(r.get("Closed_Time"))] for r in tasks_raw]
+                  ist(r.get("Closed_Time")),
+                  (r.get("What_Id") or {}).get("id","") if isinstance(r.get("What_Id"), dict) else ""] for r in tasks_raw]
         online= [[r.get("id"), owner_id(r), ist(r.get("Created_Time")), r.get("Channel"), r.get("Activity_Type")]
                  for r in online_raw]
         events= [[r.get("id"), owner_id(r), ist(r.get("Created_Time")), ist(r.get("Start_DateTime")),
