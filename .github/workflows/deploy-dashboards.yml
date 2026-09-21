@@ -6,6 +6,9 @@ name: Deploy Dashboards to Pages
 #   /sku-intelligence/  → dashboard/ga4-sku-intelligence.html + gsi.js (reads its BigQuery
 #                         export directly from a public GCS bucket URL baked into gsi.js —
 #                         no secrets/API keys involved, nothing to inject here)
+#   /walkin/            → dashboard/walkin-source-intelligence.html + walkin_source_data.js
+#                         (embedded fallback; the dashboard's CONFIG.SNAPSHOT_URL already
+#                         points at the live public GCS snapshot, nothing to inject here)
 #
 # Only these specific files are published — never the repo root as a whole — so
 # the rest of this monorepo (CRM data, backend functions, any secrets) is NOT
@@ -24,6 +27,8 @@ on:
       - "dashboard/caratlane_intel_data.js"
       - "dashboard/ga4-sku-intelligence.html"
       - "dashboard/gsi.js"
+      - "dashboard/walkin-source-intelligence.html"
+      - "dashboard/walkin_source_data.js"
       - ".github/workflows/deploy-dashboards.yml"
   workflow_dispatch: {}
 
@@ -45,7 +50,7 @@ jobs:
       - name: Assemble Pages site
         run: |
           set -euo pipefail
-          mkdir -p _site _site/sku-intelligence
+          mkdir -p _site _site/sku-intelligence _site/walkin
           touch _site/.nojekyll
 
           test -f dashboard/ga4-geo-intelligence-dashboard.html || { echo "::error::geo dashboard not found"; exit 1; }
@@ -53,15 +58,20 @@ jobs:
           test -f dashboard/caratlane_intel_data.js || { echo "::error::caratlane_intel_data.js not found"; exit 1; }
           test -f dashboard/ga4-sku-intelligence.html || { echo "::error::sku intelligence dashboard not found"; exit 1; }
           test -f dashboard/gsi.js || { echo "::error::gsi.js not found"; exit 1; }
+          test -f dashboard/walkin-source-intelligence.html || { echo "::error::walkin dashboard not found"; exit 1; }
+          test -f dashboard/walkin_source_data.js || { echo "::error::walkin_source_data.js not found"; exit 1; }
 
           cp dashboard/ga4-geo-intelligence-dashboard.html _site/index.html
           cp dashboard/geo_intel_data.js _site/geo_intel_data.js
           cp dashboard/caratlane_intel_data.js _site/caratlane_intel_data.js
           cp dashboard/ga4-sku-intelligence.html _site/sku-intelligence/index.html
           cp dashboard/gsi.js _site/sku-intelligence/gsi.js
+          cp dashboard/walkin-source-intelligence.html _site/walkin/index.html
+          cp dashboard/walkin_source_data.js _site/walkin/walkin_source_data.js
 
           grep -q "Geo Intelligence" _site/index.html || { echo "::error::dashboard content missing"; exit 1; }
           grep -q "GA4 SKU Intelligence" _site/sku-intelligence/index.html || { echo "::error::sku intelligence content missing"; exit 1; }
+          grep -q "Walk-in Source Intelligence" _site/walkin/index.html || { echo "::error::walkin dashboard content missing"; exit 1; }
 
       - uses: actions/upload-pages-artifact@v3
         with:
