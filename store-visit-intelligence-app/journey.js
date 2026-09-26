@@ -48,7 +48,7 @@ var PRESETS=[['today','Today'],['yesterday','Yesterday'],['thisweek','This Week'
 var DATA=null, ROWS=[], STORE_LABEL={};
 var TAB='created';
 function newFilter(preset){ var r=presetRange(preset); return {preset:preset, from:r[0], to:r[1], jc:'', city:'', store:'', stage:'', trigger:'', prob:'', mstatus:'', call:'', walk:'', sale:''}; }
-var F={ created:newFilter('thismonth'), from:newFilter('thisweek') };
+var F={ created:newFilter('thismonth'), from:newFilter('today') };
 var TBL={ created:{q:'',sort:'created_date',dir:-1,page:1}, from:{q:'',sort:'from_date',dir:1,page:1} };
 var BD={ created:'jc', from:'jc' };
 var PAGE_SIZE=25;
@@ -190,7 +190,7 @@ function wireFilters(tab,root){
   [['dfrom','from'],['dto','to']].forEach(function(x){ var el=$(tab+'_'+x[0]); el.onchange=function(){
     f.preset='custom'; f[x[1]]=el.value||(x[1]==='from'?'2000-01-01':'2100-12-31'); TBL[tab].page=1; renderTab(tab); }; });
   root.querySelectorAll('.filters select').forEach(function(s){ s.onchange=function(){ f[s.getAttribute('data-k')]=s.value; TBL[tab].page=1; renderTab(tab); }; });
-  root.querySelector('[data-reset]').onclick=function(){ F[tab]=newFilter(tab==='created'?'thismonth':'thisweek'); TBL[tab].page=1; renderTab(tab); };
+  root.querySelector('[data-reset]').onclick=function(){ F[tab]=newFilter(tab==='created'?'thismonth':'today'); TBL[tab].page=1; renderTab(tab); };
 }
 
 /* ---------------- KPI cards ---------------- */
@@ -416,10 +416,8 @@ function renderCreated(){
   wireCommon('created',root,rows);
 }
 function renderFrom(){
-  var root=$('tab-from'), rows=filtered('from'), m=metrics(rows), t=todayIST();
-  var todayRows=ROWS.filter(function(r){ return r.from_date===t && passNonDate(r,F.from); }), tm=metrics(todayRows);
+  var root=$('tab-from'), rows=filtered('from'), m=metrics(rows);
   root.innerHTML=
-    '<div class="today"><h2>Today’s Expected Visits</h2><div class="small muted" style="margin-bottom:10px">From Date = <b>'+fmtDate(t)+'</b> (today, IST). Calls, walk-ins and sales are still counted from each meeting’s <b>Created Time</b>, not from the From Date. Respects the non-date filters below.</div>'+kpisToday(tm)+'</div>'+
     filterBar('from')+
     '<h2 class="sec">Selected From Date range</h2>'+kpisToday(m).replace('Expected Today','Expected Meetings')+
     '<div class="grid2" style="margin-top:14px">'+funnelCard(m,'Expected Meetings')+statusCard(rows)+'</div>'+
