@@ -1,48 +1,57 @@
-# Store Visit & Sales Conversion Intelligence -- live service
+# Meeting → Call → Walk-in → Sale Intelligence (Cloud Run: `store-visit-intelligence`)
 
-Standalone Cloud Run service serving the `store-visit-sales-conversion-intelligence.html`
-dashboard (built in `../dashboard/`) behind HTTP Basic Auth. Deliberately separate
-from `zoho-login-dashboard` -- its own service, its own credential, not merged.
+Live dashboard for one journey only: **Zoho CRM meeting created → call after creation → walk-in
+after creation → sale after creation**. No GA4, PDP, product-view or website analytics data is used.
 
-Credentials are set as Cloud Run env vars (`DASH_USER` / `DASH_PASS`), never
-committed here. Ask whoever deployed it for the login, or regenerate below.
+URL: https://store-visit-intelligence-3mvv5mdr2q-el.a.run.app (HTTP Basic Auth, unchanged)
+
+## Architecture
+
+```
+zoho_crm.cdc_meetings / cdc_deals / cdc_calls / cdc_contacts   (Zoho CDC sync, every 30 min)
+zoho_crm.zoho_leads                                            (Lead mobile fallback)
+ds_imputed_reporting.Walkin_marge                               (store walk-ins, daily ~06:30 IST)
+ds_imputed_reporting.marketing_sale                             (sales)
+ornaverse_erp_master.company                                    (store code -> name)
+        │
+        ▼
+ds_imputed_reporting.zoho_meeting_journey_v   (VIEW, sql/meeting_journey_view.sql, 1 row per meeting)
+        │  one query per cache window (CACHE_TTL_SEC, default 600 s), ~240 MB scanned
+        ▼
+main.py  /api/journey  (+ /api/health)  ── gzip JSON, Basic Auth
+        ▼
+index.html + journey.js   (3 tabs; all filtering client-side over ~550 rows)
+```
+
+* No Zoho OAuth credentials are used by this service; it only reads BigQuery with its runtime SA.
+* `DASH_USER` / `DASH_PASS` stay Cloud Run env vars (never in code or frontend JS).
+
+## Tabs
+1. **Created Time** – grouped by Meeting Created Date (IST).
+2. **From Date / Today** – grouped by meeting `Start_DateTime` (IST); "Today's Expected Visits" = From Date = today IST.
+   Calls / walk-ins / sales are still counted from the meeting's **Created Time**.
+3. **Help / Logic** – definitions, sources, join/matching logic, live source status.
+
+## Key logic (full detail in the Help tab and the SQL header)
+* Call after creation: `Call_Start_Time > meeting Created_Time`; Outbound + Inbound; excludes Scheduled/Overdue
+  (never happened) and Missed. Matched by Deal ID, else Contact ID, else normalised phone; DISTINCT call id.
+* Connected: duration ≥ 30 s.
+* Walk-in: `Walkin_marge` phone = customer mobile. `walkin_date` is +05:30 vs POS invoice time
+  (verified on 1,002 exact matches) → IST = `walkin_date − 330 min`. Amazon/HO codes excluded.
+* Sale: `marketing_sale` invoice (distinct `document_no`, amount = `SUM(net_sale)`, time = `document_date` IST)
+  `> Created_Time`, mobile-matched.
+* Anti fan-out: calls, walk-ins and sales are each aggregated per meeting before joining back.
 
 ## Deploy / redeploy
-
 ```bash
-gcloud run deploy store-visit-intelligence --source . \
-  --project=lucirajewelry-prod --region=asia-south1 \
-  --allow-unauthenticated \
-  --set-env-vars DASH_USER=<username>,DASH_PASS=<password> \
-  --memory=512Mi --timeout=300
+# 1) (re)create the view if the SQL changed
+bq query --use_legacy_sql=false < sql/meeting_journey_view.sql
+# 2) deploy the service (keeps existing env vars / IAM)
+gcloud run deploy store-visit-intelligence --source . --project=lucirajewelry-prod --region=asia-south1
 ```
 
-`--allow-unauthenticated` is at the Cloud Run IAM layer only (so the URL is
-reachable without a Google/gcloud identity) -- the real gate is the app-level
-Basic Auth in `main.py`, same pattern as `zoho-login-dashboard`.
-
-## Refreshing the data
-
-The ~36MB `svci_data.js` is a static snapshot copied in at deploy time, not
-fetched live. To update it:
-
-```bash
-cd ../dashboard
-python build_svci_data.py            # or --source live for current Zoho CRM data
-cp svci_data.js ../store-visit-intelligence-app/svci_data.js
-cd ../store-visit-intelligence-app
-gcloud run deploy store-visit-intelligence --source . \
-  --project=lucirajewelry-prod --region=asia-south1
-```
-(Omit `--set-env-vars`/`--allow-unauthenticated` on redeploy -- Cloud Run keeps
-prior env vars and IAM settings unless you explicitly change them.)
-
-## Known limits
-
-- Each redeploy re-uploads the full ~36MB build context (source-based Cloud
-  Run build). Acceptable at this size/frequency; if data updates become much
-  larger or more frequent, consider hosting `svci_data.js` on the existing
-  public `lucira-dashboards` GCS bucket (pattern used by `walkin-source-api`)
-  and having the page `fetch()` it at runtime instead.
-- No auto-refresh/scheduler wired up -- this is a manual "rebuild, copy, redeploy"
-  flow, matching how the dashboard's data is refreshed locally.
+## Validation
+`python validation/validate_meetings.py` picks real meetings for each case (no call, one call, multiple calls,
+previous walk-in, walk-in after, sale after, walk-in + sale, sale without walk-in, different JC, different
+city/stage/trigger, call before creation) and recomputes them from the raw tables in Python. Last run
+(26 Sep 2026): 11/11 match. Results in `validation/validate_meetings_results.json`.

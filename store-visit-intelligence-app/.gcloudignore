@@ -1,0 +1,9 @@
+.gcloudignore
+.gitignore
+__pycache__/
+validation/
+sql/
+# Previous static-snapshot dashboard (no longer served; contains unmasked customer data)
+svci.js
+svci_data.js
+svci_data.js.gz

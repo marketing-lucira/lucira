@@ -1,3 +1,4 @@
 svci_data.js.gz
 svci_data.js
 __pycache__/
+validation/*_results.json
