@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucira — GA4 PDP × ATC × Inventory</title>
+<link rel="icon" href="https://luciraonline.myshopify.com/cdn/shop/files/Favicon_New_10.png">
+<link rel="preconnect" href="https://luciraonline.myshopify.com">
+<link rel="preconnect" href="https://storage.googleapis.com">
+<style>
+:root{
+  color-scheme: dark;
+  --plane:#0c0d0f; --surface:#16181c; --surface-2:#1e2126; --surface-3:#282c33;
+  --ink:#f5f6f8; --ink-2:#b9bec7; --muted:#7e858f;
+  --grid:#262a30; --border:rgba(255,255,255,0.09);
+  --s1:#4a90e2; --s2:#1fae82;
+  --good:#1fae82; --warn:#e0a020; --crit:#e0505a; --gold:#d9a441;
+  --radius:15px; --radius-sm:10px;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sidebar-w:270px;
+  --brand-brown:#8b6f56; --brand-brown-dark:#6e5744; --brand-mauve:#a05a64; --brand-cream:#fff8f0;
+}
+body.light{
+  color-scheme: light;
+  --plane:#f4f5f3; --surface:#ffffff; --surface-2:#f1f2ee; --surface-3:#e7e8e2;
+  --ink:#191b1e; --ink-2:#464a51; --muted:#767b83;
+  --grid:#e8e9e4; --border:rgba(0,0,0,0.11);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--plane);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+a{color:var(--s1);text-decoration:none}
+button{font-family:var(--font)}
+header.app{position:sticky;top:0;z-index:50;background:var(--brand-brown);border-bottom:2px solid var(--brand-brown-dark);padding:11px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px;margin-right:auto}
+.brand .mark{width:36px;height:36px;border-radius:50%/42%;display:grid;place-items:center;background:var(--brand-cream);border:1.5px solid var(--brand-mauve);color:var(--brand-brown);font-weight:800;font-size:16px;position:relative}
+.brand .mark::after{content:'';position:absolute;bottom:6px;left:50%;width:5px;height:5px;background:var(--brand-mauve);transform:translateX(-50%) rotate(45deg)}
+.brand .logo{height:30px;width:auto;max-width:132px;display:block;object-fit:contain;background:var(--brand-cream);border-radius:8px;padding:6px 10px}
+.brand h1{font-size:15px;margin:0;font-weight:700;letter-spacing:.2px;color:var(--brand-cream)}
+.brand small{display:block;color:rgba(255,248,240,.72);font-size:11px;font-weight:500;letter-spacing:.3px}
+header.app .hdr-status{color:rgba(255,248,240,.78)}
+header.app .btn{color:var(--brand-cream);border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.12)}
+header.app .btn:hover{background:rgba(255,255,255,.2);color:#fff}
+.hdr-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px rgba(31,174,130,.18)}
+.dot.demo{background:var(--warn);box-shadow:0 0 0 3px rgba(224,160,32,.18)}
+.btn{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--surface-3)}
+.btn.sm{padding:5px 9px;font-size:11.5px}
+.shell{display:flex;min-height:calc(100vh - 59px)}
+aside.filters{flex:0 0 var(--sidebar-w);min-width:0;border-right:1px solid var(--border);background:var(--surface);position:sticky;top:59px;height:calc(100vh - 59px);overflow:hidden;transition:flex-basis .22s ease,opacity .18s ease,border-color .22s ease}
+body.filters-collapsed aside.filters{flex-basis:0;opacity:0;border-color:transparent;pointer-events:none}
+.filters-inner{width:var(--sidebar-w);height:100%;overflow:auto}
+aside.filters .fhead{position:sticky;top:0;background:var(--surface);z-index:2;display:flex;align-items:center;gap:8px;padding:13px 15px;border-bottom:1px solid var(--border)}
+aside.filters .fhead h3{margin:0;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-2)}
+aside.filters .fhead .cnt{margin-left:auto;font-size:11px;color:var(--gold);font-weight:700}
+.fbody{padding:8px 14px 40px}
+.fgrp{border-bottom:1px solid var(--border);padding:9px 0}
+.fgrp>label{display:block;font-size:10px;color:var(--muted);font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin:2px 0 6px}
+.fgrp select,.fgrp input{width:100%;background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:12.5px;font-family:var(--font)}
+main{flex:1;min-width:0;padding:16px 22px 70px}
+.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tabs a{padding:7px 13px;border-radius:9px;color:var(--ink-2);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid transparent}
+.tabs a:hover{background:var(--surface-2);color:var(--ink)}
+.tabs a.on{background:var(--surface-2);color:var(--ink);border-color:var(--border)}
+.tabs a.on::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-right:7px;vertical-align:middle}
+.page{display:none}
+.page.on{display:block;animation:fade .2s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.h2{font-size:18px;font-weight:800;margin:2px 0 3px;letter-spacing:-.2px}
+.sub{color:var(--muted);font-size:12.5px;margin-bottom:15px}
+.grid{display:grid;gap:13px}
+.kpis{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px}
+.kpi{position:relative}
+.kpi .lbl{font-size:10.5px;color:var(--muted);font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+.kpi .val{font-size:25px;font-weight:800;margin-top:6px;letter-spacing:-.6px}
+.kpi .val.crit{color:var(--crit)}.kpi .val.warn{color:var(--warn)}.kpi .val.good{color:var(--good)}
+.two{grid-template-columns:1.3fr 1fr}
+@media(max-width:1150px){.two{grid-template-columns:1fr}}
+.card h3{font-size:13.5px;font-weight:700;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.card h3 .rt{margin-left:auto;font-size:11.5px;color:var(--muted);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;color:var(--muted);font-weight:800;font-size:10px;letter-spacing:.4px;text-transform:uppercase;padding:7px 9px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);cursor:pointer;white-space:nowrap}
+th:hover{color:var(--ink)}
+td{padding:7px 9px;border-bottom:1px solid var(--border);white-space:nowrap}
+tr:hover td{background:var(--surface-2)}
+.tbl-wrap{max-height:600px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius)}
+.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700;letter-spacing:.2px;white-space:nowrap}
+.pill.crit{background:rgba(224,80,90,.16);color:#ff6b74}
+.pill.warn{background:rgba(224,160,32,.16);color:var(--warn)}
+.pill.good{background:rgba(31,174,130,.16);color:#39c99a}
+.pill.muted{background:rgba(126,133,143,.16);color:#aeb4bd}
+.search{background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:7px 11px;color:var(--ink);font-size:12.5px;min-width:200px}
+.pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:10px;font-size:12px;color:var(--muted)}
+.pager button{background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:4px 9px;color:var(--ink);cursor:pointer}
+.scroll-x{overflow-x:auto}
+.muted{color:var(--muted)}
+.note{background:var(--surface-2);border:1px dashed var(--border);border-radius:var(--radius-sm);padding:11px 13px;font-size:12.5px;color:var(--ink-2);margin-bottom:14px}
+.sku-drill{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2);margin-top:12px}
+.legend .li{display:flex;align-items:center;gap:6px}
+.legend .sw{width:11px;height:11px;border-radius:3px;flex:none}
+.flow{display:flex;flex-direction:column;gap:0}
+.flow-step{display:flex;gap:14px;position:relative;padding-bottom:20px}
+.flow-step:last-child{padding-bottom:0}
+.flow-step:not(:last-child)::before{content:"";position:absolute;left:17px;top:36px;bottom:0;width:2px;background:var(--border)}
+.flow-step .num{flex:none;width:36px;height:36px;border-radius:50%;background:var(--surface-2);border:2px solid var(--s1);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;z-index:1}
+.flow-step.src-sales .num{border-color:var(--gold)}
+.flow-step.src-inv .num{border-color:var(--brand-mauve)}
+.flow-step .body{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;flex:1}
+.flow-step .body b{font-size:13.5px}
+.flow-step .body .tag{display:inline-block;margin-left:8px;font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;padding:1px 7px;border-radius:10px;background:var(--surface-3);color:var(--muted)}
+.flow-step .body p{margin:4px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.5}
+.info-i{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--surface-3);border:1px solid var(--border);color:var(--s1);font-size:12px;cursor:pointer;margin-left:6px;vertical-align:middle}
+.info-i:hover{background:var(--s1);color:#fff}
+.funnel-row{display:grid;grid-template-columns:170px 1fr 90px;gap:10px;align-items:center;margin-bottom:9px;font-size:12.5px}
+.funnel-row .nm{color:var(--ink-2)}
+.funnel-row .bar{height:8px;border-radius:5px;background:var(--surface-3);overflow:hidden}
+.funnel-row .bar>span{display:block;height:100%;border-radius:5px;background:var(--s1)}
+.funnel-row .amt{text-align:right;font-weight:700}
+.funnel-ratio{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;margin-bottom:9px;font-size:12.5px}
+.funnel-ratio b{font-size:14px;color:var(--gold)}
+.ai-fab{position:fixed;right:22px;bottom:22px;z-index:80;width:54px;height:54px;border-radius:50%;border:2px solid var(--brand-mauve);background:var(--brand-brown);color:var(--brand-cream);font-size:22px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35);display:grid;place-items:center}
+.ai-fab:hover{background:var(--brand-brown-dark)}
+.ai-panel{position:fixed;right:22px;bottom:88px;z-index:80;width:400px;max-width:calc(100vw - 32px);max-height:70vh;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 12px 32px rgba(0,0,0,.4);display:none;flex-direction:column;padding:14px;gap:10px}
+.ai-panel.open{display:flex}
+.ai-panel-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ai-log{display:flex;flex-direction:column;gap:10px;flex:1;min-height:120px;max-height:42vh;overflow-y:auto;padding:4px 2px}
+.ai-msg{padding:10px 13px;border-radius:10px;font-size:13.5px;line-height:1.5;max-width:92%;white-space:pre-wrap}
+.ai-msg.user{align-self:flex-end;background:var(--brand-mauve,#A05A64);color:#fff}
+.ai-msg.bot{align-self:flex-start;background:var(--surface-2);border:1px solid var(--border)}
+.ai-msg.bot.err{border-color:#c0392b;color:#c0392b}
+.ai-msg.pending{align-self:flex-start;background:var(--surface-2);border:1px solid var(--border);color:var(--muted);font-style:italic}
+.ai-input-row{display:flex;gap:8px;align-items:flex-end}
+.ai-input-row textarea{flex:1;resize:vertical;min-height:42px;max-height:100px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);font:inherit}
+.ai-suggest{display:flex;flex-wrap:wrap;gap:6px}
+.ai-suggest span{cursor:pointer;display:inline-block;padding:5px 12px;border-radius:20px;font-size:11.5px;background:var(--surface-2);border:1px solid var(--border);color:var(--ink-2)}
+.ai-suggest span:hover{border-color:var(--brand-mauve);color:var(--ink)}
+@media(max-width:480px){.ai-panel{right:10px;left:10px;width:auto;bottom:80px}.ai-fab{right:16px;bottom:16px}}
+@media(max-width:900px){:root{--sidebar-w:240px}body:not(.filters-collapsed) main{display:none}}
+body.locked{overflow:hidden}
+body.locked>*:not(#authGate){display:none!important}
+.auth-gate{display:none;position:fixed;inset:0;z-index:1000;background:var(--plane);align-items:center;justify-content:center;padding:16px}
+body.locked .auth-gate{display:flex}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:36px 32px;width:320px;max-width:100%;text-align:center;box-shadow:0 12px 32px rgba(0,0,0,.4)}
+.auth-card img{width:44px;margin-bottom:14px}
+.auth-card h2{margin:0 0 4px;font-size:16px;color:var(--ink)}
+.auth-card p{margin:0 0 18px;color:var(--muted);font-size:12.5px}
+.auth-card input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);font:inherit;margin-bottom:12px;box-sizing:border-box}
+.auth-card button{width:100%;padding:10px;border-radius:8px;border:none;background:var(--brand-mauve);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer}
+.auth-card button:hover{background:var(--brand-brown)}
+.auth-err{color:var(--crit);font-size:12px;min-height:16px;margin-top:10px}
+</style>
+</head>
+<body class="filters-collapsed locked">
+<div id="authGate" class="auth-gate">
+  <div class="auth-card">
+    <img src="https://luciraonline.myshopify.com/cdn/shop/files/LJ_Logo_Pink.svg" alt="Lucira Jewelry" onerror="this.style.display='none'">
+    <h2>GA4 PDP × ATC × Inventory</h2>
+    <p>This dashboard is password-protected. Please sign in to continue.</p>
+    <input type="password" id="authPass" placeholder="Password" autocomplete="current-password">
+    <button id="authBtn" type="button">Unlock</button>
+    <div class="auth-err" id="authErr"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var KEY='lj_ga4sku_auth', PASS='Lucira@2026';
+  function unlock(){ document.body.classList.remove('locked'); try{sessionStorage.setItem(KEY,'1');}catch(e){} }
+  try{ if(sessionStorage.getItem(KEY)==='1') unlock(); }catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    var btn=document.getElementById('authBtn'), inp=document.getElementById('authPass'), err=document.getElementById('authErr');
+    function tryUnlock(){
+      if(inp.value===PASS){ err.textContent=''; unlock(); }
+      else { err.textContent='Incorrect password'; inp.value=''; inp.focus(); }
+    }
+    btn.addEventListener('click', tryUnlock);
+    inp.addEventListener('keydown', function(e){ if(e.key==='Enter') tryUnlock(); });
+    if(document.body.classList.contains('locked')) inp.focus();
+  });
+})();
+</script>
+<header class="app">
+  <button class="btn sm" id="toggleFilters" title="Toggle filters">☰</button>
+  <div class="brand">
+    <img class="logo" src="https://luciraonline.myshopify.com/cdn/shop/files/LJ_Logo_Pink.svg" alt="Lucira Jewelry" onerror="this.outerHTML='&lt;div class=&quot;mark&quot;&gt;L&lt;/div&gt;'">
+    <div><h1>GA4 PDP × ATC × Inventory</h1><small>PDP views · ATC · total sales · current stock · where it's sitting</small></div>
+  </div>
+  <div class="hdr-status"><span class="dot demo" id="statusDot"></span><span id="statusText">Loading…</span></div>
+  <button class="btn sm" id="refreshBtn">↻ Refresh</button>
+  <button class="btn sm" id="themeBtn">◑ Theme</button>
+  <button class="btn sm" id="exportBtn">⭳ Export CSV</button>
+</header>
+<div class="shell">
+  <aside class="filters" id="filtersPanel">
+    <div class="filters-inner">
+      <div class="fhead"><h3>Filters</h3><span class="cnt" id="filterCount"></span><button class="btn sm" id="clearFilters" style="margin-left:8px">Clear</button></div>
+      <div class="fbody" id="fbody"></div>
+    </div>
+  </aside>
+  <main>
+    <div class="toolbar">
+      <nav class="tabs" id="nav"></nav>
+      <input class="search" id="globalSearch" placeholder="🔍 Search SKU (e.g. LJ-R00069)…" style="margin-left:auto;min-width:260px">
+    </div>
+    <div class="toolbar" id="rangeBar" style="margin-top:-6px">
+      <label style="font-size:10.5px;color:var(--muted);font-weight:800;letter-spacing:.4px;text-transform:uppercase">GA4 Date Range</label>
+      <select id="rangeSelect" class="search" style="min-width:150px" title="GA4 date range">
+        <option value="all">All Time</option>
+        <option value="today">Today</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="weekly">Weekly (Last 7 Days)</option>
+        <option value="monthly">Monthly (Last 30 Days)</option>
+        <option value="custom">Custom Range</option>
+      </select>
+      <span id="rangeCustomWrap" style="display:none;gap:8px;align-items:center">
+        <input type="date" id="rangeFrom" class="search" style="min-width:0">
+        <span class="muted">to</span>
+        <input type="date" id="rangeTo" class="search" style="min-width:0">
+      </span>
+      <span class="muted" id="rangeNote" style="font-size:11.5px"></span>
+    </div>
+    <div id="pages"></div>
+  </main>
+</div>
+<button id="aiFab" class="ai-fab" title="Ask AI about this data">🤖</button>
+<div id="aiPanel" class="ai-panel">
+  <div class="ai-panel-head">
+    <b>🤖 Ask AI</b>
+    <span class="muted" style="font-size:11px">Reads whatever is currently filtered — any tab, any page</span>
+    <button id="aiCloseBtn" class="btn sm" style="margin-left:auto">✕</button>
+  </div>
+  <div class="ai-suggest" id="aiSuggest"></div>
+  <div class="ai-log" id="aiLog"></div>
+  <div class="ai-input-row">
+    <textarea id="aiInput" placeholder="Ask a question about this data…"></textarea>
+    <button class="btn" id="aiSendBtn">Ask</button>
+  </div>
+  <div style="text-align:right"><button class="btn sm" id="aiClearBtn" title="Clear chat">Clear chat</button></div>
+</div>
+<script src="gsi.js"></script>
+</body>
+</html>

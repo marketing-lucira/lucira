@@ -274,6 +274,11 @@ def run_sync() -> dict:
         result["deals_recent_rebuild"] = rebuild_deals_recent(at)
     except Exception as e:
         result["deals_recent_rebuild_error"] = str(e)
+    # incremental Deal->Product link fetch (never break the rest of sync)
+    try:
+        result["deal_products"] = sync_deal_products(at)
+    except Exception as e:
+        result["deal_products_error"] = str(e)
     return result
 
 
@@ -311,6 +316,12 @@ CDC_MODULES = {
                   "Other_Country,Other_Street,Other_Zip,Last_Enriched_Time__s,Enrich_Status__s"},
     "Deals": {
         "table": "cdc_deals",
+        # Address_City/Address_State_Province/Address_Zip_Postal_Code added 2026-09-21 —
+        # previously missing here entirely, which is why cdc_deals never carried address data
+        # (the separate Lucira_Prod.lucira_zoho_Deals export was the only source, and its own
+        # upstream sync stopped on 2026-09-16). Now that these are in the field list, both
+        # rebuild_deals_recent() and sync_module()'s cursor-MERGE pick them up automatically
+        # on every /sync run (every 30 min) — no separate pipeline needed going forward.
         "fields": "id,Owner,Created_Time,Modified_Time,Amount,Deal_Name,Closing_Date,"
                   "Account_Name,Stage,Type,Probability,Expected_Revenue,Next_Step,"
                   "Lead_Source,Campaign_Source,Contact_Name,Created_By,Modified_By,"
@@ -320,7 +331,8 @@ CDC_MODULES = {
                   "Stage_Modified_Time,Email,Mobile,UTM_Medium,Store_Assigned,"
                   "First_Activity_Date,UTM_Campaign,UTM_Source,Number_of_activity,"
                   "Last_Activity_date,Customer_activity_date,Intent_Stage,Assigned_At,"
-                  "Assignment_Status,Alternate_mobile,leadchain0__Social_Lead_ID"},
+                  "Assignment_Status,Alternate_mobile,leadchain0__Social_Lead_ID,"
+                  "Address_City,Address_State_Province,Address_Zip_Postal_Code"},
     "Tasks": {
         "table": "cdc_tasks",
         "fields": "id,Owner,Created_Time,Modified_Time,Subject,Due_Date,Who_Id,What_Id,"
@@ -624,6 +636,85 @@ def rebuild_deals_recent(access_token: str, days_back: int = REBUILD_DAYS) -> di
     """).result()
     _bq.delete_table(tmp, not_found_ok=True)
     return {"window": f"{start_str}..{end_str}", "fetched": len(rows), "rebuilt": len(uniq)}
+
+
+# --------------------------------------------------------------------------- #
+# Deal -> Product links — powers the "Product-wise Deals" panel.
+# Deals<->Products is a plain many-to-many related list (confirmed via CRM
+# metadata: no separate line-item/junction module exists), so it can only be
+# read one deal at a time via the Related Records API — no bulk/COQL join.
+# Incremental by design: only deals in the rolling REBUILD_DAYS window that
+# have NO row yet in deal_products get fetched, so a steady-state /sync run
+# only pays for brand-new deals, not the whole window every time. A deal with
+# zero linked products still gets one placeholder row (product_id NULL) so it
+# isn't re-fetched forever.
+# --------------------------------------------------------------------------- #
+DEAL_PRODUCTS_TABLE = "deal_products"
+DEAL_PRODUCTS_BATCH = 300   # bounds one /sync call's wall-clock time
+
+
+def _deal_products_schema():
+    S = bigquery.SchemaField
+    return [
+        S("deal_id", "STRING"), S("product_id", "STRING"),
+        S("product_name", "STRING"), S("product_code", "STRING"),
+        S("synced_at", "TIMESTAMP"),
+    ]
+
+
+def sync_deal_products(access_token: str, days_back: int = REBUILD_DAYS,
+                       batch: int = DEAL_PRODUCTS_BATCH) -> dict:
+    start_iso, end_iso = _ist_recent_window(days_back)
+    start_str, end_str = start_iso[:10], end_iso[:10]
+    pending = list(_bq.query(f"""
+        SELECT d.id
+        FROM `{PROJECT}.{DATASET}.cdc_deals` d
+        LEFT JOIN `{PROJECT}.{DATASET}.{DEAL_PRODUCTS_TABLE}` dp ON d.id = dp.deal_id
+        WHERE DATE(d.created_time, '{TZ}') BETWEEN '{start_str}' AND '{end_str}'
+          AND dp.deal_id IS NULL
+        GROUP BY d.id
+        LIMIT {batch}
+    """).result())
+    if not pending:
+        return {"window": f"{start_str}..{end_str}", "checked": 0}
+
+    headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
+    synced_at = dt.datetime.utcnow().isoformat() + "Z"
+    out = []
+    errors = 0
+    for r in pending:
+        did = r["id"]
+        try:
+            resp = requests.get(
+                f"{API_BASE}/crm/v8/Deals/{did}/Products",
+                headers=headers, params={"fields": "id,Product_Name,Product_Code"},
+                timeout=30,
+            )
+        except requests.RequestException:
+            errors += 1
+            continue
+        if resp.status_code == 204:
+            out.append({"deal_id": did, "product_id": None, "product_name": None,
+                       "product_code": None, "synced_at": synced_at})
+            continue
+        if resp.status_code != 200:
+            errors += 1
+            continue
+        products = (resp.json() or {}).get("data") or []
+        if not products:
+            out.append({"deal_id": did, "product_id": None, "product_name": None,
+                       "product_code": None, "synced_at": synced_at})
+        for p in products:
+            out.append({
+                "deal_id": did, "product_id": str(p.get("id")) if p.get("id") else None,
+                "product_name": p.get("Product_Name"), "product_code": p.get("Product_Code"),
+                "synced_at": synced_at,
+            })
+    if out:
+        _load_ndjson_to_bq(out, DEAL_PRODUCTS_TABLE, _deal_products_schema(),
+                           bigquery.WriteDisposition.WRITE_APPEND, "exports/deal_products")
+    return {"window": f"{start_str}..{end_str}", "checked": len(pending),
+           "linked_rows": len(out), "errors": errors}
 
 
 def sync_module(access_token: str, module: str, since_iso: str | None = None) -> dict:
@@ -1246,12 +1337,20 @@ def api_crm_bundle():
     rng = f"DATE(created_time,'{TZ}') >= '{cutoff}'"
     rows = lambda sql: list(_bq.query(sql).result())
     try:
-        # Address_City/Address_State are 0% populated on cdc_deals itself (checked live via bq,
-        # 2026-08-11) — left-joined here from Lucira_Prod.lucira_zoho_Deals, a separate live
-        # Deals export that DOES carry real address columns (~14% of its rows; ~66% of cdc_deals
-        # ids find a match there by id). Feeds pd()'s city/state fields in app.js so the
-        # City-wise/State-wise Performance tables (next to Owner Performance) stop always
-        # reading "(Not Captured)". No match / blank Address_City still yields '' — never guessed.
+        # City/State sourcing, 3 tiers by freshness (COALESCE picks the first non-blank):
+        #  1. cdc_deals' own JSON (d.data) — Address_City/Address_State_Province were added to
+        #     CDC_MODULES["Deals"]["fields"] on 2026-09-21; every /sync run (every 30 min) now
+        #     carries them straight from Zoho, going forward, no join needed at all.
+        #  2. zoho_crm.deals_address_live_patch — a one-time historical backfill pulled directly
+        #     from the Zoho CRM API (COQL) for deals created 2026-09-16 onward, covering the
+        #     gap left by tier 3's outage (see below). Not auto-refreshing; tier 1 supersedes it
+        #     for anything synced after 2026-09-21.
+        #  3. Lucira_Prod.lucira_zoho_Deals — the original address export. Its own upstream sync
+        #     (a Zoho-side workflow → BigQuery pipeline) stopped writing after 2026-09-16; still
+        #     the correct source for deals created before that date.
+        # Zoho literally returns the string "NA" for some blank addresses — treated as blank, not a city.
+        # Feeds pd()'s city/state fields in app.js so the City-wise/State-wise Performance tables
+        # (next to Owner Performance) stop always reading "(Not Captured)".
         deals = [[r["id"], r["name"], r["owner"], r["created"], r["stage"], r["prob"],
                   r["lead_source"], r["reason_loss"], r["trigger"], r["utm_source"],
                   r["utm_medium"], r["num_act"] or 0, r["mobile"] or "",
@@ -1266,9 +1365,17 @@ def api_crm_bundle():
                    JSON_VALUE(d.data,'$.UTM_Medium') utm_medium,
                    SAFE_CAST(JSON_VALUE(d.data,'$.Number_of_activity') AS INT64) num_act,
                    RIGHT(REGEXP_REPLACE(COALESCE(JSON_VALUE(d.data,'$.Mobile'),''),r'[^0-9]',''),10) mobile,
-                   INITCAP(TRIM(loc.Address_City)) city, loc.Address_State state
+                   INITCAP(TRIM(COALESCE(
+                     NULLIF(NULLIF(TRIM(JSON_VALUE(d.data,'$.Address_City')),''),'NA'),
+                     NULLIF(NULLIF(TRIM(patch.address_city),''),'NA'),
+                     loc.Address_City))) city,
+                   COALESCE(
+                     NULLIF(NULLIF(TRIM(JSON_VALUE(d.data,'$.Address_State_Province')),''),'NA'),
+                     NULLIF(NULLIF(TRIM(patch.address_state),''),'NA'),
+                     loc.Address_State) state
             FROM {P}cdc_deals` d
             LEFT JOIN `lucirajewelry-prod.Lucira_Prod.lucira_zoho_Deals` loc ON d.id = loc.id
+            LEFT JOIN `{PROJECT}.{DATASET}.deals_address_live_patch` patch ON d.id = patch.id
             WHERE {rng.replace('created_time','d.created_time')}""")]
         calls = [[r["id"], r["owner"], r["created"], r["type"], r["dur"] or 0,
                   r["cstart"], r["what_id"] or "", r["phone"] or "", r["result"] or ""] for r in rows(f"""
@@ -1292,11 +1399,12 @@ def api_crm_bundle():
             SELECT id, owner_id owner, {ts} created,
                    JSON_VALUE(data,'$.Channel') channel, JSON_VALUE(data,'$.Activity_Type') atype
             FROM {P}cdc_online_activities` WHERE {rng}""")]
-        events = [[r["id"], r["owner"], r["created"], r["estart"], r["eend"], r["title"]]
+        events = [[r["id"], r["owner"], r["created"], r["estart"], r["eend"], r["title"], r["what_id"] or ""]
                   for r in rows(f"""
             SELECT id, owner_id owner, {ts} created,
                    JSON_VALUE(data,'$.Start_DateTime') estart,
-                   JSON_VALUE(data,'$.End_DateTime') eend, JSON_VALUE(data,'$.Event_Title') title
+                   JSON_VALUE(data,'$.End_DateTime') eend, JSON_VALUE(data,'$.Event_Title') title,
+                   JSON_VALUE(data,'$.What_Id.id') what_id
             FROM {P}cdc_meetings` WHERE {rng}""")]
         owners = {r["owner_id"]: r["nm"] for r in rows(f"""
             SELECT owner_id, ANY_VALUE(owner_name) nm FROM (
@@ -1307,13 +1415,23 @@ def api_crm_bundle():
               UNION ALL SELECT owner_id, owner_name FROM {P}cdc_online_activities`)
             WHERE owner_id IS NOT NULL GROUP BY owner_id""")}
         ce = _crm_ce(P, cutoff)
+        # Deal->Product links (see sync_deal_products) for deals in this same range.
+        # One row per link; a deal with no linked product simply has no row here —
+        # never fabricated. Backfill is incremental (see sync_deal_products), so
+        # very recently created deals may not have been checked yet.
+        deal_products = [[r["deal_id"], r["product_name"] or "", r["product_code"] or ""]
+                         for r in rows(f"""
+            SELECT dp.deal_id, dp.product_name, dp.product_code
+            FROM `{PROJECT}.{DATASET}.{DEAL_PRODUCTS_TABLE}` dp
+            JOIN {P}cdc_deals` d ON dp.deal_id = d.id
+            WHERE {rng.replace('created_time','d.created_time')} AND dp.product_id IS NOT NULL""")]
     except Exception as e:
         return jsonify(error=str(e)), 500
 
     from datetime import datetime, timezone, timedelta
     gen = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime("%Y-%m-%dT%H:%M:%S+05:30")
     return jsonify(owners=owners, deals=deals, calls=calls, tasks=tasks, online=online,
-                   events=events, ce=ce,
+                   events=events, ce=ce, deal_products=deal_products,
                    meta={"generated": gen, "cutoff": cutoff + "T00:00:00", "tz": "Asia/Kolkata",
                          "pagesRead": 0, "source": "cdc_bigquery"})
 

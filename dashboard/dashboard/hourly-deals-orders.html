@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hourly Deals vs Orders — Lucira Executive Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0e14; --bg2:#11151d; --card:#161b25; --card2:#1c2330; --line:#2a3242;
+  --tx:#e8ecf3; --tx2:#98a3b8; --tx3:#68738a;
+  --acc:#4f8cff; --acc2:#22d3a8; --warn:#f4b740; --bad:#ff5d6c; --good:#22c55e;
+  --c1:#4f8cff; --c2:#22d3a8; --c3:#f4b740;
+  --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.25);
+  --brand-brown:#8b6f56; --brand-brown-dark:#6e5744; --brand-mauve:#a05a64; --brand-mauve-light:#d9b8b4; --brand-cream:#fff8f0;
+}
+:root[data-theme="light"]{
+  --bg:#f3f5fa; --bg2:#eceff5; --card:#ffffff; --card2:#f7f9fc; --line:#e2e7f0;
+  --tx:#141a24; --tx2:#57647a; --tx3:#8993a6;
+  --acc:#2563eb; --acc2:#0d9488; --warn:#d97706; --bad:#dc2626; --good:#16a34a;
+  --c1:#2563eb; --c2:#0d9488; --c3:#d97706;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font:14px/1.45 'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:60px}
+.wrap{max-width:1560px;margin:0 auto;padding:0 20px 60px}
+h1,h2,h3{margin:0 0 4px}
+::-webkit-scrollbar{height:9px;width:9px}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}
+
+#boot{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;transition:opacity .4s}
+#boot.hide{opacity:0;pointer-events:none}
+.bootmark{width:64px;height:64px;border-radius:16px;background:var(--brand-cream);border:1.5px solid var(--brand-mauve);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:26px;color:var(--brand-brown)}
+.bootbar{width:220px;height:4px;background:var(--line);border-radius:4px;overflow:hidden}
+.bootbar i{display:block;height:100%;width:30%;background:linear-gradient(90deg,var(--acc),var(--acc2));animation:load 1.1s ease-in-out infinite}
+@keyframes load{0%{margin-left:-30%}100%{margin-left:100%}}
+.boottxt{color:var(--tx2);font-size:13px;letter-spacing:.3px}
+
+header.top{position:sticky;top:0;z-index:60;background:var(--brand-brown);border-bottom:2px solid var(--brand-brown-dark);padding:14px 20px 8px}
+.top .bar{max-width:1560px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:36px;height:36px;border-radius:50%/42%;background:var(--brand-cream);border:1.5px solid var(--brand-mauve);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--brand-brown);position:relative}
+.logo::after{content:'';position:absolute;bottom:5px;left:50%;width:4px;height:4px;background:var(--brand-mauve);transform:translateX(-50%) rotate(45deg)}
+.brandtx b{font-size:15px;letter-spacing:.2px;color:var(--brand-cream)}
+.brandtx div{font-size:11px;color:rgba(255,248,240,.72)}
+header.top .btn{background:rgba(255,255,255,.12);color:var(--brand-cream);border-color:rgba(255,255,255,.28)}
+header.top .btn:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.5)}
+.grow{flex:1}
+.pill{padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:var(--card2);color:var(--tx2);display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.pill.live{color:var(--good);border-color:var(--good)}
+.pill.snap{color:var(--warn);border-color:var(--warn)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.btn{background:var(--card2);border:1px solid var(--line);color:var(--tx);padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--acc)}
+.btn.primary{background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;color:#fff}
+
+.filterbar{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:16px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;box-shadow:var(--shadow)}
+.filterbar select,.filterbar input[type=date]{background:var(--card2);border:1px solid var(--line);color:var(--tx);padding:6px 9px;border-radius:8px;font-size:12.5px;font-family:inherit}
+.filterbar label{font-size:11px;color:var(--tx3);display:flex;flex-direction:column;gap:3px;font-weight:600}
+.chip{font-size:11px;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:3px 9px;color:var(--tx2)}
+
+section{margin:26px 0;scroll-margin-top:90px}
+.sechead{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.sechead h2{font-size:17px}
+.secnum{width:24px;height:24px;border-radius:7px;background:var(--card2);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--acc)}
+.secsub{color:var(--tx2);font-size:12px}
+.grid{display:grid;gap:14px}
+.grid.g6{grid-template-columns:repeat(6,1fr)}
+.grid.g4{grid-template-columns:repeat(4,1fr)}
+.grid.g3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:1200px){.grid.g6{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){.grid.g6,.grid.g3{grid-template-columns:repeat(2,1fr)}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);position:relative}
+.card h3{font-size:13px;color:var(--tx2);font-weight:700;letter-spacing:.2px;display:flex;align-items:center;gap:6px}
+
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.kpi .lbl{font-size:11px;color:var(--tx2);font-weight:700}
+.kpi .val{font-size:22px;font-weight:800;margin:6px 0 2px;font-family:'JetBrains Mono',monospace}
+.kpi .sub{font-size:11px;color:var(--tx3)}
+
+/* ===== multi-level table ===== */
+.tblwrap{overflow:auto;max-height:640px;border-radius:10px;border:1px solid var(--line)}
+table.hdo{border-collapse:separate;border-spacing:0;font-size:12.5px;width:auto}
+table.hdo th,table.hdo td{padding:7px 16px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;text-align:right}
+table.hdo th.hourcol,table.hdo td.hourcol{text-align:left}
+table.hdo th{background:var(--card2);color:var(--tx2);font-weight:700;position:sticky;top:0;z-index:3}
+table.hdo thead tr:first-child th{top:0}
+table.hdo thead tr:nth-child(2) th{top:31px}
+table.hdo th.hourcol,table.hdo td.hourcol{position:sticky;left:0;z-index:4;background:var(--card2);text-align:left;font-weight:700;border-right:2px solid var(--acc)}
+table.hdo thead tr:first-child th.hourcol{z-index:6}
+table.hdo th.datehead{text-align:center;background:var(--brand-brown);color:var(--brand-cream);font-size:12px}
+table.hdo tbody td.hourcol{background:var(--card2)}
+table.hdo tbody tr:hover td{background:rgba(79,140,255,.08)}
+table.hdo tbody tr:hover td.hourcol{background:rgba(79,140,255,.14)}
+table.hdo td.best{background:rgba(34,197,94,.16);font-weight:800;color:var(--good)}
+table.hdo td.zero{color:var(--tx3)}
+table.hdo td.future{color:var(--tx3);font-style:italic;text-align:center}
+table.hdo td .arrow-up,table.hdo td .arrow-down,table.hdo td .arrow-flat{font-size:10.5px;font-weight:700;white-space:nowrap}
+table.hdo tfoot td{font-weight:800;background:var(--card2);position:sticky;bottom:0}
+
+.note{background:var(--card2);border:1px dashed var(--line);border-radius:8px;padding:8px 11px;font-size:11.8px;color:var(--tx3);margin-top:10px}
+.note b{color:var(--tx2)}
+
+.trendbar{display:flex;gap:10px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap}
+.arrow-up{color:var(--good)} .arrow-down{color:var(--bad)} .arrow-flat{color:var(--tx3)}
+.todaybadge{display:inline-block;background:var(--good);color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.3px;padding:1px 6px;border-radius:8px;margin-left:5px;vertical-align:middle}
+
+/* ===== Marketing Sale Intelligence ===== */
+.msi-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.msi-tab{background:transparent;border:1px solid transparent;color:var(--tx2);padding:7px 13px;border-radius:9px;font-size:12.5px;font-weight:700;cursor:pointer}
+.msi-tab:hover{color:var(--tx);background:var(--card2)}
+.msi-tab.on{background:var(--card2);color:var(--acc);border-color:var(--line)}
+.msi-chipbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px}
+.msi-chip{display:inline-flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--acc);border-radius:20px;padding:4px 6px 4px 11px;font-size:11.5px;color:var(--tx)}
+.msi-chip button{background:transparent;border:none;color:var(--tx3);cursor:pointer;font-size:11px;padding:2px 5px;border-radius:50%;line-height:1}
+.msi-chip button:hover{color:var(--bad);background:rgba(255,93,108,.14)}
+.msi-sub{color:var(--tx2);font-size:12.5px;margin-bottom:15px}
+.msi-panels{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(440px,1fr))}
+.msi-panel-full{grid-column:1/-1}
+table.msi{border-collapse:collapse;width:100%;font-size:12.5px}
+table.msi th{text-align:right;color:var(--tx2);font-weight:700;font-size:10.5px;letter-spacing:.3px;text-transform:uppercase;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;background:var(--card);cursor:pointer}
+table.msi th:first-child,table.msi td:first-child{text-align:left}
+table.msi th:hover{color:var(--tx)}
+table.msi th.sorted{color:var(--acc)}
+table.msi td{padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:right}
+table.msi tbody tr{cursor:pointer}
+table.msi tbody tr:hover td{background:rgba(79,140,255,.08)}
+table.msi tbody tr.active td{background:rgba(79,140,255,.16);font-weight:700}
+table.msi td .bar{display:inline-block;height:6px;background:var(--acc);border-radius:3px;vertical-align:middle;margin-right:6px}
+.msi-tblwrap{max-height:420px;overflow:auto;border-radius:10px;border:1px solid var(--line)}
+.msi-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.msi-toolbar input[type=search]{background:var(--card2);border:1px solid var(--line);color:var(--tx);padding:6px 10px;border-radius:8px;font-size:12px;min-width:160px}
+.msi-toolbar select{background:var(--card2);border:1px solid var(--line);color:var(--tx);padding:6px 9px;border-radius:8px;font-size:12px}
+.insight-list{display:flex;flex-direction:column;gap:8px}
+.insight-item{background:var(--card2);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:8px;padding:9px 12px;font-size:12.8px}
+.matrix-wrap{overflow:auto;max-height:480px;border-radius:10px;border:1px solid var(--line)}
+table.matrix{border-collapse:collapse;font-size:12px}
+table.matrix th,table.matrix td{padding:6px 10px;border:1px solid var(--line);white-space:nowrap;text-align:right}
+table.matrix th{background:var(--card2);color:var(--tx2);position:sticky;top:0}
+table.matrix th:first-child,table.matrix td:first-child{text-align:left;position:sticky;left:0;background:var(--card2);z-index:2}
+table.matrix td.tot,table.matrix th.tot{font-weight:800;background:rgba(79,140,255,.1)}
+</style>
+</head>
+<body>
+
+<div id="boot"><div class="bootmark">L</div><div class="bootbar"><i></i></div><div class="boottxt">Loading Hourly Deals vs Orders…</div></div>
+
+<header class="top">
+  <div class="bar">
+    <div class="brand"><div class="logo">L</div><div class="brandtx"><b>Lucira Jewelry</b><div>Hourly Deals vs Orders Dashboard</div></div></div>
+    <span class="pill" id="freshPill"><span class="dot"></span> loading…</span>
+    <div class="grow"></div>
+    <select id="fAutoRefresh" class="btn" style="cursor:pointer">
+      <option value="0">Auto-refresh: Off</option>
+      <option value="900000">Auto-refresh: 15 min</option>
+      <option value="1800000">Auto-refresh: 30 min</option>
+      <option value="3600000" selected>Auto-refresh: 1 hour</option>
+    </select>
+    <button class="btn" id="refreshBtn">⟳ Refresh Now</button>
+    <button class="btn" id="themeBtn">◐ Theme</button>
+    <button class="btn primary" id="printBtn">🖨 Print / PDF</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="filterbar" id="filterbar">
+    <label>Date Range<span style="display:flex;gap:6px"><input type="date" id="fFrom"><input type="date" id="fTo"></span></label>
+    <label style="justify-content:flex-end"><span style="display:flex;gap:6px">
+      <button class="btn" id="fLatestBtn">Today</button>
+      <button class="btn" id="fYesterdayBtn">Yesterday</button>
+      <button class="btn" id="fWeeklyBtn">Weekly (7d)</button>
+    </span></label>
+    <label>Hour View<select id="fHourView">
+      <option value="biz">Business Hours (10 AM – 10 PM)</option>
+      <option value="all" selected>All 24 Hours</option>
+    </select></label>
+    <label>Agent / Owner<select id="fOwner"><option value="">All Agents</option></select></label>
+    <span class="grow"></span>
+    <span class="chip" id="chipMeta">—</span>
+  </div>
+
+  <div class="card" id="dataNote" style="border-color:var(--warn)">
+    <h3>ⓘ Data Sources</h3>
+    <div style="font-size:12.3px;color:var(--tx2);line-height:1.6">
+      <b>Deals</b> = live Zoho CRM Deals feed (BigQuery <code>zoho_crm.cdc_deals</code>, the same CDC table the other Lucira dashboards read from), unique <code>Deal_ID</code>, bucketed by <code>Created_Time</code> converted to IST (Asia/Kolkata). &nbsp;
+      <b>Orders</b> = live BigQuery <code>lucirajewelry-prod.ds_imputed_reporting.marketing_sale</code>, unique <code>document_no</code> (Order ID), bucketed by the order's date/time field, already IST wall-clock. &nbsp;
+      Deals and Orders are aggregated <b>independently</b> before being placed side-by-side in the table below — they are never joined row-to-row, so no double-counting from a join is possible.
+    </div>
+  </div>
+
+  <section id="secKpi">
+    <div class="sechead"><span class="secnum">1</span><h2>Summary KPI Cards</h2><span class="secsub" id="kpiSub"></span></div>
+    <div class="grid g4" id="kpiGrid"></div>
+  </section>
+
+  <section id="secTable">
+    <div class="sechead"><span class="secnum">2</span><h2>Hour × Date — Deals vs Orders vs Conversion %</h2><span class="secsub" id="tblSub"></span></div>
+    <div class="card">
+      <div class="tblwrap"><table class="hdo" id="mainTable"></table></div>
+      <div style="margin-top:8px"><button class="btn" id="csvBtn">⬇ Export CSV</button></div>
+    </div>
+  </section>
+
+  <section id="secRangeCompare">
+    <div class="sechead"><span class="secnum">3</span><h2>Date Range Comparison</h2><span class="secsub">Totals across any two date ranges, side by side</span></div>
+    <div class="card">
+      <div class="trendbar" style="align-items:flex-end">
+        <label style="font-size:11px;color:var(--tx3);font-weight:600">Range A — From<br><input type="date" id="rcAFrom"></label>
+        <label style="font-size:11px;color:var(--tx3);font-weight:600">To<br><input type="date" id="rcATo"></label>
+        <label style="font-size:11px;color:var(--tx3);font-weight:600">Range B — From<br><input type="date" id="rcBFrom"></label>
+        <label style="font-size:11px;color:var(--tx3);font-weight:600">To<br><input type="date" id="rcBTo"></label>
+        <button class="btn" id="rcTodayYestBtn">Today vs Yesterday</button>
+        <button class="btn" id="rcWeekBtn">This Week vs Last Week</button>
+      </div>
+      <div class="tblwrap" id="rangeCompareTable"></div>
+      <div class="note">Uses the full loaded window (last 60 days) regardless of what the table above shows, and respects the Agent/Owner filter. "B vs A" is the percent change from Range A to Range B.</div>
+    </div>
+  </section>
+
+  <section id="secMSI">
+    <div class="sechead"><span class="secnum">4</span><h2>Marketing Sale Intelligence</h2><span class="secsub" id="msiSub"></span></div>
+    <div id="msiRoot"></div>
+  </section>
+
+  <footer style="text-align:center;color:var(--tx3);font-size:11.5px;padding:30px 0 10px">Hourly Deals vs Orders Dashboard · Lucira Jewelry · Deals: live Zoho CRM · Orders: live BigQuery marketing_sale</footer>
+</div>
+
+<script src="hdo.js"></script>
+<script src="msi.js"></script>
+</body>
+</html>

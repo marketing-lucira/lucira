@@ -1,0 +1,7 @@
+.git
+.gitignore
+.claude/
+*.log
+build_ppi_data.py
+sql/
+tanishq-intelligence/

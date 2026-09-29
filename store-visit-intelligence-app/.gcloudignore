@@ -7,3 +7,13 @@ sql/
 svci.js
 svci_data.js
 svci_data.js.gz
+
+# Local test harness / scratch -- never deployed
+node_modules/
+package-lock.json
+package.json
+browser_test.js
+drill_test.js
+*.png
+api_test.json
+api2.json

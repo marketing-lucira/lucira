@@ -79,10 +79,10 @@ def build_snapshot():
         return list(bq.query(sql).result())
 
     fact_sql = f"""
-        SELECT date, document_no, customer_id, customer_name, city, state, region,
+        SELECT date, document_no, customer_id, customer_mobile, customer_name, city, state, region,
                sku, product_name, style, category, sub_category, collection, metal,
                price_band, customer_type, sale_type, store, channel,
-               qty, gross, net, discount, gross_weight, net_weight
+               qty, gross, net, discount, gross_weight, net_weight, cogs, cost_source
         FROM `{FACT_TABLE}`
         WHERE date >= DATE_SUB(CURRENT_DATE('Asia/Kolkata'), INTERVAL {WINDOW_DAYS} DAY)
         ORDER BY date
@@ -90,7 +90,10 @@ def build_snapshot():
     """
     val_sql = f"""
         SELECT COUNT(*) AS deduped_rows,
-               ROUND(SUM(gross), 2) AS gross
+               ROUND(SUM(gross), 2) AS gross,
+               ROUND(SUM(net), 2) AS net,
+               ROUND(SUM(IF(cost_source != 'unavailable', net, 0)), 2) AS covered_net,
+               ROUND(SUM(cogs), 2) AS cogs
         FROM `{FACT_TABLE}`
         WHERE date >= DATE_SUB(CURRENT_DATE('Asia/Kolkata'), INTERVAL {WINDOW_DAYS} DAY)
     """
@@ -107,7 +110,8 @@ def build_snapshot():
         d = _iso(r["date"])
         items.append({
             "date": d, "document_no": r["document_no"], "order_id": r["document_no"],
-            "customer_id": r["customer_id"], "customer_name": r["customer_name"] or "",
+            "customer_id": r["customer_id"], "customer_mobile": r["customer_mobile"] or "",
+            "customer_name": r["customer_name"] or "",
             "city": r["city"] or "", "state": r["state"] or "", "region": r["region"] or "",
             "sku": r["sku"], "product_name": r["product_name"] or "", "style": r["style"],
             "category": r["category"] or "", "sub_category": r["sub_category"] or "",
@@ -117,7 +121,9 @@ def build_snapshot():
             "qty": float(r["qty"] or 0), "gross": float(r["gross"] or 0),
             "net": float(r["net"] or 0), "discount": float(r["discount"] or 0),
             "gross_weight": float(r["gross_weight"] or 0), "net_weight": float(r["net_weight"] or 0),
-            "cogs": None, "store": r["store"] or "", "salesperson": "", "channel": r["channel"] or "",
+            "cogs": (float(r["cogs"]) if r["cogs"] is not None else None),
+            "cost_source": r["cost_source"] or "unavailable",
+            "store": r["store"] or "", "salesperson": "", "channel": r["channel"] or "",
         })
         if d and (max_date is None or d > max_date):
             max_date = d
@@ -139,19 +145,30 @@ def build_snapshot():
 
     v = run(val_sql)[0]
     raw = run(raw_sql)[0]
+    net = float(v["net"] or 0)
+    covered_net = float(v["covered_net"] or 0)
+    cogs = float(v["cogs"] or 0)
+    coverage_pct = round(100 * covered_net / net, 2) if net else 0.0
     validation = {
         "raw_rows": int(raw["raw_rows"]), "deduped_rows": int(v["deduped_rows"]),
         "removed": int(raw["raw_rows"]) - int(v["deduped_rows"]),
         "raw_gross": float(v["gross"] or 0), "returned_rows": len(items),
         "returned_gross": float(v["gross"] or 0), "gst_divisor": GST_DIVISOR,
         "dedup_key": "gross + sale_date + document_no + net_weight",
+        # Margin cost coverage — real vendor purchase cost (purchase.invoice_items),
+        # weighted-avg per exact SKU, style-average fallback. See sql/refresh_reporting.sql
+        # RULE 6. ~5% of revenue genuinely has no purchase-cost match; those lines carry
+        # cogs=null (never zero-filled) and are excluded from margin_pct here.
+        "cost_coverage_pct": coverage_pct, "cost_covered_net": covered_net,
+        "total_cogs": cogs, "gross_profit": round(covered_net - cogs, 2),
+        "margin_pct": round(100 * (covered_net - cogs) / covered_net, 2) if covered_net else None,
     }
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "asOf": max_date, "window_days": WINDOW_DAYS, "currency": CURRENCY, "gst_divisor": GST_DIVISOR,
         "capabilities": {
-            "margin": False, "inventory": False, "selling_days": False, "customer": True,
+            "margin": coverage_pct >= 50.0, "inventory": False, "selling_days": False, "customer": True,
             "salesperson": False, "sale_type": True, "weights": True,
             "price_band": True, "customer_type": True, "sub_category": True, "exchange": False,
         },

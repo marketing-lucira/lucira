@@ -41,6 +41,12 @@ index.html + journey.js   (3 tabs; all filtering client-side over ~550 rows)
 * Sale: `marketing_sale` invoice (distinct `document_no`, amount = `SUM(net_sale)`, time = `document_date` IST)
   `> Created_Time`, mobile-matched.
 * Anti fan-out: calls, walk-ins and sales are each aggregated per meeting before joining back.
+* Meeting Type (`meeting_type_norm`) is derived in the view from the free-text meeting title, which holds
+  the same intent in many spellings (23 raw variants of "Store Visit" fold to one). Titles mentioning
+  "test" become `Test / Internal` so they are not counted as real store visits; the raw title is kept.
+* Meeting **Status** is deliberately not offered as a filter/KPI: Zoho's `Check_In_Status` is `PLANNED` on
+  every record (no information), and the real `Meeting_Status` picklist is ~3% populated and absent from
+  the CDC feed.
 
 ## Deploy / redeploy
 ```bash
@@ -54,4 +60,4 @@ gcloud run deploy store-visit-intelligence --source . --project=lucirajewelry-pr
 `python validation/validate_meetings.py` picks real meetings for each case (no call, one call, multiple calls,
 previous walk-in, walk-in after, sale after, walk-in + sale, sale without walk-in, different JC, different
 city/stage/trigger, call before creation) and recomputes them from the raw tables in Python. Last run
-(26 Sep 2026): 11/11 match. Results in `validation/validate_meetings_results.json`.
+(29 Sep 2026): 11/11 match. Results in `validation/validate_meetings_results.json`.

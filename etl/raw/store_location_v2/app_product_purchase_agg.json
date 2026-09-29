@@ -1,0 +1,5702 @@
+[
+  {
+    "category": "Bangles", 
+    "city": "Ghazipur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Panchkula", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Mystic Eye Diamond Charm", 
+    "purchase_line_items": "1", 
+    "revenue": "8838.0", 
+    "sku": "LJ-CHA028-14YGLGD", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Delicate Love Diamond Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "30229.0", 
+    "sku": "LJ-R00163-14YGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Barh", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Bihar"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Noida", 
+    "price_range": "₹2L+", 
+    "product_name": "Bracelet Chain charm", 
+    "purchase_line_items": "1", 
+    "revenue": "258713.0", 
+    "sku": "LJ-ChainCharm-14YGLGD-5", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Swirl Cluster Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "8999.0", 
+    "sku": "LJ-NP0066-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "customer Order COB163", 
+    "purchase_line_items": "2", 
+    "revenue": "34146.0", 
+    "sku": "LJ-COB163-14RGLGD-7", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Marquise Cut Engagement Ring with Halo Setting", 
+    "purchase_line_items": "1", 
+    "revenue": "80026.0", 
+    "sku": "LJ-R00001-14WGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Jaipur", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Round Diamond Cluster Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "66916.0", 
+    "sku": "LJ-R00293-14YGLGD-6", 
+    "state": "Rajasthan"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Pune", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Chandrika Bali Nose Pin", 
+    "purchase_line_items": "1", 
+    "revenue": "9500.0", 
+    "sku": "LJ-NP0035-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "GANJAM", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "4999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Odisha"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹1L-2L", 
+    "product_name": "Royal Princess Sparkle Studs Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "123217.0", 
+    "sku": "LJ-E00086-18YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Pear-Cut Diamond Halo Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "14418.0", 
+    "sku": "LJ-NE0012-09YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Necklaces", 
+    "city": "Gurgaon", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Zenith Chevron Diamond Chain Necklace", 
+    "purchase_line_items": "1", 
+    "revenue": "14719.0", 
+    "sku": "LJ-N00083-09YGLGD", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "West Godavari", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Andhra Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Dakshina Kannada", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Charms", 
+    "city": "Palghar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Umbrella Charm", 
+    "purchase_line_items": "243", 
+    "revenue": "1736796.0", 
+    "sku": "LJ-CHA023-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Charms", 
+    "city": "Palghar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Heart Key Charm", 
+    "purchase_line_items": "178", 
+    "revenue": "1717850.0", 
+    "sku": "LJ-CHA025-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Chain", 
+    "city": "Pune", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "1", 
+    "revenue": "14954.0", 
+    "sku": "LJ-CH0018-18YGPG-16", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Jalandhar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Astra Teardrop Diamond Dangle Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "30738.0", 
+    "sku": "LJ-E00657-14YGLGD", 
+    "state": "Punjab"
+  }, 
+  {
+    "category": "", 
+    "city": "West Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "3.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹1L-2L", 
+    "product_name": "Three-Stone Engagement Ring with Accent Diamonds", 
+    "purchase_line_items": "1", 
+    "revenue": "100438.0", 
+    "sku": "LJ-R00138-14RGLGD-10", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Necklaces", 
+    "city": "DURG", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Echo Link Chain Necklace", 
+    "purchase_line_items": "2", 
+    "revenue": "113108.0", 
+    "sku": "LJ-N00081-14RGLGD", 
+    "state": "Chhattisgarh"
+  }, 
+  {
+    "category": "Chain", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "2", 
+    "revenue": "33782.0", 
+    "sku": "LJ-CH0018-18YGPG-18", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "3", 
+    "revenue": "20000.0", 
+    "sku": "LJ-GC100-995YGPG", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "NORTH WEST", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "4999.0", 
+    "sku": "LJ-NP0012-14RGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "NARSINGHPUR", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Madhya Pradesh"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Pune", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Floral Round Diamond Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "8554.0", 
+    "sku": "LJ-E00320-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "West Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Leaf Climber Diamond Stud Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "20374.0", 
+    "sku": "LJ-E00626-14YGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bijapur(KAR)", 
+    "price_range": "₹25K-50K", 
+    "product_name": "2gm 24kt Pure Gold Coin", 
+    "purchase_line_items": "1", 
+    "revenue": "30406.0", 
+    "sku": "LJ-GC0004-999YGPG", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Charms & Pendants", 
+    "city": "Ahmedabad", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Nakshatra Rosette Cluster Diamond Chain Pendant", 
+    "purchase_line_items": "2", 
+    "revenue": "60084.0", 
+    "sku": "LJ-PD0499-14RGLGD", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Nashik", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Pallavi Diamond Bali Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "23998.0", 
+    "sku": "LJ-NP0035-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MADURAI", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Pear & Round Diamond Cuff Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "39232.0", 
+    "sku": "LJ-SBR0008-14YGLGD-2.3", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Small Round Diamond 0.25ct Eternity Band", 
+    "purchase_line_items": "1", 
+    "revenue": "18530.0", 
+    "sku": "LJ-R00317-14YGLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Bijapur(KAR)", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Ever Bloom Diamond Nose Bali", 
+    "purchase_line_items": "5", 
+    "revenue": "59995.0", 
+    "sku": "LJ-NP0078-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "4.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹1L-2L", 
+    "product_name": "Pear and Round Diamond Halo Ring with Center Gemstone", 
+    "purchase_line_items": "1", 
+    "revenue": "100286.0", 
+    "sku": "LJ-R00218-14YGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "THANE", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Lotus Pose Yoga Diamond Pendant Necklace", 
+    "purchase_line_items": "2", 
+    "revenue": "102278.0", 
+    "sku": "LJ-PD0062-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "GHAZIABAD", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Unity Cluster Diamond Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "55840.0", 
+    "sku": "LJ-R00836-18YGLGD-15", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Khorda", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Odisha"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bengaluru", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "2", 
+    "revenue": "24970.0", 
+    "sku": "LJ-CH0018-14YGPG-16", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Round Solitaire 4-Prong Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "36836.0", 
+    "sku": "LJ-E00032-18YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BANGALORE", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Round Solitaire Tulip Setting Engagement Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "89318.0", 
+    "sku": "LJ-R00035-18WGLGD-13", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "0.47 Ct Marquise Shape Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "35548.0", 
+    "sku": "LJ-E00088-14RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "KOLKATA", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Palghar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "117", 
+    "revenue": "701883.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "", 
+    "city": "Palghar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "139", 
+    "revenue": "139.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "The Loving Heart Diamond Nose Pin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0025-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Rajkot", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": null, 
+    "city": "Chennai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Blooming Flower Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "12876.0", 
+    "sku": "LJ-E00671-14YGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bijnor", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Round Diamond Prong Set Nose Pin", 
+    "purchase_line_items": "1", 
+    "revenue": "4999.0", 
+    "sku": "LJ-NP0005-14YGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Hyderabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Trio Cluster Diamond Stud Earring", 
+    "purchase_line_items": "1", 
+    "revenue": "8184.0", 
+    "sku": "LJ-E00613-14YGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Patna", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Titan Hex Fusion Gold Men's Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "20854.0", 
+    "sku": "LJ-PGMR002-09YGPG-19", 
+    "state": "Bihar"
+  }, 
+  {
+    "category": "Pendants", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Sparkling S Diamond Pendant", 
+    "purchase_line_items": "2", 
+    "revenue": "21400.0", 
+    "sku": "LJ-PD0286-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Blossom Round Diamond Nosepin", 
+    "purchase_line_items": "3", 
+    "revenue": "31996.0", 
+    "sku": "LJ-NP0030-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Dhanbad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Men's Bali", 
+    "purchase_line_items": "1", 
+    "revenue": "10094.0", 
+    "sku": "LJ-ME0030-09YGLGD", 
+    "state": "Jharkhand"
+  }, 
+  {
+    "category": null, 
+    "city": "Rajkot", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Ornella Bloom Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "9064.0", 
+    "sku": "LJ-E00638-14YGLGD", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "South Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Divine Trishul Diamond Men’s Stud", 
+    "purchase_line_items": "2", 
+    "revenue": "15748.0", 
+    "sku": "LJ-ME0048-14YGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Siliguri", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Leaf Climber Diamond Stud Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "18724.0", 
+    "sku": "LJ-E00626-14YGLGD", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mahpur", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Antiqua Drop Diamond Pendant Necklace", 
+    "purchase_line_items": "1", 
+    "revenue": "35599.0", 
+    "sku": "LJ-PD0297-14YGLGD", 
+    "state": "Bihar"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Rajkot", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Celestial Spark Diamond Hoops Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "19325.0", 
+    "sku": "LJ-E00389-09YGLGD", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "South West Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹1L-2L", 
+    "product_name": "Round Bezel Diamond Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "145956.0", 
+    "sku": "LJ-SBR0064-14YGLGD-2.4", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": null, 
+    "city": "Aligarh", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Woven Floral Intricate Gold Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "29589.0", 
+    "sku": "LJ-PGR023-18YGPG-18", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "KACHCHH", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "1", 
+    "revenue": "2000.0", 
+    "sku": "LJ-GC100-995YGPG", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Dual Chevron Diamond Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "57206.0", 
+    "sku": "LJ-R00853-18YGLGD-17", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Pentas Diamond Nose Pin", 
+    "purchase_line_items": "79", 
+    "revenue": "710921.0", 
+    "sku": "LJ-NP0072-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Chain", 
+    "city": "Kanchipuram", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "1", 
+    "revenue": "11000.0", 
+    "sku": "LJ-CH0018-14YGPG-16", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Ghaziabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "7", 
+    "revenue": "7.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Rajkot", 
+    "price_range": "₹50K-1L", 
+    "product_name": "1.06 ct Classic Round Diamond Tennis Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "50953.0", 
+    "sku": "LJ-BR0188-14YGLGD-6.5", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Ghazipur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Round Diamond Solitaire Twist Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "34642.0", 
+    "sku": "LJ-R00604-09WGLGD-9", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Faridabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Kannur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Kerala"
+  }, 
+  {
+    "category": "", 
+    "city": "Khorda", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Silver Bracelet", 
+    "purchase_line_items": "2", 
+    "revenue": "0.0", 
+    "sku": "LJ-SLB001-925SLLGD-6.5", 
+    "state": "Odisha"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Hexane-Petal Diamond Chevron Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "27160.0", 
+    "sku": "LJ-R00897-14YGLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "ARIYALUR", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Duo-Tone Round Diamond Men's Bali", 
+    "purchase_line_items": "1", 
+    "revenue": "22253.0", 
+    "sku": "LJ-ME0028-18RGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Pave Round Diamond Men's Stud", 
+    "purchase_line_items": "1", 
+    "revenue": "9971.0", 
+    "sku": "LJ-ME0021-18YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "RANGA REDDY", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Marq Diamond Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "7385.0", 
+    "sku": "LJ-E00443-14YGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "MANGALORE", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Astra Teardrop Diamond Dangle Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "14637.0", 
+    "sku": "LJ-E00657-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Jaipur", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Round Diamond Evil Eye Pendant", 
+    "purchase_line_items": "1", 
+    "revenue": "49065.0", 
+    "sku": "LJ-PD0353-14YGLGD", 
+    "state": "Rajasthan"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Classic 4-Prong Round Diamond Stud Earrings – 5.00mm", 
+    "purchase_line_items": "2", 
+    "revenue": "94022.0", 
+    "sku": "LJ-E00043-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Darbhanga", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Flora Cluster Diamond Stud Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "15788.0", 
+    "sku": "LJ-E00621-14YGLGD", 
+    "state": "Bihar"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Noida", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Bracelet Chain charm heart", 
+    "purchase_line_items": "2", 
+    "revenue": "51846.0", 
+    "sku": "LJ-BR12345", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "ghaziabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "6999.0", 
+    "sku": "LJ-NP0012-18YGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Hyderabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Auric Fusion Gold Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "35730.0", 
+    "sku": "LJ-PGR043-14YGPG-17", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "South West Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Lumiere Round Diamond Hoop Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "27760.0", 
+    "sku": "LJ-E00655-14YGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Gurgaon", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Heartflare Plain Gold Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "8522.0", 
+    "sku": "LJ-PGE039-09YGPG", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Delicate Love Diamond Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "30208.0", 
+    "sku": "LJ-R00163-14YGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Round Diamond with Pear Shape Green Gemstone Necklace", 
+    "purchase_line_items": "1", 
+    "revenue": "90460.0", 
+    "sku": "LJ-N00007-14YGLGD", 
+    "state": null
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹25K-50K", 
+    "product_name": "0.32 Carat Round Diamond Two-Tone Gold Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "35684.0", 
+    "sku": "LJ-R00081-14YWLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Amritsar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Lumiere Round Diamond Hoop Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "13623.0", 
+    "sku": "LJ-E00655-14YGLGD", 
+    "state": "Punjab"
+  }, 
+  {
+    "category": null, 
+    "city": "Gobindapur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Elowen Flow Plain Gold Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "12572.0", 
+    "sku": "LJ-PGR034-18YGPG-10", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Exquisite Round Diamond Solitaire Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "61120.0", 
+    "sku": "LJ-R00541-14YGLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Hyderabad", 
+    "price_range": "₹1L-2L", 
+    "product_name": "3.60cts Brilliant Round Six-Prong Solitaire Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "163820.0", 
+    "sku": "LJ-E00283-14YGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Hyderabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Imperial Weave Intricate Gold Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "39424.0", 
+    "sku": "LJ-PGR049-14YGPG-18", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "0.66 Carat Dual Tone Textured Diamond Men's Classic Ring", 
+    "purchase_line_items": "107", 
+    "revenue": "8230547.0", 
+    "sku": "LJ-R00075-14RWLGD-18", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Gurgaon", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Sculpted Plain Gold Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "8971.0", 
+    "sku": "LJ-PGE040-09YGPG", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Round Diamond Solitaire Twist Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "29032.0", 
+    "sku": "LJ-R00604-18YGLGD-10", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Guntur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Trishul Om Convertible Diamond Rakhi Pendant", 
+    "purchase_line_items": "2", 
+    "revenue": "16468.0", 
+    "sku": "LJ-BP0008-09YGLGD", 
+    "state": "Andhra Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Pune", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Swastika Wheel Diamond Men's Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "22373.0", 
+    "sku": "LJ-MBR014-18YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "South Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Scalloped Cluster Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "11901.0", 
+    "sku": "LJ-E00627-18YGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "SHIMOGA", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Round Diamond Solitaire Twist Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "19742.0", 
+    "sku": "LJ-R00604-14YGLGD-17", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BANGALORE", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Gold-Wave Diamond Bali Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "6999.0", 
+    "sku": "LJ-NP0044-14RGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Ernakulam", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Kerala"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Thane", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Sculpted Plain Gold Stud Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "18668.0", 
+    "sku": "LJ-PGE040-09YGPG", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Marquise Cut Engagement Ring with Halo Setting", 
+    "purchase_line_items": "2", 
+    "revenue": "131398.0", 
+    "sku": "LJ-R00001-14YGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "", 
+    "city": "Guwahati", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Silver Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "15000.0", 
+    "sku": "LJ-SLB001-925SLLGD-6.5", 
+    "state": "Assam"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Ahmedabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Silver Bracelet", 
+    "purchase_line_items": "2", 
+    "revenue": "30000.0", 
+    "sku": "LJ-SLB001-925SLLGD-6.5", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": null, 
+    "city": "ERNAKULAM", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Timeless Silk Fit Plain Gold Band", 
+    "purchase_line_items": "1", 
+    "revenue": "8494.0", 
+    "sku": "LJ-PGR056-18YGPG-12", 
+    "state": "Kerala"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Raigard", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cluster Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "6499.0", 
+    "sku": "LJ-NP0033-14YGLGD", 
+    "state": "Chhattisgarh"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Gachibowli", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Swastika Wheel Diamond Men's Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "17108.0", 
+    "sku": "LJ-MBR014-14YGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Greater noida", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Falcon Crest Fusion Gold Men's Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "12524.0", 
+    "sku": "LJ-PGMR005-09YGPG-21", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "", 
+    "city": "", 
+    "price_range": "Under ₹25K", 
+    "product_name": "0.100 gms 22 kt Gold Coin", 
+    "purchase_line_items": "63", 
+    "revenue": "3.96", 
+    "sku": "LJ-GC0002-916YGPG", 
+    "state": ""
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Pathanamthitta", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Floral Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "7499.0", 
+    "sku": "LJ-NP0026-14YGLGD", 
+    "state": "Kerala"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Meerut", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Princess Cut Diamond Men's Classic Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "65212.0", 
+    "sku": "LJ-R00069-14RGLGD-20", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "PUNE", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "4999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Amritsar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "1", 
+    "revenue": "2000.0", 
+    "sku": "LJ-GC100-995YGPG", 
+    "state": "Punjab"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Paramount Pave Diamond Men's Ring", 
+    "purchase_line_items": "107", 
+    "revenue": "5312550.0", 
+    "sku": "LJ-MR0782-14YGLGD-20", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "", 
+    "city": "Kodagu", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Raigarh(MH)", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Fleure Plain Gold Ring", 
+    "purchase_line_items": "3", 
+    "revenue": "45153.0", 
+    "sku": "LJ-PGR081-18YGPG-12", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "", 
+    "city": "Ahmedabad", 
+    "price_range": "₹1L-2L", 
+    "product_name": "Customer Order COR166", 
+    "purchase_line_items": "4", 
+    "revenue": "494864.0", 
+    "sku": "LJ-COR166-18YGLGD-20", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Raigarh(MH)", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Pristine Round Solitaire Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "32802.0", 
+    "sku": "LJ-PR0435-14YGLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Men’s Dual-Line Solitaire  Band", 
+    "purchase_line_items": "1", 
+    "revenue": "37995.0", 
+    "sku": "LJ-R00111-14YWLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Dhanbad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Stria Round Diamond Trilogy Ring", 
+    "purchase_line_items": "3", 
+    "revenue": "30105.0", 
+    "sku": "LJ-R00949-09YGLGD-15", 
+    "state": "Jharkhand"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bengaluru, Hullahalli", 
+    "price_range": "₹1L-2L", 
+    "product_name": "Dual Tone Luxurious Diamond Geometric Men's Band", 
+    "purchase_line_items": "1", 
+    "revenue": "160801.0", 
+    "sku": "LJ-R00096-18YWLGD-22", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Charms", 
+    "city": "Palghar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Hat Charm", 
+    "purchase_line_items": "239", 
+    "revenue": "3435464.0", 
+    "sku": "LJ-CHA020-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Jalpaiguri", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Rajkot", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Falcon Crest Fusion Gold Men's Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "11570.0", 
+    "sku": "LJ-PGMR005-09YGPG-16", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Greater Noida West", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Starlit Harmony Intricate Gold Ring", 
+    "purchase_line_items": "3", 
+    "revenue": "48000.0", 
+    "sku": "LJ-PGR022-14YGPG-16", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Nala Sopara", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Ribbed Shoulder Round Solitaire Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "62988.0", 
+    "sku": "LJ-R00594-14YGLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Corolla Round Diamond Nosepin", 
+    "purchase_line_items": "2", 
+    "revenue": "17998.0", 
+    "sku": "LJ-NP0048-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Thane", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Driftline Fusion Gold Men's Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "17093.0", 
+    "sku": "LJ-PGR083-09YGPG-23", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Pune", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Chain Detailing Round Diamond Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "17408.0", 
+    "sku": "LJ-R00606-14YGLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "0.15Ct Half Eternity Round Diamond Band", 
+    "purchase_line_items": "2", 
+    "revenue": "55272.0", 
+    "sku": "LJ-R00379-14YGLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Ahmedabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Curve Diamond Geometric Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "15749.0", 
+    "sku": "LJ-R00867-14YGLGD-12", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MEDCHAL MALKAJGIRI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Petal Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "9999.0", 
+    "sku": "LJ-E00333-14RGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "RANGA REDDY", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Petal Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "10071.0", 
+    "sku": "LJ-E00333-14YGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Charms", 
+    "city": "Palghar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Airplane Charm", 
+    "purchase_line_items": "521", 
+    "revenue": "4663853.0", 
+    "sku": "LJ-CHA026-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Bezel Round Diamond Nosepin", 
+    "purchase_line_items": "2", 
+    "revenue": "15998.0", 
+    "sku": "LJ-NP0079-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Kanchipuram", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "4", 
+    "revenue": "4.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Timeless Silk Fit Plain Gold Band", 
+    "purchase_line_items": "1", 
+    "revenue": "4846.0", 
+    "sku": "LJ-PGR056-09YGPG-12", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Hyderabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "15", 
+    "revenue": "15.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Ahmedabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "6 prong solitaire stud 1.5 cts", 
+    "purchase_line_items": "1", 
+    "revenue": "65058.0", 
+    "sku": "LJ-E00023-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": null, 
+    "city": "Thane", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Jharokha Fusion Gold Dangle Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "14320.0", 
+    "sku": "LJ-PPE008-09YGPG", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "GHAZIABAD", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Swastika Wheel Diamond Men's Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "22045.0", 
+    "sku": "LJ-MBR014-18WGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "South Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Sunburst Cluster Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "14796.0", 
+    "sku": "LJ-E00622-14YGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Pune", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Brilliance Princess Cut Diamond Men's Bali", 
+    "purchase_line_items": "1", 
+    "revenue": "15201.0", 
+    "sku": "LJ-ME0029-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Thane", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Marquise Cut Engagement Ring with Halo Setting", 
+    "purchase_line_items": "1", 
+    "revenue": "65630.0", 
+    "sku": "LJ-R00001-14WGLGD-10", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "", 
+    "city": "Bengaluru", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Customer Order COR151", 
+    "purchase_line_items": "1", 
+    "revenue": "41709.0", 
+    "sku": "LJ-COR151-18RGLGD-19", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Pendants", 
+    "city": "East Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Silver Pendant", 
+    "purchase_line_items": "1", 
+    "revenue": "0.0", 
+    "sku": "LJ-SLP001-925SLLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Gold Coin", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "0.50gm 22kt Gold Coin", 
+    "purchase_line_items": "2", 
+    "revenue": "15854.0", 
+    "sku": "LJ-GC0007-22YGPG", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "EAST KHASI HILLS", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "1", 
+    "revenue": "4000.0", 
+    "sku": "LJ-GC100-995YGPG", 
+    "state": "Meghalaya"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "North 24 Parganas", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Vector Noir Diamond Mens Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "61366.0", 
+    "sku": "LJ-MR0778-18YGLGD-18", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Thane", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "28", 
+    "revenue": "28.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "0.21ct Half Eternity Diamond Band", 
+    "purchase_line_items": "2", 
+    "revenue": "44874.0", 
+    "sku": "LJ-R00358-14RGLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Lucknow", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Ornate Flora Diamond Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "103208.0", 
+    "sku": "LJ-R00724-14YGLGD-13", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "PASCHIM BARDHAMAN", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Antiqua Drop Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "25027.0", 
+    "sku": "LJ-PE0297-14YGLGD", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Gautam Buddha Nagar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Hexa Signature Diamond Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "48553.0", 
+    "sku": "LJ-R00593-14YGLGD-10", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BATHINDA", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Diamond Nose Pin", 
+    "purchase_line_items": "1", 
+    "revenue": "4999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Punjab"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Kanchipuram", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Two-Tone Paperclip Link Men's Chain", 
+    "purchase_line_items": "1", 
+    "revenue": "64430.0", 
+    "sku": "LJ-MCH002-18YGPG-22", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Necklaces", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Om Plain Gold Chain Necklace", 
+    "purchase_line_items": "1", 
+    "revenue": "29108.0", 
+    "sku": "LJ-PGN007-14YGPG", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "0.21ct Half Eternity Diamond Band", 
+    "purchase_line_items": "1", 
+    "revenue": "20907.0", 
+    "sku": "LJ-R00358-14YGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BANGALORE", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "1", 
+    "revenue": "7500.0", 
+    "sku": "LJ-GC100-955YG", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Thane", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Iconic Shiva Diamond Men's Bracelet", 
+    "purchase_line_items": "2", 
+    "revenue": "62046.0", 
+    "sku": "LJ-MBR011-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Vintage Floral Diamond Stud Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "26012.0", 
+    "sku": "LJ-E00624-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Coimbatore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "North Star Diamond Stud Earrings", 
+    "purchase_line_items": "3", 
+    "revenue": "29268.0", 
+    "sku": "LJ-E00617-14YGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Gurgaon", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Leaf Climber Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "9613.0", 
+    "sku": "LJ-E00626-14YGLGD", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Meerut", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Diamond Huggie Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "16675.0", 
+    "sku": "LJ-E00282-09YGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "North 24 Parganas", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Silver Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "15000.0", 
+    "sku": "LJ-SLB001-925SLLGD-6.5", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Rajkot", 
+    "price_range": "₹50K-1L", 
+    "product_name": "1.06 ct Classic Round Diamond Tennis Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "57877.0", 
+    "sku": "LJ-BR0188-18YGLGD-6.5", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bijapur(KAR)", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Raigarh(MH)", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Titan Hex Fusion Gold Men's Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "8975.0", 
+    "sku": "LJ-PGMR002-09YGPG-13", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "HYDERABAD", 
+    "price_range": "Under ₹25K", 
+    "product_name": "0.15Ct Half Eternity Round Diamond Band", 
+    "purchase_line_items": "1", 
+    "revenue": "19164.0", 
+    "sku": "LJ-R00379-14YGLGD-14", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "1.06 ct Classic Round Diamond Tennis Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "47942.0", 
+    "sku": "LJ-BR0188-14YGLGD-6.5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Chennai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Cushion Cut Diamond Stud Earrings", 
+    "purchase_line_items": "4", 
+    "revenue": "326128.0", 
+    "sku": "LJ-E00008-18YGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "NORTH", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Mosaic Round Diamond Men's Bali", 
+    "purchase_line_items": "1", 
+    "revenue": "33086.0", 
+    "sku": "LJ-ME0027-14YGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Divine Om Convertible Diamond Rakhi Pendant", 
+    "purchase_line_items": "2", 
+    "revenue": "39314.0", 
+    "sku": "LJ-BP0003-09YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Pendants", 
+    "city": "Chennai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Silver Pendant", 
+    "purchase_line_items": "1", 
+    "revenue": "10607.0", 
+    "sku": "LJ-SLP001-925SLLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Thane", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Heritage Oval Diamond Dangle Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "74810.0", 
+    "sku": "LJ-E00375-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Marquise Cut Engagement Ring with Halo Setting", 
+    "purchase_line_items": "8", 
+    "revenue": "464200.0", 
+    "sku": "LJ-R00001-14WGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Pendants", 
+    "city": "Jaipuraipur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Round Diamond Bail Pendant", 
+    "purchase_line_items": "3", 
+    "revenue": "26418.0", 
+    "sku": "LJ-PD0280-14YGLGD", 
+    "state": "Rajasthan"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Round Diamond Bail Pendant", 
+    "purchase_line_items": "1", 
+    "revenue": "9118.0", 
+    "sku": "LJ-PD0280-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Lanceolate Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "8455.0", 
+    "sku": "LJ-E00633-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Chain", 
+    "city": "Harda", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "1", 
+    "revenue": "11516.0", 
+    "sku": "LJ-CH0018-14YGPG-18", 
+    "state": "Madhya Pradesh"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Luster Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "9499.0", 
+    "sku": "LJ-NP0067-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "", 
+    "city": "Ahmedabad", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Customer Order COB184", 
+    "purchase_line_items": "2", 
+    "revenue": "80896.0", 
+    "sku": "LJ-COB184-14YGPG", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BIJNOR", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Bellara Round Diamond Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "28324.0", 
+    "sku": "LJ-R00648-09YGLGD-16", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Gurugram", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Round Solitaire with Diamond Accented Split Shank Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "53890.0", 
+    "sku": "LJ-R00120-18YGLGD-5", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Elliptical Diamond Pearl Drop Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "10684.0", 
+    "sku": "LJ-PE0420-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "North 24 Parganas", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Test Order 2", 
+    "purchase_line_items": "3", 
+    "revenue": "282621.0", 
+    "sku": "LJ-LO0002", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Dewapur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Jewelry Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": null, 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BANGALORE", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Stellar Petal Nose Pin", 
+    "purchase_line_items": "1", 
+    "revenue": "4057.0", 
+    "sku": "LJ-NP0031-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Timeless Silk Fit Plain Gold Band", 
+    "purchase_line_items": "2", 
+    "revenue": "10500.0", 
+    "sku": "LJ-PGR056-09YGPG-14", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Timeless Silk Fit Plain Gold Band", 
+    "purchase_line_items": "1", 
+    "revenue": "5089.0", 
+    "sku": "LJ-PGR056-09YGPG-15", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Star Round Diamond Earrings", 
+    "purchase_line_items": "6", 
+    "revenue": "41448.68", 
+    "sku": "LJ-E00324-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Jaipuraipur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "3", 
+    "revenue": "3.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Rajasthan"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "1.31 cts Round Brilliant Solitaire Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "63326.0", 
+    "sku": "LJ-R00009-18YGLGD-13", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Customer Order COR144", 
+    "purchase_line_items": "1", 
+    "revenue": "78354.0", 
+    "sku": "LJ-COR144-18YGLGD-21", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": null, 
+    "city": "Ernakulam", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Zenith Chevron Diamond Chain Necklace", 
+    "purchase_line_items": "3", 
+    "revenue": "44280.0", 
+    "sku": "LJ-N00083-09YGLGD", 
+    "state": "Kerala"
+  }, 
+  {
+    "category": null, 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Hyderabad", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Bellara Round Diamond Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "62340.0", 
+    "sku": "LJ-R00648-09YGLGD-17", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": null, 
+    "city": "Thane", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Round and Oval Diamond Half Eternity Band", 
+    "purchase_line_items": "1", 
+    "revenue": "55041.0", 
+    "sku": "LJ-R00303-14YGLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "New Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Timeless Silk Fit Plain Gold Band", 
+    "purchase_line_items": "3", 
+    "revenue": "22062.0", 
+    "sku": "LJ-PGR056-14YGPG-16", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "", 
+    "city": "", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Customer Order LJ-COB164", 
+    "purchase_line_items": "5", 
+    "revenue": "71975.0", 
+    "sku": "LJ-COB164-14YGPG-8", 
+    "state": ""
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Ranchi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "11998.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Jharkhand"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "East Godavari", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Andhra Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Timeless Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "4999.0", 
+    "sku": "LJ-NP0005-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "GURGAON", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "1", 
+    "revenue": "3000.0", 
+    "sku": "LJ-GC100-955YGPG", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "PALGHAR", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Round Diamond Solitaire Twist Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "20548.0", 
+    "sku": "LJ-R00604-14YGLGD-14", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Meerut", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Princess Cut Diamond Men's Classic Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "88675.0", 
+    "sku": "LJ-R00069-18RGLGD-21", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Meerut", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "1", 
+    "revenue": "8000.0", 
+    "sku": "LJ-GC100-995YGPG", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Darjiling", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Falcon Crest Fusion Gold Men's Ring", 
+    "purchase_line_items": "3", 
+    "revenue": "32982.0", 
+    "sku": "LJ-PGMR005-09YGPG-13", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Pune", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Blossom Diamond Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "9223.0", 
+    "sku": "LJ-E00327-14RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Ghaziabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Swastika Wheel Diamond Men's Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "16881.0", 
+    "sku": "LJ-MBR014-14WGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Kodagu", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Timeless Glimmer Diamond Tennis Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "41315.0", 
+    "sku": "LJ-BR0179-14YGLGD-5.5", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "GHAZIABAD", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Round Solitaire Swirl Engagement Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "37477.0", 
+    "sku": "LJ-R00174-14WGLGD-12", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Thane", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Falcon Crest Fusion Gold Men's Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "24618.0", 
+    "sku": "LJ-PGMR005-09YGPG-19", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Customer Order COR111", 
+    "purchase_line_items": "131", 
+    "revenue": "2323678.0", 
+    "sku": "LJ-COR111-09YGPG-19", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Hadiya Village", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Diamond Nose Pin", 
+    "purchase_line_items": "1", 
+    "revenue": "4999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "GURGAON", 
+    "price_range": "Under ₹25K", 
+    "product_name": "The Loving Heart Diamond Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "7999.0", 
+    "sku": "LJ-E00348-14YGLGD", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Charms", 
+    "city": "Palghar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Passport Charm", 
+    "purchase_line_items": "249", 
+    "revenue": "2814037.0", 
+    "sku": "LJ-CHA004-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Thane", 
+    "price_range": "Under ₹25K", 
+    "product_name": "The Loving Heart Diamond Earrings", 
+    "purchase_line_items": "5", 
+    "revenue": "38235.0", 
+    "sku": "LJ-E00319-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Hosur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Blossome Plain Gold Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "6412.0", 
+    "sku": "LJ-PGR069-09YGPG-9", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹1L-2L", 
+    "product_name": "3.04ct Halo Solitaire Diamond Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "264334.0", 
+    "sku": "LJ-E00157-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "", 
+    "city": "Mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Men’s Prong-Set Solitaire Lab-Grown Diamond Ring", 
+    "purchase_line_items": "4", 
+    "revenue": "291428.0", 
+    "sku": "LJ-R00108-09YGLGD-18", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Marquise Cut Engagement Ring with Halo Setting", 
+    "purchase_line_items": "5", 
+    "revenue": "370549.0", 
+    "sku": "LJ-R00001-14YGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "KANPUR NAGAR", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Pear and Round Diamond Mangalsutra Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "26218.0", 
+    "sku": "LJ-BR0051-14YGLGD-5", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Princess Cut Diamond Men's Classic Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "52528.0", 
+    "sku": "LJ-R00069-14YGLGD-22", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "North 24 Parganas", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "3", 
+    "revenue": "3.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Round Radiance Tennis Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "52474.0", 
+    "sku": "LJ-BR0188-14YGLGD-6.5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Marquise and Emerald Toi et Moi Engagement Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "89558.0", 
+    "sku": "LJ-R00168-14YGLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "0.21ct Half Eternity Diamond Band", 
+    "purchase_line_items": "1", 
+    "revenue": "19627.0", 
+    "sku": "LJ-R00358-14YGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Nala Sopara", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Round Solitaire Vintage Engagement Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "48495.0", 
+    "sku": "LJ-R00173-14YGLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Charms", 
+    "city": "Palghar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Camera Charm", 
+    "purchase_line_items": "339", 
+    "revenue": "3035595.0", 
+    "sku": "LJ-CHA003-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bangalore", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Men’s Dual-Line Solitaire  Band", 
+    "purchase_line_items": "1", 
+    "revenue": "45165.0", 
+    "sku": "LJ-R00111-18YWLGD-12", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Men’s Prong-Set Solitaire Lab-Grown Diamond Ring", 
+    "purchase_line_items": "110", 
+    "revenue": "9943072.0", 
+    "sku": "LJ-R00108-14YGLGD-18", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Emerald-Cut Diamond Solitaire Mangalsutra", 
+    "purchase_line_items": "1", 
+    "revenue": "35183.0", 
+    "sku": "LJ-TN00007-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "West Delhi", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Bubble Fusion Gold Dangle Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "25317.0", 
+    "sku": "LJ-PGE070-18YGPG", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Pendants", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Silver Pendant Freebie", 
+    "purchase_line_items": "1", 
+    "revenue": "10606.0", 
+    "sku": "LJ-SLP001-925SLLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Luster Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "10499.0", 
+    "sku": "LJ-NP0067-18YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "New Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "0.21ct Half Eternity Diamond Band", 
+    "purchase_line_items": "1", 
+    "revenue": "19548.0", 
+    "sku": "LJ-R00358-14YGLGD-5", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Darbhanga", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Bihar"
+  }, 
+  {
+    "category": null, 
+    "city": "West Tripura", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Tripura"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Khorda", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Apex Panther Diamond Men's Bracelet", 
+    "purchase_line_items": "2", 
+    "revenue": "78582.0", 
+    "sku": "LJ-MBR015-14YGLGD", 
+    "state": "Odisha"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Leaf Climber Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "9544.0", 
+    "sku": "LJ-E00626-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "CHENGALPATTU", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Diamond Nose Pin", 
+    "purchase_line_items": "1", 
+    "revenue": "4999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Ludhiana", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Golden Solitaire Diamond Mens Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "54101.0", 
+    "sku": "LJ-R00810-18YGLGD-21", 
+    "state": "Punjab"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Hexagon Halo Round Diamond Stud Earrings", 
+    "purchase_line_items": "5", 
+    "revenue": "497605.0", 
+    "sku": "LJ-E00030-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Pune", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cluster Stud Diamond Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "9279.0", 
+    "sku": "LJ-E00334-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Pune", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Starlet Cluster Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "7093.0", 
+    "sku": "LJ-E00632-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUZAFFARPUR", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0012-18YGLGD", 
+    "state": "Bihar"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "RANCHI(jharkhand )", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Half Diamond Butterfly Pendant", 
+    "purchase_line_items": "1", 
+    "revenue": "15778.0", 
+    "sku": "LJ-PD0244-18YGLGD", 
+    "state": "Jharkhand"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "33", 
+    "revenue": "33.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Necklaces", 
+    "city": "", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Chevron Pearls Diamond Pendant", 
+    "purchase_line_items": "3", 
+    "revenue": "41073.0", 
+    "sku": "LJ-PD0426-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": null, 
+    "city": "Chennai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "New Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "5", 
+    "revenue": "5.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Chennai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "1.5ct Minimalist Cushion Solitaire Chain Pendant", 
+    "purchase_line_items": "1", 
+    "revenue": "68233.0", 
+    "sku": "LJ-PD0487-18YGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Heirloom Emerald Cut Solitaire Men's Stud", 
+    "purchase_line_items": "1", 
+    "revenue": "22225.0", 
+    "sku": "LJ-ME0023-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Dakshina Kannada", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Leaf Climber Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "11204.0", 
+    "sku": "LJ-E00626-18YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "PATNA", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Bihar"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bengaluru, Hullahalli", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Contemporary Round Solitaire Men's Stud", 
+    "purchase_line_items": "1", 
+    "revenue": "130522.0", 
+    "sku": "LJ-ME0005-14WGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "KENDRAPARA", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Round Diamond Solitaire Twist Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "29131.0", 
+    "sku": "LJ-R00604-18YGLGD-12", 
+    "state": "Odisha"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "NEW DELHI", 
+    "price_range": "₹25K-50K", 
+    "product_name": "0.50ct Round Diamond Micro Prong Eternity Band", 
+    "purchase_line_items": "1", 
+    "revenue": "34072.0", 
+    "sku": "LJ-R00318-14WGLGD-13", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Panchkula", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Rolo Gold Neck Chain", 
+    "purchase_line_items": "1", 
+    "revenue": "19948.0", 
+    "sku": "LJ-CH0003-18YGPG-18", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Karnal", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Fleur Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "6499.0", 
+    "sku": "LJ-NP0031-14YGLGD", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Tuticorin", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Chandran Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "8133.0", 
+    "sku": "LJ-E00614-14YGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "2", 
+    "revenue": "23609.0", 
+    "sku": "LJ-CH0018-14YGPG-16", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Chennai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Starlet Cluster Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "6333.0", 
+    "sku": "LJ-E00632-14YGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Kanchipuram", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Vintage Floral Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "12626.0", 
+    "sku": "LJ-E00624-14YGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Princess Cut Diamond Men's Classic Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "46862.0", 
+    "sku": "LJ-R00069-14YGLGD-21", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "", 
+    "city": "K.V.Rangareddy", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Classic Pear Solitaire Pendant", 
+    "purchase_line_items": "2", 
+    "revenue": "63545.0", 
+    "sku": "LJ-PD0079-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Eternal Interlace Intricate Gold Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "7421.0", 
+    "sku": "LJ-PGR046-09YGPG-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Hadiya Village", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Forevermark Round Diamond Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "35314.0", 
+    "sku": "LJ-R00653-18YGLGD-16", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Round Diamond with Pear Shape Green Gemstone Necklace", 
+    "purchase_line_items": "2", 
+    "revenue": "180920.0", 
+    "sku": "LJ-N00007-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹1L-2L", 
+    "product_name": "Oval Cut & Round Side Stone Diamond Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "130626.0", 
+    "sku": "LJ-R00586-14WGLGD-13", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Thane", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Trio-Link Diamond Dangle Earrings", 
+    "purchase_line_items": "8", 
+    "revenue": "215688.0", 
+    "sku": "LJ-E00490-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Meerut", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Vintage Floral Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "12632.0", 
+    "sku": "LJ-E00624-14YGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Allahabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Astra Teardrop Diamond Dangle Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "14374.0", 
+    "sku": "LJ-E00657-14YGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Dehradun", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Gold-Wave Diamond Nose-Bali", 
+    "purchase_line_items": "1", 
+    "revenue": "7999.0", 
+    "sku": "LJ-NP0044-14YGLGD", 
+    "state": "Uttarakhand"
+  }, 
+  {
+    "category": "", 
+    "city": "Hyderabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Silver Bracelet", 
+    "purchase_line_items": "4", 
+    "revenue": "60000.0", 
+    "sku": "LJ-SLB001-925SLLGD-6.5", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Bangalore", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Swastika Wheel Diamond Men's Bracelet", 
+    "purchase_line_items": "2", 
+    "revenue": "56150.0", 
+    "sku": "LJ-MBR014-18YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹2L+", 
+    "product_name": "Classic Emerald and Round Cut Diamond Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "205536.0", 
+    "sku": "LJ-SBR0021-14WGLGD-2.2", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": null, 
+    "city": "ERNAKULAM", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Skyline Plain Gold Band", 
+    "purchase_line_items": "1", 
+    "revenue": "23309.0", 
+    "sku": "LJ-PGR041-18YGPG-12", 
+    "state": "Kerala"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Harda", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Madhya Pradesh"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Gurgaon", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "3", 
+    "revenue": "3.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "GB Nagar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "2", 
+    "revenue": "11998.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "0.30 Cts Constellation Lab Grown Diamond Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "22600.0", 
+    "sku": "LJ-R00021-14YGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Gautam Buddha Nagar", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Chain Detailing Round Diamond Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "53742.0", 
+    "sku": "LJ-R00606-18YGLGD-12", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Floret Diamond Nose-Bali", 
+    "purchase_line_items": "80", 
+    "revenue": "639920.0", 
+    "sku": "LJ-NP0043-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Chennai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Free Silver Pendant", 
+    "purchase_line_items": "1", 
+    "revenue": "0.0", 
+    "sku": null, 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Nashik", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Endless Spark Chain Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "60382.0", 
+    "sku": "LJ-BR0110-14YGLGD-6.5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "ARIYALUR", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "1", 
+    "revenue": "2000.0", 
+    "sku": "LJ-GC100-995YGPG", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "", 
+    "city": "Jaipur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Customer Order COE165", 
+    "purchase_line_items": "2", 
+    "revenue": "18432.0", 
+    "sku": "LJ-COE165-09WGLGD", 
+    "state": "Rajasthan"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Patna", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Floret Diamond Bali Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "10549.0", 
+    "sku": "LJ-NP0043-18RGLGD", 
+    "state": "Bihar"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "New Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Fleur Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0031-14YGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "KOLKATA", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Blossom Diamond Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "11232.0", 
+    "sku": "LJ-E00327-18YGLGD", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "1", 
+    "revenue": "12322.0", 
+    "sku": "LJ-CH0018-14YGPG-16", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Leaf Climber Diamond Stud Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "20374.0", 
+    "sku": "LJ-E00626-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "South Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Auric Fusion Gold Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "10246.0", 
+    "sku": "LJ-PGR043-09YGPG-12", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Ever Bloom Diamond Nose Bali", 
+    "purchase_line_items": "2", 
+    "revenue": "23998.0", 
+    "sku": "LJ-NP0078-14YGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "West Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": null, 
+    "city": "ERNAKULAM", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Kerala"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Blossom Diamond Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "8762.0", 
+    "sku": "LJ-E00327-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "K.V.Rangareddy", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Swastika Wheel Diamond Men's Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "16804.0", 
+    "sku": "LJ-MBR014-14YGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Guntur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Andhra Pradesh"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "0.25 cts Classic Solitaire Diamond Ring", 
+    "purchase_line_items": "3", 
+    "revenue": "86505.0", 
+    "sku": "LJ-R00796-14YGLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "GHAZIABAD", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Swastika Wheel Diamond Men's Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "18763.0", 
+    "sku": "LJ-MBR014-14WGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BANGALORE", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Dazzling Round Solitaire Men's Stud", 
+    "purchase_line_items": "1", 
+    "revenue": "30602.0", 
+    "sku": "LJ-ME0001-18WGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "NADIA", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "1", 
+    "revenue": "12391.0", 
+    "sku": "LJ-CH0018-14YGPG-18", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "CUDDALORE", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Blossom Diamond Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "9999.0", 
+    "sku": "LJ-E00327-14YGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Classic Pear Solitaire Pendant", 
+    "purchase_line_items": "3", 
+    "revenue": "140716.0", 
+    "sku": "LJ-PD0079-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "GB Nagar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": null, 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Zenith Chevron Diamond Chain Necklace", 
+    "purchase_line_items": "1", 
+    "revenue": "20666.0", 
+    "sku": "LJ-N00083-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Chain", 
+    "city": "North West Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "3", 
+    "revenue": "46113.0", 
+    "sku": "LJ-CH0018-18YGPG-16", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Ahmedabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Spiritual Symbol Diamond Pendant", 
+    "purchase_line_items": "1", 
+    "revenue": "9340.0", 
+    "sku": "LJ-PD0275-14YGLGD", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Silver Pendant Freebie", 
+    "purchase_line_items": "1", 
+    "revenue": "10606.0", 
+    "sku": "LJ-SLP001-925SLLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "THANE", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Marquise Cut Engagement Ring with Halo Setting", 
+    "purchase_line_items": "9", 
+    "revenue": "594954.0", 
+    "sku": "LJ-R00001-14YGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Necklaces", 
+    "city": "Tarn taran", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Bow Plain Gold Chain Necklace", 
+    "purchase_line_items": "1", 
+    "revenue": "28047.0", 
+    "sku": "LJ-PGN003-14YGPG", 
+    "state": "Punjab"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Haridwar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Uttarakhand"
+  }, 
+  {
+    "category": "", 
+    "city": "Tiruvallur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Timeless Round Diamond Nosepin", 
+    "purchase_line_items": "19", 
+    "revenue": "113981.0", 
+    "sku": "LJ-NP0005-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "East Delhi", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Iconic Shiva Diamond Men's Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "30104.0", 
+    "sku": "LJ-MBR011-14YGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "NORTH", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Core Round Solitaire Mens Stud", 
+    "purchase_line_items": "1", 
+    "revenue": "23408.0", 
+    "sku": "LJ-ME0018-14YGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BANGALORE", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Blossom Diamond Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "9999.0", 
+    "sku": "LJ-E00327-14RGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Pathankot", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Shimmering Round Solitaire Stud Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "137999.54", 
+    "sku": "LJ-PE0437-14YGLGD", 
+    "state": "Punjab"
+  }, 
+  {
+    "category": "Pendants", 
+    "city": "Raigarh(MH)", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Silver Pendant", 
+    "purchase_line_items": "1", 
+    "revenue": "0.0", 
+    "sku": "LJ-SLP001-925SLLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Oval-Cut Halo Diamond Pendant Necklace", 
+    "purchase_line_items": "1", 
+    "revenue": "60291.0", 
+    "sku": "LJ-PD0053-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Dahlia Cluster Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "8999.0", 
+    "sku": "LJ-NP0056-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Round Diamond Solitaire Twist Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "20304.0", 
+    "sku": "LJ-R00604-14YGLGD-12", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "1", 
+    "revenue": "2000.0", 
+    "sku": "LJ-GC100-995YGPG", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "GURGAON", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Round Diamond Floral Swirl Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "39933.0", 
+    "sku": "LJ-E00296-14YGLGD", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Thane", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Diamond Nose Pin", 
+    "purchase_line_items": "1", 
+    "revenue": "4999.0", 
+    "sku": "LJ-NP0012-14RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Guwahati", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Customer Order COR158", 
+    "purchase_line_items": "1", 
+    "revenue": "15590.0", 
+    "sku": "LJ-COR158-09YGLGD-15", 
+    "state": "Assam"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "NEW DELHI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Erode", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Split Arc Pearl Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "14943.0", 
+    "sku": "LJ-PE0300-14RGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Chain", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "1", 
+    "revenue": "11219.0", 
+    "sku": "LJ-CH0018-14YGPG-18", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Lucknow", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "DURG", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Chhattisgarh"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Pune", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Titan Hex Fusion Gold Men's Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "9317.0", 
+    "sku": "LJ-PGMR002-09YGPG-18", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "North West Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "5", 
+    "revenue": "5.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Nagpur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Eternal Interlace Intricate Gold Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "10408.0", 
+    "sku": "LJ-PGR046-14YGPG-10", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "SANGLI", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Classic Floral Diamond Mangalsutra", 
+    "purchase_line_items": "1", 
+    "revenue": "39039.0", 
+    "sku": "LJ-TN0031-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Nala Sopara", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Mens Solitaire Princess Diamond Band", 
+    "purchase_line_items": "1", 
+    "revenue": "57328.0", 
+    "sku": "LJ-R00537-14YGLGD-18", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Round Diamond Floral Swirl Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "38830.0", 
+    "sku": "LJ-E00296-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Ghaziabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Sunburst Cluster Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "14728.0", 
+    "sku": "LJ-E00622-14YGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Round Solitaire 4-Prong Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "36836.0", 
+    "sku": "LJ-E00032-18YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Nalasopara West", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Chennai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cluster Stud Diamond Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "9914.0", 
+    "sku": "LJ-E00334-14YGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "", 
+    "city": "Anakapalle", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Customer Order CH0014", 
+    "purchase_line_items": "2", 
+    "revenue": "30942.0", 
+    "sku": "LJ-CH0014-14RGPG", 
+    "state": "Andhra Pradesh"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "K.V.Rangareddy", 
+    "price_range": "₹50K-1L", 
+    "product_name": "1.77 ct Streamlined Round Diamond Tennis Bracelet", 
+    "purchase_line_items": "2", 
+    "revenue": "157302.0", 
+    "sku": "LJ-BR0205-14WGLGD-6", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "0.28ct Oval & Round Diamond Toi et Moi Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "23056.0", 
+    "sku": "LJ-R00480-14YGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "North Star Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "9438.0", 
+    "sku": "LJ-E00617-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mughalsarai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Iconic Shiva Diamond Men's Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "30748.0", 
+    "sku": "LJ-MBR011-14YGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BANGALORE", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "6999.0", 
+    "sku": "LJ-NP0012-18YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Core Round Solitaire Mens Stud", 
+    "purchase_line_items": "3", 
+    "revenue": "65473.0", 
+    "sku": "LJ-ME0018-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BHOPAL", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "1", 
+    "revenue": "12485.0", 
+    "sku": "LJ-CH0018-14YGPG-16", 
+    "state": "Madhya Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BANGALORE", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Floret Diamond Bali Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "7999.0", 
+    "sku": "LJ-NP0043-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Entwined-Heart Diamond Nosepin", 
+    "purchase_line_items": "82", 
+    "revenue": "655918.0", 
+    "sku": "LJ-NP0047-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Chain", 
+    "city": "Palghar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Charm Bolo Gold Chain", 
+    "purchase_line_items": "161", 
+    "revenue": "2646323.0", 
+    "sku": "LJ-CH0022-14YGPG-18", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Round Solitaire 4-Prong Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "32718.0", 
+    "sku": "LJ-E00032-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "West Godavari", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Flora Cluster Diamond Stud Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "15992.0", 
+    "sku": "LJ-E00621-14YGLGD", 
+    "state": "Andhra Pradesh"
+  }, 
+  {
+    "category": null, 
+    "city": "Chatra", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Timeless Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0005-14YGLGD", 
+    "state": "Jharkhand"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Kamrup", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Small Round Diamond 0.25ct Eternity Band", 
+    "purchase_line_items": "1", 
+    "revenue": "15325.0", 
+    "sku": "LJ-R00317-09YGLGD-12", 
+    "state": "Assam"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BANGALORE", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "1", 
+    "revenue": "4000.0", 
+    "sku": "LJ-GC100-995YGPG", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Halo Emerald & Oval Diamond Half Eternity Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "62863.0", 
+    "sku": "LJ-R00552-14YGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Amravati", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Fleure Plain Gold Ring", 
+    "purchase_line_items": "117", 
+    "revenue": "893529.0", 
+    "sku": "LJ-PGR081-09YGPG-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "NEW DELHI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Stellar Petal Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "9999.0", 
+    "sku": "LJ-E00328-14YGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Ghaziabad", 
+    "price_range": "₹1L-2L", 
+    "product_name": "Round Solitaire 4-Prong Basket Stud Earrings7.5mm", 
+    "purchase_line_items": "1", 
+    "revenue": "125260.0", 
+    "sku": "LJ-E00039-18YGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Bengalore", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Leaflet Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "33475.0", 
+    "sku": "LJ-E00391-18YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "South Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "4", 
+    "revenue": "4.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "0.15Ct Half Eternity Round Diamond Band", 
+    "purchase_line_items": "1", 
+    "revenue": "17345.0", 
+    "sku": "LJ-R00379-14YGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Round Radiance Tennis Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "54511.0", 
+    "sku": "LJ-BR0188-14RGLGD-7.5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Eternal Heart Plain Gold Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "13202.0", 
+    "sku": "LJ-PGR058-09YGPG-13", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Round Radiance Tennis Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "56474.0", 
+    "sku": "LJ-BR0188-14RGLGD-7.5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Cuddalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "DARJEELING", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "GURGAON", 
+    "price_range": "₹25K-50K", 
+    "product_name": "The X-Factor Diamond Hoops Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "32764.0", 
+    "sku": "LJ-E00432-18YGLGD", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "", 
+    "city": "Ghaziabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "", 
+    "city": "Navi Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Customer Order COE145", 
+    "purchase_line_items": "1", 
+    "revenue": "12629.0", 
+    "sku": "LJ-COE145-09WGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BATHINDA", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Diamond Nose Pin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0012-18YGLGD", 
+    "state": "Punjab"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "K.V.Rangareddy", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "4", 
+    "revenue": "4.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": null, 
+    "city": "West Tripura", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "1", 
+    "revenue": "11175.0", 
+    "sku": "LJ-CH0018-14YGPG-18", 
+    "state": "Tripura"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Brilliance Princess Cut Diamond Men's Bali", 
+    "purchase_line_items": "1", 
+    "revenue": "25998.0", 
+    "sku": "LJ-ME0029-18RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "PALGHAR", 
+    "price_range": "Under ₹25K", 
+    "product_name": "0.21ct Half Eternity Diamond Band", 
+    "purchase_line_items": "5", 
+    "revenue": "112885.0", 
+    "sku": "LJ-R00358-14RGLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "PALGHAR", 
+    "price_range": "₹1L-2L", 
+    "product_name": "3.04ct Halo Solitaire Diamond Earrings", 
+    "purchase_line_items": "3", 
+    "revenue": "386256.0", 
+    "sku": "LJ-E00157-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "JAIPUR", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Floral Round Diamond Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "6625.0", 
+    "sku": "LJ-E00320-14YGLGD", 
+    "state": "Rajasthan"
+  }, 
+  {
+    "category": "Pendants", 
+    "city": "Goa", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Round Diamond Medallion Pendant", 
+    "purchase_line_items": "1", 
+    "revenue": "13887.0", 
+    "sku": "LJ-PD0283-18YGLGD", 
+    "state": "Goa"
+  }, 
+  {
+    "category": "", 
+    "city": "Tarn taran", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Punjab"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Khategaon", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Timeless Silk Fit Plain Gold Band", 
+    "purchase_line_items": "1", 
+    "revenue": "5559.0", 
+    "sku": "LJ-PGR056-09YGPG-12", 
+    "state": "Madhya Pradesh"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Hyderabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Leaf Climber Diamond Stud Earrings", 
+    "purchase_line_items": "4", 
+    "revenue": "48948.0", 
+    "sku": "LJ-E00626-18YGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Jalandhar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Punjab"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Kolhapur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Blossom Diamond Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "10401.0", 
+    "sku": "LJ-E00327-18YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": null, 
+    "city": "Rajkot", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Rajkot", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Titan Hex Fusion Gold Men's Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "9297.0", 
+    "sku": "LJ-PGMR002-09YGPG-13", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "EAST KHASI HILLS", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Ribbed Shoulder Round Solitaire Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "40850.0", 
+    "sku": "LJ-R00594-18YGLGD-12", 
+    "state": "Meghalaya"
+  }, 
+  {
+    "category": "Charms", 
+    "city": "Palghar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Car Charm", 
+    "purchase_line_items": "203", 
+    "revenue": "1384840.0", 
+    "sku": "LJ-CHA006-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Ghaziabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Petalyn Plain Gold Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "15508.0", 
+    "sku": "LJ-PGR086-09YGPG-14", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": null, 
+    "city": "Ernakulam", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "3", 
+    "revenue": "3.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Kerala"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Round Solitaire 4-Prong Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "31685.0", 
+    "sku": "LJ-E00032-14RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Marquise Cut Engagement Ring with Halo Setting", 
+    "purchase_line_items": "2", 
+    "revenue": "137670.0", 
+    "sku": "LJ-R00001-14WGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Kolhapur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Vertical Grace Round Diamond Studs", 
+    "purchase_line_items": "1", 
+    "revenue": "15361.0", 
+    "sku": "LJ-E00409-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BANGALORE", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "2", 
+    "revenue": "11998.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "DHANBAD", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Floral Round Diamond Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "11806.0", 
+    "sku": "LJ-E00320-18YGLGD", 
+    "state": "Jharkhand"
+  }, 
+  {
+    "category": "Chain", 
+    "city": "Chennai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "2", 
+    "revenue": "34786.0", 
+    "sku": "LJ-CH0018-18YGPG-18", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Timeless Round Solitaire Men's Stud", 
+    "purchase_line_items": "7", 
+    "revenue": "311458.0", 
+    "sku": "LJ-ME0008-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹1L-2L", 
+    "product_name": "Marquise and Emerald Toi et Moi Engagement Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "103413.0", 
+    "sku": "LJ-R00168-18YGLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Necklaces", 
+    "city": "New Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Zenith Chevron Diamond Chain Necklace", 
+    "purchase_line_items": "2", 
+    "revenue": "31032.0", 
+    "sku": "LJ-N00083-09YGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "PALGHAR", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "1", 
+    "revenue": "1500.0", 
+    "sku": "LJ-GC100-955YGPG", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "", 
+    "city": "Kanchipuram", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Silver Bracelet", 
+    "purchase_line_items": "3", 
+    "revenue": "45000.0", 
+    "sku": "LJ-SLB001-925SLLGD-6.5", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Pendants", 
+    "city": "Goa", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Round Diamond Medallion Pendant", 
+    "purchase_line_items": "2", 
+    "revenue": "21457.0", 
+    "sku": "LJ-PD0283-14YGLGD", 
+    "state": "Goa"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BANGALORE", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Round Radiance Tennis Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "51572.0", 
+    "sku": "LJ-BR0188-14YGLGD-7", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Kalaburagi", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Mens Solitaire Princess Diamond Band", 
+    "purchase_line_items": "1", 
+    "revenue": "77633.0", 
+    "sku": "LJ-R00537-18YGLGD-20", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "HYDERABAD", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Floret Diamond Bali Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "10549.0", 
+    "sku": "LJ-NP0043-18YGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": null, 
+    "city": "Hyderabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "2", 
+    "revenue": "11998.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Kanchipuram", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "2", 
+    "revenue": "18000.0", 
+    "sku": "LJ-GC100-995YGPG", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Ernakulam", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Small Round Diamond 0.25ct Eternity Band", 
+    "purchase_line_items": "2", 
+    "revenue": "37720.0", 
+    "sku": "LJ-R00317-14RGLGD-8", 
+    "state": "Kerala"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹1L-2L", 
+    "product_name": "Oval Halo Split Shank Engagement Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "163748.0", 
+    "sku": "LJ-R00178-18RGLGD-13", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Palghar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Charm Bolo Chain Gold Bracelets", 
+    "purchase_line_items": "866", 
+    "revenue": "8189328.0", 
+    "sku": "LJ-CH0023-14YGPG-7", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Navi Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Brilliance Princess Cut Diamond Men's Bali", 
+    "purchase_line_items": "66", 
+    "revenue": "999900.0", 
+    "sku": "LJ-ME0029-09WGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Thiruvananthapuram", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Mens Solitaire Princess Diamond Band", 
+    "purchase_line_items": "1", 
+    "revenue": "53187.0", 
+    "sku": "LJ-R00537-14YGLGD-20", 
+    "state": "Kerala"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bhadradri", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Falcon Crest Fusion Gold Men's Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "13161.0", 
+    "sku": "LJ-PGMR005-09YGPG-21", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Lariat Necklace with Drop Pendant", 
+    "purchase_line_items": "2", 
+    "revenue": "124472.0", 
+    "sku": "LJ-N00005-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Pendants", 
+    "city": "Rajkot", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Silver Pendant", 
+    "purchase_line_items": "1", 
+    "revenue": "10606.0", 
+    "sku": "LJ-SLP001-925SLLGD", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Jalpaiguri", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Titan Hex Fusion Gold Men's Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "17908.0", 
+    "sku": "LJ-PGMR002-09YGPG-12", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Lumiere Round Diamond Hoop Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "15641.0", 
+    "sku": "LJ-E00655-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Thiruvananthapuram", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Leaf Climber Diamond Stud Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "18874.0", 
+    "sku": "LJ-E00626-14YGLGD", 
+    "state": "Kerala"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Greater Noida West", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "3", 
+    "revenue": "3.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Ghaziabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "2", 
+    "revenue": "23726.0", 
+    "sku": "LJ-CH0018-14YGPG-16", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Necklaces", 
+    "city": "Vikhroli West", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Trinity Halo Diamond Necklace", 
+    "purchase_line_items": "2", 
+    "revenue": "109084.0", 
+    "sku": "LJ-N00094-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "", 
+    "price_range": "₹1L-2L", 
+    "product_name": "4 ct Glacial Princess Solitaire Stud Earrings", 
+    "purchase_line_items": "9", 
+    "revenue": "1303034.0400000003", 
+    "sku": "LJ-E00650-14YGLGD", 
+    "state": ""
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "South Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BANGALORE", 
+    "price_range": "₹50K-1L", 
+    "product_name": "1.06 ct Classic Round Diamond Tennis Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "55490.0", 
+    "sku": "LJ-BR0188-18YGLGD-6.5", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Chain", 
+    "city": "Ghaziabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "3", 
+    "revenue": "45489.0", 
+    "sku": "LJ-CH0018-18YGPG-16", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "", 
+    "city": "Hyderabad", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Customer Order COR171", 
+    "purchase_line_items": "2", 
+    "revenue": "93670.0", 
+    "sku": "LJ-COR171-14YGLGD-13", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Amritsar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Punjab"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Eternal Interlace Intricate Gold Ring", 
+    "purchase_line_items": "3", 
+    "revenue": "26856.0", 
+    "sku": "LJ-PGR046-09YGPG-24", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Chain", 
+    "city": "Gurgaon", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Customer order CH0013", 
+    "purchase_line_items": "1", 
+    "revenue": "12698.0", 
+    "sku": "LJ-CH0013-14YGPG", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Lotus Pose Yoga Diamond Pendant Necklace", 
+    "purchase_line_items": "3", 
+    "revenue": "152997.0", 
+    "sku": "LJ-PD0062-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Ghaziabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Eternal Interlace Intricate Gold Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "16552.0", 
+    "sku": "LJ-PGR046-09YGPG-14", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Pear Floral Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "30813.0", 
+    "sku": "LJ-E00418-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Lanjigarh", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Diamond Huggie Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "17131.0", 
+    "sku": "LJ-E00282-09RGLGD", 
+    "state": "Odisha"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bengaluru", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Mens Solitaire Princess Diamond Band", 
+    "purchase_line_items": "1", 
+    "revenue": "79829.0", 
+    "sku": "LJ-R00537-18YGLGD-22", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bengaluru", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Chain Detailing Round Diamond Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "20367.0", 
+    "sku": "LJ-R00606-18YGLGD-12", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Rolo Gold Neck Chain", 
+    "purchase_line_items": "1", 
+    "revenue": "14352.0", 
+    "sku": "LJ-CH0003-14YGPG-16", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bengaluru", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Round Radiance Tennis Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "55422.0", 
+    "sku": "LJ-BR0188-18YGLGD-6.5", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Aligarh", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Round Halo Solitaire Ring with Diamond Accented Shoulders", 
+    "purchase_line_items": "1", 
+    "revenue": "96258.0", 
+    "sku": "LJ-R00210-14YGLGD-18", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Pune", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "9", 
+    "revenue": "9.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Ghaziabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Astra Pyramid Plain Gold Band", 
+    "purchase_line_items": "1", 
+    "revenue": "8958.0", 
+    "sku": "LJ-PGR061-09YGPG-13", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Necklaces", 
+    "city": "Nalasopara West", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Chevron Pearls Diamond Pendant", 
+    "purchase_line_items": "1", 
+    "revenue": "13691.0", 
+    "sku": "LJ-PD0426-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Ahmedabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Curve Diamond Geometric Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "10252.0", 
+    "sku": "LJ-R00867-09YGLGD-12", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Coimbatore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "3", 
+    "revenue": "3.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Diamond Star Nose Pin", 
+    "purchase_line_items": "1", 
+    "revenue": "6999.0", 
+    "sku": "LJ-NP0017-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Gachibowli", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "EAST GODAVARI", 
+    "price_range": "₹1L-2L", 
+    "product_name": "Round Diamond Drop Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "145435.0", 
+    "sku": "LJ-E00002-18YGLGD", 
+    "state": "Andhra Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Dewapur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Round Diamond Solitaire Twist Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "19046.0", 
+    "sku": "LJ-R00604-09YGLGD-16", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "East Godavari", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Swastika Wheel Diamond Men's Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "22883.0", 
+    "sku": "LJ-MBR014-18YGLGD", 
+    "state": "Andhra Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "", 
+    "price_range": "₹2L+", 
+    "product_name": "Gemstone and Diamond Chandelier Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "237366.0", 
+    "sku": "LJ-NE0058-14YGLGD", 
+    "state": ""
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BANGALORE", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Clover Flower Pave Diamond Pendant", 
+    "purchase_line_items": "1", 
+    "revenue": "63089.0", 
+    "sku": "LJ-PD0057-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Oval Gem Round Diamond Chain Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "46550.0", 
+    "sku": "LJ-BR0097-14YGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Chennai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "7", 
+    "revenue": "7.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "THANE", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Crisscut Emerald Cut Diamond Men's Stud", 
+    "purchase_line_items": "1", 
+    "revenue": "36190.0", 
+    "sku": "LJ-ME0002-18RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Guwahati", 
+    "price_range": "₹50K-1L", 
+    "product_name": "1.06 ct Classic Round Diamond Tennis Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "50113.0", 
+    "sku": "LJ-BR0188-14YGLGD-6", 
+    "state": "Assam"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "New Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Swastika Wheel Diamond Men's Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "21790.0", 
+    "sku": "LJ-MBR014-18YGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Diamond Nose Pin", 
+    "purchase_line_items": "2", 
+    "revenue": "9998.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Tiruvallur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Solene Wrap Fusion Gold Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "7334.0", 
+    "sku": "LJ-PGR060-09YGPG-18", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "West Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Solwave Plain Gold Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "20863.0", 
+    "sku": "LJ-PGR084-18YGPG-13", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Thane", 
+    "price_range": "₹1L-2L", 
+    "product_name": "Round Classic Solitaire Engagement Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "106417.0", 
+    "sku": "LJ-R00175-18YGLGD-10", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BANGALORE", 
+    "price_range": "₹50K-1L", 
+    "product_name": "1.01 cts Emerald-Cut Solitaire Diamond Pendant Necklace", 
+    "purchase_line_items": "1", 
+    "revenue": "62541.0", 
+    "sku": "LJ-PD0314-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Nalanda", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Duo-Tone Round Diamond Men's Bali", 
+    "purchase_line_items": "2", 
+    "revenue": "23981.0", 
+    "sku": "LJ-ME0028-09WGLGD", 
+    "state": "Bihar"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Round Diamond Marquise Accent Gold Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "34378.0", 
+    "sku": "LJ-R00089-14YGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Chennai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Iconic Shiva Diamond Men's Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "41510.0", 
+    "sku": "LJ-MBR011-18YGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Thiruvananthapuram", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "3", 
+    "revenue": "3.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Kerala"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mathura", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Diamond Huggie Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "17072.0", 
+    "sku": "LJ-E00282-14YGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Raigarh(MH)", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Paramount Pave Diamond Men's Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "82656.0", 
+    "sku": "LJ-MR0782-09YGLGD-22", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Sparkling Diamond Drop Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "89300.0", 
+    "sku": "LJ-E00060-18RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "SHIMLA", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "6999.0", 
+    "sku": "LJ-NP0012-18YGLGD", 
+    "state": "Himachal Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "KACHCHH", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Petal Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "22542.0", 
+    "sku": "LJ-E00333-18YGLGD", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MADURAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "1", 
+    "revenue": "2000.0", 
+    "sku": "LJ-GC100-995YGPG", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "GAUTAM BUDDHA NAGAR", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Fresh-Water Pearl Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "21205.0", 
+    "sku": "LJ-PE0430-14RGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "18", 
+    "revenue": "18.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Bijapur(KAR)", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "5", 
+    "revenue": "5.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "104", 
+    "revenue": "105.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Faridabad", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Oval Gem Halo Diamond Stud Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "87732.0", 
+    "sku": "LJ-PE0446-18YGLGD", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Tiruvallur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Chandrika Diamond Nose-Bali", 
+    "purchase_line_items": "1", 
+    "revenue": "6999.0", 
+    "sku": "LJ-NP0046-14YGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "BIJNOR", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "1", 
+    "revenue": "2000.0", 
+    "sku": "LJ-GC100-995YGPG", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "GURGAON", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Trio Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "6499.0", 
+    "sku": "LJ-NP0029-14YGLGD", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "K.V.Rangareddy", 
+    "price_range": "₹50K-1L", 
+    "product_name": "1.06 ct Classic Round Diamond Tennis Bracelet", 
+    "purchase_line_items": "2", 
+    "revenue": "100018.0", 
+    "sku": "LJ-BR0188-14WGLGD-5", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "1.31 cts Round Brilliant Solitaire Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "62078.0", 
+    "sku": "LJ-R00009-18RGLGD-10", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Amritsar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Bellara Round Diamond Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "24034.0", 
+    "sku": "LJ-R00648-09YGLGD-5", 
+    "state": "Punjab"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "GAUTAM BUDDHA NAGAR", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "1", 
+    "revenue": "2000.0", 
+    "sku": "LJ-GC100-995YGPG", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "", 
+    "city": "New Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Customer Order COB148", 
+    "purchase_line_items": "1", 
+    "revenue": "14431.0", 
+    "sku": "LJ-COB148-14YGLGD-5", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Tri-Cluster Round Diamond Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "50883.0", 
+    "sku": "LJ-R00591-18YGLGD-12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "CHENNAI", 
+    "price_range": "₹1L-2L", 
+    "product_name": "Sparkling Oval Cut Diamond Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "153665.0", 
+    "sku": "LJ-R00516-18YGLGD-17", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Bengaluru", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Vintage Floral Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "12826.0", 
+    "sku": "LJ-E00624-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Dhanbad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Jharkhand"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Gurgaon", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Zareen Intricate Gold Drop Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "38440.0", 
+    "sku": "LJ-PGE067-09YGPG", 
+    "state": "Haryana"
+  }, 
+  {
+    "category": null, 
+    "city": "Thane", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": null, 
+    "city": "Hyderabad", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Iconic Shiva Diamond Men's Bracelet", 
+    "purchase_line_items": "1", 
+    "revenue": "39020.0", 
+    "sku": "LJ-MBR011-18YGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "COIMBATORE", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Floral Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "5999.0", 
+    "sku": "LJ-NP0026-14YGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "bhiwandi", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Stackable Round-Cut Solitaire Wedding Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "66477.0", 
+    "sku": "LJ-R00204-14YGLGD-13", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Elegant Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "4999.0", 
+    "sku": "LJ-NP0016-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Classic Floral Diamond Mangalsutra", 
+    "purchase_line_items": "1", 
+    "revenue": "45540.0", 
+    "sku": "LJ-TN0031-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Stellar Diamond Nose Pin", 
+    "purchase_line_items": "103", 
+    "revenue": "514897.0", 
+    "sku": "LJ-NP0059-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Charms", 
+    "city": "Palghar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Lock Charm", 
+    "purchase_line_items": "470", 
+    "revenue": "5874912.0", 
+    "sku": "LJ-CHA005-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Darjiling", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "3", 
+    "revenue": "3.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Pendants", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cat Plain Gold Pendant", 
+    "purchase_line_items": "2", 
+    "revenue": "19350.0", 
+    "sku": "LJ-PGP003-14YGPG", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Thane", 
+    "price_range": "₹50K-1L", 
+    "product_name": "1.06 ct Classic Round Diamond Tennis Bracelet", 
+    "purchase_line_items": "3", 
+    "revenue": "161118.0", 
+    "sku": "LJ-BR0188-14YGLGD-6.5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Rajkot", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Vintage Floral Diamond Stud Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "25636.0", 
+    "sku": "LJ-E00624-14YGLGD", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "Pendants", 
+    "city": "Haridwar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Wishbone Round Diamond Pendant", 
+    "purchase_line_items": "2", 
+    "revenue": "19484.0", 
+    "sku": "LJ-PD0300-14YGLGD", 
+    "state": "Uttarakhand"
+  }, 
+  {
+    "category": "", 
+    "city": "Siliguri", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Silver Bracelet", 
+    "purchase_line_items": "3", 
+    "revenue": "0.0", 
+    "sku": "LJ-SLB001-925SLLGD-6.5", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Thiruvananthapuram", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Emerald Shape Diamond with Halo Setting Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "47199.0", 
+    "sku": "LJ-R00018-14RGLGD-12", 
+    "state": "Kerala"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Noida", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Bracelet Chain charm heart", 
+    "purchase_line_items": "2", 
+    "revenue": "49746.0", 
+    "sku": "LJ-BR12345", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Kokalata", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Imperial Princess Cut Solitaire Men's Stud", 
+    "purchase_line_items": "1", 
+    "revenue": "23375.0", 
+    "sku": "LJ-ME0019-14YGLGD", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Pune", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Mahadev Trishul Diamond Men’s Stud", 
+    "purchase_line_items": "4", 
+    "revenue": "49736.0", 
+    "sku": "LJ-ME0047-18YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Kamrup", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Assam"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "JAIPUR", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Round Diamond Swirl Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "39366.0", 
+    "sku": "LJ-E00462-18YGLGD", 
+    "state": "Rajasthan"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "24 PARAGANAS SOUTH", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Floral Round Diamond Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "6546.0", 
+    "sku": "LJ-E00320-14YGLGD", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Pendants", 
+    "city": "Rajkot", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Silver Pendant - 9ct", 
+    "purchase_line_items": "1", 
+    "revenue": "6603.0", 
+    "sku": "LJ-SLP002-925SLLGD", 
+    "state": "Gujarat"
+  }, 
+  {
+    "category": "", 
+    "city": "Pune", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": null, 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Lily Flame Plain Gold Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "8855.0", 
+    "sku": "LJ-PGE060-09YGPG", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Hyderabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Eternal Interlace Intricate Gold Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "16678.0", 
+    "sku": "LJ-PGR046-09YGPG-17", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "South Delhi", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Men’s Classic Solitaire Engagement Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "42143.0", 
+    "sku": "LJ-R00114-14YGLGD-15", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Split Trillion Cut Diamond Men's Stud", 
+    "purchase_line_items": "2", 
+    "revenue": "36456.0", 
+    "sku": "LJ-ME0004-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Chennai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Open Heart Promise Diamond Necklace", 
+    "purchase_line_items": "1", 
+    "revenue": "31278.0", 
+    "sku": "LJ-N00096-14RGLGD", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "SHAHDARA", 
+    "price_range": "₹25K-50K", 
+    "product_name": "0.25 cts Classic Solitaire Diamond Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "30527.0", 
+    "sku": "LJ-R00796-14YGLGD-14", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Pendants", 
+    "city": "North West Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Round Diamond Bail Pendant", 
+    "purchase_line_items": "2", 
+    "revenue": "17012.0", 
+    "sku": "LJ-PD0280-14WGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MORADABAD", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Classic Diamond Nose Pin", 
+    "purchase_line_items": "1", 
+    "revenue": "4999.0", 
+    "sku": "LJ-NP0012-14YGLGD", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Chain", 
+    "city": "Hyderabad", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "1", 
+    "revenue": "16570.0", 
+    "sku": "LJ-CH0018-18YGPG-18", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Pune", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Trishul Om Convertible Diamond Rakhi Pendant", 
+    "purchase_line_items": "3", 
+    "revenue": "24702.0", 
+    "sku": "LJ-BP0008-09YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "GAUTAM BUDDHA NAGAR", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Round Diamond Solitaire Twist Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "23120.0", 
+    "sku": "LJ-R00604-14YGLGD-17", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Hyderabad", 
+    "price_range": "₹25K-50K", 
+    "product_name": "The Dual Diamond Pendant Necklace", 
+    "purchase_line_items": "1", 
+    "revenue": "49689.0", 
+    "sku": "LJ-PD0303-18YGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Dimapur", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cluster Stud Diamond Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "9999.0", 
+    "sku": "LJ-E00334-14YGLGD", 
+    "state": "Nagaland"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Siliguri", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "5", 
+    "revenue": "5.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Siliguri", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Iconic Shiva Diamond Men's Bracelet", 
+    "purchase_line_items": "3", 
+    "revenue": "101607.0", 
+    "sku": "LJ-MBR011-14YGLGD", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Paramount Pave Diamond Men's Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "36436.0", 
+    "sku": "LJ-MR0782-09YGLGD-18", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "₹50K-1L", 
+    "product_name": "1.31 cts Round Brilliant Solitaire Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "63326.0", 
+    "sku": "LJ-R00009-18YGLGD-13", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Goa International airport, Dabolim", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Ornella Bloom Diamond Stud Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "18894.0", 
+    "sku": "LJ-E00638-14YGLGD", 
+    "state": "Goa"
+  }, 
+  {
+    "category": null, 
+    "city": "Karbi Anglong", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Round Diamond Floral Cluster Bypass Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "15762.0", 
+    "sku": "LJ-R00646-09YGLGD-11", 
+    "state": "Assam"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mumbai", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Round Solitaire Swirl Engagement Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "24528.0", 
+    "sku": "LJ-R00174-14RGLGD-5", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Bengaluru", 
+    "price_range": "₹50K-1L", 
+    "product_name": "1.3 ct Solitaire Cushion Shape Diamond Engagement Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "67832.0", 
+    "sku": "LJ-R00011-18YGLGD-9", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Ceramic Heart Diamond Stud Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "67448.0", 
+    "sku": "LJ-E00473-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "", 
+    "price_range": "₹1L-2L", 
+    "product_name": "Equinox Round Diamond Men's Ring", 
+    "purchase_line_items": "2", 
+    "revenue": "223836.0", 
+    "sku": "LJ-R00102-18YGLGD-20", 
+    "state": ""
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "Patna", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "2", 
+    "revenue": "2.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Bihar"
+  }, 
+  {
+    "category": "Chain", 
+    "city": "Pune", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Cable Gold Neck Chain", 
+    "purchase_line_items": "1", 
+    "revenue": "17499.0", 
+    "sku": "LJ-CH0018-18YGPG-18", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Round Solitaire 4-Prong Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "36836.0", 
+    "sku": "LJ-E00032-18YGLGD", 
+    "state": ""
+  }, 
+  {
+    "category": "Earrings", 
+    "city": "Hyderabad", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Majestic Peacock Diamond Earrings", 
+    "purchase_line_items": "2", 
+    "revenue": "146676.0", 
+    "sku": "LJ-PE0454-14YGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Charms", 
+    "city": "Palghar", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Eiffel Tower Charm", 
+    "purchase_line_items": "880", 
+    "revenue": "1.6475202E7", 
+    "sku": "LJ-CHA013-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Kanchipuram", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Lustre Round Diamond Chain Bracelet", 
+    "purchase_line_items": "3", 
+    "revenue": "112806.0", 
+    "sku": "LJ-BR0206-18YGLGD-6", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "mumbai", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Round Solitaire 4-Prong Diamond Stud Earrings", 
+    "purchase_line_items": "1", 
+    "revenue": "32681.0", 
+    "sku": "LJ-E00032-14RGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bracelets", 
+    "city": "Thane", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Divine Om Convertible Diamond Rakhi Pendant", 
+    "purchase_line_items": "2", 
+    "revenue": "36900.0", 
+    "sku": "LJ-BP0003-09YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "Mhow", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Multi-Pear Diamond Ring with Round Accents", 
+    "purchase_line_items": "1", 
+    "revenue": "88346.0", 
+    "sku": "LJ-R00550-18YGLGD-13", 
+    "state": "Madhya Pradesh"
+  }, 
+  {
+    "category": "Nosepins", 
+    "city": "Bangalore", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Ever Bloom Diamond Nose Bali", 
+    "purchase_line_items": "2", 
+    "revenue": "23998.0", 
+    "sku": "LJ-NP0078-14YGLGD", 
+    "state": "Karnataka"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "KOLLAM", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Petal Round Diamond Nose Pin", 
+    "purchase_line_items": "1", 
+    "revenue": "4999.0", 
+    "sku": "LJ-NP0032-14YGLGD", 
+    "state": "Kerala"
+  }, 
+  {
+    "category": "", 
+    "city": "North 24 Parganas", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Customer Order COE198", 
+    "purchase_line_items": "3", 
+    "revenue": "64029.0", 
+    "sku": "LJ-COE198-14WGLGD", 
+    "state": "West Bengal"
+  }, 
+  {
+    "category": "Rings", 
+    "city": "Raigarh(MH)", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Customised Order", 
+    "purchase_line_items": "2", 
+    "revenue": "90420.0", 
+    "sku": "LJ-LO0001", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Bangles", 
+    "city": "East Delhi", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Insurance", 
+    "purchase_line_items": "1", 
+    "revenue": "1.0", 
+    "sku": "LJ-INS-09RGLGD", 
+    "state": "Delhi"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "JAIPUR", 
+    "price_range": "Under ₹25K", 
+    "product_name": "100 mg gold coin", 
+    "purchase_line_items": "1", 
+    "revenue": "3000.0", 
+    "sku": "LJ-GC100-955YGPG", 
+    "state": "Rajasthan"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Diagonal Round Diamond Nosepin", 
+    "purchase_line_items": "1", 
+    "revenue": "6999.0", 
+    "sku": "LJ-NP0049-14YGLGD", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "HYDERABAD", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Classic Floral Diamond Mangalsutra", 
+    "purchase_line_items": "1", 
+    "revenue": "38284.0", 
+    "sku": "LJ-TN0031-14YGLGD", 
+    "state": "Telangana"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "₹50K-1L", 
+    "product_name": "Classic Oval Shape Diamond Ring with Sleek Band", 
+    "purchase_line_items": "1", 
+    "revenue": "52397.0", 
+    "sku": "LJ-R00014-14YGLGD-10", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "", 
+    "price_range": "₹25K-50K", 
+    "product_name": "Oval Center Diamond Engagement Ring", 
+    "purchase_line_items": "1", 
+    "revenue": "39075.0", 
+    "sku": "LJ-R00569-14YGLGD-5", 
+    "state": ""
+  }, 
+  {
+    "category": "Jewelry", 
+    "city": "MUMBAI", 
+    "price_range": "Under ₹25K", 
+    "product_name": "Pave Round Diamond Men's Stud", 
+    "purchase_line_items": "1", 
+    "revenue": "7724.0", 
+    "sku": "LJ-ME0021-14YGLGD", 
+    "state": "Maharashtra"
+  }
+]

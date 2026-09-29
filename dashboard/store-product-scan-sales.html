@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Store × Product Scan/Sale/Walk-in Intelligence — Lucira</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0e14; --bg2:#11151d; --card:#161b25; --card2:#1c2330; --line:#2a3242;
+  --tx:#e8ecf3; --tx2:#98a3b8; --tx3:#68738a;
+  --acc:#4f8cff; --acc2:#22d3a8; --warn:#f4b740; --bad:#ff5d6c; --good:#22c55e;
+  --c1:#4f8cff; --c2:#22d3a8; --c3:#f4b740; --c4:#c084fc; --c5:#fb7185; --c6:#38bdf8; --c7:#a3e635; --c8:#f97316;
+  --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.25);
+  --brand-brown:#8b6f56; --brand-brown-dark:#6e5744; --brand-mauve:#a05a64; --brand-mauve-light:#d9b8b4; --brand-cream:#fff8f0;
+}
+:root[data-theme="light"]{
+  --bg:#f3f5fa; --bg2:#eceff5; --card:#ffffff; --card2:#f7f9fc; --line:#e2e7f0;
+  --tx:#141a24; --tx2:#57647a; --tx3:#8993a6;
+  --acc:#2563eb; --acc2:#0d9488; --warn:#d97706; --bad:#dc2626; --good:#16a34a;
+  --c1:#2563eb; --c2:#0d9488; --c3:#d97706; --c4:#9333ea; --c5:#e11d48; --c6:#0284c7; --c7:#65a30d; --c8:#ea580c;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font:14px/1.45 'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:60px}
+a{color:var(--acc)}
+.wrap{max-width:1560px;margin:0 auto;padding:0 20px 60px}
+h1,h2,h3{margin:0 0 4px}
+::-webkit-scrollbar{height:9px;width:9px}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}
+
+#boot{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;transition:opacity .4s}
+#boot.hide{opacity:0;pointer-events:none}
+.bootmark{width:64px;height:64px;border-radius:16px;background:var(--brand-cream);border:1.5px solid var(--brand-mauve);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:26px;color:var(--brand-brown)}
+.bootbar{width:220px;height:4px;background:var(--line);border-radius:4px;overflow:hidden}
+.bootbar i{display:block;height:100%;width:30%;background:linear-gradient(90deg,var(--acc),var(--acc2));animation:load 1.1s ease-in-out infinite}
+@keyframes load{0%{margin-left:-30%}100%{margin-left:100%}}
+.boottxt{color:var(--tx2);font-size:13px;letter-spacing:.3px}
+
+header.top{position:sticky;top:0;z-index:60;background:var(--brand-brown);border-bottom:2px solid var(--brand-brown-dark);padding:14px 20px 8px}
+.top .bar{max-width:1560px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:36px;height:36px;border-radius:50%/42%;background:var(--brand-cream);border:1.5px solid var(--brand-mauve);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--brand-brown);position:relative}
+.logo::after{content:'';position:absolute;bottom:5px;left:50%;width:4px;height:4px;background:var(--brand-mauve);transform:translateX(-50%) rotate(45deg)}
+.brandtx b{font-size:15px;letter-spacing:.2px;color:var(--brand-cream)}
+.brandtx div{font-size:11px;color:rgba(255,248,240,.72)}
+.dotless{position:relative;display:inline-block;font-style:normal}
+.dotless::before{content:'';position:absolute;top:-.6em;left:50%;width:4px;height:4px;background:var(--brand-mauve-light);transform:translateX(-50%) rotate(45deg)}
+header.top .btn{background:rgba(255,255,255,.12);color:var(--brand-cream);border-color:rgba(255,255,255,.28)}
+header.top .btn:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.5)}
+.grow{flex:1}
+.pill{padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:var(--card2);color:var(--tx2);display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.pill.live{color:var(--good);border-color:var(--good)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.btn{background:var(--card2);border:1px solid var(--line);color:var(--tx);padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--acc)}
+.btn.primary{background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;color:#fff}
+
+nav.tabs{position:sticky;top:64px;z-index:55;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto;white-space:nowrap;padding:0 20px;display:flex;gap:4px}
+nav.tabs .tab{color:var(--tx2);font-size:12.5px;font-weight:600;padding:9px 12px;border-radius:8px;cursor:pointer;flex:0 0 auto;margin:6px 0}
+nav.tabs .tab:hover{background:var(--card2);color:var(--tx)}
+nav.tabs .tab.active{background:var(--acc);color:#fff}
+
+.filterbar{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:16px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;box-shadow:var(--shadow)}
+.filterbar select,.filterbar input[type=date],.filterbar input[type=text]{background:var(--card2);border:1px solid var(--line);color:var(--tx);padding:6px 9px;border-radius:8px;font-size:12.5px;font-family:inherit}
+.filterbar label{font-size:11px;color:var(--tx3);display:flex;flex-direction:column;gap:3px;font-weight:600}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;flex-wrap:wrap}
+.seg button{background:var(--card2);border:none;color:var(--tx2);padding:6px 10px;font-size:11.5px;font-weight:600;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button:hover{color:var(--tx)}
+.fdrawer{display:none;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);width:100%}
+.fdrawer.open{display:grid}
+.msbox{max-height:120px;overflow:auto;border:1px solid var(--line);border-radius:8px;background:var(--card2);padding:5px}
+.msbox label{flex-direction:row;align-items:center;gap:6px;font-weight:400;color:var(--tx2);padding:2px 4px;font-size:12px}
+.disabledNote{font-size:11px;color:var(--tx3);font-style:italic}
+
+.view{display:none}
+.view.on{display:block}
+section{margin:22px 0}
+.sechead{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.sechead h2{font-size:17px}
+.secsub{color:var(--tx2);font-size:12px}
+.grid{display:grid;gap:14px}
+.grid.g4{grid-template-columns:repeat(4,1fr)}
+.grid.g3{grid-template-columns:repeat(3,1fr)}
+.grid.g2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:1100px){.grid.g4{grid-template-columns:repeat(2,1fr)}.grid.g3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.grid.g4,.grid.g3,.grid.g2{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);position:relative}
+.card h3{font-size:13px;color:var(--tx2);font-weight:700;letter-spacing:.2px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.kpi .lbl{font-size:11.5px;color:var(--tx2);font-weight:700}
+.kpi .val{font-size:23px;font-weight:800;margin:6px 0 2px;font-family:'JetBrains Mono',monospace}
+.kpi .sub{font-size:11px;color:var(--tx3)}
+.kpi.bad{border-color:rgba(255,93,108,.55)}
+.kpi.bad .val{color:var(--bad)}
+
+.tblwrap{overflow:auto;max-height:520px;border-radius:10px}
+table.dt{width:100%;border-collapse:collapse;font-size:12.5px}
+table.dt th{position:sticky;top:0;background:var(--card2);color:var(--tx2);text-align:left;padding:8px 10px;font-weight:700;border-bottom:1px solid var(--line);white-space:nowrap}
+table.dt td{padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.dt tr:hover td{background:var(--card2)}
+.num{text-align:right;font-family:'JetBrains Mono',monospace}
+.gap{color:var(--tx3);font-style:italic}
+.hc{text-align:center}
+
+.gatebox{background:rgba(244,183,64,.08);border:1px dashed var(--warn);color:var(--tx2);border-radius:8px;padding:10px 12px;font-size:12.3px;line-height:1.55}
+.note{background:var(--card2);border:1px dashed var(--line);border-radius:8px;padding:8px 11px;font-size:11.8px;color:var(--tx3);margin-top:8px}
+.execSummary{font-size:13.5px;line-height:1.7;color:var(--tx2)}
+
+#askFab{position:fixed;right:22px;bottom:22px;z-index:90;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;cursor:pointer;box-shadow:0 10px 30px rgba(79,140,255,.5);border:none}
+#askPanel{position:fixed;right:22px;bottom:88px;z-index:90;width:380px;max-width:92vw;height:480px;max-height:70vh;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.5);display:none;flex-direction:column;overflow:hidden}
+#askPanel.open{display:flex}
+#askHead{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:13px}
+#askMsgs{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:9px;font-size:12.5px}
+.msg{padding:8px 11px;border-radius:10px;max-width:88%}
+.msg.u{align-self:flex-end;background:var(--acc);color:#fff}
+.msg.a{align-self:flex-start;background:var(--card2);border:1px solid var(--line)}
+#askIn{display:flex;border-top:1px solid var(--line)}
+#askIn input{flex:1;border:none;background:transparent;color:var(--tx);padding:11px;font-family:inherit;font-size:12.5px}
+#askIn input:focus{outline:none}
+#askIn button{border:none;background:none;color:var(--acc);font-weight:700;padding:0 14px;cursor:pointer}
+.qchip{font-size:11px;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:4px 8px;cursor:pointer;color:var(--tx2)}
+.qchips{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px}
+
+@media print{ header,nav.tabs,.filterbar,#askFab,#askPanel{display:none!important} .view{display:block!important} section{margin:10px 0} .card{box-shadow:none;border:1px solid #ccc} }
+</style>
+</head>
+<body>
+
+<div id="boot"><div class="bootmark">L</div><div class="bootbar"><i></i></div><div class="boottxt">Loading Store × Product Scan/Sale/Walk-in intelligence…</div></div>
+
+<header class="top">
+  <div class="bar">
+    <div class="brand"><div class="logo">L</div><div class="brandtx"><b>Luc<span class="dotless">ı</span>rá Jewelry</b><div>Store × Product Scan / Sale / Walk-in Intelligence</div></div></div>
+    <span class="pill" id="freshPill"><span class="dot"></span> loading…</span>
+    <div class="grow"></div>
+    <button class="btn" id="themeBtn">◐ Theme</button>
+    <button class="btn primary" id="printBtn">🖨 Print / PDF</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="tab active" data-view="v1">1 · Executive</div>
+  <div class="tab" data-view="v2">2 · Store Performance</div>
+  <div class="tab" data-view="v3">3 · Product Scan Analysis</div>
+  <div class="tab" data-view="v4">4 · Scan vs Sale</div>
+  <div class="tab" data-view="v5">5 · Walk-in Analysis</div>
+  <div class="tab" data-view="v6">6 · Store × Product Heatmap</div>
+  <div class="tab" data-view="v7">7 · Opportunity Analysis</div>
+  <div class="tab" data-view="v8">8 · Data Quality</div>
+  <div class="tab" data-view="v9">9 · Ask Your Data</div>
+</nav>
+
+<div class="wrap">
+
+  <div class="filterbar" id="filterbar">
+    <label>From<input type="date" id="fFrom"></label>
+    <label>To<input type="date" id="fTo"></label>
+    <div class="seg">
+      <button data-preset="today">Today</button>
+      <button data-preset="yesterday">Yesterday</button>
+      <button data-preset="7">Last 7d</button>
+      <button data-preset="30">Last 30d</button>
+      <button data-preset="90">Last 90d</button>
+      <button data-preset="mtd">MTD</button>
+      <button data-preset="prevmonth">Prev Month</button>
+      <button data-preset="all">All Data</button>
+    </div>
+    <label>Item Code / Product search<input type="text" id="skuSearch" placeholder="e.g. PD0338"></label>
+    <span class="grow"></span>
+    <button class="btn" id="moreFiltBtn">Store / City / State / Category ▾</button>
+    <button class="btn" id="resetFiltBtn">↺ Reset all filters</button>
+    <div class="fdrawer" id="fdrawer">
+      <label>Store<div class="msbox" id="msStore"></div></label>
+      <label>City<div class="msbox" id="msCity"></div></label>
+      <label>State<div class="msbox" id="msState"></div></label>
+      <label>Category<div class="msbox" id="msCategory"></div></label>
+      <label>Product Status<div class="msbox"><span class="disabledNote">Not available — <code>marketing_sale</code> has no product-status field in this data model.</span></div></label>
+    </div>
+  </div>
+
+  <!-- ============ TAB 1: EXECUTIVE ============ -->
+  <div class="view on" id="v1">
+    <section>
+      <div class="sechead"><h2>Executive Dashboard</h2><span class="secsub">Recomputes from real aggregates whenever filters change</span></div>
+      <div class="grid g4" id="execKpis"></div>
+      <div class="card" style="margin-top:14px"><h3>AI-Generated Executive Summary</h3><div class="execSummary" id="execSummary"></div></div>
+    </section>
+  </div>
+
+  <!-- ============ TAB 2: STORE PERFORMANCE ============ -->
+  <div class="view" id="v2">
+    <section>
+      <div class="sechead"><h2>Store Performance</h2><span class="secsub">Walk-ins · scans · sales · ranking — recomputed for the current date range and store/city/state filter above</span></div>
+      <div class="card"><div class="tblwrap"><table class="dt" id="tblStorePerf"></table></div>
+        <div style="margin-top:8px"><button class="btn" data-csv="tblStorePerf" data-name="store_performance">⬇ Export CSV</button></div>
+      </div>
+      <div class="grid g2" style="margin-top:14px">
+        <div class="card"><h3>Sales Value by Store</h3><div id="chStoreSales"></div></div>
+        <div class="card"><h3>Walk-ins by Store</h3><div id="chStoreWalkins"></div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ TAB 3: PRODUCT SCAN ANALYSIS ============ -->
+  <div class="view" id="v3">
+    <section>
+      <div class="sechead"><h2>Product Scan Analysis</h2><span class="secsub">Opaque item_id grain — no catalog SKU/name resolves these ids (no populated item master exists)</span></div>
+      <div class="grid g3" id="scanKpis" style="margin-bottom:14px"></div>
+      <div class="card"><h3>Most-Scanned Items (Top 15)</h3><div id="chTopScanned"></div></div>
+      <div class="card" style="margin-top:14px"><div class="tblwrap"><table class="dt" id="tblTopScanned"></table></div>
+        <div style="margin-top:8px"><button class="btn" data-csv="tblTopScanned" data-name="top_scanned_items">⬇ Export CSV</button></div>
+      </div>
+      <div class="card" style="margin-top:14px"><h3>Store-wise Scanned-Item Counts</h3><div class="tblwrap"><table class="dt" id="tblScanByStore"></table></div>
+        <div style="margin-top:8px"><button class="btn" data-csv="tblScanByStore" data-name="scan_by_store">⬇ Export CSV</button></div>
+      </div>
+      <div class="note">"Total Scan Events" is used instead of "unique customers" wherever <code>party_id</code> is absent (95%+ of scan rows have no party_id).</div>
+    </section>
+  </div>
+
+  <!-- ============ TAB 4: SCAN VS SALE ============ -->
+  <div class="view" id="v4">
+    <section>
+      <div class="sechead"><h2>Scan vs Sale Analysis</h2></div>
+      <div class="gatebox" id="svsGate" style="margin-bottom:14px"></div>
+      <div class="card"><h3>(a) Measured Conversion — party_id-linked scan → sale</h3>
+        <div class="grid g4" id="svsMeasuredKpis" style="margin:10px 0"></div>
+        <div class="tblwrap"><table class="dt" id="tblPartyLinked"></table></div>
+        <div style="margin-top:8px"><button class="btn" data-csv="tblPartyLinked" data-name="party_linked_scan_sale">⬇ Export CSV</button></div>
+      </div>
+      <div class="card" style="margin-top:14px"><h3>(b) Analytical / Proxy — store-level scan volume vs sales value (NOT a per-product funnel)</h3>
+        <div id="chProxyCorr"></div>
+        <div class="tblwrap" style="margin-top:10px"><table class="dt" id="tblProxyCorr"></table></div>
+        <div style="margin-top:8px"><button class="btn" data-csv="tblProxyCorr" data-name="store_scan_vs_sale_proxy">⬇ Export CSV</button></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ TAB 5: WALK-IN ANALYSIS ============ -->
+  <div class="view" id="v5">
+    <section>
+      <div class="sechead"><h2>Customer Walk-in Analysis</h2></div>
+      <div class="grid g4" id="walkinKpis" style="margin-bottom:14px"></div>
+      <div class="grid g2">
+        <div class="card"><h3>Walk-ins by Store</h3><div id="chWalkinByStore"></div>
+          <div class="tblwrap" style="margin-top:8px"><table class="dt" id="tblWalkinByStore"></table></div>
+          <div style="margin-top:8px"><button class="btn" data-csv="tblWalkinByStore" data-name="walkin_by_store">⬇ Export CSV</button></div>
+        </div>
+        <div class="card"><h3>Walk-ins by Day of Week</h3><div id="chWalkinDow"></div></div>
+        <div class="card"><h3>Walk-ins by Month</h3><div id="chWalkinMonth"></div></div>
+        <div class="card"><h3>Walk-ins Trend (Daily, In Scope)</h3><div id="chWalkinVsSaleTrend"></div></div>
+      </div>
+      <div class="note">Walk-in → Sale conversion (phone match) recomputes for the current date/store/city/state filter above. See Data Quality tab for the full-dataset reference numbers.</div>
+    </section>
+  </div>
+
+  <!-- ============ TAB 6: HEATMAP ============ -->
+  <div class="view" id="v6">
+    <section>
+      <div class="sechead"><h2>Store × Product Heatmap</h2><span class="secsub">Top 25 Item Codes by sales value × store — recomputed for the current date/store filter</span></div>
+      <div class="filterbar" style="margin-bottom:14px">
+        <label>Metric<select id="heatMetricSel">
+          <option value="net_sale">Sales Value</option>
+          <option value="pieces">Units Sold</option>
+          <option value="orders">Orders</option>
+        </select></label>
+        <span class="secsub">Scan metric is intentionally not offered here — there is no valid per-SKU scan count (0% key overlap between scan and sale identifiers, verified in the Data Quality tab).</span>
+      </div>
+      <div class="card"><div class="tblwrap"><table class="dt" id="tblHeatmap"></table></div>
+        <div style="margin-top:8px"><button class="btn" data-csv="tblHeatmap" data-name="store_product_heatmap">⬇ Export CSV</button></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ TAB 7: OPPORTUNITY ============ -->
+  <div class="view" id="v7">
+    <section>
+      <div class="sechead"><h2>Opportunity Analysis</h2></div>
+      <div class="card"><div class="tblwrap"><table class="dt" id="tblOpportunity"></table></div>
+        <div class="note" id="oppNote"></div>
+        <div style="margin-top:8px"><button class="btn" data-csv="tblOpportunity" data-name="opportunity_analysis">⬇ Export CSV</button></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ TAB 8: DATA QUALITY ============ -->
+  <div class="view" id="v8">
+    <section>
+      <div class="sechead"><h2>Data Quality</h2></div>
+      <div class="card"><div class="tblwrap"><table class="dt" id="tblDataQuality"></table></div>
+        <div class="note" id="dqNote"></div>
+        <div style="margin-top:8px"><button class="btn" data-csv="tblDataQuality" data-name="data_quality">⬇ Export CSV</button></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ TAB 9: ASK YOUR DATA ============ -->
+  <div class="view" id="v9">
+    <section>
+      <div class="sechead"><h2>Ask Your Data</h2></div>
+      <div class="gatebox" style="margin-bottom:14px">This is a <b>rule-based</b> assistant that keyword-matches your question against the precomputed aggregates already shown in this dashboard. It is <b>not</b> a live Gemini/LLM API call — this repo has no LLM backend wired up for this dashboard. Answers are tagged FACT / INSIGHT / ASSUMPTION.</div>
+      <div class="card">
+        <div class="qchips">
+          <span class="qchip">What is the top store?</span>
+          <span class="qchip">What is the top product?</span>
+          <span class="qchip">How is PN1 doing?</span>
+          <span class="qchip">Walk-in to sale conversion?</span>
+          <span class="qchip">Total scan events?</span>
+          <span class="qchip">Unmapped walk-ins?</span>
+          <span class="qchip">Where should we focus?</span>
+        </div>
+        <div id="askMsgsInline"></div>
+        <div id="askIn" style="border:1px solid var(--line);border-radius:10px;margin-top:8px">
+          <input id="askInputInline" placeholder="Type a question and press Enter — mirrors the chat widget bottom-right">
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer style="text-align:center;color:var(--tx3);font-size:11.5px;padding:30px 0 10px">Store × Product Scan/Sale/Walk-in Intelligence · Lucira Jewelry · locally-embedded snapshot, no live network calls, works from file://</footer>
+</div>
+
+<button id="askFab">💬</button>
+<div id="askPanel">
+  <div id="askHead"><span>✨ Ask Your Data</span><span style="cursor:pointer" id="askClose">✕</span></div>
+  <div class="qchips" id="askChips">
+    <span class="qchip">Top store?</span><span class="qchip">Top product?</span><span class="qchip">Walk-in conversion?</span><span class="qchip">Unmapped walk-ins?</span>
+  </div>
+  <div id="askMsgs"></div>
+  <div id="askIn"><input id="askInput" placeholder="Ask about stores, products, scans, walk-ins…"><button id="askSend">Send</button></div>
+</div>
+
+<script src="spsw_data.js"></script>
+<script src="spsw.js"></script>
+<script>
+document.getElementById('askFab').addEventListener('click', function(){ document.getElementById('askPanel').classList.toggle('open'); });
+document.getElementById('askClose').addEventListener('click', function(){ document.getElementById('askPanel').classList.remove('open'); });
+</script>
+</body>
+</html>

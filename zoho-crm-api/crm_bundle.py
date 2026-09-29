@@ -121,7 +121,7 @@ def crm_bundle(request):
                              "Call_Start_Time,Subject,What_Id,Call_Result")
         tasks_raw = paginate(tok, "Tasks", "id,Owner.id,Created_Time,Status,Due_Date,Closed_Time,What_Id")
         online_raw= paginate(tok, "Online_Activity_Logs", "id,Owner.id,Created_Time,Channel,Activity_Type")
-        events_raw= paginate(tok, "Events", "id,Owner.id,Created_Time,Start_DateTime,End_DateTime,Event_Title")
+        events_raw= paginate(tok, "Events", "id,Owner.id,Created_Time,Start_DateTime,End_DateTime,Event_Title,What_Id")
         ce_raw    = paginate(tok, "Customer_Events", "Event_Type,Created_Time")
 
         # pack (positional order MUST match dashboard app.js pd/pc/pt/po/pe)
@@ -145,7 +145,8 @@ def crm_bundle(request):
         online= [[r.get("id"), owner_id(r), ist(r.get("Created_Time")), r.get("Channel"), r.get("Activity_Type")]
                  for r in online_raw]
         events= [[r.get("id"), owner_id(r), ist(r.get("Created_Time")), ist(r.get("Start_DateTime")),
-                  ist(r.get("End_DateTime")), r.get("Event_Title")] for r in events_raw]
+                  ist(r.get("End_DateTime")), r.get("Event_Title"),
+                  (r.get("What_Id") or {}).get("id","") if isinstance(r.get("What_Id"), dict) else ""] for r in events_raw]
 
         # customer events aggregate
         cats = ["Signup","ATC","Checkout","Purchase","Website Visit","Other"]

@@ -67,7 +67,7 @@ def _require_login():
 # Explicit column list (no SELECT *): exactly what the dashboard renders.
 JOURNEY_COLUMNS = [
     "meeting_id", "meeting_title", "meeting_created_ist", "meeting_created_date", "from_date", "from_ist",
-    "all_day", "meeting_status", "meeting_type", "meeting_location", "venue", "meeting_store_code", "store",
+    "all_day", "meeting_status", "meeting_type", "meeting_type_norm", "meeting_location", "venue", "meeting_store_code", "store",
     "meeting_owner", "meeting_created_by", "meeting_description", "related_module",
     "customer_name", "mobile", "mobile_source", "contact_id",
     "deal_id", "deal_name", "deal_stage", "deal_trigger", "probability", "deal_city", "deal_state",

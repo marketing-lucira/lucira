@@ -12,27 +12,48 @@
 --   `analytics_478308692`. If your tables live elsewhere (or you also want
 --   Shopify/CRM joined in), change the FROM / add joins below.
 --
--- Refresh: register this file as a **BigQuery Scheduled Query** running daily at
--- 09:00 IST (Asia/Kolkata). It rebuilds only the previous day's partition, so
--- cost stays low. `@run_date` is supplied automatically by Scheduled Queries;
--- the DECLARE default (yesterday IST) also lets you run it by hand.
+-- SELF-HEALING WINDOW: every run wipes and rebuilds the trailing 7 DAYS
+-- (through the latest day the raw export actually has data for), not just
+-- "yesterday". This means a missed run, a temporarily-paused schedule, or a
+-- late-arriving GA4 export day all correct themselves on the next run instead
+-- of leaving the dashboard silently stuck on a stale date (which is exactly
+-- what happened before this table was ever put on a schedule at all — it sat
+-- frozen for 6 days with nobody noticing until the dashboard was checked).
+--
+-- Refresh: register this file as a **BigQuery Scheduled Query** running daily
+-- at 09:00 IST (Asia/Kolkata). Cost stays low — 7 partitions is still a small
+-- rebuild, and DELETE+INSERT on a partitioned table only touches those days.
 --
 -- Destination table (create once with 00_setup_fact.sql, or let the Scheduled
 -- Query create it): `lucirajewelry-prod.ga4_dashboard.ga4_fact_sessions`
 --   PARTITION BY session_date  CLUSTER BY channel, country, device_category
 -- ═══════════════════════════════════════════════════════════════════════════
-DECLARE target_date    DATE          DEFAULT DATE_SUB(COALESCE(@run_date, CURRENT_DATE('Asia/Kolkata')), INTERVAL 1 DAY);
-DECLARE suffix         STRING        DEFAULT FORMAT_DATE('%Y%m%d', target_date);
+
+-- Declare a date variable
+DECLARE dt DATE;
+
 -- Key events present in THIS property's export (confirm vs GA4 Admin → Key events).
 DECLARE key_events_set ARRAY<STRING> DEFAULT ['purchase','begin_checkout','add_to_cart','signup'];
 
--- idempotent: rebuild just this day's partition
+-- Assign the variable the max date the raw GA4 export actually has data for
+-- (export lags real time by ~1-2 days, so "yesterday" isn't always ready —
+-- this finds the true latest day rather than assuming).
+SET dt = (
+  SELECT MAX(PARSE_DATE('%Y%m%d', REGEXP_EXTRACT(table_id, r'^events_(\d{8})$')))
+  FROM `lucirajewelry-prod.analytics_478308692.__TABLES__`
+  WHERE REGEXP_CONTAINS(table_id, r'^events_\d{8}$')
+);
+
+-- Deleting the trailing 7 days of data from the fact table so they can be
+-- rebuilt clean (idempotent — safe to rerun, and self-heals any gap in that
+-- window from a missed or late run).
 DELETE FROM `lucirajewelry-prod.ga4_dashboard.ga4_fact_sessions`
-WHERE session_date = target_date;
+WHERE session_date BETWEEN DATE_SUB(dt, INTERVAL 6 DAY) AND dt;
 
 INSERT INTO `lucirajewelry-prod.ga4_dashboard.ga4_fact_sessions`
 WITH ev AS (
   SELECT
+    PARSE_DATE('%Y%m%d', _TABLE_SUFFIX) AS session_date,
     user_pseudo_id, event_name, event_timestamp, platform, items, ecommerce,
     (SELECT value.int_value    FROM UNNEST(event_params) WHERE key='ga_session_id')       AS session_id,
     (SELECT value.int_value    FROM UNNEST(event_params) WHERE key='ga_session_number')   AS session_number,
@@ -51,7 +72,7 @@ WITH ev AS (
     device.language         AS language,
     geo.country AS country, geo.region AS region, geo.city AS city
   FROM `lucirajewelry-prod.analytics_478308692.events_*`
-  WHERE _TABLE_SUFFIX = suffix
+  WHERE _TABLE_SUFFIX BETWEEN FORMAT_DATE('%Y%m%d', DATE_SUB(dt, INTERVAL 6 DAY)) AND FORMAT_DATE('%Y%m%d', dt)
 ),
 -- pick each session's defining traffic source (first real non-direct event)
 src_rank AS (
@@ -109,7 +130,7 @@ pages_agg AS (
   ) GROUP BY skey
 )
 SELECT
-  target_date AS session_date,
+  s.session_date AS session_date,
   s.skey AS session_key,
   ANY_VALUE(s.user_pseudo_id) AS user_pseudo_id,
   IF(MAX(IF(s.event_name='first_visit' OR s.session_number=1,1,0))=1, TRUE, FALSE) AS is_new_user,
@@ -152,5 +173,5 @@ LEFT JOIN land       l  USING (skey)
 LEFT JOIN items_agg  i  USING (skey)
 LEFT JOIN events_agg ea USING (skey)
 LEFT JOIN pages_agg  pa USING (skey)
-GROUP BY s.skey, a.source, a.medium, a.campaign, a.campaign_id,
+GROUP BY s.session_date, s.skey, a.source, a.medium, a.campaign, a.campaign_id,
          l.landing_page, l.landing_title, l.hostname;

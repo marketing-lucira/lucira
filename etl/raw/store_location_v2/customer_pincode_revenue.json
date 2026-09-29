@@ -1,0 +1,32 @@
+[
+  {
+    "mobile": "9530720672", 
+    "pincode": "255315", 
+    "purchase_events": "9", 
+    "revenue": "1303038.0"
+  }, 
+  {
+    "mobile": "8500005006", 
+    "pincode": "279436", 
+    "purchase_events": "1", 
+    "revenue": "22884.0"
+  }, 
+  {
+    "mobile": "7674840647", 
+    "pincode": "196910", 
+    "purchase_events": "1", 
+    "revenue": "8999.0"
+  }, 
+  {
+    "mobile": "9611782611", 
+    "pincode": "143633", 
+    "purchase_events": "1", 
+    "revenue": "14418.0"
+  }, 
+  {
+    "mobile": "9810736935", 
+    "pincode": "153198", 
+    "purchase_events": "1", 
+    "revenue": "9613.0"
+  }
+]

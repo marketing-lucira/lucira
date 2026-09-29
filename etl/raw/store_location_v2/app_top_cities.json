@@ -1,0 +1,402 @@
+[
+  {
+    "city": "Mumbai", 
+    "state": "Maharashtra", 
+    "total_events": "2522613"
+  }, 
+  {
+    "city": "Pune", 
+    "state": "Maharashtra", 
+    "total_events": "742189"
+  }, 
+  {
+    "city": "Bengaluru", 
+    "state": "Karnataka", 
+    "total_events": "622384"
+  }, 
+  {
+    "city": "Delhi", 
+    "state": "Delhi", 
+    "total_events": "592665"
+  }, 
+  {
+    "city": "New Delhi", 
+    "state": "Delhi", 
+    "total_events": "589724"
+  }, 
+  {
+    "city": "Hyderabad", 
+    "state": "Telangana", 
+    "total_events": "568779"
+  }, 
+  {
+    "city": "Kolkata", 
+    "state": "West Bengal", 
+    "total_events": "379422"
+  }, 
+  {
+    "city": "Patna", 
+    "state": "Bihar", 
+    "total_events": "300454"
+  }, 
+  {
+    "city": "Ahmedabad", 
+    "state": "Gujarat", 
+    "total_events": "265299"
+  }, 
+  {
+    "city": "Chennai", 
+    "state": "Tamil Nadu", 
+    "total_events": "262866"
+  }, 
+  {
+    "city": "Jaipur", 
+    "state": "Rajasthan", 
+    "total_events": "257090"
+  }, 
+  {
+    "city": "Lucknow", 
+    "state": "Uttar Pradesh", 
+    "total_events": "240396"
+  }, 
+  {
+    "city": "Surat", 
+    "state": "Gujarat", 
+    "total_events": "194452"
+  }, 
+  {
+    "city": "Indore", 
+    "state": "Madhya Pradesh", 
+    "total_events": "140016"
+  }, 
+  {
+    "city": "Bhopal", 
+    "state": "Madhya Pradesh", 
+    "total_events": "103348"
+  }, 
+  {
+    "city": "Bhubaneswar", 
+    "state": "Odisha", 
+    "total_events": "101480"
+  }, 
+  {
+    "city": "Noida", 
+    "state": "Uttar Pradesh", 
+    "total_events": "98265"
+  }, 
+  {
+    "city": "Nagpur", 
+    "state": "Maharashtra", 
+    "total_events": "97653"
+  }, 
+  {
+    "city": "Meerut", 
+    "state": "Uttar Pradesh", 
+    "total_events": "88466"
+  }, 
+  {
+    "city": "Kanpur", 
+    "state": "Uttar Pradesh", 
+    "total_events": "86709"
+  }, 
+  {
+    "city": "Dehradun", 
+    "state": "Uttarakhand", 
+    "total_events": "82000"
+  }, 
+  {
+    "city": "Ludhiana", 
+    "state": "Punjab", 
+    "total_events": "79274"
+  }, 
+  {
+    "city": "Gurugram", 
+    "state": "Haryana", 
+    "total_events": "79071"
+  }, 
+  {
+    "city": "Guwahati", 
+    "state": "Assam", 
+    "total_events": "78850"
+  }, 
+  {
+    "city": "Chandigarh", 
+    "state": "Chandigarh", 
+    "total_events": "73009"
+  }, 
+  {
+    "city": "Kochi", 
+    "state": "Kerala", 
+    "total_events": "72052"
+  }, 
+  {
+    "city": "Coimbatore", 
+    "state": "Tamil Nadu", 
+    "total_events": "65680"
+  }, 
+  {
+    "city": "Prayagraj", 
+    "state": "Uttar Pradesh", 
+    "total_events": "60993"
+  }, 
+  {
+    "city": "Ranchi", 
+    "state": "Jharkhand", 
+    "total_events": "60741"
+  }, 
+  {
+    "city": "Varanasi", 
+    "state": "Uttar Pradesh", 
+    "total_events": "56181"
+  }, 
+  {
+    "city": "Agra", 
+    "state": "Uttar Pradesh", 
+    "total_events": "55530"
+  }, 
+  {
+    "city": "Vadodara", 
+    "state": "Gujarat", 
+    "total_events": "54008"
+  }, 
+  {
+    "city": "Jodhpur", 
+    "state": "Rajasthan", 
+    "total_events": "53317"
+  }, 
+  {
+    "city": "Rajkot", 
+    "state": "Gujarat", 
+    "total_events": "48293"
+  }, 
+  {
+    "city": "Vijayawada", 
+    "state": "Andhra Pradesh", 
+    "total_events": "40328"
+  }, 
+  {
+    "city": "Faridabad", 
+    "state": "Haryana", 
+    "total_events": "36470"
+  }, 
+  {
+    "city": "Nashik", 
+    "state": "Maharashtra", 
+    "total_events": "33905"
+  }, 
+  {
+    "city": "Raipur", 
+    "state": "Chhattisgarh", 
+    "total_events": "33205"
+  }, 
+  {
+    "city": "Navi Mumbai", 
+    "state": "Maharashtra", 
+    "total_events": "32710"
+  }, 
+  {
+    "city": "Thane", 
+    "state": "Maharashtra", 
+    "total_events": "31341"
+  }, 
+  {
+    "city": "Moradabad", 
+    "state": "Uttar Pradesh", 
+    "total_events": "28685"
+  }, 
+  {
+    "city": "Patiala", 
+    "state": "Punjab", 
+    "total_events": "27923"
+  }, 
+  {
+    "city": "Visakhapatnam", 
+    "state": "Andhra Pradesh", 
+    "total_events": "27386"
+  }, 
+  {
+    "city": "Jalandhar", 
+    "state": "Punjab", 
+    "total_events": "26011"
+  }, 
+  {
+    "city": "Sahibzada Ajit Singh Nagar", 
+    "state": "Punjab", 
+    "total_events": "25516"
+  }, 
+  {
+    "city": "Sonipat", 
+    "state": "Haryana", 
+    "total_events": "25259"
+  }, 
+  {
+    "city": "Thiruvananthapuram", 
+    "state": "Kerala", 
+    "total_events": "25127"
+  }, 
+  {
+    "city": "Aurangabad", 
+    "state": "Maharashtra", 
+    "total_events": "24684"
+  }, 
+  {
+    "city": "Panipat", 
+    "state": "Haryana", 
+    "total_events": "24602"
+  }, 
+  {
+    "city": "Udaipur", 
+    "state": "Rajasthan", 
+    "total_events": "23648"
+  }, 
+  {
+    "city": "Ghaziabad", 
+    "state": "Uttar Pradesh", 
+    "total_events": "22758"
+  }, 
+  {
+    "city": "Madurai", 
+    "state": "Tamil Nadu", 
+    "total_events": "22448"
+  }, 
+  {
+    "city": "Rohtak", 
+    "state": "Haryana", 
+    "total_events": "21466"
+  }, 
+  {
+    "city": "Solapur", 
+    "state": "Maharashtra", 
+    "total_events": "19771"
+  }, 
+  {
+    "city": "Saharanpur", 
+    "state": "Uttar Pradesh", 
+    "total_events": "18841"
+  }, 
+  {
+    "city": "Thrissur", 
+    "state": "Kerala", 
+    "total_events": "18696"
+  }, 
+  {
+    "city": "Siliguri", 
+    "state": "West Bengal", 
+    "total_events": "17830"
+  }, 
+  {
+    "city": "Salem", 
+    "state": "Tamil Nadu", 
+    "total_events": "17796"
+  }, 
+  {
+    "city": "Kolhapur", 
+    "state": "Maharashtra", 
+    "total_events": "17604"
+  }, 
+  {
+    "city": "Karnal", 
+    "state": "Haryana", 
+    "total_events": "17245"
+  }, 
+  {
+    "city": "Dhanbad", 
+    "state": "Jharkhand", 
+    "total_events": "15623"
+  }, 
+  {
+    "city": "Aligarh", 
+    "state": "Uttar Pradesh", 
+    "total_events": "15287"
+  }, 
+  {
+    "city": "Jamnagar", 
+    "state": "Gujarat", 
+    "total_events": "15155"
+  }, 
+  {
+    "city": "Bokaro Steel City", 
+    "state": "Jharkhand", 
+    "total_events": "14966"
+  }, 
+  {
+    "city": "Mangalore", 
+    "state": "Karnataka", 
+    "total_events": "14396"
+  }, 
+  {
+    "city": "Kota", 
+    "state": "Rajasthan", 
+    "total_events": "13829"
+  }, 
+  {
+    "city": "Amritsar", 
+    "state": "Punjab", 
+    "total_events": "13132"
+  }, 
+  {
+    "city": "Kozhikode", 
+    "state": "Kerala", 
+    "total_events": "12966"
+  }, 
+  {
+    "city": "Durgapur", 
+    "state": "West Bengal", 
+    "total_events": "12863"
+  }, 
+  {
+    "city": "Asansol", 
+    "state": "West Bengal", 
+    "total_events": "12800"
+  }, 
+  {
+    "city": "Kalyan", 
+    "state": "Maharashtra", 
+    "total_events": "12375"
+  }, 
+  {
+    "city": "Muzaffarnagar", 
+    "state": "Uttar Pradesh", 
+    "total_events": "12097"
+  }, 
+  {
+    "city": "Jamshedpur", 
+    "state": "Jharkhand", 
+    "total_events": "12092"
+  }, 
+  {
+    "city": "Murshidabad", 
+    "state": "West Bengal", 
+    "total_events": "11967"
+  }, 
+  {
+    "city": "Greater Noida", 
+    "state": "Uttar Pradesh", 
+    "total_events": "11700"
+  }, 
+  {
+    "city": "Shimla", 
+    "state": "Himachal Pradesh", 
+    "total_events": "11147"
+  }, 
+  {
+    "city": "Bhilwara", 
+    "state": "Rajasthan", 
+    "total_events": "10920"
+  }, 
+  {
+    "city": "Rourkela", 
+    "state": "Odisha", 
+    "total_events": "10797"
+  }, 
+  {
+    "city": "Jaunpur", 
+    "state": "Uttar Pradesh", 
+    "total_events": "10594"
+  }, 
+  {
+    "city": "Jabalpur", 
+    "state": "Madhya Pradesh", 
+    "total_events": "9979"
+  }
+]

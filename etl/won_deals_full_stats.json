@@ -1,0 +1,170 @@
+[
+    {
+        "Metric":  "total_activities",
+        "TotalSum":  3965,
+        "Average":  20.33,
+        "Min":  17,
+        "Max":  46
+    },
+    {
+        "Metric":  "sessions",
+        "TotalSum":  716,
+        "Average":  3.67,
+        "Min":  3,
+        "Max":  5
+    },
+    {
+        "Metric":  "pdp_views",
+        "TotalSum":  1294,
+        "Average":  6.64,
+        "Min":  6,
+        "Max":  12
+    },
+    {
+        "Metric":  "total_products_viewed",
+        "TotalSum":  1294,
+        "Average":  6.64,
+        "Min":  6,
+        "Max":  12
+    },
+    {
+        "Metric":  "unique_products_viewed",
+        "TotalSum":  597,
+        "Average":  3.06,
+        "Min":  3,
+        "Max":  5
+    },
+    {
+        "Metric":  "category_pages",
+        "TotalSum":  647,
+        "Average":  3.32,
+        "Min":  3,
+        "Max":  6
+    },
+    {
+        "Metric":  "search_actions",
+        "TotalSum":  390,
+        "Average":  2,
+        "Min":  2,
+        "Max":  2
+    },
+    {
+        "Metric":  "atc_count",
+        "TotalSum":  219,
+        "Average":  1.12,
+        "Min":  1,
+        "Max":  3
+    },
+    {
+        "Metric":  "wishlist_count",
+        "TotalSum":  6,
+        "Average":  0.03,
+        "Min":  0,
+        "Max":  1
+    },
+    {
+        "Metric":  "checkout_attempts",
+        "TotalSum":  18,
+        "Average":  0.09,
+        "Min":  0,
+        "Max":  2
+    },
+    {
+        "Metric":  "whatsapp_clicks",
+        "TotalSum":  8,
+        "Average":  0.04,
+        "Min":  0,
+        "Max":  2
+    },
+    {
+        "Metric":  "phone_clicks",
+        "TotalSum":  2,
+        "Average":  0.01,
+        "Min":  0,
+        "Max":  2
+    },
+    {
+        "Metric":  "store_visits",
+        "TotalSum":  0,
+        "Average":  0,
+        "Min":  0,
+        "Max":  0
+    },
+    {
+        "Metric":  "returned_website",
+        "TotalSum":  521,
+        "Average":  2.67,
+        "Min":  2,
+        "Max":  4
+    },
+    {
+        "Metric":  "days_to_convert",
+        "TotalSum":  1365,
+        "Average":  7,
+        "Min":  7,
+        "Max":  7
+    },
+    {
+        "Metric":  "engagement_minutes",
+        "TotalSum":  14514,
+        "Average":  74.43,
+        "Min":  60,
+        "Max":  170
+    },
+    {
+        "Metric":  "zoho_activities",
+        "TotalSum":  152,
+        "Average":  0.78,
+        "Min":  0,
+        "Max":  26
+    },
+    {
+        "Metric":  "total_calls",
+        "TotalSum":  152,
+        "Average":  1.01,
+        "Min":  0,
+        "Max":  26
+    },
+    {
+        "Metric":  "connected_calls",
+        "TotalSum":  99,
+        "Average":  0.51,
+        "Min":  0,
+        "Max":  22
+    },
+    {
+        "Metric":  "missed_calls",
+        "TotalSum":  53,
+        "Average":  0.27,
+        "Min":  -1,
+        "Max":  5
+    },
+    {
+        "Metric":  "followup_attempts",
+        "TotalSum":  152,
+        "Average":  0.78,
+        "Min":  0,
+        "Max":  26
+    },
+    {
+        "Metric":  "emails_sent",
+        "TotalSum":  64,
+        "Average":  0.33,
+        "Min":  0,
+        "Max":  10
+    },
+    {
+        "Metric":  "whatsapp_convos",
+        "TotalSum":  207,
+        "Average":  1.06,
+        "Min":  1,
+        "Max":  4
+    },
+    {
+        "Metric":  "quotes_sent",
+        "TotalSum":  10,
+        "Average":  0.05,
+        "Min":  0,
+        "Max":  2
+    }
+]

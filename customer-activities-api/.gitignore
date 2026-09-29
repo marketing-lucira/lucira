@@ -1,0 +1,4 @@
+node_modules/
+.env
+.grant_code
+.new_refresh_token

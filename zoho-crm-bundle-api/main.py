@@ -125,11 +125,12 @@ def _build_bundle(cutoff):
                JSON_VALUE(data,'$.Channel') channel, JSON_VALUE(data,'$.Activity_Type') atype
         FROM {P}cdc_online_activities` WHERE {rng}""")]
 
-    events = [[r["id"], r["owner"], r["created"], r["estart"], r["eend"], r["title"]]
+    events = [[r["id"], r["owner"], r["created"], r["estart"], r["eend"], r["title"], r["what_id"] or ""]
               for r in rows(f"""
         SELECT id, owner_id owner, {ts} created,
                JSON_VALUE(data,'$.Start_DateTime') estart,
-               JSON_VALUE(data,'$.End_DateTime') eend, JSON_VALUE(data,'$.Event_Title') title
+               JSON_VALUE(data,'$.End_DateTime') eend, JSON_VALUE(data,'$.Event_Title') title,
+               JSON_VALUE(data,'$.What_Id.id') what_id
         FROM {P}cdc_meetings` WHERE {rng}""")]
 
     owners = {r["owner_id"]: r["nm"] for r in rows(f"""

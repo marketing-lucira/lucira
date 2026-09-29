@@ -61,9 +61,10 @@ function pd(a){return {id:a[0],name:a[1],owner:a[2],created:a[3],stage:a[4],prob
 function pc(a){return {id:a[0],owner:a[1],created:a[2],type:a[3],dur:a[4]||0,start:a[5],whatId:a[6]||'',phone:a[7]||'',result:a[8]||''};}
 function pt(a){return {id:a[0],owner:a[1],created:a[2],status:a[3],due:a[4],closed:a[5],whatId:a[6]||''};}
 function po(a){return {id:a[0],owner:a[1],created:a[2],channel:a[3],atype:a[4]};}
-function pe(a){return {id:a[0],owner:a[1],created:a[2],start:a[3],end:a[4],title:a[5]};}
+function pe(a){return {id:a[0],owner:a[1],created:a[2],start:a[3],end:a[4],title:a[5],whatId:a[6]||''};}
 var DEALS=(DASH.deals||[]).map(pd), CALLS=(DASH.calls||[]).map(pc), TASKS=(DASH.tasks||[]).map(pt),
-    ONLINE=(DASH.online||[]).map(po), EVENTS=(DASH.events||[]).map(pe), CE=DASH.ce||{byCat:{},byCatDay:{},byDay:{},cats:[],rawTop:[],total:0};
+    ONLINE=(DASH.online||[]).map(po), EVENTS=(DASH.events||[]).map(pe), CE=DASH.ce||{byCat:{},byCatDay:{},byDay:{},cats:[],rawTop:[],total:0},
+    DEAL_PRODUCTS=(DASH.deal_products||[]).map(function(a){return {dealId:a[0],name:a[1]||'',code:a[2]||''};});
 
 /* CRM reference counts (100% pagination confirmed this session) */
 var CRM={Deals:DEALS.length,Calls:CALLS.length,Tasks:TASKS.length,Online:ONLINE.length,Events:EVENTS.length,CustomerEvents:CE.total,EventsModuleTotal:117};
@@ -523,6 +524,82 @@ Object.assign(INFO, {
     what:'Count and % of deals created in the selected window with zero calls ever linked to them.',
     formula:'COUNT(deals with 0 matched calls, all-time) ÷ Deals Created in range × 100',
     related:'Pending First Calls, Call Coverage'
+  }
+});
+/* ---- Agent-wise Deals VS Call (new section, below Owner Performance) ---- */
+Object.assign(INFO, {
+  'command.agentdvc_total_deals': {
+    name:'Yesterday Total Deals', tabLabel:'Command Center · Agent-wise Deals VS Call',
+    what:'Distinct deals created yesterday (IST), across all agents — fixed to real yesterday regardless of the date-range filter above, same convention as the Overdue Deals column in Owner Performance.',
+    formula:'COUNT(DISTINCT Deal_ID) WHERE DATE(Deal_Created_Time, IST) = Yesterday',
+    related:'Yesterday Deals Pending Call, Yesterday Deals Call %'
+  },
+  'command.agentdvc_total_calls': {
+    name:'Yesterday Total Calls', tabLabel:'Command Center · Agent-wise Deals VS Call',
+    what:'All valid calls made yesterday by any agent — includes calls on yesterday\'s new deals AND on older deals. This is raw calling activity, not deal-linked.',
+    formula:'COUNT(DISTINCT Call_ID) WHERE DATE(Call_Created_Time, IST) = Yesterday',
+    related:'Yesterday Deals → Calls, Yesterday Talk Time'
+  },
+  'command.agentdvc_deals_to_calls': {
+    name:'Yesterday Deals → Calls', tabLabel:'Command Center · Agent-wise Deals VS Call',
+    what:'Calls made yesterday specifically against deals created yesterday (call happened at/after that deal\'s creation time). A call count, not a distinct-deal count — one deal called 3 times yesterday adds 3 here.',
+    formula:'COUNT(Call_ID) WHERE Call_Date = Yesterday AND Deal_Created_Date = Yesterday AND Call_Time ≥ Deal_Created_Time',
+    related:'Yesterday Deals Call %, Yesterday Deals Talk Time'
+  },
+  'command.agentdvc_call_pct': {
+    name:'Yesterday Deals Call %', tabLabel:'Command Center · Agent-wise Deals VS Call',
+    what:'% of yesterday\'s newly created deals that received at least one valid call yesterday. Deliberately a DISTINCT-deal ratio, not Total Calls ÷ Total Deals — multiple calls on one deal don\'t inflate it.',
+    formula:'COUNT(DISTINCT Deal_ID, ≥1 call yesterday after creation) ÷ Yesterday Deals × 100',
+    related:'Yesterday Deals → Calls, Yesterday Deals Pending Call'
+  },
+  'command.agentdvc_contacted_till_now': {
+    name:'Yesterday Deals Contacted Till Now', tabLabel:'Command Center · Agent-wise Deals VS Call',
+    what:'Distinct count of yesterday-created deals that have received at least one valid call at any point since creation — yesterday, today, whenever — up to right now.',
+    formula:'COUNT(DISTINCT Deal_ID) WHERE Deal_Created_Date = Yesterday AND ≥1 Call_Time ≥ Deal_Created_Time, as of now',
+    interpretation:'Different from "Yesterday Deals Call %", which only counts calls made ON yesterday — a deal first called today still counts here but not there.',
+    related:'Yesterday Deals Pending Call, Yesterday Deals Call %'
+  },
+  'command.agentdvc_pending_call': {
+    name:'Yesterday Deals Pending Call', tabLabel:'Command Center · Agent-wise Deals VS Call',
+    what:'Yesterday-created deals with ZERO valid calls after creation, as of right now (not restricted to yesterday\'s call date — a call made today still clears a deal from this list).',
+    importance:'The main actionable backlog from this section — deals a day old with no outreach attempt at all.',
+    formula:'Yesterday Deals − Yesterday Deals Contacted Till Now',
+    related:'Yesterday Deals Contacted Till Now, Pending First Calls, Overdue Deals'
+  },
+  'command.agentdvc_frt30_pct': {
+    name:'FRT ≤30 %', tabLabel:'Command Center · Agent-wise Deals VS Call',
+    what:'% of yesterday\'s deals whose first valid call (any call at/after creation, whenever it happened) arrived within 30 minutes of creation.',
+    formula:'COUNT(DISTINCT Deal_ID, first-call FRT ≤ 30 min) ÷ Yesterday Deals × 100',
+    related:'Avg FRT (Working Hours), SLA %'
+  },
+  'command.agentdvc_avg_frt_wh': {
+    name:'Avg FRT (Working Hours)', tabLabel:'Command Center · Agent-wise Deals VS Call',
+    what:'Average first-response time for yesterday\'s deals that were CREATED during working hours (10 AM–9 PM IST). Deals created outside working hours are excluded entirely, not just their FRT.',
+    formula:'AVG(first_call.Created_Time − deal.Created_Time) for yesterday deals with 10AM≤creation&lt;9PM, that have received ≥1 call',
+    interpretation:'Shows "—" when no eligible deal has been called yet; the deal count shown alongside is how many deals the average is actually based on.',
+    related:'FRT ≤30 %, Avg First Response'
+  },
+  'command.agentdvc_talk_time': {
+    name:'Yesterday Talk Time', tabLabel:'Command Center · Agent-wise Deals VS Call',
+    what:'Total talk-time (connected call duration) across every call the agent made yesterday, on any deal.',
+    formula:'SUM(Call_Duration) WHERE DATE(Call_Created_Time, IST) = Yesterday'
+  },
+  'command.agentdvc_deal_talk_time': {
+    name:'Yesterday Deals Talk Time', tabLabel:'Command Center · Agent-wise Deals VS Call',
+    what:'Talk-time spent specifically on yesterday\'s newly created deals, via calls made yesterday.',
+    formula:'SUM(Call_Duration) WHERE Call_Date = Yesterday AND Deal_Created_Date = Yesterday AND Call_Time ≥ Deal_Created_Time'
+  },
+  'command.agentdvc_connected_calls': {
+    name:'Connected Calls', tabLabel:'Command Center · Agent-wise Deals VS Call',
+    what:'Of the agent\'s Total Calls in the selected period, how many had Talk Time ≥30 seconds. Each call counts once.',
+    formula:'COUNT(Call_ID) WHERE Call_Created_Date IN [selected period] AND Call_Duration_Seconds ≥ 30',
+    related:'Total Calls, Talk Time'
+  },
+  'command.agentdvc_pending_call_window': {
+    name:'Deals Pending Call (10AM–8:30PM)', tabLabel:'Command Center · Agent-wise Deals VS Call',
+    what:'Of "Deals Pending Call" (zero valid calls after creation, as of now), how many were created in the 10:00 AM–8:30 PM IST business window and are still Open/WIP (not Won/Lost).',
+    formula:'COUNT(DISTINCT Deal_ID) WHERE Deals_Pending_Call AND Stage NOT LIKE \'%Won%\' AND Stage NOT LIKE \'%Lost%\' AND TIME(Deal_Created_Time, IST) BETWEEN 10:00 AND 20:30',
+    related:'Yesterday Deals Pending Call'
   }
 });
 /* Cross-scope refs: assigned once the Section-11 IIFE defines these (see near its SLA_MIN/dayMetrics/opsModel/reportModel).
@@ -1992,7 +2069,10 @@ function chips(){
   items.forEach(function(it){ var ch=el('span','chip','<b>'+esc(it[0])+':</b> '+esc(it[1])+' <span class="x">✕</span>'); ch.querySelector('.x').onclick=it[2]; c.appendChild(ch); });
   var clr=el('button','clearall','Clear all'); clr.onclick=function(){ F.owners.clear(); F.stage.clear(); F.trigger.clear(); F.leadSource.clear(); ['utmSource','utmMedium','callType','taskStatus'].forEach(function(k){F[k]='';}); setPreset('all'); }; c.appendChild(clr);
 }
-function presetRange(p){ var to=maxDate, r={from:F.from,to:F.to};
+function presetRange(p){ var to=istTodayKey(), r={from:F.from,to:F.to};
+  /* `to` is the REAL current IST calendar date, not maxDate (the latest date that happens to have a
+     deal/call in the loaded data) — otherwise "Today" silently aliases to "Yesterday" whenever no deal
+     has been created yet today, since maxDate would still point at yesterday. */
   if(p==='all'){r.from=minDate;r.to=maxDate;}
   else if(p==='today'){r.from=to;r.to=to;}
   else if(p==='yest'){var dy=D(istTodayKey());dy.setDate(dy.getDate()-1);r.from=ymd(dy);r.to=ymd(dy);}
@@ -2906,6 +2986,7 @@ function buildAssistant(){
        deal counts once even with several qualifying Tasks (.some(), not a per-task count). Deal-linked
        (needs Zoho Task.What_Id) — honestly 0 if TASKS_LINKED is false on this data source. */
     var realTodayKey=ymd(new Date());
+    var overdueDealsRows=[]; // raw dump backing the "Overdue" column drill-down, for cross-verification
     joinDeals(fDeals('2000-01-01','2099-12-31')).forEach(function(j){
       var o=om[j.deal.owner]; if(!o) return;
       if(isWon(j.deal)||isLost(j.deal)) return;           // Closed deals never count — Open/WIP only
@@ -2913,7 +2994,7 @@ function buildAssistant(){
       var dueToday=j.tasks.some(function(t){ return t.due&&dayKey(t.due)===realTodayKey&&!isDone(t); });
       if(dueToday) o.dueDealsToday=(o.dueDealsToday||0)+1;
       var overdueTask=j.tasks.some(function(t){ return t.due&&dayKey(t.due)<realTodayKey&&!isDone(t); });
-      if(overdueTask) o.overdueDeals=(o.overdueDeals||0)+1;
+      if(overdueTask){ o.overdueDeals=(o.overdueDeals||0)+1; overdueDealsRows.push(j.deal); }
     });
     owners.forEach(function(o){
       var oc=cl.filter(function(c){return c.owner===o.id;});
@@ -3106,7 +3187,7 @@ function buildAssistant(){
     var triggerFunnelPerf=FUNNEL_TRIGGERS.map(function(k){return triggerPerfMap[k]||{name:k,deals:0,workHr:0,nonWorkHr:0,wa:0,other:0,acts:0,first30:0,firstAfter30:0,calls:0,talk:0,connected30:0,callsNotConn:0,taskNoCall:0,dueDealsToday:0,overdueDeals:0};});
 
     return { from:F.from, to:F.to, single:(F.from===F.to), generated:new Date(), scope:ccScope(), ref:ref,
-      cityPerf:cityPerf, statePerf:statePerf, triggerFunnelPerf:triggerFunnelPerf,
+      cityPerf:cityPerf, statePerf:statePerf, triggerFunnelPerf:triggerFunnelPerf, triggerPerf:triggerPerfAll,
       dl:dl, cl:cl, tk:tk, ev:ev, on:on, joined:joined, contacted:contacted, pending:pending, overdue:overdue,
       deals:dl.length, calls:cl.length, uniqueCalled:contacted.length, pendingCnt:pending.length,
       avgFrt:avgFrt, medFrt:medFrt, maxFrt:maxFrt, coverage:coverage, slaPct:slaPct, overdueCnt:overdue.length,
@@ -3122,7 +3203,7 @@ function buildAssistant(){
       workHourPerf:workHourPerf, nonWorkHourPerf:nonWorkHourPerf, hourlyOps:hourlyOps,
       storeRows:storeRows, storeVisitByOwner:storeVisitByOwner, lostByReason:lostByReason,
       highValue:highValue, closingToday:closingToday, needsFollowup:needsFollowup, atRisk:atRisk, reactivating:reactivating,
-      ranking:ranking, teamScore:teamScore, pipelineScore:pipelineScore, alerts:alerts, taskNoCallRows:taskNoCallRows };
+      ranking:ranking, teamScore:teamScore, pipelineScore:pipelineScore, alerts:alerts, taskNoCallRows:taskNoCallRows, overdueDealsRows:overdueDealsRows };
   }
   opsModelFn=opsModel; /* expose to the outer-scope info-panel engine (imContext/trendBlock) */
 
@@ -3241,6 +3322,133 @@ function buildAssistant(){
     document.head.appendChild(st);
   })();
 
+  /* ---------- Product-wise Deals model ----------
+     Deals↔Products is a many-to-many related list in Zoho (no line-item/junction module), so it can
+     only be read one deal at a time via the CRM API — DEAL_PRODUCTS is built incrementally by the
+     backend (sync_deal_products in main.py, runs alongside /sync every 30 min) and only covers deals
+     in the last few days at first; older history backfills over time. A deal with zero linked products
+     has no row here — never fabricated. Follows the same date-range + owner/stage/trigger/lead
+     source/UTM filters as the rest of this dashboard. */
+  function productDealsModel(){
+    var pDeals=DEALS.filter(function(d){ return inDate(d.created) && ownerOk(d.owner)
+      &&(!F.stage.size||F.stage.has(d.stage))
+      &&(!F.trigger.size||F.trigger.has(normTrig(d.trigger)))
+      &&(!F.leadSource.size||F.leadSource.has(clean(d.leadSource)))
+      &&(!F.utmSource||clean(d.utmSource).toLowerCase()===F.utmSource.toLowerCase())
+      &&(!F.utmMedium||clean(d.utmMedium).toLowerCase()===F.utmMedium.toLowerCase()); });
+    var inRange={}; pDeals.forEach(function(d){ inRange[d.id]=true; });
+    var links=DEAL_PRODUCTS.filter(function(p){ return inRange[p.dealId]; });
+
+    var pm={};
+    links.forEach(function(p){ var k=p.name||'(unnamed product)';
+      var o=pm[k]||(pm[k]={name:k,code:p.code||'',deals:{}}); o.deals[p.dealId]=true; });
+    var withLink={}; links.forEach(function(p){ withLink[p.dealId]=true; });
+    var rows=Object.keys(pm).map(function(k){ var o=pm[k];
+      return {name:o.name, code:o.code, deals:Object.keys(o.deals).length}; })
+      .sort(function(a,b){ return b.deals-a.deals; });
+
+    return {rows:rows, totalDeals:pDeals.length,
+           dealsWithProduct:Object.keys(withLink).length,
+           dealsWithoutProduct:pDeals.length-Object.keys(withLink).length};
+  }
+
+  /* ---------- Agent-wise Deals VS Call model (new section, independent of Owner Performance) ----------
+     Follows the selected date-range filter above (F.from/F.to — Today/Yesterday/7d/30d/custom, same as
+     the rest of the dashboard). Still respects the non-date filters (owner/stage/trigger/lead
+     source/UTM) so narrowing to one agent elsewhere narrows this table too.
+     Reuses the SAME valid-call definition as the rest of this dashboard (joinDeals: a call is linked to
+     a deal via Zoho What_Id or phone-matched Mobile, and only counts if Call_Time ≥ Deal_Created_Time —
+     "after deal creation", never before). No separate SQL/backend call — everything is already loaded
+     client-side in DEALS/CALLS. */
+  function agentDvcModel(){
+    var yestKey=F.to;   // label anchor: end of the selected range (matches F.from when a single day is picked)
+    var WORK_LO=10, WORK_HI=21; // 10 AM – 9 PM IST, same working-hour window Owner Performance uses
+    function inWH(iso){ var h=hourOf(iso); return h>=WORK_LO&&h<WORK_HI; }
+    var PW_LO_MIN=10*60, PW_HI_MIN=20*60+30; // 10:00 AM – 8:30 PM IST, for "Deals Pending Call (10AM–8:30PM)"
+    function minuteOf(iso){ var m=parseInt(String(iso).slice(14,16),10); return (m>=0&&m<60)?m:0; }
+    function inPendingWindow(iso){ var mins=hourOf(iso)*60+minuteOf(iso); return mins>=PW_LO_MIN && mins<=PW_HI_MIN; }
+
+    var yDeals=DEALS.filter(function(d){ return inDate(d.created) && ownerOk(d.owner)
+      &&(!F.stage.size||F.stage.has(d.stage))
+      &&(!F.trigger.size||F.trigger.has(normTrig(d.trigger)))
+      &&(!F.leadSource.size||F.leadSource.has(clean(d.leadSource)))
+      &&(!F.utmSource||clean(d.utmSource).toLowerCase()===F.utmSource.toLowerCase())
+      &&(!F.utmMedium||clean(d.utmMedium).toLowerCase()===F.utmMedium.toLowerCase()); });
+    var joined=joinDeals(yDeals);   // calls after creation, up to now — frt/contacted/calls[] per deal
+    var jByDeal={}; joined.forEach(function(j){ jByDeal[j.deal.id]=j; });
+
+    // Meetings (Zoho "Events" module, cdc_meetings table) actually RAISED within the selected range —
+    // matched by What_Id -> deal id, then attributed to that deal's owner (agent), regardless of when
+    // the deal itself was created. Deliberately NOT restricted to the range's deals: a meeting raised
+    // in-range on a lead assigned earlier still counts here — only the meeting's own Created_Time has
+    // to fall in range. Requires the live BigQuery feed (What_Id isn't on the static snapshot yet).
+    var dealById={}; DEALS.forEach(function(d){ dealById[d.id]=d; });
+    var meetingsYest=EVENTS.filter(function(e){ return e.whatId && inDate(e.created) && dealById[e.whatId] && ownerOk(dealById[e.whatId].owner); });
+
+    // Agent's total calling activity in the selected range — ALL calls, not just ones linked to the range's deals
+    var yCallsAll=CALLS.filter(function(c){ return inDate(c.created) && ownerOk(c.owner) && (!F.callType||c.type===F.callType); });
+
+    var am={};
+    function row(id){ return am[id]||(am[id]={id:id, deals:0, yCalls:0, yTalk:0, yConnected30:0,
+      dealCallsYest:0, dealTalkYest:0, contactedYest:0, frt30:0, whFrtSum:0, whFrtN:0,
+      acts:0, actDeals:0, callsTillNow:0, contactedTillNow:0, meetingsRaised:0, pendingCallWindow:0}); }
+
+    meetingsYest.forEach(function(e){ var o=row(dealById[e.whatId].owner); o.meetingsRaised++; });
+
+    yDeals.forEach(function(d){
+      var o=row(d.owner); o.deals++;
+      o.acts+=(+d.numAct||0); if((+d.numAct||0)>0) o.actDeals++;
+      var j=jByDeal[d.id];
+      if(j){
+        o.callsTillNow+=j.nCalls;
+        if(j.contacted) o.contactedTillNow++;
+        if(j.frt!=null && j.frt<=30) o.frt30++;
+        if(inWH(d.created) && j.frt!=null){ o.whFrtSum+=j.frt; o.whFrtN++; }
+        var hasYestCall=false;
+        j.calls.forEach(function(c){ if(inDate(c.created)){ o.dealCallsYest++; o.dealTalkYest+=(c.dur||0); hasYestCall=true; } });
+        if(hasYestCall) o.contactedYest++;
+      }
+      // "Deals Pending Call (10AM–8:30PM)": genuinely pending/working deals (no valid call yet, not
+      // Won/Lost) whose Deal Created Time — the same business-time field inWH() already buckets on —
+      // falls in the 10:00 AM–8:30 PM IST window.
+      var notContacted=!j||!j.contacted;
+      if(notContacted && !isWon(d) && !isLost(d) && inPendingWindow(d.created)) o.pendingCallWindow++;
+    });
+    yCallsAll.forEach(function(c){ var o=row(c.owner); o.yCalls++; o.yTalk+=(c.dur||0); if((c.dur||0)>=30) o.yConnected30++; });
+
+    var rows=Object.keys(am).map(function(id){ var o=am[id];
+      return { id:id, name:ownerName(id),
+        deals:o.deals, yCalls:o.yCalls, dealCallsYest:o.dealCallsYest, contactedYest:o.contactedYest, callPct:pct(o.contactedYest,o.deals),
+        yTalk:o.yTalk, yConnected30:o.yConnected30, dealTalkYest:o.dealTalkYest,
+        frt30:o.frt30, frt30Pct:pct(o.frt30,o.deals),
+        whFrtAvg:o.whFrtN?(o.whFrtSum/o.whFrtN):null, whFrtN:o.whFrtN,
+        acts:o.acts, actDeals:o.actDeals, meetingsRaised:o.meetingsRaised,
+        callsTillNow:o.callsTillNow, contactedTillNow:o.contactedTillNow, pendingCall:o.deals-o.contactedTillNow,
+        pendingCallWindow:o.pendingCallWindow
+      };
+    }).sort(function(a,b){ return b.deals-a.deals; });
+
+    var whFrts=[]; joined.forEach(function(j){ if(inWH(j.deal.created)&&j.frt!=null) whFrts.push(j.frt); });
+    var totContactedTillNow=rows.reduce(function(s,r){return s+r.contactedTillNow;},0);
+    var totals={
+      deals:yDeals.length, yCalls:yCallsAll.length,
+      dealCallsYest:rows.reduce(function(s,r){return s+r.dealCallsYest;},0),
+      yTalk:rows.reduce(function(s,r){return s+r.yTalk;},0),
+      yConnected30:rows.reduce(function(s,r){return s+r.yConnected30;},0),
+      dealTalkYest:rows.reduce(function(s,r){return s+r.dealTalkYest;},0),
+      frt30:rows.reduce(function(s,r){return s+r.frt30;},0),
+      callsTillNow:rows.reduce(function(s,r){return s+r.callsTillNow;},0),
+      contactedTillNow:totContactedTillNow, pendingCall:yDeals.length-totContactedTillNow,
+      pendingCallWindow:rows.reduce(function(s,r){return s+r.pendingCallWindow;},0),
+      whFrtAvg:whFrts.length?(whFrts.reduce(function(s,x){return s+x;},0)/whFrts.length):null, whFrtN:whFrts.length
+    };
+    totals.contactedYest=joined.filter(function(j){ return j.calls.some(function(c){return inDate(c.created);}); }).length;
+    totals.callPct=pct(totals.contactedYest,totals.deals);
+    totals.frt30Pct=pct(totals.frt30,totals.deals);
+
+    return {yestKey:yestKey, from:F.from, to:F.to, single:(F.from===F.to), rows:rows, yDeals:yDeals, joined:joined, jByDeal:jByDeal, totals:totals, inWH:inWH};
+  }
+
   /* ---------- Command Center render: AI Sales & Operations Control Room (22 sections) ---------- */
   function renderCommand(v){
     var M=opsModel();
@@ -3323,6 +3531,83 @@ function buildAssistant(){
     else { p2b.__body.appendChild(el('div','empty','No deals in this window are pending a first call.')); }
     addExport(p2b,'deals_never_called_10to9',['Deal ID','Customer','Mobile','Owner','Stage','DealTrigger','Prob','Created','TaskCreatedCallNotDone'], M.pendingNoWADeals.map(function(d){return [d.id,d.name||'',d.mobile||'',ownerName(d.owner),d.stage||'',normTrig(d.trigger),(d.prob==null?'':d.prob),d.created,(d._taskNoCallCount||0)];}));
 
+    // ===== SECTION 3z — Agent-wise Deals VS Call (independent, new section — placed before Owner Performance, does not touch it) =====
+    var AG=agentDvcModel();
+    var agPeriod=AG.single?fmtDay(AG.to):(fmtDay(AG.from)+' → '+fmtDay(AG.to));
+    var p3z=panel('📞 Agent-wise Deals VS Call','Follows the date-range filter above ('+agPeriod+', IST) — pick Today/Yesterday/7d/30d/custom up top to change it. Tracks the selected period\'s newly created deals against calling performance, agent-wise. Valid-call and working-hour (10AM–9PM) rules are the same ones used throughout this dashboard. "Connected Calls" = Talk Time ≥30s. "Deals Pending Call (10AM–8:30PM)" = open (non-Won/Lost) deals with no call yet, created 10AM–8:30PM IST. Sortable · horizontal-scroll for the full 13 columns.'); v.appendChild(p3z);
+    if(!AG.yDeals.length){
+      p3z.__body.appendChild(el('div','empty','No deals were created in the selected period ('+agPeriod+').'));
+    } else {
+      var agHeaders=['Agent','Deals','Total Calls','Talk Time','Connected Calls','Deals → Calls',
+        'Deals Call %','Deals Talk Time','FRT ≤30 Min','Avg FRT (Working Hours)','Deals Pending Call','Deals Pending Call (10AM–8:30PM)','Meeting Raised'];
+      var agRows=AG.rows.map(function(r){ return [
+        r.name, r.deals, r.yCalls, hms(r.yTalk), r.yConnected30, r.contactedYest, p1(r.callPct), hms(r.dealTalkYest),
+        r.frt30, (r.whFrtAvg==null?'':hms(r.whFrtAvg*60)), r.pendingCall, r.pendingCallWindow, r.meetingsRaised
+      ]; });
+      table(p3z.__body,agHeaders,agRows,{key:'agentdvc',numCols:[1,2,3,4,5,6,7,8,9,10,11,12]});
+      addExport(p3z,'agent_deals_vs_call',agHeaders,agRows);
+      if(!EVENTS.some(function(e){return !!e.whatId;})) p3z.__body.appendChild(el('div','hint','⚠ "Meeting Raised" needs Meeting→Deal linking (Zoho What_Id on the Events/Meetings module) — this data source doesn\'t have it yet, so it shows 0 for everyone.'));
+
+      function agLastCall(j){ if(!j||!j.calls.length)return null; var last=null; j.calls.forEach(function(c){ if(!last||D(c.created)>D(last.created))last=c; }); return last; }
+      function agTalk(j){ return j?j.calls.reduce(function(s,c){return s+(c.dur||0);},0):0; }
+
+      var ddBtn=el('button','mini','🔍 Deals ('+num(AG.yDeals.length)+')');
+      ddBtn.title='Every deal created in the selected period, with first-call/FRT/talk-time detail';
+      ddBtn.onclick=function(){ var last; openDrill('Deals ('+agPeriod+') — raw dump ('+num(AG.yDeals.length)+')',
+        ['Deal ID','Customer','Owner','Created','Lead Source','First Call','FRT (min)','Total Calls','Talk Time','Last Call','Status'],
+        AG.yDeals.map(function(d){ var j=AG.jByDeal[d.id]; last=agLastCall(j);
+          return [d.id, esc(d.name||'—'), ownerName(d.owner), fmtDT(d.created), clean(d.leadSource),
+            (j&&j.first)?fmtDT(j.first.created):'—', (j&&j.frt!=null)?p1(j.frt):'—', j?j.nCalls:0,
+            {html:hms(agTalk(j)),text:agTalk(j)}, last?fmtDT(last.created):'—', (j&&j.contacted)?'Contacted':'No Call Yet']; }),
+        {key:'agentdvc_yesterday_deals'}); };
+      p3z.__head.appendChild(ddBtn);
+
+      var pendList=AG.yDeals.filter(function(d){ var j=AG.jByDeal[d.id]; return !j||!j.contacted; })
+        .slice().sort(function(a,b){ return D(a.created)-D(b.created); });   // oldest first = highest ageing first
+      var pcBtn=el('button','mini','🔍 Pending Call ('+num(pendList.length)+')');
+      pcBtn.title='Deals created in the selected period with zero valid calls after creation, as of right now — sorted oldest-first';
+      pcBtn.onclick=function(){ var nowD=new Date(); openDrill('Pending Call ('+agPeriod+') — raw dump ('+num(pendList.length)+', oldest first)',
+        ['Deal ID','Customer','Owner','Created','Lead Source','Ageing','Created In Working Hours','Status'],
+        pendList.map(function(d){ var ageMin=(nowD-D(d.created))/60000;
+          return [d.id, esc(d.name||'—'), ownerName(d.owner), fmtDT(d.created), clean(d.leadSource),
+            {html:fmtMinNice(ageMin),text:ageMin}, AG.inWH(d.created)?'Yes':'No', 'No Call Yet']; }),
+        {key:'agentdvc_pending_call'}); };
+      p3z.__head.appendChild(pcBtn);
+
+      var tillNowList=AG.yDeals.filter(function(d){ var j=AG.jByDeal[d.id]; return j&&j.nCalls>0; });
+      var ctnBtn=el('button','mini','🔍 Calls Till Now ('+num(AG.totals.callsTillNow)+' calls)');
+      ctnBtn.title='All calls made so far (in the selected period or since) on the selected period\'s deals';
+      ctnBtn.onclick=function(){ openDrill('Calls Till Now ('+agPeriod+') — raw dump ('+num(tillNowList.length)+' deals, '+num(AG.totals.callsTillNow)+' calls)',
+        ['Deal ID','Owner','Created','First Call','Last Call','Total Calls','Talk Time','FRT (min)','Last Call Outcome'],
+        tillNowList.map(function(d){ var j=AG.jByDeal[d.id]; var last=agLastCall(j);
+          return [d.id, ownerName(d.owner), fmtDT(d.created), fmtDT(j.first.created), last?fmtDT(last.created):'—',
+            j.nCalls, {html:hms(agTalk(j)),text:agTalk(j)}, p1(j.frt), (last&&last.result)?last.result:'—']; }),
+        {key:'agentdvc_calls_till_now'}); };
+      p3z.__head.appendChild(ctnBtn);
+
+      var frt30List=AG.joined.filter(function(j){ return j.frt!=null&&j.frt<=30; });
+      var frtBtn=el('button','mini','🔍 FRT ≤30 Min ('+num(frt30List.length)+')');
+      frtBtn.title='Selected period\'s deals whose first valid call after creation arrived within 30 minutes';
+      frtBtn.onclick=function(){ openDrill('FRT ≤30 Min — raw dump ('+num(frt30List.length)+')',
+        ['Deal ID','Owner','Created','First Call','FRT (min)'],
+        frt30List.slice().sort(function(a,b){return a.frt-b.frt;}).map(function(j){
+          return [j.deal.id, ownerName(j.deal.owner), fmtDT(j.deal.created), fmtDT(j.first.created), {html:p1(j.frt),text:j.frt}]; }),
+        {key:'agentdvc_frt30'}); };
+      p3z.__head.appendChild(frtBtn);
+    }
+
+    // ===== SECTION 3y — Product-wise Deals =====
+    var PD=productDealsModel();
+    var p3y=panel('🛍️ Product-wise Deals','Follows the date-range filter above ('+agPeriod+', IST) and the owner/stage/trigger/lead-source/UTM filters. Counts each deal once per product it links to in Zoho (Deals → Products related list). '+num(PD.dealsWithProduct)+' of '+num(PD.totalDeals)+' deals in range have a linked product ('+num(PD.dealsWithoutProduct)+' none) — coverage backfills gradually since this is fetched one deal at a time from Zoho, not a bulk sync. Sortable · CSV export below.'); v.appendChild(p3y);
+    if(!PD.rows.length){
+      p3y.__body.appendChild(el('div','empty','No product links found yet for deals in the selected period ('+agPeriod+'). This data backfills gradually — check back shortly, or widen the date range.'));
+    } else {
+      var pdHeaders=['Product','Product Code','Deals'];
+      var pdRows=PD.rows.map(function(r){ return [r.name, r.code||'—', r.deals]; });
+      table(p3y.__body,pdHeaders,pdRows,{key:'productdeals',numCols:[2]});
+      addExport(p3y,'product_wise_deals',pdHeaders,pdRows);
+    }
+
     // ===== SECTION 4 — Owner Performance =====
     var p3=panel('👥 Owner Performance','WhatsApp broken out per the business rule · First Call = earliest call after Deal Creation · talk time in HH:MM:SS · "Call Not Connected" excludes WhatsApp deals · "Task Created, No Call" = a follow-up task exists but the deal was never actually dialed, for leads received 10AM-9PM · "Due Today"/"Overdue" are based on Open/WIP deals created before the REAL current date and ignore the date-range filter above — an overdue follow-up stays Overdue every day until its Task is completed, never reset by changing the date range. 🏆 top Owner Score · ⚠ needs coaching.'); v.appendChild(p3);
     var bestO=M.ranking[0]?M.ranking[0].owner:null, worstO=M.ranking.length?M.ranking[M.ranking.length-1].owner:null;
@@ -3342,6 +3627,12 @@ function buildAssistant(){
       tnBtn.title='Every deal counted in the "Task Created, No Call" column, for cross-verification (WhatsApp deals already excluded)';
       tnBtn.onclick=function(){ openDrill('Task Created, No Call — raw dump ('+num(M.taskNoCallRows.length)+' deals, WhatsApp excluded)', ['Deal ID','Customer','Mobile','Owner','Stage','Prob','Created'], drillRows(M.taskNoCallRows)); };
       p3.__head.appendChild(tnBtn);
+    }
+    if(M.overdueDealsRows.length){
+      var odBtn=el('button','mini','🔍 View Raw Data — Overdue ('+num(M.overdueDealsRows.length)+')');
+      odBtn.title='Every open/WIP deal counted in the "Overdue" column — a follow-up Task past due and not yet completed, regardless of the date-range filter above';
+      odBtn.onclick=function(){ openDrill('Overdue — raw dump ('+num(M.overdueDealsRows.length)+' deals, open/WIP only)', ['Deal ID','Customer','Mobile','Owner','Stage','Prob','Created'], drillRows(M.overdueDealsRows)); };
+      p3.__head.appendChild(odBtn);
     }
     if(!TASKS_LINKED) p3.__body.appendChild(el('div','hint','⚠ "Due Today", "Overdue", and "Task Created, No Call" need Task→Deal linking (Zoho What_Id) — this data source doesn\'t have it yet, so these columns show 0 for everyone.'));
 
@@ -3379,6 +3670,12 @@ function buildAssistant(){
     table(p3b.__body,cityHeaders,M.cityPerf.map(bucketPerfRow),{key:'city4',numCols:[1,2,3,4,5,6,7,9,10,11,12,13,14]});
     addExport(p3b,'city_wise_performance',cityHeaders,M.cityPerf.map(bucketExportRow));
     p3b.__body.appendChild(el('div','hint',coverageHint('Address_City',M.cityPerf)));
+
+    // ===== SECTION 4b-2 — Deal Trigger Event-wise Performance (placed right after City-wise) =====
+    var p3bt=panel('🎯 Deal Trigger Event-wise Performance','Same columns as Owner Performance above, grouped by Deal_Trigger_Event instead of Owner. This field comes directly off the deal record — no separate table join needed.'); v.appendChild(p3bt);
+    var triggerHeaders=ownHeaders.slice(); triggerHeaders[0]='Trigger Event';
+    table(p3bt.__body,triggerHeaders,M.triggerPerf.map(bucketPerfRow),{key:'trigger4',numCols:[1,2,3,4,5,6,7,9,10,11,12,13,14]});
+    addExport(p3bt,'trigger_event_wise_performance',triggerHeaders,M.triggerPerf.map(bucketExportRow));
 
     var p3c=panel('🗺️ State-wise Performance','Same columns as Owner Performance above, grouped by Deal Address_State instead of Owner.'); v.appendChild(p3c);
     var stateHeaders=ownHeaders.slice(); stateHeaders[0]='State';
@@ -3491,6 +3788,24 @@ function buildAssistant(){
     p16.__body.appendChild(chipRow);
   }
 
+  /* ---------- Overdue Raw Data tab — same rows as Owner Performance's
+     "🔍 View Raw Data — Overdue" drill button (Section 4), but as its own
+     full tab instead of a popup, so the list can be browsed/searched/sorted
+     and exported without re-opening the modal each time. ---------- */
+  function renderOverdueRaw(v){
+    var M=opsModel();
+    v.appendChild(kpiRow([
+      ['Overdue Deals',num(M.overdueDealsRows.length),'open/WIP · follow-up Task past due, uncompleted','',M.overdueDealsRows.length?'var(--bad)':'var(--good)']
+    ]));
+    v.appendChild(el('div','note','Every open/WIP deal counted in Owner Performance\'s "Overdue" column — a follow-up Task past due and not yet completed. Based on the REAL current date, ignores the date-range filter above: a deal stays here every day until its Task is completed.'));
+    var p=panel('🔴 Overdue — Raw Data','Sortable · click a column header · search below'); v.appendChild(p);
+    var headers=['Deal ID','Customer','Mobile','Owner','Stage','Prob','Created'];
+    if(!M.overdueDealsRows.length){ p.__body.appendChild(el('div','hint','No overdue deals right now. 🎉')); }
+    else{ table(p.__body,headers,drillRows(M.overdueDealsRows),{key:'overdueRaw',numCols:[]}); }
+    addExport(p,'overdue_raw',headers,M.overdueDealsRows.map(function(d){ return [d.id,d.name||'',d.mobile||'',ownerName(d.owner),d.stage||'',(d.prob==null?'':d.prob),d.created]; }));
+    if(!TASKS_LINKED) p.__body.appendChild(el('div','hint','⚠ Needs Task→Deal linking (Zoho What_Id) — this data source doesn\'t have it yet, so this list is empty for everyone.'));
+  }
+
   /* ---------- ops exports (reuse Section-11 helpers) ---------- */
   function buildOpsDoc(M){
     var kpis=[ kpiTile('Deals Created',num(M.deals),''), kpiTile('Calls Done',num(M.calls),''),
@@ -3600,6 +3915,8 @@ function buildAssistant(){
   /* ---------- register tab + header Share button ---------- */
   TABS.unshift(['command','🎯 Command Center']);
   VIEWS.command=renderCommand;
+  TABS.splice(1,0,['overdueRaw','🔴 Overdue Raw Data']);
+  VIEWS.overdueRaw=renderOverdueRaw;
   (function(){ var h=(location.hash||'').replace('#',''); if(!h||!VIEWS[h]) active='command'; })();
   window.DVCOps={ model:opsModel, pdf:opsPDF, excel:opsExcel, png:opsPNG, whatsapp:crmWhatsapp, brief:managerBrief, doc:function(){return buildOpsDoc(opsModel());}, excelXml:function(){return buildOpsExcelXml(opsModel());} };
   TABS.push(['share','⤴ Share']);

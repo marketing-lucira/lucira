@@ -2,3 +2,9 @@ svci_data.js.gz
 svci_data.js
 __pycache__/
 validation/*_results.json
+node_modules/
+package-lock.json
+package.json
+*.png
+api_test.json
+api2.json

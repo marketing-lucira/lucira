@@ -1,0 +1,817 @@
+[
+  {
+    "city": "North West Delhi", 
+    "purchase_events": "5", 
+    "state": "Delhi"
+  }, 
+  {
+    "city": "Amritsar", 
+    "purchase_events": "2", 
+    "state": "Punjab"
+  }, 
+  {
+    "city": "MADURAI", 
+    "purchase_events": "1", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "city": "mumbai", 
+    "purchase_events": "43", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Navi Mumbai", 
+    "purchase_events": "67", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Kokalata", 
+    "purchase_events": "1", 
+    "state": "West Bengal"
+  }, 
+  {
+    "city": "PASCHIM BARDHAMAN", 
+    "purchase_events": "1", 
+    "state": "West Bengal"
+  }, 
+  {
+    "city": "EAST KHASI HILLS", 
+    "purchase_events": "1", 
+    "state": "Meghalaya"
+  }, 
+  {
+    "city": "COIMBATORE", 
+    "purchase_events": "1", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "city": "Bhadradri", 
+    "purchase_events": "1", 
+    "state": "Telangana"
+  }, 
+  {
+    "city": "Khategaon", 
+    "purchase_events": "1", 
+    "state": "Madhya Pradesh"
+  }, 
+  {
+    "city": "Jalandhar", 
+    "purchase_events": "2", 
+    "state": "Punjab"
+  }, 
+  {
+    "city": "SHAHDARA", 
+    "purchase_events": "1", 
+    "state": "Delhi"
+  }, 
+  {
+    "city": "South West Delhi", 
+    "purchase_events": "2", 
+    "state": "Delhi"
+  }, 
+  {
+    "city": "Bijnor", 
+    "purchase_events": "1", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "Guntur", 
+    "purchase_events": "2", 
+    "state": "Andhra Pradesh"
+  }, 
+  {
+    "city": "Nashik", 
+    "purchase_events": "2", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Delhi", 
+    "purchase_events": "3", 
+    "state": "Delhi"
+  }, 
+  {
+    "city": "Mumbai", 
+    "purchase_events": "604", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Pune", 
+    "purchase_events": "18", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Pathankot", 
+    "purchase_events": "2", 
+    "state": "Punjab"
+  }, 
+  {
+    "city": "Bengaluru, Hullahalli", 
+    "purchase_events": "2", 
+    "state": "Karnataka"
+  }, 
+  {
+    "city": "Bangalore", 
+    "purchase_events": "132", 
+    "state": "Karnataka"
+  }, 
+  {
+    "city": "DURG", 
+    "purchase_events": "2", 
+    "state": "Chhattisgarh"
+  }, 
+  {
+    "city": "West Delhi", 
+    "purchase_events": "4", 
+    "state": "Delhi"
+  }, 
+  {
+    "city": "Karbi Anglong", 
+    "purchase_events": "1", 
+    "state": "Assam"
+  }, 
+  {
+    "city": "Darjiling", 
+    "purchase_events": "3", 
+    "state": "West Bengal"
+  }, 
+  {
+    "city": "Ahmedabad", 
+    "purchase_events": "11", 
+    "state": "Gujarat"
+  }, 
+  {
+    "city": "Tarn taran", 
+    "purchase_events": "1", 
+    "state": "Punjab"
+  }, 
+  {
+    "city": "bhiwandi", 
+    "purchase_events": "1", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "GANJAM", 
+    "purchase_events": "1", 
+    "state": "Odisha"
+  }, 
+  {
+    "city": "SHIMOGA", 
+    "purchase_events": "1", 
+    "state": "Karnataka"
+  }, 
+  {
+    "city": "ARIYALUR", 
+    "purchase_events": "1", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "city": "Jalpaiguri", 
+    "purchase_events": "2", 
+    "state": "West Bengal"
+  }, 
+  {
+    "city": "GURGAON", 
+    "purchase_events": "4", 
+    "state": "Haryana"
+  }, 
+  {
+    "city": "NORTH", 
+    "purchase_events": "2", 
+    "state": "Delhi"
+  }, 
+  {
+    "city": "NADIA", 
+    "purchase_events": "1", 
+    "state": "West Bengal"
+  }, 
+  {
+    "city": "BIJNOR", 
+    "purchase_events": "1", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "24 PARAGANAS SOUTH", 
+    "purchase_events": "1", 
+    "state": "West Bengal"
+  }, 
+  {
+    "city": "Erode", 
+    "purchase_events": "1", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "city": "Guwahati", 
+    "purchase_events": "2", 
+    "state": "Assam"
+  }, 
+  {
+    "city": "CUDDALORE", 
+    "purchase_events": "1", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "city": "North 24 Parganas", 
+    "purchase_events": "7", 
+    "state": "West Bengal"
+  }, 
+  {
+    "city": "Mumbai", 
+    "purchase_events": "1", 
+    "state": null
+  }, 
+  {
+    "city": "GB Nagar", 
+    "purchase_events": "2", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "Harda", 
+    "purchase_events": "1", 
+    "state": "Madhya Pradesh"
+  }, 
+  {
+    "city": "Bijapur(KAR)", 
+    "purchase_events": "6", 
+    "state": "Karnataka"
+  }, 
+  {
+    "city": "Dhanbad", 
+    "purchase_events": "4", 
+    "state": "Jharkhand"
+  }, 
+  {
+    "city": "SHIMLA", 
+    "purchase_events": "1", 
+    "state": "Himachal Pradesh"
+  }, 
+  {
+    "city": "BANGALORE", 
+    "purchase_events": "12", 
+    "state": "Karnataka"
+  }, 
+  {
+    "city": "Tuticorin", 
+    "purchase_events": "1", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "city": "KOLLAM", 
+    "purchase_events": "1", 
+    "state": "Kerala"
+  }, 
+  {
+    "city": "Karnal", 
+    "purchase_events": "1", 
+    "state": "Haryana"
+  }, 
+  {
+    "city": "GHAZIABAD", 
+    "purchase_events": "4", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "HYDERABAD", 
+    "purchase_events": "3", 
+    "state": "Telangana"
+  }, 
+  {
+    "city": "THANE", 
+    "purchase_events": "12", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "East Delhi", 
+    "purchase_events": "1", 
+    "state": "Delhi"
+  }, 
+  {
+    "city": "Kannur", 
+    "purchase_events": "1", 
+    "state": "Kerala"
+  }, 
+  {
+    "city": "Mahpur", 
+    "purchase_events": "1", 
+    "state": "Bihar"
+  }, 
+  {
+    "city": "Gurgaon", 
+    "purchase_events": "5", 
+    "state": "Haryana"
+  }, 
+  {
+    "city": "MANGALORE", 
+    "purchase_events": "1", 
+    "state": "Karnataka"
+  }, 
+  {
+    "city": "Jaipur", 
+    "purchase_events": "4", 
+    "state": "Rajasthan"
+  }, 
+  {
+    "city": "Dehradun", 
+    "purchase_events": "1", 
+    "state": "Uttarakhand"
+  }, 
+  {
+    "city": "Amravati", 
+    "purchase_events": "117", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "PALGHAR", 
+    "purchase_events": "6", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Ranchi", 
+    "purchase_events": "1", 
+    "state": "Jharkhand"
+  }, 
+  {
+    "city": "ghaziabad", 
+    "purchase_events": "1", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "MORADABAD", 
+    "purchase_events": "1", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "NARSINGHPUR", 
+    "purchase_events": "1", 
+    "state": "Madhya Pradesh"
+  }, 
+  {
+    "city": "DARJEELING", 
+    "purchase_events": "1", 
+    "state": "West Bengal"
+  }, 
+  {
+    "city": "PATNA", 
+    "purchase_events": "1", 
+    "state": "Bihar"
+  }, 
+  {
+    "city": "NORTH WEST", 
+    "purchase_events": "1", 
+    "state": "Delhi"
+  }, 
+  {
+    "city": "Gurugram", 
+    "purchase_events": "1", 
+    "state": "Haryana"
+  }, 
+  {
+    "city": "NEW DELHI", 
+    "purchase_events": "3", 
+    "state": "Delhi"
+  }, 
+  {
+    "city": "K.V.Rangareddy", 
+    "purchase_events": "5", 
+    "state": "Telangana"
+  }, 
+  {
+    "city": "KOLKATA", 
+    "purchase_events": "2", 
+    "state": "West Bengal"
+  }, 
+  {
+    "city": "Rajkot", 
+    "purchase_events": "8", 
+    "state": "Gujarat"
+  }, 
+  {
+    "city": "BATHINDA", 
+    "purchase_events": "2", 
+    "state": "Punjab"
+  }, 
+  {
+    "city": "Hosur", 
+    "purchase_events": "1", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "city": "Jaipuraipur", 
+    "purchase_events": "3", 
+    "state": "Rajasthan"
+  }, 
+  {
+    "city": "Noida", 
+    "purchase_events": "1", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "Gautam Buddha Nagar", 
+    "purchase_events": "2", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "Faridabad", 
+    "purchase_events": "2", 
+    "state": "Haryana"
+  }, 
+  {
+    "city": "Lanjigarh", 
+    "purchase_events": "1", 
+    "state": "Odisha"
+  }, 
+  {
+    "city": "Mathura", 
+    "purchase_events": "1", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "CHENGALPATTU", 
+    "purchase_events": "1", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "city": "Chatra", 
+    "purchase_events": "1", 
+    "state": "Jharkhand"
+  }, 
+  {
+    "city": "DHANBAD", 
+    "purchase_events": "1", 
+    "state": "Jharkhand"
+  }, 
+  {
+    "city": "East Godavari", 
+    "purchase_events": "1", 
+    "state": "Andhra Pradesh"
+  }, 
+  {
+    "city": "BHOPAL", 
+    "purchase_events": "1", 
+    "state": "Madhya Pradesh"
+  }, 
+  {
+    "city": "Mughalsarai", 
+    "purchase_events": "1", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "Greater Noida West", 
+    "purchase_events": "3", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "Haridwar", 
+    "purchase_events": "2", 
+    "state": "Uttarakhand"
+  }, 
+  {
+    "city": "Pathanamthitta", 
+    "purchase_events": "1", 
+    "state": "Kerala"
+  }, 
+  {
+    "city": "Chennai", 
+    "purchase_events": "12", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "city": "Nagpur", 
+    "purchase_events": "1", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Ghazipur", 
+    "purchase_events": "2", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "MEDCHAL MALKAJGIRI", 
+    "purchase_events": "1", 
+    "state": "Telangana"
+  }, 
+  {
+    "city": "South Delhi", 
+    "purchase_events": "6", 
+    "state": "Delhi"
+  }, 
+  {
+    "city": "Ludhiana", 
+    "purchase_events": "1", 
+    "state": "Punjab"
+  }, 
+  {
+    "city": "GAUTAM BUDDHA NAGAR", 
+    "purchase_events": "2", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "Lucknow", 
+    "purchase_events": "2", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "Goa", 
+    "purchase_events": "3", 
+    "state": "Goa"
+  }, 
+  {
+    "city": "Anakapalle", 
+    "purchase_events": "2", 
+    "state": "Andhra Pradesh"
+  }, 
+  {
+    "city": "New Delhi", 
+    "purchase_events": "9", 
+    "state": "Delhi"
+  }, 
+  {
+    "city": "RANGA REDDY", 
+    "purchase_events": "1", 
+    "state": "Telangana"
+  }, 
+  {
+    "city": "Kalaburagi", 
+    "purchase_events": "1", 
+    "state": "Karnataka"
+  }, 
+  {
+    "city": "CHENNAI", 
+    "purchase_events": "1", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "city": "RANCHI(jharkhand )", 
+    "purchase_events": "1", 
+    "state": "Jharkhand"
+  }, 
+  {
+    "city": "West Godavari", 
+    "purchase_events": "2", 
+    "state": "Andhra Pradesh"
+  }, 
+  {
+    "city": "Nala Sopara", 
+    "purchase_events": "4", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Dimapur", 
+    "purchase_events": "1", 
+    "state": "Nagaland"
+  }, 
+  {
+    "city": "JAIPUR", 
+    "purchase_events": "2", 
+    "state": "Rajasthan"
+  }, 
+  {
+    "city": "Raigard", 
+    "purchase_events": "1", 
+    "state": "Chhattisgarh"
+  }, 
+  {
+    "city": "KACHCHH", 
+    "purchase_events": "1", 
+    "state": "Gujarat"
+  }, 
+  {
+    "city": "Goa International airport, Dabolim", 
+    "purchase_events": "2", 
+    "state": "Goa"
+  }, 
+  {
+    "city": "Ghaziabad", 
+    "purchase_events": "13", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "Meerut", 
+    "purchase_events": "4", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "Mhow", 
+    "purchase_events": "1", 
+    "state": "Madhya Pradesh"
+  }, 
+  {
+    "city": "", 
+    "purchase_events": "3", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Tiruvallur", 
+    "purchase_events": "2", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "city": "KENDRAPARA", 
+    "purchase_events": "1", 
+    "state": "Odisha"
+  }, 
+  {
+    "city": "Dewapur", 
+    "purchase_events": "1", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "MUZAFFARPUR", 
+    "purchase_events": "1", 
+    "state": "Bihar"
+  }, 
+  {
+    "city": "Gachibowli", 
+    "purchase_events": "1", 
+    "state": "Telangana"
+  }, 
+  {
+    "city": "Dakshina Kannada", 
+    "purchase_events": "1", 
+    "state": "Karnataka"
+  }, 
+  {
+    "city": "", 
+    "purchase_events": "19", 
+    "state": ""
+  }, 
+  {
+    "city": "Bengaluru", 
+    "purchase_events": "7", 
+    "state": "Karnataka"
+  }, 
+  {
+    "city": "MUMBAI", 
+    "purchase_events": "43", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "KANPUR NAGAR", 
+    "purchase_events": "1", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "Hyderabad", 
+    "purchase_events": "21", 
+    "state": "Telangana"
+  }, 
+  {
+    "city": "Nalanda", 
+    "purchase_events": "2", 
+    "state": "Bihar"
+  }, 
+  {
+    "city": "Kodagu", 
+    "purchase_events": "1", 
+    "state": "Karnataka"
+  }, 
+  {
+    "city": "Kolhapur", 
+    "purchase_events": "2", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Nalasopara West", 
+    "purchase_events": "1", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Darbhanga", 
+    "purchase_events": "2", 
+    "state": "Bihar"
+  }, 
+  {
+    "city": "Palghar", 
+    "purchase_events": "1112", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "SANGLI", 
+    "purchase_events": "1", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Patna", 
+    "purchase_events": "3", 
+    "state": "Bihar"
+  }, 
+  {
+    "city": "EAST GODAVARI", 
+    "purchase_events": "1", 
+    "state": "Andhra Pradesh"
+  }, 
+  {
+    "city": "Greater noida", 
+    "purchase_events": "1", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "Allahabad", 
+    "purchase_events": "1", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "Gobindapur", 
+    "purchase_events": "1", 
+    "state": "West Bengal"
+  }, 
+  {
+    "city": "Thiruvananthapuram", 
+    "purchase_events": "4", 
+    "state": "Kerala"
+  }, 
+  {
+    "city": "Panchkula", 
+    "purchase_events": "2", 
+    "state": "Haryana"
+  }, 
+  {
+    "city": "Barh", 
+    "purchase_events": "1", 
+    "state": "Bihar"
+  }, 
+  {
+    "city": "Vikhroli West", 
+    "purchase_events": "2", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Khorda", 
+    "purchase_events": "2", 
+    "state": "Odisha"
+  }, 
+  {
+    "city": "Kanchipuram", 
+    "purchase_events": "6", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "city": "bangalore", 
+    "purchase_events": "1", 
+    "state": "Karnataka"
+  }, 
+  {
+    "city": "Bengalore", 
+    "purchase_events": "1", 
+    "state": "Karnataka"
+  }, 
+  {
+    "city": "Raigarh(MH)", 
+    "purchase_events": "6", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Siliguri", 
+    "purchase_events": "5", 
+    "state": "West Bengal"
+  }, 
+  {
+    "city": "Thane", 
+    "purchase_events": "32", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Coimbatore", 
+    "purchase_events": "3", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "city": "Cuddalore", 
+    "purchase_events": "1", 
+    "state": "Tamil Nadu"
+  }, 
+  {
+    "city": "Kamrup", 
+    "purchase_events": "1", 
+    "state": "Assam"
+  }, 
+  {
+    "city": "ERNAKULAM", 
+    "purchase_events": "2", 
+    "state": "Kerala"
+  }, 
+  {
+    "city": "Aligarh", 
+    "purchase_events": "2", 
+    "state": "Uttar Pradesh"
+  }, 
+  {
+    "city": "West Tripura", 
+    "purchase_events": "1", 
+    "state": "Tripura"
+  }, 
+  {
+    "city": "Ernakulam", 
+    "purchase_events": "5", 
+    "state": "Kerala"
+  }, 
+  {
+    "city": "PUNE", 
+    "purchase_events": "1", 
+    "state": "Maharashtra"
+  }, 
+  {
+    "city": "Hadiya Village", 
+    "purchase_events": "2", 
+    "state": "Uttar Pradesh"
+  }
+]

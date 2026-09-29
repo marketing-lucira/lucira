@@ -1,24 +1,24 @@
 {
   "meta": {
-    "generated_at": "2026-07-23T09:18:08.394653+00:00",
-    "period": "21 Jul \u2013 22 Jul 2026",
+    "generated_at": "2026-09-23T08:42:12.806854+00:00",
+    "period": "21 Sep \u2013 22 Sep 2026",
     "source": "live"
   },
   "system": {
     "status": "green",
-    "last_run": "2026-07-23T09:17:44.871175+00:00",
-    "next_run": "2026-07-24T04:30:00+00:00",
-    "run_id": "a7d6fc11b198",
-    "duration_sec": 23.5
+    "last_run": "2026-09-23T08:41:04.599738+00:00",
+    "next_run": "2026-09-24T04:30:00+00:00",
+    "run_id": "ad0cc7daaa1f",
+    "duration_sec": 68.2
   },
   "health": {
-    "overall": 90,
+    "overall": 93,
     "domains": [
       {
         "name": "Sales",
         "score": 67,
         "status": "yellow",
-        "reason": "Net Revenue -100.0% (risk)."
+        "reason": "Net Revenue -34.3% (risk)."
       },
       {
         "name": "Marketing",
@@ -34,9 +34,9 @@
       },
       {
         "name": "Inventory",
-        "score": 82,
+        "score": 100,
         "status": "green",
-        "reason": "Inventory Health Score -100.0% (risk)."
+        "reason": "Healthy \u2014 all metrics within range."
       },
       {
         "name": "Customer",
@@ -61,7 +61,7 @@
   "automation": {
     "email_sent": 0,
     "whatsapp_sent": 0,
-    "insights_generated": 3,
+    "insights_generated": 2,
     "dashboards_ok": 6,
     "dashboards_failed": 0,
     "failed_jobs": 0,
@@ -98,27 +98,23 @@
     {
       "severity": "critical",
       "domain": "sales",
-      "message": "Net revenue down -100.0% vs prior period (\u20b90).",
+      "message": "Net revenue down -34.3% vs prior period (\u20b9670,615).",
       "owner": "CEO"
     }
   ],
   "insights": [
     {
-      "what": "Net Revenue is 0 INR, down 100.0% vs prior period.",
+      "what": "Net Revenue is 670,615 INR, down 34.3% vs prior period.",
       "confidence": "low"
     },
     {
-      "what": "Inventory Health Score is 0 pct, down 100.0% vs prior period.",
-      "confidence": "low"
-    },
-    {
-      "what": "Net revenue down -100.0% vs prior period (\u20b90).",
+      "what": "Net revenue down -34.3% vs prior period (\u20b9670,615).",
       "confidence": "high"
     }
   ],
   "recommendations": [
     {
-      "action": "Address: Net revenue down -100.0% vs prior period (\u20b90).",
+      "action": "Address: Net revenue down -34.3% vs prior period (\u20b9670,615).",
       "priority": "P1",
       "owner": "CEO",
       "eta_days": 1,
@@ -131,42 +127,42 @@
     {
       "name": "Collect \u00b7 sales",
       "status": "ok",
-      "duration_sec": 3.09,
+      "duration_sec": 15.89,
       "retry_count": 0,
       "error": ""
     },
     {
       "name": "Collect \u00b7 sales",
       "status": "ok",
-      "duration_sec": 2.14,
+      "duration_sec": 7.1,
       "retry_count": 0,
       "error": ""
     },
     {
       "name": "Collect \u00b7 crm",
       "status": "ok",
-      "duration_sec": 2.11,
+      "duration_sec": 5.64,
       "retry_count": 0,
       "error": ""
     },
     {
       "name": "Collect \u00b7 marketing",
       "status": "ok",
-      "duration_sec": 3.39,
+      "duration_sec": 7.35,
       "retry_count": 0,
       "error": ""
     },
     {
       "name": "Collect \u00b7 inventory",
       "status": "ok",
-      "duration_sec": 1.87,
+      "duration_sec": 6.05,
       "retry_count": 0,
       "error": ""
     },
     {
       "name": "Collect \u00b7 product",
       "status": "ok",
-      "duration_sec": 1.37,
+      "duration_sec": 4.32,
       "retry_count": 0,
       "error": ""
     },
@@ -180,35 +176,35 @@
     {
       "name": "AI insights",
       "status": "ok",
-      "duration_sec": 0.0,
+      "duration_sec": 0.01,
       "retry_count": 0,
       "error": ""
     },
     {
       "name": "AI recommendations",
       "status": "ok",
-      "duration_sec": 0.0,
+      "duration_sec": 0.01,
       "retry_count": 0,
       "error": ""
     },
     {
       "name": "Deal Follow-up analysis",
       "status": "ok",
-      "duration_sec": 2.28,
+      "duration_sec": 13.1,
       "retry_count": 0,
       "error": ""
     },
     {
       "name": "Publish snapshot",
       "status": "ok",
-      "duration_sec": 1.87,
+      "duration_sec": 3.68,
       "retry_count": 0,
       "error": ""
     },
     {
       "name": "Notify (email + WhatsApp)",
       "status": "ok",
-      "duration_sec": 5.05,
+      "duration_sec": 4.58,
       "retry_count": 0,
       "error": ""
     }

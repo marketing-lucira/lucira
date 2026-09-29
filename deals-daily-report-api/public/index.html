@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Deals Dashboard</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="viz-root">
+    <header class="app-header">
+      <div>
+        <h1>Deals Dashboard</h1>
+        <p class="subtitle">Zoho CRM &middot; daily report &middot; deduplicated by mobile + day &middot; WhatsApp-triggered deals excluded</p>
+      </div>
+      <div class="header-actions">
+        <span id="updatedAt" class="updated-at"></span>
+        <button id="refreshBtn" class="refresh-btn">Refresh</button>
+
+        <div class="filters-dropdown" id="filtersDropdown">
+          <button type="button" class="filters-toggle" id="filtersToggle">
+            Filters <span class="filters-toggle-caret">&#9662;</span>
+          </button>
+
+          <div class="filters-panel" id="filtersPanel" hidden>
+            <button type="button" id="applyFilters" class="apply-filters-btn">Apply</button>
+
+            <div class="filter-section">
+              <div class="filter-section-title">Date basis</div>
+              <div class="tabs" role="tablist" aria-label="Date basis">
+                <button class="tab-btn is-active" data-tab="Created_Time" role="tab" aria-selected="true">Created Date</button>
+                <button class="tab-btn" data-tab="Modified_Time" role="tab" aria-selected="false">Modified Date</button>
+              </div>
+            </div>
+
+            <div class="filter-section">
+              <div class="filter-section-title">Date range</div>
+              <div class="filter-options" id="rangeOptions">
+                <button class="option-btn" data-range="daily">Today</button>
+                <button class="option-btn is-active" data-range="yesterday">Yesterday</button>
+                <button class="option-btn" data-range="weekly">Weekly</button>
+                <button class="option-btn" data-range="monthly">Monthly</button>
+                <button class="option-btn" data-range="quarterly">Quarterly</button>
+                <button class="option-btn" data-range="yearly">Yearly</button>
+                <button class="option-btn" data-range="custom">Custom</button>
+              </div>
+              <div id="customRangeForm" class="custom-range-form" hidden>
+                <label for="customStart">From</label>
+                <input type="date" id="customStart" />
+                <label for="customEnd">To</label>
+                <input type="date" id="customEnd" />
+              </div>
+            </div>
+
+            <div class="filter-section">
+              <div class="filter-section-title">Probability Score</div>
+              <label class="toggle-label">
+                <input type="checkbox" id="qualifiedOnlyToggle" checked />
+                Only &ge;70% (applies to all tables)
+              </label>
+            </div>
+
+            <div class="filter-section">
+              <div class="filter-section-title">Stage</div>
+              <div class="multiselect" id="stageMultiselect">
+                <button type="button" class="multiselect-toggle" id="stageToggle">All stages</button>
+                <div class="multiselect-panel" id="stagePanel" hidden></div>
+              </div>
+            </div>
+
+            <div class="filter-section">
+              <div class="filter-section-title">Agent</div>
+              <div class="multiselect" id="agentMultiselect">
+                <button type="button" class="multiselect-toggle" id="agentToggle">All agents</button>
+                <div class="multiselect-panel" id="agentPanel" hidden></div>
+              </div>
+            </div>
+
+            <div class="filter-meta" id="filterMeta"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="statusBar" class="status-bar" hidden></div>
+
+    <div class="report-layout">
+      <section class="report-main">
+        <h2 class="table-heading">By probability score</h2>
+        <div class="th-sub" id="probabilityMeta" style="margin-bottom:8px;"></div>
+        <div class="table-wrap table-wrap--spaced">
+          <table class="report-table" id="probabilityTable">
+            <thead>
+              <tr>
+                <th>Probability Score</th>
+                <th>Stage</th>
+                <th>Total deals</th>
+                <th>Contribution %</th>
+                <th>Lost</th>
+                <th>Won</th>
+                <th>Working hrs<br><span class="th-sub">10am&ndash;9pm</span></th>
+                <th>Same-day call<br><span class="th-sub">of working hrs</span></th>
+                <th>Non-working hrs<br><span class="th-sub">9pm&ndash;10am</span></th>
+                <th>Avg first call<br><span class="th-sub">10am&ndash;9pm, same-day, hh:mm:ss</span></th>
+                <th>First call &lt;30min</th>
+                <th>Connected &ge;30s</th>
+              </tr>
+            </thead>
+            <tbody id="probabilityBody"></tbody>
+          </table>
+        </div>
+        <button class="export-btn" data-export-table="probabilityTable" data-export-filename="by-probability-score">&#8595; Export CSV</button>
+
+        <h2 class="table-heading">Closed lost deals</h2>
+        <div class="th-sub" id="closedLostMeta" style="margin-bottom:8px;"></div>
+
+        <div class="table-wrap table-wrap--spaced">
+          <table class="report-table" id="closedLostAgentFlatTable">
+            <thead>
+              <tr>
+                <th>Agent name</th>
+                <th>Probability score</th>
+                <th>Deal count</th>
+                <th>Contribution %</th>
+                <th>Working hrs<br><span class="th-sub">10am&ndash;9pm</span></th>
+                <th>Same-day call<br><span class="th-sub">of working hrs</span></th>
+                <th>Non-working hrs<br><span class="th-sub">9pm&ndash;10am</span></th>
+                <th>Avg first call<br><span class="th-sub">10am&ndash;9pm, same-day, hh:mm:ss</span></th>
+                <th>First call &lt;30min</th>
+                <th>Connected &ge;30s</th>
+              </tr>
+            </thead>
+            <tbody id="closedLostAgentFlatBody"></tbody>
+          </table>
+        </div>
+        <button class="export-btn" data-export-table="closedLostAgentFlatTable" data-export-filename="closed-lost-deals">&#8595; Export CSV</button>
+
+        <h2 class="table-heading">By date</h2>
+        <div class="th-sub" id="reportMeta" style="margin-bottom:8px;"></div>
+        <div class="table-wrap">
+          <table class="report-table" id="reportTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Total deals</th>
+                <th>Probability Score &ge;70%</th>
+                <th>Contribution %</th>
+                <th>Lost</th>
+                <th>Won</th>
+                <th>Working hrs<br><span class="th-sub">10am&ndash;9pm</span></th>
+                <th>Same-day call<br><span class="th-sub">of working hrs</span></th>
+                <th>Non-working hrs<br><span class="th-sub">9pm&ndash;10am</span></th>
+                <th>Avg first call<br><span class="th-sub">10am&ndash;9pm, same-day, hh:mm:ss</span></th>
+                <th>First call &lt;30min</th>
+                <th>Connected &ge;30s</th>
+              </tr>
+            </thead>
+            <tbody id="reportBody"></tbody>
+          </table>
+        </div>
+        <button class="export-btn" data-export-table="reportTable" data-export-filename="by-date">&#8595; Export CSV</button>
+
+        <h2 class="table-heading">By agent</h2>
+        <div class="th-sub" id="agentMeta" style="margin-bottom:8px;"></div>
+        <div class="table-wrap table-wrap--spaced">
+          <table class="report-table" id="agentTable">
+            <thead id="agentTableHead"></thead>
+            <tbody id="agentTableBody"></tbody>
+          </table>
+        </div>
+        <button class="export-btn" data-export-table="agentTable" data-export-filename="by-agent">&#8595; Export CSV</button>
+
+        <div class="th-sub" id="dumpDetailMeta" style="margin-bottom:4px;"></div>
+        <div class="table-heading-row">
+          <h2 class="table-heading">Raw deal dump</h2>
+          <span class="th-sub" id="dumpMeta"></span>
+        </div>
+
+        <div class="table-wrap table-wrap--scroll-y">
+          <table class="report-table" id="dumpTable">
+            <thead>
+              <tr>
+                <th>Created</th>
+                <th>Modified</th>
+                <th>Stage</th>
+                <th>Probability Score</th>
+                <th>&ge;70%</th>
+                <th>Amount</th>
+                <th>Mobile</th>
+                <th>Owner</th>
+                <th>Trigger event</th>
+                <th>First call</th>
+                <th>Call type</th>
+                <th>Call duration<br><span class="th-sub">sec</span></th>
+                <th>Connected &ge;30s</th>
+                <th>Call date &minus; Create date<br><span class="th-sub">hh:mm:ss</span></th>
+              </tr>
+            </thead>
+            <tbody id="dumpBody"></tbody>
+          </table>
+        </div>
+        <button class="export-btn" data-export-table="dumpTable" data-export-filename="raw-deal-dump">&#8595; Export CSV</button>
+
+      </section>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

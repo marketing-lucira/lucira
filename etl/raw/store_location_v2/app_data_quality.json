@@ -1,0 +1,14 @@
+[
+  {
+    "distinct_event_names": "94", 
+    "distinct_luid": "2516856", 
+    "events_india": "12305764", 
+    "events_with_city": "12654944", 
+    "events_with_cuid": "1692865", 
+    "events_with_postal_code": "0", 
+    "events_with_valid_mobile_shape": "1676554", 
+    "max_date": "2026-09-16", 
+    "min_date": "2025-05-27", 
+    "total_events": "14379662"
+  }
+]

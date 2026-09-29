@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Lucira · Store Location Intelligence</title>
+<meta name="description" content="Lucira Store Location Intelligence & Campaign Demand — where should we open our next physical store, and why. Pincode-first digital demand vs real store coverage.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%238b6f56'/%3E%3Ctext x='50' y='70' font-family='Georgia,serif' font-size='58' font-weight='700' text-anchor='middle' fill='%23fff8f0'%3EL%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --gold:#d4af37; --gold-2:#f2d888; --gold-deep:#b8860b; --gold-soft:rgba(212,175,55,.14);
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b; --info:#4d96ff;
+  --r-lg:20px; --r-md:14px; --r-sm:10px;
+  --shadow:0 18px 50px -20px rgba(0,0,0,.65);
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --serif:"Cormorant Garamond","Playfair Display",Georgia,"Times New Roman",serif;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a; --series-4:#eda100; --series-5:#e87ba4;
+  --brand-brown:#8b6f56; --brand-brown-dark:#6e5744; --brand-mauve:#a05a64; --brand-mauve-light:#d9b8b4; --brand-cream:#fff8f0;
+}
+html[data-theme=dark]{
+  --bg:#08080a; --bg-2:#0d0d10; --surface:#141418; --surface-2:#1b1b21; --surface-3:#22222a;
+  --glass:rgba(26,26,32,.62); --glass-brd:rgba(212,175,55,.16); --hair:rgba(255,255,255,.07);
+  --ink:#f4f1ea; --ink-2:#b9b6ad; --muted:#7d7a72; --grid:rgba(255,255,255,.06); --axis:rgba(255,255,255,.14);
+  --sheen:radial-gradient(120% 120% at 0% 0%,rgba(212,175,55,.10),transparent 46%),radial-gradient(120% 120% at 100% 0%,rgba(43,120,214,.08),transparent 50%);
+  --card-grad:linear-gradient(158deg,rgba(255,255,255,.045),rgba(255,255,255,.008));
+  --good:#0ca30c; --warn:#fab219; --crit:#e66767;
+  --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70; --series-4:#c98500; --series-5:#d55181;
+}
+html[data-theme=light]{
+  --bg:#efece5; --bg-2:#f6f4ef; --surface:#fcfcfb; --surface-2:#faf8f3; --surface-3:#f1ede3;
+  --glass:rgba(255,255,255,.72); --glass-brd:rgba(184,134,11,.22); --hair:rgba(20,15,5,.09);
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781; --grid:rgba(20,15,5,.08); --axis:rgba(20,15,5,.2);
+  --gold:#b8860b; --gold-2:#c99a26;
+  --sheen:radial-gradient(120% 120% at 0% 0%,rgba(184,134,11,.10),transparent 46%),radial-gradient(120% 120% at 100% 0%,rgba(43,120,214,.06),transparent 50%);
+  --card-grad:linear-gradient(158deg,rgba(255,255,255,.9),rgba(250,247,240,.55));
+  --shadow:0 18px 44px -22px rgba(80,60,10,.28);
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a; --series-4:#eda100; --series-5:#e87ba4;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;background-image:var(--sheen);background-attachment:fixed;overflow-x:hidden}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:600;letter-spacing:.2px;line-height:1.15}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:20px;border:2px solid transparent;background-clip:content-box}
+#loader{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;transition:opacity .7s var(--ease),visibility .7s}
+#loader.done{opacity:0;visibility:hidden;display:none}
+.load-mark{width:100px;height:100px;position:relative;display:grid;place-items:center}
+.load-mark svg{width:100%;height:100%}
+.load-ring{position:absolute;inset:-14px;border-radius:50%;border:1.5px solid var(--glass-brd);border-top-color:var(--gold);animation:spin 1.15s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-word{font-family:var(--serif);font-size:30px;letter-spacing:6px;color:var(--brand-mauve);padding-left:6px}
+.load-sub{font-size:11px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;text-align:center;margin-top:4px}
+.dotless{position:relative;display:inline-block;font-style:normal}
+.dotless::before{content:'';position:absolute;top:-.6em;left:50%;width:4px;height:4px;background:var(--brand-mauve-light);transform:translateX(-50%) rotate(45deg)}
+.load-bar{width:180px;height:2px;background:var(--hair);border-radius:2px;overflow:hidden}
+.load-bar i{display:block;height:100%;width:40%;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:load 1.1s var(--ease) infinite}
+@keyframes load{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .mono{width:36px;height:36px;border-radius:50%/42%;flex:0 0 auto;background:var(--brand-cream);border:1.5px solid var(--brand-mauve);display:grid;place-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.4);position:relative}
+.brand .mono svg{width:22px;height:22px}
+.brand .mono::after{content:'';position:absolute;bottom:5px;left:50%;width:5px;height:5px;background:var(--brand-mauve);transform:translateX(-50%) rotate(45deg)}
+.brand .wm{display:flex;flex-direction:column;line-height:1}
+.brand .wm b{font-family:var(--serif);font-size:18px;font-weight:600;letter-spacing:3px;color:var(--brand-cream)}
+.brand .wm span{font-size:8px;letter-spacing:3px;text-transform:uppercase;margin-top:3px;font-weight:600;color:rgba(255,248,240,.72)}
+#app{opacity:0;transition:opacity .6s var(--ease)}
+#app.ready{opacity:1}
+header.top{position:relative;z-index:60;background:var(--brand-brown);border-bottom:2px solid var(--brand-brown-dark);padding:11px clamp(14px,3vw,30px);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top .spacer{flex:1}
+.src-dot{display:inline-flex;align-items:center;gap:7px;font-size:11px;color:var(--brand-cream);padding:5px 11px;border:1px solid rgba(255,255,255,.28);border-radius:20px;background:rgba(255,255,255,.12)}
+.src-dot i{width:7px;height:7px;border-radius:50%;background:var(--warn);box-shadow:0 0 8px var(--warn)}
+.src-dot.live i{background:var(--good);box-shadow:0 0 8px var(--good)}
+.iconbtn{width:36px;height:36px;border-radius:11px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.12);display:grid;place-items:center;color:var(--brand-cream);transition:.2s var(--ease);font-size:15px}
+.iconbtn:hover{color:#fff;border-color:rgba(255,255,255,.5);transform:translateY(-1px)}
+.btn{padding:8px 15px;border-radius:11px;border:1px solid var(--hair);background:var(--surface-2);color:var(--ink);font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:7px;transition:.2s var(--ease)}
+.btn:hover{border-color:var(--glass-brd);transform:translateY(-1px)}
+.btn.gold{background:linear-gradient(120deg,var(--gold),var(--gold-deep));color:#160f00;border:none;font-weight:600;box-shadow:0 8px 20px -8px var(--gold-deep)}
+nav.tabs{position:relative;z-index:55;display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;padding:9px clamp(14px,3vw,30px);backdrop-filter:blur(18px);background:linear-gradient(180deg,var(--glass),transparent);border-bottom:1px solid var(--hair)}
+nav.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 15px;border-radius:10px;font-size:12.5px;font-weight:500;color:var(--ink-2);white-space:nowrap;display:inline-flex;align-items:center;gap:7px;transition:.18s var(--ease);border:1px solid transparent}
+.tab:hover{color:var(--ink);background:var(--surface-2)}
+.tab.active{color:var(--gold);background:var(--gold-soft);border-color:var(--glass-brd)}
+main{padding:clamp(16px,3vw,30px);max-width:1560px;margin:0 auto}
+.view{display:none;animation:fade .5s var(--ease)}
+.view.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:6px 0 16px}
+.sec-head h2{font-size:clamp(20px,2.4vw,27px)}
+.sec-head .sub{color:var(--muted);font-size:12.5px;margin-top:3px;max-width:80ch}
+.eyebrow{font-size:10.5px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:600}
+.card{background:var(--card-grad),var(--glass);border:1px solid var(--glass-brd);border-radius:var(--r-lg);backdrop-filter:blur(14px);box-shadow:var(--shadow);position:relative;overflow:hidden;margin-bottom:16px}
+.card>.pad{padding:18px}
+.card .ct{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.card .ct h3{font-size:15.5px;letter-spacing:.3px}
+.card .ct .ct-r{display:flex;align-items:center;gap:8px;flex:0 0 auto;flex-wrap:wrap}
+.card .ct .hint{font-size:11px;color:var(--muted)}
+.grid{display:grid;gap:16px}
+.g-2{grid-template-columns:repeat(2,1fr)}.g-3{grid-template-columns:repeat(3,1fr)}.g-4{grid-template-columns:repeat(4,1fr)}.g-5{grid-template-columns:repeat(5,1fr)}
+@media(max-width:1180px){.g-4,.g-5{grid-template-columns:repeat(3,1fr)}.g-3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.g-2,.g-3,.g-4,.g-5{grid-template-columns:1fr}}
+.kpi{background:var(--card-grad),var(--glass);border:1px solid var(--glass-brd);border-radius:var(--r-md);padding:14px 15px 12px;position:relative;overflow:hidden;transition:.25s var(--ease)}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold);opacity:.75}
+.kpi:hover{transform:translateY(-3px);box-shadow:0 22px 44px -24px rgba(0,0,0,.7)}
+.kpi.warn::before{background:var(--warn)}.kpi.crit::before{background:var(--crit)}.kpi.ok::before{background:var(--good)}
+.kpi .lab{font-size:10.5px;color:var(--ink-2);letter-spacing:.4px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.kpi .val{font-family:var(--serif);font-size:24px;font-weight:600;margin:5px 0 2px;letter-spacing:.3px;line-height:1}
+.kpi .sub2{font-size:10.5px;color:var(--muted)}
+.pill{font-size:10.5px;padding:3px 9px;border-radius:20px;border:1px solid var(--hair);background:var(--surface-2);color:var(--ink-2);white-space:nowrap;display:inline-block}
+.pill.g{color:var(--gold);border-color:var(--glass-brd);background:var(--gold-soft)}
+.pill.ok{color:var(--good);border-color:rgba(12,163,12,.3);background:rgba(12,163,12,.1)}
+.pill.bad{color:var(--crit);border-color:rgba(208,59,59,.3);background:rgba(208,59,59,.1)}
+.pill.warn{color:var(--warn);border-color:rgba(250,178,25,.35);background:rgba(250,178,25,.12)}
+select.inp,input.inp{background:var(--surface-2);border:1px solid var(--hair);border-radius:9px;color:var(--ink);padding:7px 10px;font-size:12px;outline:none;transition:.15s;width:100%}
+select.inp:focus,input.inp:focus{border-color:var(--gold)}
+table.dt{width:100%;border-collapse:collapse;font-size:12.3px}
+table.dt th{text-align:left;padding:9px 10px;color:var(--muted);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--hair);cursor:pointer;white-space:nowrap;position:sticky;top:0;background:var(--surface)}
+table.dt th.num,table.dt td.num{text-align:right;font-variant-numeric:tabular-nums}
+table.dt td{padding:8px 10px;border-bottom:1px solid var(--hair);white-space:nowrap}
+table.dt tbody tr:hover{background:var(--surface-2)}
+table.dt th:hover{color:var(--ink-2)}
+.tbl-wrap{max-height:560px;overflow:auto;border-radius:var(--r-sm)}
+.tbl-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.tbl-tools input.inp{max-width:240px}
+.pager{display:flex;align-items:center;gap:10px;justify-content:flex-end;margin-top:10px;font-size:11.5px;color:var(--muted)}
+.rank{width:22px;height:22px;border-radius:7px;display:inline-grid;place-items:center;font-size:10.5px;font-weight:700;background:var(--surface-3);color:var(--ink-2)}
+.rank.r1{background:linear-gradient(135deg,var(--gold-2),var(--gold-deep));color:#160f00}
+.rank.r2{background:linear-gradient(135deg,#e6e6ea,#a9adb5);color:#161616}
+.rank.r3{background:linear-gradient(135deg,#e0a899,#b06a52);color:#160f00}
+.chart{width:100%;height:auto;display:block;overflow:visible}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;font-size:11.5px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+.tip{position:fixed;z-index:200;background:var(--surface-3);border:1px solid var(--glass-brd);border-radius:9px;padding:8px 11px;font-size:11.5px;color:var(--ink);pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:var(--shadow);max-width:280px;line-height:1.5}
+.tip.on{opacity:1}
+.info-btn{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;flex:0 0 auto;border:1px solid var(--hair);background:var(--surface-2);color:var(--muted);font-size:10px;font-style:normal;font-family:Georgia,serif;line-height:1;cursor:pointer;user-select:none;transition:.16s;vertical-align:middle}
+.info-btn:hover{color:var(--gold);border-color:var(--gold)}
+.info-pop{position:fixed;z-index:240;width:min(400px,92vw);max-height:min(72vh,540px);overflow-y:auto;background:var(--surface);border:1px solid var(--glass-brd);border-radius:15px;box-shadow:0 20px 55px rgba(0,0,0,.55);padding:16px 17px;opacity:0;transform:translateY(7px) scale(.985);pointer-events:none;transition:opacity .19s,transform .19s}
+.info-pop.on{opacity:1;transform:none;pointer-events:auto}
+.info-pop h4{font-family:var(--serif);font-size:15px;margin:0 0 8px}
+.info-pop .t{font-size:12px;color:var(--ink-2);line-height:1.6}
+.insight{display:flex;gap:11px;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--hair);background:var(--surface-2);margin-bottom:9px}
+.insight .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;flex:0 0 auto;font-size:14px;background:var(--gold-soft);color:var(--gold)}
+.insight.sev-warn .ic{background:rgba(250,178,25,.16);color:var(--warn)}
+.insight.sev-crit .ic{background:rgba(208,59,59,.14);color:var(--crit)}
+.insight p{font-size:12.3px;color:var(--ink-2);line-height:1.55}
+.filters-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.filters-row .fld{min-width:150px;flex:1}
+.filters-row label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:4px}
+.attr-tag{font-size:9.5px;padding:1px 7px;border-radius:8px;font-weight:700;letter-spacing:.3px}
+.attr-tag.exact{background:rgba(12,163,12,.16);color:var(--good)}
+.attr-tag.proxy{background:rgba(250,178,25,.18);color:var(--warn)}
+/* Visually separates real, pincode/customer-exact columns from city-level estimate columns in any
+   table -- so "why is this number tiny next to that huge one" reads as two different measurements,
+   not a broken one. th gets a colored underline; td gets a faint tint of the same color. */
+th.col-exact{box-shadow:inset 0 -2px 0 var(--good)}
+td.col-exact{background:rgba(12,163,12,.05)}
+th.col-proxy{box-shadow:inset 0 -2px 0 var(--warn)}
+td.col-proxy{background:rgba(250,178,25,.05)}
+.scroll-x{overflow-x:auto}
+.badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10.5px;font-weight:700}
+.badge.High{background:rgba(12,163,12,.16);color:var(--good)}
+.badge.Medium{background:rgba(250,178,25,.18);color:var(--warn)}
+.badge.Low{background:rgba(77,150,255,.16);color:var(--info)}
+.badge.Watch{background:var(--surface-3);color:var(--muted)}
+.badge.HIGH{background:rgba(208,59,59,.16);color:var(--crit)}
+.badge.MEDIUM{background:rgba(250,178,25,.18);color:var(--warn)}
+.badge.LOW{background:rgba(12,163,12,.14);color:var(--good)}
+.empty{padding:36px;text-align:center;color:var(--muted);font-size:12.5px}
+details.cov{border:1px solid var(--hair);border-radius:var(--r-md);background:var(--surface-2);padding:12px 15px;margin-bottom:12px}
+details.cov summary{cursor:pointer;font-weight:600;font-size:13px;list-style:none}
+details.cov summary::-webkit-details-marker{display:none}
+details.cov summary::before{content:"▸ ";color:var(--gold)}
+details.cov[open] summary::before{content:"▾ "}
+details.cov .body{margin-top:10px;font-size:12.3px;color:var(--ink-2);line-height:1.65}
+.reco-card{border:1px solid var(--hair);border-radius:var(--r-md);padding:16px;background:var(--card-grad),var(--glass);margin-bottom:12px}
+.reco-card .top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.reco-card .top h4{font-family:var(--sans);font-size:14.5px;font-weight:700;flex:1}
+.reco-card .kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px 16px;font-size:11.8px;margin-bottom:10px}
+.reco-card .kv b{color:var(--muted);font-weight:600;display:block;font-size:9.8px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.reco-card .reason{font-size:12.3px;color:var(--ink-2);border-top:1px dashed var(--hair);padding-top:9px;line-height:1.55}
+#map-svg{width:100%;height:auto;background:var(--surface-2);border-radius:var(--r-md)}
+@media print{header.top,nav.tabs,.no-print{display:none!important}.view{display:block!important}body{background:#fff}.card{break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="load-mark"><div class="load-ring"></div><svg viewBox="0 0 100 100"><text x="50" y="72" font-family="Georgia,serif" font-size="66" font-weight="700" text-anchor="middle" fill="#a05a64">L</text></svg></div>
+  <div><div class="load-word">Luc<span class="dotless">ı</span>rá</div><div class="load-sub">Store Location Intelligence</div></div>
+  <div class="load-bar"><i></i></div>
+</div>
+
+<div id="app">
+  <header class="top">
+    <div class="brand">
+      <div class="mono"><svg viewBox="0 0 100 100"><text x="50" y="68" font-family="Georgia,serif" font-size="62" font-weight="700" text-anchor="middle" fill="#8b6f56">L</text></svg></div>
+      <div class="wm"><b>Luc<span class="dotless">ı</span>rá</b><span>Store Location Intel</span></div>
+    </div>
+    <div class="src-dot" id="srcDot"><i></i><span id="srcTxt">Loading…</span></div>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="btnTheme" title="Toggle theme">◐</button>
+    <button class="iconbtn" id="btnPrint" title="Print / Save as PDF">⎙</button>
+  </header>
+  <nav class="tabs" id="tabs"></nav>
+  <main id="main"></main>
+</div>
+
+<div class="tip" id="tip"></div>
+<div class="info-pop" id="infoPop"></div>
+
+<script>
+"use strict";
+/* ═══════════════════════════════════════════════════════════════════════
+   LUCIRA STORE LOCATION INTELLIGENCE & CAMPAIGN DEMAND — engine
+   Source: etl/out/store_location_intel.json (built by
+   etl/build_store_location_intel_v2.js from dashboard/sql/store_location_app_events_pull.sql +
+   dashboard/sql/store_location_store_master.sql).
+   GA4 (ga4_data.ga4_data) has ZERO dependency as of 2026-09-01 — every behavioral metric is
+   sourced from test-webengage.11b56595a_shared.application_view_v1 (events, primary) and
+   user_profile_view_v3 (profile Users count + pincode geo enrichment). PINCODE-FIRST: events with
+   a valid mobile match to a real pincode are tagged 'pincode_exact'; everything else attached to a
+   pincode row for context is a CITY-LEVEL PROXY from the SAME table (suffixed _cityProxy) — never
+   presented as pincode-exact. See the Methodology and Data Quality tabs for the full disclosure.
+   ═══════════════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  SNAPSHOT_URL: "https://storage.googleapis.com/lucira-dashboards/store-location/latest.json", // static snapshot — no live refresh pipeline yet, see Data Quality tab
+  LOCAL_FALLBACK: "store_location_intel.json",
+  // Pincode-Level Customer Intelligence — separate ~8.6MB snapshot, fetched lazily on first visit
+  // to that tab only (not needed by any other tab, no reason to block initial page load on it).
+  // Built by etl/build_pincode_customer_intelligence.js from the SQL in
+  // dashboard/sql/pincode_customer_intelligence_pull.sql + _sales_pull.sql.
+  PCI_URL: "pincode_customer_intelligence.json"
+};
+const STATE = { data:null, source:'none', tab:'exec', filters:{ state:'', city:'', cityKey:'', priority:'', q:'', dateRange:'all', dateFrom:null, dateTo:null }, tablePage:{}, tableSort:{} };
+// Reuses the exact same city-alias table the merge script used to build D.cities (shipped in
+// D.dataLineage.cityAliasMap), so a City-row drill-down matches the SAME pincodes that were
+// summed into that city's totals -- not a separate, potentially-inconsistent text match.
+function clientNormCity(s){
+  if(!s) return '';
+  const c = String(s).trim().toLowerCase();
+  const aliases = (STATE.data && STATE.data.dataLineage && STATE.data.dataLineage.cityAliasMap) || {};
+  return aliases[c] || c;
+}
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtInt(n){ return (n==null||isNaN(n))?'—':Math.round(n).toLocaleString('en-IN'); }
+function fmtMoney(n){ return (n==null||isNaN(n))?'—':'₹'+Math.round(n).toLocaleString('en-IN'); }
+function pctStr(x,dp){ return (x==null||isNaN(x)||!isFinite(x))?'—':x.toFixed(dp==null?1:dp)+'%'; }
+function trunc(s,n){ s=String(s||''); return s.length>n?s.slice(0,n-1)+'…':s; }
+function downloadBlob(content,filename,mime){ if(mime==='text/csv' && content.charCodeAt(0)!==0xFEFF) content='﻿'+content;
+  const blob=new Blob([content],{type:mime+';charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800); }
+function csvOf(rows){ return rows.map(r=>r.map(v=>{ v=(v==null?'':''+v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(',')).join('\n'); }
+
+async function loadData(){
+  try{
+    const res = await fetch(CONFIG.SNAPSHOT_URL, {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const j = await res.json();
+    STATE.data = j; STATE.source = 'live';
+    return;
+  }catch(e){
+    console.warn('Public snapshot load failed, trying local fallback:', e.message);
+  }
+  try{
+    const res = await fetch(CONFIG.LOCAL_FALLBACK, {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const j = await res.json();
+    STATE.data = j; STATE.source = 'local';
+  }catch(e){
+    console.error('Local fallback load failed:', e.message);
+    STATE.source = 'error';
+  }
+}
+
+/* ── generic sortable/paginated/searchable table ─────────────────────── */
+function renderTable(opts){
+  // opts: {id, columns:[{key,label,num,fmt,attr}], rows, defaultSort, pageSize, csvName, searchKeys}
+  const id = opts.id;
+  if(!STATE.tableSort[id]) STATE.tableSort[id] = opts.defaultSort || {key:opts.columns[0].key, dir:-1};
+  if(!STATE.tablePage[id]) STATE.tablePage[id] = 0;
+  const pageSize = opts.pageSize || 25;
+  return { html: tableShell(id, opts), mount: () => mountTable(id, opts, pageSize) };
+}
+function tableShell(id, opts){
+  return `<div class="tbl-tools">
+    <input class="inp" id="${id}-search" placeholder="Search…" style="max-width:220px">
+    <span class="hint" id="${id}-count" style="font-size:11px;color:var(--muted)"></span>
+    <span style="flex:1"></span>
+    <button class="btn" id="${id}-csv">⬇ CSV</button>
+  </div>
+  <div class="tbl-wrap"><table class="dt" id="${id}-table">
+    <thead><tr>${opts.columns.map(c=>`<th class="${c.num?'num':''} ${c.tone?'col-'+c.tone:''}" data-key="${c.key}">${esc(c.label)}</th>`).join('')}</tr></thead>
+    <tbody id="${id}-tbody"></tbody>
+  </table></div>
+  <div class="pager" id="${id}-pager"></div>`;
+}
+function mountTable(id, opts, pageSize){
+  const searchEl = document.getElementById(id+'-search');
+  const csvBtn = document.getElementById(id+'-csv');
+  const theadRow = document.querySelector('#'+id+'-table thead tr');
+  theadRow.querySelectorAll('th').forEach(th=>{
+    th.onclick = () => { const k=th.getAttribute('data-key'); const s=STATE.tableSort[id];
+      s.dir = (s.key===k) ? -s.dir : -1; s.key=k; STATE.tablePage[id]=0; draw(); };
+  });
+  searchEl.oninput = () => { STATE.tablePage[id]=0; draw(); };
+  csvBtn.onclick = () => {
+    const rows = filteredSorted();
+    const head = opts.columns.map(c=>c.label);
+    const body = rows.map(r=>opts.columns.map(c=>r[c.key]==null?'':r[c.key]));
+    downloadBlob(csvOf([head,...body]), (opts.csvName||id)+'.csv', 'text/csv');
+  };
+  function filteredSorted(){
+    let rows = opts.rows;
+    const q = (searchEl.value||'').toLowerCase().trim();
+    if(q){ const keys = opts.searchKeys || opts.columns.map(c=>c.key);
+      rows = rows.filter(r => keys.some(k => String(r[k]==null?'':r[k]).toLowerCase().includes(q))); }
+    const s = STATE.tableSort[id];
+    rows = [...rows].sort((a,b)=>{ const av=a[s.key], bv=b[s.key];
+      if(av==null && bv==null) return 0; if(av==null) return 1; if(bv==null) return -1;
+      if(typeof av==='number') return (av-bv)*s.dir; return String(av).localeCompare(String(bv))*s.dir; });
+    return rows;
+  }
+  function draw(){
+    const rows = filteredSorted();
+    document.getElementById(id+'-count').textContent = rows.length.toLocaleString('en-IN')+' rows';
+    const page = STATE.tablePage[id];
+    const start = page*pageSize, slice = rows.slice(start, start+pageSize);
+    const tbody = document.getElementById(id+'-tbody');
+    tbody.innerHTML = slice.length ? slice.map(r => `<tr>${opts.columns.map(c=>{
+      let v = r[c.key];
+      let disp = c.fmt ? c.fmt(v, r) : (v==null ? '—' : v);
+      return `<td class="${c.num?'num':''} ${c.tone?'col-'+c.tone:''}">${disp}</td>`;
+    }).join('')}</tr>`).join('') : `<tr><td colspan="${opts.columns.length}"><div class="empty">No rows match.</div></td></tr>`;
+    const totalPages = Math.max(1, Math.ceil(rows.length/pageSize));
+    document.getElementById(id+'-pager').innerHTML = `
+      <button class="btn" id="${id}-prev" ${page<=0?'disabled':''}>‹ Prev</button>
+      <span>Page ${page+1} / ${totalPages}</span>
+      <button class="btn" id="${id}-next" ${page>=totalPages-1?'disabled':''}>Next ›</button>`;
+    const prevBtn=document.getElementById(id+'-prev'), nextBtn=document.getElementById(id+'-next');
+    if(prevBtn) prevBtn.onclick=()=>{ if(STATE.tablePage[id]>0){ STATE.tablePage[id]--; draw(); } };
+    if(nextBtn) nextBtn.onclick=()=>{ if(STATE.tablePage[id]<totalPages-1){ STATE.tablePage[id]++; draw(); } };
+  }
+  draw();
+}
+
+/* ── card / section builders ──────────────────────────────────────── */
+function card(title,body,opts){ opts=opts||{}; return `<div class="card ${opts.cls||''}"><div class="pad">
+  ${title?`<div class="ct"><h3>${esc(title)}</h3><div class="ct-r">${opts.hint?`<span class="hint">${opts.hint}</span>`:''}${opts.info?infoIcon(opts.info,title):''}</div></div>`:''}
+  ${body}</div></div>`; }
+function secHead(eyebrow,title,sub){ return `<div class="sec-head"><div><div class="eyebrow">${esc(eyebrow)}</div><h2>${esc(title)}</h2>${sub?`<div class="sub">${sub}</div>`:''}</div></div>`; }
+function kpi(label,val,sub,cls){ return `<div class="kpi ${cls||''}"><div class="lab">${esc(label)}</div><div class="val">${val}</div>${sub?`<div class="sub2">${sub}</div>`:''}</div>`; }
+function insightBox(text,sev){ return `<div class="insight ${sev?'sev-'+sev:''}"><div class="ic">${sev==='crit'?'⚠':sev==='warn'?'●':'✦'}</div><p>${text}</p></div>`; }
+
+const INFO = {
+  'pincode-tier':{title:'Real vs. junk pincodes',t:'Only pincodes that are (1) a plausible 6-digit value AND (2) match a real India Post pincode in the official master are shown here. Live-verified: 125,435 distinct 6-digit-shaped values were claimed in WebEngage, but only 3,096 (2.5%) are real postal codes — the rest are free-text noise. By USERS (not distinct pincodes), 19,275 of 141,638 format-valid-pincode users (13.6%) sit on a real pincode. This is disclosed, not hidden, in the Data Quality tab.'},
+  'city-proxy':{title:'City-level context, not this pincode\'s own events',t:'application_view_v1 has 0% postal_code — pincode-exact events only exist for the slice of events with a valid mobile that also matches a real pincode via user_profile_view_v3 (tagged "pincode_exact"). Every value tagged "city proxy" is that pincode\'s CITY total from the SAME WebEngage event table — a reasonable enrichment, never split or allocated down to the pincode, and never presented as pincode-exact.'},
+  'opp-score':{title:'Opportunity Score methodology',t:'0-100 percentile-rank blend, never revenue-only: 25% User Demand (WebEngage profile users) + 20% Digital Demand (WebEngage app-event volume) + 15% Campaign Demand (WebEngage campaign-attributed profile users) + 25% Revenue Score (WebEngage Purchase-event city revenue, real order addresses) + 15% Store Gap (distance to nearest real store, percentile-ranked). The old GA4-era 10% Conversion Score component has no equivalent without a session denominator on a single event table — its weight was folded into Revenue Score (15%→25%), disclosed in Data Quality. Priority is percentile-of-the-blended-score: High = top 10%, Medium = next 20%, Low = next 30%, else Watch.'},
+  'store-gap':{title:'Store Gap flag methodology',t:'HIGH = top-tercile demand (user or event-volume percentile ≥66) AND more than 15km from the nearest real store. MEDIUM = mid/high demand (≥33 percentile) AND 5-15km away. LOW = otherwise — includes genuinely low demand, or already within 5km of an existing store.'},
+  'campaign-native':{title:'Campaign data is native, no cross-table join needed',t:'campaign_id/source/medium are columns directly on application_view_v1 — the same table as every other event metric here. Unlike the old GA4-era pipeline (which had to text-match WebEngage\'s campaign_id against a separate GA4 campaign_name field), there is no join, no match-rate, and no "unmatched campaign" concept anymore — every campaign row below is exact.'}
+};
+function infoIcon(slug,title){ if(!INFO[slug]) return ''; return `<i class="info-btn" data-info="${slug}" data-title="${esc(title||'')}" tabindex="0">ⓘ</i>`; }
+const POP=document.getElementById('infoPop');
+function placePop(btn){ const r=btn.getBoundingClientRect(); const pr=POP.getBoundingClientRect();
+  let x=r.right-pr.width; x=Math.max(10,Math.min(x,innerWidth-pr.width-10));
+  let y=r.bottom+8; if(y+pr.height>innerHeight-10) y=r.top-pr.height-8; y=Math.max(10,y);
+  POP.style.left=x+'px'; POP.style.top=y+'px'; }
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.info-btn');
+  if(b){ e.preventDefault(); const d=INFO[b.getAttribute('data-info')];
+    POP.innerHTML = d ? `<h4>${esc(d.title)}</h4><div class="t">${esc(d.t)}</div>` : '';
+    POP.classList.add('on'); placePop(b);
+  } else if(!e.target.closest('#infoPop')) POP.classList.remove('on');
+});
+
+/* tooltip for map markers */
+const TIP=document.getElementById('tip');
+document.addEventListener('pointermove',e=>{ const t=e.target.closest('[data-tip]');
+  if(t){ TIP.innerHTML=t.getAttribute('data-tip'); TIP.classList.add('on'); let x=e.clientX+14,y=e.clientY+14;
+    const tw=TIP.offsetWidth,th=TIP.offsetHeight; if(x+tw>innerWidth-10)x=e.clientX-tw-14; if(y+th>innerHeight-10)y=e.clientY-th-14;
+    TIP.style.left=x+'px'; TIP.style.top=y+'px'; } else if(!e.target.closest('.tip')) TIP.classList.remove('on'); });
+
+/* ── TABS ─────────────────────────────────────────────────────────── */
+const TABS = [
+  ['exec','Executive'],['pincode','Pincode'],['pciTab','Customer Intelligence'],['city','City'],['state','State'],['map','Map'],
+  ['competitor','Competitor Intel'],['fakepincode','Fake Pincodes'],
+  ['campaign','Campaign'],['campaignPincode','Campaign × Pincode'],['product','Product Demand'],
+  ['priceband','Price Band'],['storegap','Store Gap'],['recommend','Store Recommendation'],
+  ['customer','Customer-Level'],['dataquality','Data Quality'],['qa','Business Q&A'],['methodology','Methodology'],
+  ['lineage','Data Lineage']
+];
+function buildNav(){
+  document.getElementById('tabs').innerHTML = TABS.map(([id,label])=>`<a href="#${id}" class="tab ${STATE.tab===id?'active':''}" data-tab="${id}">${esc(label)}</a>`).join('');
+  document.querySelectorAll('.tab').forEach(t=>t.onclick=(e)=>{ e.preventDefault(); STATE.tab=t.getAttribute('data-tab'); location.hash=STATE.tab; render(); });
+}
+
+/* ── FILTER helpers (State/City/Priority applied to pincode-derived tabs) ── */
+function filteredPincodes(){
+  const D = STATE.data; const F = STATE.filters;
+  return D.pincodes.filter(p =>
+    (!F.state || p.state===F.state) &&
+    (!F.city || p.district===F.city) &&
+    (!F.cityKey || clientNormCity(p.district)===F.cityKey) &&
+    (!F.priority || p.priority===F.priority) &&
+    (!F.q || p.pincode.includes(F.q) || (p.district||'').toLowerCase().includes(F.q.toLowerCase()))
+  );
+}
+// City -> Pincode drill-down: matches the SAME pincodes summed into that city row's totals.
+function drillToPincodes(cityKey){
+  STATE.filters = {state:'',city:'',cityKey,priority:'',q:'',dateRange:STATE.filters.dateRange,dateFrom:STATE.filters.dateFrom,dateTo:STATE.filters.dateTo};
+  STATE.tab = 'pincode'; location.hash = 'pincode'; render();
+}
+// State -> City drill-down: state text is consistent between D.states and D.cities (both real
+// India-Post state names), no alias mapping needed here unlike the city-text case above.
+function drillToCities(stateName){
+  STATE.filters = {state:stateName,city:'',cityKey:'',priority:'',q:'',dateRange:STATE.filters.dateRange,dateFrom:STATE.filters.dateFrom,dateTo:STATE.filters.dateTo};
+  STATE.tab = 'city'; location.hash = 'city'; render();
+}
+// Pincode -> Competitor Intelligence drill-down: shows Tanishq/CaratLane presence + CaratLane's
+// real public catalog mix side-by-side with OUR OWN real customer/sales numbers for that pincode.
+function drillToCompetitor(pincode){
+  STATE.filters.q = pincode; STATE.tab = 'competitor'; location.hash = 'competitor'; render();
+}
+// Generic global-filter applier so every tab's table respects the same State/City/Priority/Search
+// controls. City matching is a case-insensitive, BIDIRECTIONAL substring check (not exact equality)
+// because "City" text differs by source across this dashboard's own tables -- the filter dropdown's
+// options come from real India-Post district names (e.g. "MUMBAI SUBURBAN"), while WebEngage's own
+// city rollup uses free-text like "mumbai" -- exact equality would silently return zero rows for
+// real matches. State matching is case-insensitive exact (state names are consistent enums here).
+function applyGeoFilters(rows, opts){
+  const F = STATE.filters; opts = opts||{};
+  const norm = s => String(s||'').trim().toLowerCase();
+  const fState = norm(F.state), fCity = norm(F.city), fQ = norm(F.q);
+  return rows.filter(r=>{
+    if(F.state && opts.stateKey && norm(r[opts.stateKey])!==fState) return false;
+    if(F.city && opts.cityKey){ const rc=norm(r[opts.cityKey]); if(!(rc.includes(fCity)||fCity.includes(rc))) return false; }
+    if(F.priority && opts.priorityKey && r[opts.priorityKey]!==F.priority) return false;
+    if(F.q){
+      const hay = [opts.pincodeKey&&r[opts.pincodeKey], opts.cityKey&&r[opts.cityKey], opts.stateKey&&r[opts.stateKey]]
+        .filter(Boolean).map(norm).join(' ');
+      if(!hay.includes(fQ)) return false;
+    }
+    return true;
+  });
+}
+
+/* ── Date Range filter -- real WebEngage application_view_v1 daily data, Executive + Campaign
+   tabs only ──────────────────────────────────────────────────────────────────────────────────
+   user_profile_view_v3 is a profile snapshot, not a session log -- it has no per-day breakdown,
+   so this filter never touches WebEngage-PROFILE-native fields (Users, Campaign Users profile,
+   Opportunity Score, Priority). City/State/Pincode/Product/Price-Band/Store-Gap/Recommendation
+   tabs stay all-time -- date-ranging those would need the same city-text matching the all-time
+   numbers already use, re-derived per arbitrary date range, which is real complexity not yet
+   built -- ask if that's wanted. */
+function dateBoundsFromPreset(){
+  const F = STATE.filters; const maxDate = STATE.data.meta.dailyDateRange.max;
+  if(!F.dateRange || F.dateRange==='all') return null;
+  if(F.dateRange==='custom') return (F.dateFrom && F.dateTo) ? {from:F.dateFrom, to:F.dateTo} : null;
+  const days = {'7d':7,'30d':30,'90d':90,'180d':180}[F.dateRange] || 30;
+  const to = new Date(maxDate+'T00:00:00');
+  const from = new Date(to); from.setDate(from.getDate()-(days-1));
+  const ymd = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  return {from: ymd(from), to: ymd(to)};
+}
+function sumDailyCityInRange(bounds){
+  const t = {pdpViews:0,addToCart:0,checkout:0,purchase:0,totalEvents:0};
+  STATE.data.dailyCity.forEach(r=>{ if(!bounds || (r.date>=bounds.from && r.date<=bounds.to)){
+    t.pdpViews+=r.pdpViews; t.addToCart+=r.addToCart; t.checkout+=r.checkout; t.purchase+=r.purchase; t.totalEvents+=r.totalEvents; } });
+  return t;
+}
+function dailyCampaignSumsInRange(bounds){
+  const m = new Map();
+  STATE.data.dailyCampaign.forEach(r=>{ if(!bounds || (r.date>=bounds.from && r.date<=bounds.to)){
+    const cur = m.get(r.campaignKey) || {pdpViews:0,addToCart:0,checkout:0,purchase:0,totalEvents:0};
+    cur.pdpViews+=r.pdpViews; cur.addToCart+=r.addToCart; cur.checkout+=r.checkout; cur.purchase+=r.purchase; cur.totalEvents+=r.totalEvents;
+    m.set(r.campaignKey, cur);
+  }});
+  return m;
+}
+function renderDateFilter(){
+  const F = STATE.filters; const dr = STATE.data.meta.dailyDateRange;
+  const opts = [['all','All time'],['7d','Last 7 days'],['30d','Last 30 days'],['90d','Last 90 days'],['180d','Last 180 days'],['custom','Custom range']];
+  return `<div class="filters-row no-print">
+    <div class="fld"><label>Date Range (real WebEngage event data, ${esc(dr.min)} to ${esc(dr.max)})</label>
+      <select class="inp" id="f-daterange">${opts.map(([v,l])=>`<option value="${v}" ${F.dateRange===v?'selected':''}>${l}</option>`).join('')}</select>
+    </div>
+    ${F.dateRange==='custom' ? `<div class="fld"><label>From</label><input type="date" class="inp" id="f-datefrom" min="${dr.min}" max="${dr.max}" value="${F.dateFrom||dr.min}"></div>
+    <div class="fld"><label>To</label><input type="date" class="inp" id="f-dateto" min="${dr.min}" max="${dr.max}" value="${F.dateTo||dr.max}"></div>` : ''}
+    <div class="fld" style="flex:2"></div>
+  </div>`;
+}
+function mountDateFilter(){
+  const dre = document.getElementById('f-daterange'), fe = document.getElementById('f-datefrom'), te = document.getElementById('f-dateto');
+  if(dre) dre.onchange = () => { STATE.filters.dateRange = dre.value; render(); };
+  if(fe) fe.onchange = () => { STATE.filters.dateFrom = fe.value; render(); };
+  if(te) te.onchange = () => { STATE.filters.dateTo = te.value; render(); };
+}
+// City-proxy WebEngage values are identical for every pincode sharing the same district (by
+// construction -- see build_store_location_intel_v2.js). Summing across pincode rows without deduping would
+// double/triple/N-count a city's total once per real pincode inside it (471 of 586 districts have
+// >1 real pincode, up to 40) -- always dedupe by district FIRST. Shared by the Executive KPIs and
+// the Business Q&A tab so both report the same real number.
+// Sums the (City Est.) columns straight across every real pincode, no de-dup needed. Each pincode
+// now carries its own ALLOCATED SHARE of its city's total (weighted by that pincode's share of the
+// city's real profile Users -- see build_store_location_intel_v2.js) rather than the city's full
+// total repeated on every row, so summing all pincodes reconstructs the real city total exactly.
+// (Named cityDedupTotals for backward-compat with existing call sites -- no dedup happens anymore.)
+function cityDedupTotals(pincodesArr){
+  const t = {pdp:0,atc:0,checkout:0,purchase:0,revenue:0};
+  pincodesArr.forEach(p=>{
+    t.pdp+=p.pdpViews_cityProxy||0; t.atc+=p.addToCart_cityProxy||0; t.checkout+=p.checkout_cityProxy||0;
+    t.purchase+=p.purchase_cityProxy||0; t.revenue+=p.revenue_cityProxy||0; });
+  return t;
+}
+function renderGlobalFilters(){
+  const D = STATE.data; const states = [...new Set(D.pincodes.map(p=>p.state))].sort();
+  const cities = [...new Set(D.pincodes.filter(p=>!STATE.filters.state || p.state===STATE.filters.state).map(p=>p.district))].sort();
+  return `<div class="filters-row no-print">
+    <div class="fld"><label>State</label><select class="inp" id="f-state"><option value="">All States</option>${states.map(s=>`<option ${STATE.filters.state===s?'selected':''}>${esc(s)}</option>`).join('')}</select></div>
+    <div class="fld"><label>City / District</label><select class="inp" id="f-city"><option value="">All Cities</option>${cities.map(c=>`<option ${STATE.filters.city===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
+    <div class="fld"><label>Priority</label><select class="inp" id="f-priority"><option value="">All</option>${['High','Medium','Low','Watch'].map(p=>`<option ${STATE.filters.priority===p?'selected':''}>${p}</option>`).join('')}</select></div>
+    <div class="fld"><label>Search Pincode / City</label><input class="inp" id="f-q" value="${esc(STATE.filters.q)}" placeholder="e.g. 110063"></div>
+    <div class="fld" style="flex:0 0 auto;align-self:flex-end"><button class="btn" id="f-clear">Clear</button></div>
+  </div>${STATE.filters.cityKey ? `<div class="filters-row no-print"><span class="pill g">Drilled into city: ${esc(STATE.filters.cityKey)} — click Clear to reset</span></div>` : ''}`;
+}
+function mountGlobalFilters(){
+  const se=document.getElementById('f-state'), ce=document.getElementById('f-city'), pe=document.getElementById('f-priority'), qe=document.getElementById('f-q'), cl=document.getElementById('f-clear');
+  if(se) se.onchange=()=>{ STATE.filters.state=se.value; STATE.filters.city=''; STATE.filters.cityKey=''; render(); };
+  if(ce) ce.onchange=()=>{ STATE.filters.city=ce.value; STATE.filters.cityKey=''; render(); };
+  if(pe) pe.onchange=()=>{ STATE.filters.priority=pe.value; render(); };
+  if(qe) qe.onkeyup=(e)=>{ if(e.key==='Enter'){ STATE.filters.q=qe.value; render(); } };
+  if(cl) cl.onclick=()=>{ STATE.filters={state:'',city:'',cityKey:'',priority:'',q:'',dateRange:STATE.filters.dateRange,dateFrom:STATE.filters.dateFrom,dateTo:STATE.filters.dateTo}; render(); };
+}
+
+/* ═══════════════════════ TAB RENDERERS ═══════════════════════ */
+let PENDING_MOUNTS = [];
+function tabExec(){
+  const D = STATE.data; const pc = filteredPincodes();
+  const dateBounds = dateBoundsFromPreset();
+  // When a date range is active, the totals below come from real DAILY application_view_v1 data
+  // (Top 80 cities, national sum) instead of the all-time per-pincode city-proxy dedup -- see
+  // dateBoundsFromPreset() header comment for why City/State/Pincode-level rows don't get this
+  // same date-ranging yet.
+  const dedup = dateBounds ? sumDailyCityInRange(dateBounds) : cityDedupTotals(pc);
+  const totalPdp = dateBounds?dedup.pdpViews:dedup.pdp, totalAtc = dateBounds?dedup.addToCart:dedup.atc,
+    totalCheckout = dedup.checkout, totalPurchase = dedup.purchase;
+  const totalStates = new Set(pc.map(p=>p.state)).size;
+  const totalCities = new Set(pc.map(p=>p.district)).size;
+  const totalPincodesCount = pc.length;
+  const totalNetSales = pc.reduce((a,p)=>a+p.netSales,0);
+  const totalSalesOrders = pc.reduce((a,p)=>a+p.salesOrders,0);
+
+  const cols = [
+    {key:'rank',label:'#',fmt:(v,r)=>`<span class="rank ${r._rank<=3?'r'+r._rank:''}">${r._rank}</span>`},
+    {key:'state',label:'State'},{key:'district',label:'City'},{key:'pincode',label:'Pincode'},
+    {key:'uniqueCustomers_exact',label:'Unique Customers',num:1,tone:'exact',fmt:(v,r)=>v>0?`<a href="#" class="drill" data-pincode="${esc(r.pincode)}" style="color:var(--gold);text-decoration:underline;cursor:pointer">${fmtInt(v)} →</a>`:'0'},
+    {key:'pdpViews_exact',label:'PDP Views (Exact)',num:1,tone:'exact',fmt:fmtInt},
+    {key:'addToCart_exact',label:'ATC (Exact)',num:1,tone:'exact',fmt:fmtInt},
+    {key:'checkout_exact',label:'Checkout (Exact)',num:1,tone:'exact',fmt:fmtInt},
+    {key:'salesOrders',label:'Purchases',num:1,tone:'exact',fmt:fmtInt},
+    {key:'netSales',label:'Sales',num:1,tone:'exact',fmt:fmtMoney},
+    {key:'_distanceKm',label:'Existing Store Distance',num:1,fmt:v=>v==null?'—':v+' km'},
+    {key:'opportunityScore',label:'Opportunity Score',num:1,fmt:v=>v==null?'—':v.toFixed(1)},
+    {key:'priority',label:'Priority',fmt:v=>`<span class="badge ${v}">${v}</span>`}
+  ];
+  const rows = [...pc].sort((a,b)=>b.scores.opportunityScore-a.scores.opportunityScore).map((p,i)=>({
+    _rank:i+1, state:p.state, district:p.district, pincode:p.pincode, users:p.users, totalEvents_exact:p.totalEvents_exact,
+    uniqueCustomers_exact:p.uniqueCustomers_exact, pdpViews_exact:p.pdpViews_exact, addToCart_exact:p.addToCart_exact,
+    checkout_exact:p.checkout_exact, salesOrders:p.salesOrders, netSales:p.netSales, attribution:p.attribution,
+    _distanceKm: p.nearestStore?p.nearestStore.distanceKm:null, opportunityScore:p.scores.opportunityScore, priority:p.priority
+  }));
+  const t = renderTable({id:'exec-tbl', columns:cols, rows, defaultSort:{key:'opportunityScore',dir:-1}, csvName:'executive_store_opportunity'});
+  PENDING_MOUNTS.push(() => { t.mount();
+    document.getElementById('exec-tbl-tbody').addEventListener('click', e=>{
+      const d = e.target.closest('a.drill'); if(!d) return; e.preventDefault(); drillToCustomers(d.getAttribute('data-pincode'));
+    });
+  });
+  return secHead('Tab 1 · Store Location Overview','If I Open a Store in This Area, How Much Demand Already Exists?', `<span class="pill ok">Green-tinted "(Exact)"</span> columns are real, mobile-matched numbers for THAT pincode specifically — the SAME numbers as the Pincode tab, never a city total. Sales is real marketing_sale data, not GA4/WebEngage. See Methodology.`) +
+    renderGlobalFilters() +
+    renderDateFilter() +
+    `<div class="grid g-4">
+      ${kpi('Total States', fmtInt(totalStates))}
+      ${kpi('Total Cities', fmtInt(totalCities))}
+      ${kpi('Total Unique Pincodes', fmtInt(totalPincodesCount))}
+      ${kpi('Total Customers (all, by mobile)', fmtInt(D.dataQuality.customerDrilldown.totalMobileNumbersSystemWide), 'distinct real mobile numbers identified system-wide (WebEngage profile)', 'ok')}
+      ${kpi('Total Sales (real)', fmtMoney(totalNetSales), fmtInt(totalSalesOrders)+' purchases, marketing_sale — sparse mapping, see Data Quality', 'ok')}
+      ${kpi('Lifetime PDP Views'+(dateBounds?' ('+dateBounds.from+' to '+dateBounds.to+')':''), fmtInt(totalPdp))}
+      ${kpi('Lifetime ATC'+(dateBounds?' ('+dateBounds.from+' to '+dateBounds.to+')':''), fmtInt(totalAtc))}
+      ${kpi('Lifetime Checkout'+(dateBounds?' (real WebEngage)':''), fmtInt(totalCheckout))}
+      ${kpi('Lifetime Purchase'+(dateBounds?' (real WebEngage)':''), fmtInt(totalPurchase))}
+    </div>
+    <div style="height:22px"></div>` +
+    card('Main Table — sorted by Opportunity Score', t.html, {info:'opp-score'});
+}
+
+/* ── Business Q&A — the spec's 12 "final business questions", each answered by a REAL
+   computation over STATE.data (never a canned/fabricated line) — see qaCard() below for the
+   exact field/formula behind every answer, and STORE-LOCATION-INTELLIGENCE-README.md for the
+   full written mapping of question → source → formula. ── */
+function qaCard(type, question, answerHtml, whyHtml){
+  return `<div class="card"><div class="pad">
+    <div class="ct"><h3><span class="pill g" style="margin-right:8px">${esc(type)}</span>${esc(question)}</h3></div>
+    <div style="font-size:16px;margin-bottom:8px">${answerHtml}</div>
+    <div style="font-size:12px;color:var(--muted);border-top:1px dashed var(--hair);padding-top:8px">${whyHtml}</div>
+  </div></div>`;
+}
+function tabQA(){
+  const D = STATE.data;
+  const topState = D.states[0], topCity = D.cities[0];
+  const cityKey = c => (c||'').trim().toLowerCase();
+  const pinInTopCity = D.pincodes.filter(p => cityKey(p.district)===cityKey(topCity && topCity.city)).sort((a,b)=>b.users-a.users);
+  const topPincodeInCity = pinInTopCity[0] || D.pincodes[0];
+  const topCampaignResponse = [...D.pincodes].filter(p=>p.campaignUsersProfile>0).sort((a,b)=>b.campaignUsersProfile-a.campaignUsersProfile).slice(0,5);
+  const topSessions = [...D.pincodes].sort((a,b)=>b.users-a.users).slice(0,5); // see WHY note: pincode-exact event volume is too sparse to rank on (only 31 of 3,096 pincodes have any)
+  const prodInTopCity = D.productByCity.filter(r=>cityKey(r.city)===cityKey(topCity && topCity.city)).sort((a,b)=>b.pdpViews-a.pdpViews).slice(0,3);
+  const pbInTopCity = D.priceBand.filter(r=>cityKey(r.city)===cityKey(topCity && topCity.city)).sort((a,b)=>b.purchase-a.purchase).slice(0,3);
+  const allRealPincodes = D.pincodes; // Executive-tab totals, unfiltered — the honest whole-dataset number
+  const totals = cityDedupTotals(allRealPincodes);
+  const top3Recos = D.storeRecommendations.slice(0,3);
+  const top3Cities = new Set(top3Recos.map(r=>cityKey(r.district)));
+  const campaignsInTop3 = D.campaignCity.filter(r=>top3Cities.has(cityKey(r.city))).sort((a,b)=>b.totalEvents-a.totalEvents).slice(0,5);
+  const catsAcrossTop3 = new Map();
+  D.productByCity.filter(r=>top3Cities.has(cityKey(r.city))).forEach(r=>{
+    const cur = catsAcrossTop3.get(r.category)||0; catsAcrossTop3.set(r.category, cur+r.pdpViews); });
+  const topCatsAcrossTop3 = [...catsAcrossTop3.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3);
+  const pbAcrossTop3 = new Map();
+  D.priceBand.filter(r=>top3Cities.has(cityKey(r.city))).forEach(r=>{
+    const cur = pbAcrossTop3.get(r.priceRange)||0; pbAcrossTop3.set(r.priceRange, cur+r.purchase); });
+  const topPbAcrossTop3 = [...pbAcrossTop3.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3);
+
+  return secHead('Business Q&A','The 12 Questions Management Actually Needs Answered','Every answer below is computed live from the tables in the other tabs — none of these are canned text. See the ⓘ-style "why" line under each for the exact field/formula, and the Methodology tab for the scoring logic.') +
+
+    qaCard('WHICH','Which state has the highest potential for a new store?',
+      topState ? `<b>${esc(topState.state)}</b> — Opportunity Score ${topState.opportunityScore.toFixed(1)}, ${fmtInt(topState.users)} real WebEngage users across ${fmtInt(topState.pincodeCount)} real pincodes, ${fmtInt(topState.existingStores)} existing store(s).` : '—',
+      'State Intelligence tab, top row by Opportunity Score (55% user percentile-rank blend — see Methodology).') +
+
+    qaCard('WHICH','Which city has the highest potential?',
+      topCity ? `<b>${esc(topCity.city)}</b> (${esc(topCity.state||'')}) — Opportunity Score ${topCity.opportunityScore.toFixed(1)}, ${fmtInt(topCity.users)} users, ${fmtInt(topCity.realPincodesTracked)} real pincodes tracked, ${fmtInt(topCity.existingStoreCount)} existing store(s).` : '—',
+      'City Intelligence tab, top row by Opportunity Score.') +
+
+    qaCard('WHICH',`Within ${topCity?esc(topCity.city):'that city'}, which pincode has the strongest customer concentration?`,
+      topPincodeInCity ? `<b>${esc(topPincodeInCity.pincode)}</b> — ${fmtInt(topPincodeInCity.users)} real WebEngage users, ${topPincodeInCity.nearestStore?topPincodeInCity.nearestStore.distanceKm+' km from '+esc(topPincodeInCity.nearestStore.storeName):'no store data'}.` : '—',
+      'Pincode Intelligence tab, pincodes filtered to the top city\'s district text, sorted by real Users descending.') +
+
+    qaCard('WHICH','Which pincodes have high campaign response?',
+      topCampaignResponse.length ? topCampaignResponse.map(p=>`<span class="pill">${esc(p.pincode)} · ${fmtInt(p.campaignUsersProfile)} campaign users</span>`).join(' ') : '<span class="pill warn">None — campaign-attributed users are 0 for every real pincode in the current filter.</span>',
+      'Top 5 real pincodes by profile-level Campaign Users (WebEngage campaign_source/medium populated), descending.') +
+
+    qaCard('WHICH','Which pincodes have strong event volume and digital engagement?',
+      topSessions.map(p=>`<span class="pill">${esc(p.pincode)} · ${fmtInt(p.users)} users${p.totalEvents_exact?', '+p.totalEvents_exact+' exact events':''}</span>`).join(' '),
+      `Ranked by real profile Users, not event volume — pincode-EXACT application_view_v1 events (mobile-matched) exist for only ${D.dataQuality.weProfile.realPincodesWithExactEvents} of ${D.pincodes.length} real pincodes (disclosed in Data Quality), too sparse to rank on directly. Users is the honest available proxy for digital engagement at pincode grain.`) +
+
+    qaCard('WHAT',`What products/categories are in demand in ${topCity?esc(topCity.city):'the top city'}?`,
+      prodInTopCity.length ? prodInTopCity.map(r=>`<span class="pill g">${esc(r.category)} · ${fmtInt(r.pdpViews)} PDP views</span>`).join(' ') : '<span class="pill warn">No product data for this city (outside the Top 80 cities by event volume).</span>',
+      'Product Demand tab, filtered to the top city, top 3 categories by PDP Views (real WebEngage "Product Viewed" event, city-exact).') +
+
+    qaCard('WHICH','Which price bands are performing?',
+      pbInTopCity.length ? pbInTopCity.map(r=>`<span class="pill g">${esc(r.priceRange)} · ${fmtInt(r.purchase)} purchases</span>`).join(' ') : '<span class="pill warn">No price-band data for this city.</span>',
+      'Price Band tab, filtered to the top city, top 3 bands by Purchase count (real WebEngage Purchase event, city-exact).') +
+
+    qaCard('HOW MUCH','How much online demand/revenue exists (across all real pincodes)?',
+      `${fmtInt(totals.pdp)} PDP views · ${fmtInt(totals.atc)} ATC · ${fmtInt(totals.purchase)} purchases · <b>${fmtMoney(totals.revenue)}</b> revenue`,
+      'Sum of each real pincode\'s CITY-level WebEngage proxy — each pincode carries its own allocated share of its city\'s total (weighted by that pincode\'s share of the city\'s real profile Users), so summing every pincode reconstructs the true city total exactly, no dedup needed. See Data Lineage / Methodology for the allocation formula.') +
+
+    qaCard('HOW FAR','How far is the nearest existing Lucira store (from the #1 recommended pincode)?',
+      top3Recos[0] && top3Recos[0].nearestStore ? `<b>${top3Recos[0].nearestStore.distanceKm} km</b> from ${esc(top3Recos[0].nearestStore.storeName)}` : '—',
+      'Haversine great-circle distance from the pincode\'s real India-Post lat/lon to the nearest of the 6 real store addresses.') +
+
+    qaCard('WHICH','Which 10 pincodes should management investigate first?',
+      D.storeRecommendations.map(r=>`<span class="pill g">#${r.rank} ${esc(r.pincode)} (${esc(r.district)})</span>`).join(' '),
+      'Store Recommendation tab — the full Top 10 by Opportunity Score, each with its own "why this location" reasoning.') +
+
+    qaCard('WHAT','What product mix should the new store carry (across the top 3 recommended locations)?',
+      (topCatsAcrossTop3.length?'<b>Categories:</b> '+topCatsAcrossTop3.map(([c,v])=>`${esc(c)} (${fmtInt(v)} PDP views)`).join(', '):'—')+
+      '<br>'+(topPbAcrossTop3.length?'<b>Price bands:</b> '+topPbAcrossTop3.map(([c,v])=>`${esc(c)} (${fmtInt(v)} purchases)`).join(', '):'—'),
+      'Category/price-band PDP-views and purchases summed (real WebEngage, city-exact) across the 3 cities of the Top 3 recommended pincodes.') +
+
+    qaCard('WHICH','Which campaigns are generating the strongest demand in those locations?',
+      campaignsInTop3.length ? campaignsInTop3.map(r=>`<span class="pill">${trunc(esc(r.campaignKey),28)} · ${fmtInt(r.totalEvents)} events</span>`).join(' ') : '<span class="pill warn">No campaign data for these cities.</span>',
+      'Campaign × City tab, filtered to the 3 cities behind the Top 3 store recommendations, top 5 by Total Events.');
+}
+
+// Jump to the Customer tab pre-filtered to one pincode -- the City -> Pincode -> Customer drill-down.
+function drillToCustomers(pincode){
+  STATE.filters.q = pincode; STATE.tab = 'customer'; location.hash = 'customer'; render();
+}
+// Dynamic per-row Opportunity Score breakdown popover (Section 10: "show the components").
+function showScoreBreakdown(btn, p){
+  const s = p.scoreComponents; const w = STATE.data.meta.scoringMethodology;
+  const rows = [
+    ['Customer Demand (15%)', s.customerDemandScore], ['Active Customer Rate (10%)', s.activeCustomerRateScore],
+    ['PDP Engagement (10%)', s.pdpEngagementScore], ['Cart Intent (10%)', s.cartIntentScore],
+    ['Checkout Intent (10%)', s.checkoutIntentScore], ['Conversion (15%)', s.conversionScore],
+    ['Sales Performance (15%)', s.salesPerformanceScore], ['Store Gap (15%)', s.storeGapScore]
+  ];
+  POP.innerHTML = `<h4>Pincode ${esc(p.pincode)} — Opportunity Score ${p.scores.opportunityScore.toFixed(1)}/100</h4>
+    <div class="t">${rows.map(([label,val])=>`<div style="display:flex;justify-content:space-between;margin:4px 0"><span>${esc(label)}</span><b>${val.toFixed(1)}</b></div>`).join('')}
+    <div style="border-top:1px dashed var(--hair);margin-top:8px;padding-top:8px;font-size:11px;color:var(--muted)">Each component is a 0-100 percentile rank among all real pincodes, then weighted-summed. Per-customer ratios used for engagement components so small and large pincodes compare on intensity, not raw size.</div></div>`;
+  POP.classList.add('on'); placePop(btn);
+}
+function tabPincode(){
+  const D = STATE.data; const pc = filteredPincodes();
+  const cols = [
+    {key:'pincode',label:'Pincode'},{key:'district',label:'City'},{key:'state',label:'State'},
+    {key:'uniqueCustomers_exact',label:'Unique Customers',num:1,tone:'exact',fmt:(v,r)=>v>0?`<a href="#" class="drill" data-pincode="${esc(r.pincode)}" style="color:var(--gold);text-decoration:underline;cursor:pointer">${fmtInt(v)} →</a>`:'0'},
+    {key:'activeCustomers_exact',label:'Active Customers',num:1,tone:'exact',fmt:fmtInt},
+    {key:'uniqueCustomers_luid',label:'Unique Customers (LUID, comparison)',num:1,fmt:v=>v>0?fmtInt(v):'—'},
+    {key:'pdpViews_exact',label:'PDP Views (Exact)',num:1,tone:'exact',fmt:fmtInt},
+    {key:'addToCart_exact',label:'ATC (Exact)',num:1,tone:'exact',fmt:fmtInt},
+    {key:'checkout_exact',label:'Checkout (Exact)',num:1,tone:'exact',fmt:fmtInt},
+    {key:'salesOrders',label:'Purchases',num:1,tone:'exact',fmt:fmtInt},
+    {key:'netSales',label:'Sales',num:1,tone:'exact',fmt:fmtMoney},
+    {key:'_pdpPerCust',label:'PDP/Customer (Exact)',num:1,tone:'exact',fmt:v=>v==null?'—':v.toFixed(1)},
+    {key:'_atcPerCust',label:'ATC/Customer (Exact)',num:1,tone:'exact',fmt:v=>v==null?'—':v.toFixed(2)},
+    {key:'_salesPerCust',label:'Sales/Customer',num:1,tone:'exact',fmt:v=>v==null?'—':fmtMoney(v)},
+    {key:'opportunityScore',label:'Opportunity Score',num:1,fmt:(v,r)=>`<a href="#" class="score-info" data-pincode="${esc(r.pincode)}" style="cursor:pointer;border-bottom:1px dotted var(--muted)">${v.toFixed(1)}</a>`},
+    {key:'opportunityFlag',label:'Flag',fmt:v=>`<span class="badge ${v==='EXISTING STORE'?'LOW':v==='HIGH OPPORTUNITY'?'High':v==='MEDIUM OPPORTUNITY'?'Medium':'Watch'}" style="white-space:nowrap">${esc(v)}</span>`},
+    {key:'revenue_cityProxy',label:'Revenue (City Est.)',num:1,tone:'proxy',fmt:fmtMoney},
+    {key:'_competitors',label:'Competitors',fmt:(v,r)=>{
+      if(!r._tanishqCount && !r._caratlaneCount) return '<span class="pill">—</span>';
+      return `<a href="#" class="drill-competitor" data-pincode="${esc(r.pincode)}" style="text-decoration:none">`+
+        [r._tanishqCount?`<span class="pill warn">Tanishq ×${r._tanishqCount}</span>`:'',
+         r._caratlaneCount?`<span class="pill warn">CaratLane ×${r._caratlaneCount}</span>`:''].filter(Boolean).join(' ')+' →</a>';
+    }},
+    {key:'_nearestStoreName',label:'Nearest Store'},
+    {key:'_distanceKm',label:'Distance KM',num:1,fmt:v=>v==null?'—':v},
+    {key:'priority',label:'Priority',fmt:v=>`<span class="badge ${v}">${v}</span>`}
+  ];
+  const rows = pc.map(p=>({
+    state:p.state, district:p.district, pincode:p.pincode, lat:p.lat, lon:p.lon,
+    uniqueCustomers_exact:p.uniqueCustomers_exact, activeCustomers_exact:p.activeCustomers_exact,
+    uniqueCustomers_luid:p.uniqueCustomers_luid,
+    pdpViews_exact:p.pdpViews_exact, addToCart_exact:p.addToCart_exact, checkout_exact:p.checkout_exact,
+    salesOrders:p.salesOrders, netSales:p.netSales,
+    _pdpPerCust: p.uniqueCustomers_exact? p.pdpViews_exact/p.uniqueCustomers_exact : null,
+    _atcPerCust: p.uniqueCustomers_exact? p.addToCart_exact/p.uniqueCustomers_exact : null,
+    _salesPerCust: p.salesCustomers? p.netSales/p.salesCustomers : null,
+    pdpViews_cityProxy:p.pdpViews_cityProxy, revenue_cityProxy:p.revenue_cityProxy, attribution:p.attribution,
+    _tanishqCount:p.tanishqStoreCount, _tanishqNames:p.tanishqStores||[], _caratlaneCount:p.caratlaneStoreCount, _caratlaneNames:p.caratlaneStores||[],
+    _nearestStoreName: p.nearestStore?p.nearestStore.storeName:null, _distanceKm: p.nearestStore?p.nearestStore.distanceKm:null,
+    opportunityScore:p.scores.opportunityScore, opportunityFlag:p.opportunityFlag, priority:p.priority,
+    _pincodeRef:p
+  }));
+  const t = renderTable({id:'pin-tbl', columns:cols, rows, defaultSort:{key:'opportunityScore',dir:-1}, csvName:'pincode_opportunity', searchKeys:['pincode','district','state']});
+  PENDING_MOUNTS.push(() => { t.mount();
+    document.getElementById('pin-tbl-tbody').addEventListener('click', e=>{
+      const d = e.target.closest('a.drill'); if(d){ e.preventDefault(); drillToCustomers(d.getAttribute('data-pincode')); return; }
+      const si = e.target.closest('a.score-info'); if(si){ e.preventDefault(); const p = D.pincodes.find(x=>x.pincode===si.getAttribute('data-pincode')); if(p) showScoreBreakdown(si, p); return; }
+      const co = e.target.closest('a.drill-competitor'); if(co){ e.preventDefault(); drillToCompetitor(co.getAttribute('data-pincode')); return; }
+    });
+  });
+  return secHead('Tab 4 · Pincode Opportunity','If I Open a Store Here, How Much Demand Already Exists? — Click a Score to See Its Components, Click Unique Customers to See Each One', `${D.dataQuality.weProfile.distinctRealMatchedPincodes} real pincodes (matched to the India Post master) out of ${D.dataQuality.weProfile.distinctFormatValidPincodes.toLocaleString('en-IN')} 6-digit values claimed. <span class="pill ok">Green-tinted "(Exact)"</span> columns are REAL mobile-matched numbers for THIS pincode specifically (customers = distinct people, never events) — sparse by construction, since only ${D.dataQuality.weProfile.realPincodesWithExactEvents} of ${D.pincodes.length} real pincodes have any at all. <span class="pill warn">Amber-tinted "(City Est.)"</span> columns are each pincode's own ALLOCATED SHARE of its city's total — weighted by that pincode's share of the city's real profile Users, not the full city number repeated — so every pincode gets a genuinely different value and all of them sum back to the true city total. Sales is from marketing_sale (real company sales), not GA4/WebEngage.`) +
+    renderGlobalFilters() +
+    card('Pincode Table — sorted by Opportunity Score', t.html, {info:'city-proxy'});
+}
+
+function tabCity(){
+  const D = STATE.data;
+  const cols = [
+    {key:'city',label:'City'},{key:'state',label:'State'},
+    {key:'realPincodesTracked',label:'Real Pincodes',num:1,fmt:(v,r)=>v>0?`<a href="#" class="drill-city" data-citykey="${esc(clientNormCity(r.city))}" style="color:var(--gold);text-decoration:underline;cursor:pointer">${fmtInt(v)} →</a>`:'0'},
+    {key:'uniqueCustomers_exact',label:'Customers',num:1,fmt:fmtInt},
+    {key:'pdpViews_exact',label:'PDP Views',num:1,fmt:fmtInt},{key:'addToCart_exact',label:'ATC',num:1,fmt:fmtInt},
+    {key:'checkout_exact',label:'Checkout',num:1,fmt:fmtInt},{key:'salesOrders',label:'Purchases',num:1,fmt:fmtInt},
+    {key:'netSales',label:'Sales',num:1,fmt:fmtMoney},
+    {key:'_conversion',label:'Conversion',num:1,fmt:v=>v==null?'—':pctStr(v)},
+    {key:'_salesPerCust',label:'Sales/Customer',num:1,fmt:v=>v==null?'—':fmtMoney(v)},
+    {key:'users',label:'Profile Users',num:1,fmt:fmtInt},
+    {key:'existingStoreCount',label:'Existing Stores',num:1,fmt:fmtInt},
+    {key:'opportunityScore',label:'Opportunity Score',num:1,fmt:v=>v.toFixed(1)},
+    {key:'priority',label:'Priority',fmt:v=>`<span class="badge ${v}">${v}</span>`}
+  ];
+  const rows = applyGeoFilters(D.cities, {stateKey:'state', cityKey:'city', priorityKey:'priority'}).map(c=>({
+    ...c,
+    _conversion: c.uniqueCustomers_exact ? c.salesCustomers/c.uniqueCustomers_exact*100 : null,
+    _salesPerCust: c.salesCustomers ? c.netSales/c.salesCustomers : null
+  }));
+  const t = renderTable({id:'city-tbl', columns:cols, rows, defaultSort:{key:'opportunityScore',dir:-1}, csvName:'city_analysis', searchKeys:['city','state']});
+  PENDING_MOUNTS.push(() => { t.mount();
+    document.getElementById('city-tbl-tbody').addEventListener('click', e=>{
+      const a = e.target.closest('a.drill-city'); if(!a) return; e.preventDefault(); drillToPincodes(a.getAttribute('data-citykey'));
+    });
+  });
+  return secHead('Tab 3 · City Analysis','Click "Real Pincodes" to Drill Into That City\'s Pincodes', `Customers/PDP/ATC/Checkout are real, mobile-matched, distinct-customer numbers reconciled bottom-up from the Pincode tab. Sales is from marketing_sale (real company sales, ${D.dataQuality.salesMapping.mappedCustomerPincodePairs} customer-pincode pairs mapped nationally — see Data Quality). Profile Users is the broader (less precise) WebEngage profile count, kept as a separate signal.`) +
+    renderGlobalFilters() +
+    card('City Table', t.html);
+}
+
+function tabState(){
+  const D = STATE.data;
+  const cols = [
+    {key:'state',label:'State',fmt:(v)=>`<a href="#" class="drill-state" data-state="${esc(v)}" style="color:var(--gold);text-decoration:underline;cursor:pointer">${esc(v)} →</a>`},
+    {key:'cityCount',label:'Cities',num:1,fmt:fmtInt},{key:'pincodeCount',label:'Real Pincodes',num:1,fmt:fmtInt},
+    {key:'uniqueCustomers_exact',label:'Customers',num:1,fmt:fmtInt},
+    {key:'pdpViews_exact',label:'PDP Views',num:1,fmt:fmtInt},{key:'addToCart_exact',label:'ATC',num:1,fmt:fmtInt},
+    {key:'checkout_exact',label:'Checkout',num:1,fmt:fmtInt},{key:'salesOrders',label:'Purchases',num:1,fmt:fmtInt},
+    {key:'netSales',label:'Sales',num:1,fmt:fmtMoney},
+    {key:'_pdpPerCust',label:'PDP/Customer',num:1,fmt:v=>v==null?'—':v.toFixed(1)},
+    {key:'_atcRate',label:'ATC Rate',num:1,fmt:v=>v==null?'—':pctStr(v)},
+    {key:'_salesPerCust',label:'Sales/Customer',num:1,fmt:v=>v==null?'—':fmtMoney(v)},
+    {key:'users',label:'Profile Users',num:1,fmt:fmtInt},
+    {key:'existingStores',label:'Existing Stores',num:1,fmt:fmtInt},
+    {key:'opportunityScore',label:'Opportunity Score',num:1,fmt:v=>v.toFixed(1)},
+    {key:'priority',label:'Priority',fmt:v=>`<span class="badge ${v}">${v}</span>`}
+  ];
+  const rows = applyGeoFilters(D.states, {stateKey:'state', priorityKey:'priority'}).map(s=>({
+    ...s,
+    _pdpPerCust: s.uniqueCustomers_exact ? s.pdpViews_exact/s.uniqueCustomers_exact : null,
+    _atcRate: s.pdpViews_exact ? s.addToCart_exact/s.pdpViews_exact*100 : null,
+    _salesPerCust: s.salesCustomers ? s.netSales/s.salesCustomers : null
+  }));
+  const t = renderTable({id:'state-tbl', columns:cols, rows, defaultSort:{key:'opportunityScore',dir:-1}, csvName:'state_analysis'});
+  PENDING_MOUNTS.push(() => { t.mount();
+    document.getElementById('state-tbl-tbody').addEventListener('click', e=>{
+      const a = e.target.closest('a.drill-state'); if(!a) return; e.preventDefault(); drillToCities(a.getAttribute('data-state'));
+    });
+  });
+  return secHead('Tab 2 · State Analysis','Which States Have the Strongest Expansion Potential — Click a State to Drill Into Its Cities', `Customers/PDP/ATC/Checkout/Purchases/Sales are real, mobile-matched numbers reconciled bottom-up from the Pincode tab (marketing_sale for Sales, not GA4/WebEngage). Profile Users is the broader WebEngage profile count. The City filter below doesn't narrow this table (states have no single city) — use State/Priority/Search here.`) +
+    renderGlobalFilters() +
+    card('State Table', t.html);
+}
+
+/* ── Map: real pincodes plotted by real lat/lon, sized by real sessions, colored by
+   opportunity flag, real store markers overlaid. Hand-rolled SVG (no map library used anywhere
+   else in this codebase either). India bounding box is a fixed approximation (lat 6-38, lon 68-98)
+   -- fine for a national scatter, not for precise geolocation. ── */
+/* ── Competitor Intelligence: Tanishq/CaratLane real store presence + CaratLane's real public
+   catalog mix (category + price-band), side-by-side with OUR OWN real customer/PDP/ATC/Sales for
+   the same pincode -- so a competitor's presence is always seen next to our own numbers there,
+   never in isolation. ── */
+/* ── Fake Pincodes: format-valid 6-digit postal_code values from real, mobile-matched customers
+   that are NOT real India Post pincodes. Previously silently discarded with no trace anywhere on
+   the dashboard -- now shown honestly instead of hidden. Excluded from every real Pincode/City/
+   State total elsewhere, since the pincode value itself can't be trusted, even though the
+   customer/event data behind it is real. ── */
+function tabFakePincode(){
+  const D = STATE.data;
+  const fp = D.fakePincodes || [];
+  const note = D.dataQuality.fakePincodesNote;
+  const cols = [
+    {key:'pincode',label:'Pincode (not real)'},
+    {key:'uniqueCustomers',label:'Unique Customers',num:1,fmt:fmtInt},
+    {key:'sessions',label:'Sessions',num:1,fmt:fmtInt},
+    {key:'pdpViews',label:'PDP Views',num:1,fmt:fmtInt},
+    {key:'addToCart',label:'ATC',num:1,fmt:fmtInt},
+    {key:'checkout',label:'Checkout',num:1,fmt:fmtInt},
+    {key:'purchase',label:'Purchase',num:1,fmt:fmtInt},
+    {key:'revenue',label:'Revenue',num:1,fmt:fmtMoney},
+    {key:'totalEvents',label:'Total Events',num:1,fmt:fmtInt}
+  ];
+  const t = renderTable({id:'fake-pin-tbl', columns:cols, rows:fp, defaultSort:{key:'pdpViews',dir:-1}, csvName:'fake_pincodes', searchKeys:['pincode']});
+  PENDING_MOUNTS.push(() => t.mount());
+  return secHead('Fake Pincodes','Format-Valid, But NOT Real India Post Pincodes — Real Customers, Unverifiable Location', `${esc(note.note)}`) +
+    `<div class="grid g-3" style="margin-bottom:16px">
+      ${kpi('Fake Pincodes Found', fmtInt(note.count), null, 'warn')}
+      ${kpi('Customers Behind Them', fmtInt(note.totalCustomers))}
+      ${kpi('PDP Views Behind Them', fmtInt(note.totalPdpViews), 'real events, unverifiable pincode', 'crit')}
+    </div>
+    <div style="height:22px"></div>` +
+    card('Fake Pincode Table — sorted by PDP Views', t.html);
+}
+function tabCompetitor(){
+  const D = STATE.data;
+  const withCompetitor = D.pincodes.filter(p=>p.tanishqStoreCount>0 || p.caratlaneStoreCount>0);
+  const focusPin = STATE.filters.q ? D.pincodes.find(p=>p.pincode===STATE.filters.q) : null;
+
+  let detail = '';
+  if(focusPin){
+    const catRows = (focusPin.caratlaneCatalog||[]).flatMap(s=>Object.entries(s.cat||{}).map(([cat,n])=>({store:s.store,cat,n})));
+    const pbRows = (focusPin.caratlaneCatalog||[]).flatMap(s=>Object.entries(s.pb||{}).map(([band,n])=>({store:s.store,band,n})));
+    detail = card(`Pincode ${esc(focusPin.pincode)} — ${esc(focusPin.district)}, ${esc(focusPin.state)}`, `
+      <div class="grid g-4" style="margin-bottom:16px">
+        ${kpi('Our Unique Customers', fmtInt(focusPin.uniqueCustomers_exact), null, 'ok')}
+        ${kpi('Our PDP Views', fmtInt(focusPin.pdpViews_exact))}
+        ${kpi('Our ATC', fmtInt(focusPin.addToCart_exact))}
+        ${kpi('Our Sales', fmtMoney(focusPin.netSales), fmtInt(focusPin.salesOrders)+' purchases')}
+      </div>
+      <div class="grid g-2">
+        <div>
+          <h4 style="font-size:13px;margin-bottom:8px;color:var(--gold)">Tanishq — ${focusPin.tanishqStoreCount} store(s)</h4>
+          ${focusPin.tanishqStoreCount ? `<ul style="margin:0 0 0 18px;font-size:12.3px;color:var(--ink-2);line-height:1.8">${focusPin.tanishqStores.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>` : '<p style="font-size:11px;color:var(--muted)">None found in the public capture (not a confirmed absence).</p>'}
+        </div>
+        <div>
+          <h4 style="font-size:13px;margin-bottom:8px;color:var(--gold)">CaratLane — ${focusPin.caratlaneStoreCount} store(s)</h4>
+          ${focusPin.caratlaneStoreCount ? `<ul style="margin:0 0 0 18px;font-size:12.3px;color:var(--ink-2);line-height:1.8">${focusPin.caratlaneStores.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>` : '<p style="font-size:11px;color:var(--muted)">None found in the public capture (not a confirmed absence).</p>'}
+        </div>
+      </div>
+      ${catRows.length ? `<h4 style="font-size:13px;margin:16px 0 8px;color:var(--gold)">CaratLane's Real Public Catalog Mix (their own online listing, by category)</h4>
+        <div class="legend">${catRows.map(r=>`<span class="pill g">${esc(r.cat)}: ${fmtInt(r.n)} listed</span>`).join(' ')}</div>` : ''}
+      ${pbRows.length ? `<h4 style="font-size:13px;margin:16px 0 8px;color:var(--gold)">CaratLane's Price-Band Mix</h4>
+        <div class="legend">${pbRows.map(r=>`<span class="pill">${esc(r.band)}: ${fmtInt(r.n)}</span>`).join(' ')}</div>` : ''}
+      <p style="font-size:11px;color:var(--muted);margin-top:14px">CaratLane catalog is their own public online listing count, NOT a sales or stock figure — no competitor sales data exists anywhere in this dashboard, real or estimated. Tanishq has no equivalent catalog capture, store presence only.</p>
+    `);
+  }
+
+  const cols = [
+    {key:'pincode',label:'Pincode',fmt:(v,r)=>`<a href="#" class="drill-competitor" data-pincode="${esc(v)}" style="color:var(--gold);text-decoration:underline;cursor:pointer">${esc(v)}</a>`},
+    {key:'district',label:'City'},{key:'state',label:'State'},
+    {key:'tanishqStoreCount',label:'Tanishq',num:1,fmt:v=>v>0?`<span class="pill warn">×${v}</span>`:'—'},
+    {key:'caratlaneStoreCount',label:'CaratLane',num:1,fmt:v=>v>0?`<span class="pill warn">×${v}</span>`:'—'},
+    {key:'caratlaneCatTop',label:'CaratLane Top Category',fmt:v=>v||'—'},
+    {key:'uniqueCustomers_exact',label:'Our Customers',num:1,fmt:fmtInt},
+    {key:'pdpViews_exact',label:'Our PDP Views',num:1,fmt:fmtInt},
+    {key:'addToCart_exact',label:'Our ATC',num:1,fmt:fmtInt},
+    {key:'netSales',label:'Our Sales',num:1,fmt:fmtMoney},
+    {key:'opportunityFlag',label:'Flag',fmt:v=>`<span class="badge ${v==='EXISTING STORE'?'LOW':v==='HIGH OPPORTUNITY'?'High':v==='MEDIUM OPPORTUNITY'?'Medium':'Watch'}">${esc(v)}</span>`}
+  ];
+  const rows = withCompetitor.map(p=>{
+    const cats = {}; (p.caratlaneCatalog||[]).forEach(s=>Object.entries(s.cat||{}).forEach(([k,n])=>cats[k]=(cats[k]||0)+n));
+    const top = Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
+    return { ...p, caratlaneCatTop: top ? `${top[0]} (${top[1]})` : null };
+  });
+  const t = renderTable({id:'comp-tbl', columns:cols, rows, defaultSort:{key:'opportunityScore',dir:-1}, csvName:'competitor_intelligence', searchKeys:['pincode','district','state']});
+  PENDING_MOUNTS.push(() => { t.mount();
+    document.getElementById('comp-tbl-tbody').addEventListener('click', e=>{
+      const a = e.target.closest('a.drill-competitor'); if(!a) return; e.preventDefault(); drillToCompetitor(a.getAttribute('data-pincode'));
+    });
+  });
+
+  return secHead('Competitor Intelligence','Tanishq & CaratLane Real Store Presence, Next to Our Own Numbers', `${fmtInt(withCompetitor.length)} of our ${fmtInt(D.pincodes.length)} real pincodes have a real Tanishq or CaratLane store (one-time public capture, not live — see Data Quality). Click any pincode to see full detail: their store(s), CaratLane's real public catalog mix, and our own customers/PDP/ATC/Sales for that exact pincode.`) +
+    detail +
+    card('All Pincodes with Competitor Presence', t.html);
+}
+function tabMap(){
+  const D = STATE.data; const pc = filteredPincodes();
+  const LAT_MIN=6, LAT_MAX=38, LON_MIN=68, LON_MAX=98, W=980, H=980*(LAT_MAX-LAT_MIN)/(LON_MAX-LON_MIN);
+  const x = lon => ((lon-LON_MIN)/(LON_MAX-LON_MIN))*W;
+  const y = lat => ((LAT_MAX-lat)/(LAT_MAX-LAT_MIN))*H;
+  const flagColor = f => f==='EXISTING STORE' ? 'var(--info)' : f==='HIGH OPPORTUNITY' ? 'var(--good)' : f==='MEDIUM OPPORTUNITY' ? 'var(--warn)' : 'var(--muted)';
+  const withGeo = pc.filter(p=>p.lat && p.lon);
+  const maxSessions = Math.max(1, ...withGeo.map(p=>p.sessions_exact||0));
+  const rFor = s => 3 + Math.sqrt((s||0)/maxSessions)*16; // area-proportional, min 3px so zero-session pincodes are still visible
+  const pincodeDots = withGeo.map(p=>{
+    const tip = `<b>${esc(p.pincode)}</b> · ${esc(p.district)}, ${esc(p.state)}<br>Unique Customers: ${fmtInt(p.uniqueCustomers_exact)} · Sessions: ${fmtInt(p.sessions_exact)}<br>PDP: ${fmtInt(p.pdpViews_exact)} · Opportunity: ${p.scores.opportunityScore.toFixed(1)} · ${esc(p.opportunityFlag)}`;
+    return `<circle class="map-pin" data-pincode="${esc(p.pincode)}" cx="${x(p.lon).toFixed(1)}" cy="${y(p.lat).toFixed(1)}" r="${rFor(p.sessions_exact).toFixed(1)}" fill="${flagColor(p.opportunityFlag)}" fill-opacity="${p.sessions_exact>0?0.85:0.35}" stroke="var(--bg)" stroke-width="0.6" data-tip="${tip.replace(/"/g,'&quot;')}" style="cursor:pointer"></circle>`;
+  }).join('');
+  const storeDots = (D.stores||[]).filter(s=>s.lat&&s.lon).map(s=>
+    `<path class="map-store" transform="translate(${x(s.lon).toFixed(1)},${y(s.lat).toFixed(1)}) rotate(45)" d="M-7,-7 L7,-7 L7,7 L-7,7 Z" fill="var(--gold)" stroke="var(--bg)" stroke-width="1" data-tip="<b>${esc(s.storeName)}</b><br>${esc(s.address||'')}" style="cursor:pointer"></path>`
+  ).join('');
+  // Competitor markers -- matched by pincode, so plotted at that pincode's own lat/lon (no separate
+  // store-address geocoding exists for these). Small triangles, distinct colors per brand.
+  const tanishqDots = withGeo.filter(p=>p.tanishqStoreCount>0).map(p=>
+    `<path class="map-competitor" transform="translate(${x(p.lon).toFixed(1)},${(y(p.lat)-6).toFixed(1)})" d="M0,-5 L5,4 L-5,4 Z" fill="#c0392b" stroke="var(--bg)" stroke-width="0.8" data-tip="<b>Tanishq</b> · ${p.tanishqStoreCount} store(s) in ${esc(p.pincode)}<br>${p.tanishqStores.slice(0,3).map(esc).join('<br>')}" style="cursor:default"></path>`
+  ).join('');
+  const caratlaneDots = withGeo.filter(p=>p.caratlaneStoreCount>0).map(p=>
+    `<path class="map-competitor" transform="translate(${x(p.lon).toFixed(1)},${(y(p.lat)+6).toFixed(1)})" d="M0,5 L5,-4 L-5,-4 Z" fill="#2980b9" stroke="var(--bg)" stroke-width="0.8" data-tip="<b>CaratLane</b> · ${p.caratlaneStoreCount} store(s) in ${esc(p.pincode)}<br>${p.caratlaneStores.slice(0,3).map(esc).join('<br>')}" style="cursor:default"></path>`
+  ).join('');
+  const sessionCount = withGeo.filter(p=>p.sessions_exact>0).length;
+  const tanishqCount = withGeo.filter(p=>p.tanishqStoreCount>0).length, caratlaneCount = withGeo.filter(p=>p.caratlaneStoreCount>0).length;
+  PENDING_MOUNTS.push(() => {
+    document.getElementById('map-svg').addEventListener('click', e=>{
+      const c = e.target.closest('.map-pin'); if(!c) return; drillToCustomers(c.getAttribute('data-pincode'));
+    });
+  });
+  return secHead('Map','Real Pincodes by Location — Bubble Size = Real Sessions, Color = Opportunity Flag', `${fmtInt(withGeo.length)} real pincodes plotted at their real lat/lon (India Post master). ${fmtInt(sessionCount)} have real, mobile-matched sessions (bubble size); the rest show as small dots for geographic context. Gold diamonds are the ${(D.stores||[]).length} real existing stores. ${fmtInt(tanishqCount)} pincodes have a real Tanishq store (red triangle), ${fmtInt(caratlaneCount)} have a real CaratLane store (blue triangle) — one-time public capture, not live, see Data Quality. Click a pincode bubble to see its customers.`) +
+    renderGlobalFilters() +
+    card('India Map', `
+      <div class="legend" style="margin-bottom:10px">
+        <span><i style="background:var(--info);border-radius:50%"></i> Existing Store nearby</span>
+        <span><i style="background:var(--good);border-radius:50%"></i> High Opportunity</span>
+        <span><i style="background:var(--warn);border-radius:50%"></i> Medium Opportunity</span>
+        <span><i style="background:var(--muted);border-radius:50%"></i> Low Opportunity</span>
+        <span><i style="background:var(--gold);transform:rotate(45deg)"></i> Real Store</span>
+        <span><i style="background:#c0392b;clip-path:polygon(50% 0,100% 100%,0 100%)"></i> Tanishq</span>
+        <span><i style="background:#2980b9;clip-path:polygon(50% 0,100% 100%,0 100%)"></i> CaratLane</span>
+      </div>
+      <svg id="map-svg" viewBox="0 0 ${W} ${H.toFixed(0)}" style="max-height:74vh">${pincodeDots}${tanishqDots}${caratlaneDots}${storeDots}</svg>
+    `);
+}
+
+function tabCampaign(){
+  const D = STATE.data;
+  const dateBounds = dateBoundsFromPreset();
+  const dailySums = dateBounds ? dailyCampaignSumsInRange(dateBounds) : null;
+  const cols = [
+    {key:'campaignKey',label:'Campaign',fmt:v=>trunc(v,50)},{key:'source',label:'Source'},{key:'medium',label:'Medium'},
+    {key:'distinctCities',label:'Cities',num:1,fmt:fmtInt},{key:'uniqueDevices',label:'Unique Devices',num:1,fmt:fmtInt},
+    {key:'pdpViews',label:'PDP Views',num:1,fmt:fmtInt},{key:'addToCart',label:'ATC',num:1,fmt:fmtInt},
+    {key:'checkout',label:'Checkout',num:1,fmt:fmtInt},{key:'purchase',label:'Purchase',num:1,fmt:v=>v==null?'not available':fmtInt(v)},
+    {key:'totalEvents',label:'Total Events',num:1,fmt:fmtInt},
+    {key:'conversionPct',label:'Conversion %',num:1,fmt:v=>v==null?'not available':v+'%'}
+  ];
+  const rows = D.campaigns.map(c=>{
+    if(!dailySums) return c;
+    const s = dailySums.get(c.campaignKey);
+    // purchase/conversionPct stay null even in date-filtered view -- Purchase events carry no
+    // campaign_id at all (see Data Quality), so daily-summed purchase would be a misleading 0, not
+    // a real number for a shorter window.
+    return { ...c, pdpViews: s?s.pdpViews:c.pdpViews, addToCart: s?s.addToCart:c.addToCart,
+      checkout: s?s.checkout:c.checkout, purchase: null, totalEvents: s?s.totalEvents:c.totalEvents,
+      conversionPct: null };
+  });
+  const t = renderTable({id:'camp-tbl', columns:cols, rows, defaultSort:{key:'totalEvents',dir:-1}, csvName:'campaign_intelligence', searchKeys:['campaignKey','source','medium']});
+  PENDING_MOUNTS.push(() => t.mount());
+  return secHead('Tab 5 · Campaign Intelligence','Which Campaigns Are Generating Demand, and Where', `campaign_id/source/medium are native columns on application_view_v1 — no cross-table match rate or "unmatched campaign" concept anymore (unlike the old GA4-era text-match join). Purchase/Conversion% are genuinely not available at campaign grain — Purchase events carry no campaign_id at all (see Data Quality).`+(dateBounds?` Funnel columns are real daily data summed for ${esc(dateBounds.from)} to ${esc(dateBounds.to)}; Cities/Unique Devices stay all-time.`:'')) +
+    renderDateFilter() +
+    card('Campaigns — native WebEngage funnel', t.html, {info:'campaign-native'});
+}
+
+function tabCampaignPincode(){
+  const D = STATE.data;
+  const ccCols = [
+    {key:'campaignKey',label:'Campaign',fmt:v=>trunc(v,45)},{key:'source',label:'Source'},{key:'medium',label:'Medium'},
+    {key:'state',label:'State'},{key:'city',label:'City'},
+    {key:'totalEvents',label:'Total Events',num:1,fmt:fmtInt},{key:'pdpViews',label:'PDP',num:1,fmt:fmtInt},
+    {key:'addToCart',label:'ATC',num:1,fmt:fmtInt},{key:'checkout',label:'Checkout',num:1,fmt:fmtInt},
+    {key:'purchase',label:'Purchase',num:1,fmt:v=>v==null?'not available':fmtInt(v)}
+  ];
+  const ccRows = applyGeoFilters(D.campaignCity, {stateKey:'state', cityKey:'city'});
+  const t = renderTable({id:'cc-tbl', columns:ccCols, rows:ccRows, defaultSort:{key:'totalEvents',dir:-1}, csvName:'campaign_x_city', searchKeys:['campaignKey','city']});
+  const exCols = [{key:'pincode',label:'Pincode'},{key:'district',label:'City'},{key:'state',label:'State'},
+    {key:'campaignKey',label:'Campaign',fmt:v=>trunc(v,40)},{key:'source',label:'Source'},{key:'medium',label:'Medium'},
+    {key:'uniqueCustomers',label:'Unique Customers',num:1,fmt:fmtInt},{key:'totalEvents',label:'Total Events',num:1,fmt:fmtInt}];
+  const exRows = applyGeoFilters(D.campaignPincodeExact, {stateKey:'state', cityKey:'district', pincodeKey:'pincode'});
+  const t2 = renderTable({id:'cx-exact-tbl', columns:exCols, rows:exRows, defaultSort:{key:'totalEvents',dir:-1}, csvName:'campaign_x_pincode_exact'});
+  PENDING_MOUNTS.push(() => t.mount(), () => t2.mount());
+  return secHead('Tab 6 · Campaign × Pincode','Where Is Each Campaign Generating Geographic Demand', `Pincode-exact campaign×pincode co-occurrence exists only for events with a valid mobile match (${D.campaignPincodeExact.length.toLocaleString('en-IN')} rows) — shown separately below. The PRIMARY view is city-exact Campaign × City data (native to application_view_v1).`) +
+    renderGlobalFilters() +
+    card('CITY-LEVEL — Campaign × City (real WebEngage, city-exact)', t.html, {info:'city-proxy'}) +
+    card('PINCODE-EXACT — Campaign × Pincode (mobile-matched)', t2.html);
+}
+
+function tabProduct(){
+  const D = STATE.data;
+  const cols = [
+    {key:'state',label:'State'},{key:'city',label:'City'},{key:'category',label:'Category'},
+    {key:'priceRange',label:'Price Range'},
+    {key:'pdpViews',label:'PDP Views',num:1,fmt:fmtInt},
+    {key:'purchase',label:'Purchase',num:1,fmt:fmtInt},{key:'revenue',label:'Revenue',num:1,fmt:fmtMoney},
+    {key:'attribution',label:'Source',fmt:v=>v==='city_exact_webengage_purchase_only'?'<span class="pill warn">Purchase only</span>':'<span class="pill ok">PDP view</span>'}
+  ];
+  const prodRows = applyGeoFilters(D.productByCity, {stateKey:'state', cityKey:'city'});
+  const t = renderTable({id:'prod-tbl', columns:cols, rows:prodRows, defaultSort:{key:'pdpViews',dir:-1}, csvName:'product_demand_by_city', searchKeys:['city','category']});
+  const skuCols = [{key:'city',label:'City'},{key:'sku',label:'SKU'},{key:'productName',label:'Product'},{key:'category',label:'Category'},
+    {key:'priceRange',label:'Price Range'},{key:'purchase',label:'Purchase',num:1,fmt:fmtInt},{key:'revenue',label:'Revenue',num:1,fmt:fmtMoney}];
+  const skuRows = applyGeoFilters(D.topSkuByCity, {cityKey:'city'});
+  const t2 = renderTable({id:'sku-tbl', columns:skuCols, rows:skuRows, defaultSort:{key:'revenue',dir:-1}, csvName:'top_sku_by_city', searchKeys:['city','sku','productName']});
+  PENDING_MOUNTS.push(() => t.mount(), () => t2.mount());
+  return secHead('Tab 7 · Product Demand by City','What Should a New Store Stock', 'application_view_v1 has no pincode dimension for product data — this is CITY grain (Top 80 India cities by event volume, ~93% coverage), never fabricated down to pincode. PDP-view category/price comes from the "Product Viewed" event only (the only PDP event with usable json_data — "productView" and "addToCart" carry no category/price at all, disclosed in Data Quality, not estimated). Top SKU table is Purchase-only (real order data, sku/price/category always present).') +
+    renderGlobalFilters() +
+    card('Category-Level Demand', t.html) +
+    card('Top 10 SKUs per City (by Purchase Revenue)', t2.html) +
+    card('Gender Demand', '<div class="empty">Not available — no gender field exists anywhere on application_view_v1 (confirmed against the full schema). GA4 provided this in the prior build; there is no WebEngage equivalent, so this is disclosed as unavailable rather than estimated.</div>');
+}
+
+function tabPriceband(){
+  const D = STATE.data;
+  const cols = [
+    {key:'state',label:'State'},{key:'city',label:'City'},{key:'priceRange',label:'Price Band'},
+    {key:'pdpViews',label:'PDP Views',num:1,fmt:fmtInt},{key:'addToCart',label:'ATC',num:1,fmt:fmtInt},
+    {key:'purchase',label:'Purchase',num:1,fmt:fmtInt},{key:'revenue',label:'Revenue',num:1,fmt:fmtMoney},
+    {key:'conversionPct',label:'Conversion %',num:1,fmt:v=>v==null?'—':v+'%'}
+  ];
+  const rows = applyGeoFilters(D.priceBand, {stateKey:'state', cityKey:'city'});
+  const t = renderTable({id:'pb-tbl', columns:cols, rows, defaultSort:{key:'purchase',dir:-1}, csvName:'price_band_intelligence', searchKeys:['city','priceRange']});
+  PENDING_MOUNTS.push(() => t.mount());
+  return secHead('Tab 8 · Price Band Intelligence','Which Price Bands Perform Where', 'City/State grain, price bands computed from real WebEngage "Product Viewed"/Purchase prices — never pincode (not available).') +
+    renderGlobalFilters() +
+    card('Price Band Table', t.html);
+}
+
+function tabStoreGap(){
+  const D = STATE.data; const pc = filteredPincodes();
+  const cols = [
+    {key:'state',label:'State'},{key:'district',label:'City'},{key:'pincode',label:'Pincode'},
+    {key:'users',label:'Users',num:1,fmt:fmtInt},{key:'totalEvents_exact',label:'Exact Events',num:1,fmt:fmtInt},
+    {key:'pdpViews_cityProxy',label:'PDP*',num:1,fmt:fmtInt},{key:'addToCart_cityProxy',label:'ATC*',num:1,fmt:fmtInt},
+    {key:'purchase_cityProxy',label:'Purchase*',num:1,fmt:fmtInt},{key:'revenue_cityProxy',label:'Revenue*',num:1,fmt:fmtMoney},
+    {key:'_nearestStoreName',label:'Nearest Store'},{key:'_distanceKm',label:'Distance KM',num:1,fmt:v=>v==null?'—':v},
+    {key:'storeGapFlag',label:'Gap',fmt:v=>`<span class="badge ${v}">${v}</span>`},
+    {key:'opportunityScore',label:'Opportunity',num:1,fmt:v=>v.toFixed(1)}
+  ];
+  const rows = pc.map(p=>({state:p.state, district:p.district, pincode:p.pincode, users:p.users, totalEvents_exact:p.totalEvents_exact,
+    pdpViews_cityProxy:p.pdpViews_cityProxy, addToCart_cityProxy:p.addToCart_cityProxy, purchase_cityProxy:p.purchase_cityProxy, revenue_cityProxy:p.revenue_cityProxy,
+    _nearestStoreName:p.nearestStore?p.nearestStore.storeName:null, _distanceKm:p.nearestStore?p.nearestStore.distanceKm:null,
+    storeGapFlag:p.storeGapFlag, opportunityScore:p.scores.opportunityScore}));
+  const t = renderTable({id:'gap-tbl', columns:cols, rows, defaultSort:{key:'opportunityScore',dir:-1}, csvName:'store_gap_analysis'});
+  PENDING_MOUNTS.push(() => t.mount());
+  const highN = rows.filter(r=>r.storeGapFlag==='HIGH').length, medN = rows.filter(r=>r.storeGapFlag==='MEDIUM').length, lowN = rows.filter(r=>r.storeGapFlag==='LOW').length;
+  return secHead('Tab 9 · Store Gap Analysis','Digital Demand Without Nearby Store Coverage') +
+    renderGlobalFilters() +
+    `<div class="grid g-3">${kpi('HIGH Store Gap', fmtInt(highN), 'strong demand, no store nearby', 'crit')}${kpi('MEDIUM Store Gap', fmtInt(medN), null, 'warn')}${kpi('LOW Store Gap', fmtInt(lowN), 'low demand or already covered', 'ok')}</div>` +
+    card('Store Gap Table', t.html, {info:'store-gap'});
+}
+
+function tabRecommend(){
+  const D = STATE.data;
+  const recos = applyGeoFilters(D.storeRecommendations, {stateKey:'state', cityKey:'district', priorityKey:'priority', pincodeKey:'pincode'});
+  const cards = recos.map(r => `<div class="reco-card">
+    <div class="top"><span class="rank ${r.rank<=3?'r'+r.rank:''}">${r.rank}</span><h4>${esc(r.district)}, ${esc(r.state)} — Pincode ${esc(r.pincode)}</h4><span class="badge ${r.priority}">${esc(r.priority)}</span></div>
+    <div class="kv">
+      <div><b>Users</b>${fmtInt(r.users)}</div><div><b>Exact Events</b>${fmtInt(r.totalEvents_exact)}</div>
+      <div><b>PDP Views*</b>${fmtInt(r.pdpViews_cityProxy)}</div><div><b>Purchase*</b>${fmtInt(r.purchase_cityProxy)}</div>
+      <div><b>Revenue*</b>${fmtMoney(r.revenue_cityProxy)}</div><div><b>Top Category</b>${esc(r.topCategory||'—')}</div>
+      <div><b>Top Product</b>${trunc(esc(r.topProduct||'—'),24)}</div>
+      <div><b>Nearest Store</b>${r.nearestStore?esc(r.nearestStore.storeName):'—'}</div><div><b>Distance</b>${r.nearestStore?r.nearestStore.distanceKm+' km':'—'}</div>
+      <div><b>Store Gap</b><span class="badge ${r.storeGapFlag}">${r.storeGapFlag}</span></div><div><b>Opportunity Score</b>${r.opportunityScore.toFixed(1)}</div>
+    </div>
+    <div class="reason"><b>Why this location:</b> ${esc(r.reason)}</div>
+  </div>`).join('') || '<div class="empty">No recommendations match the current filter.</div>';
+  return secHead('Tab 10 · Store Recommendation','Top 10 Store Opportunity Pincodes', '* = city-level WebEngage proxy, not pincode-exact. Filtering below narrows this fixed Top 10 list rather than recomputing a new top-10 within the filter.') +
+    renderGlobalFilters() + cards;
+}
+
+function tabCustomer(){
+  const D = STATE.data;
+  const cols = [
+    {key:'mobile_masked',label:'Mobile (masked)'},{key:'pincode',label:'Pincode'},{key:'city',label:'City'},{key:'state',label:'State'},
+    {key:'sessions',label:'Sessions',num:1,fmt:fmtInt},
+    {key:'pdpViews',label:'PDP Views',num:1,fmt:fmtInt},{key:'addToCart',label:'ATC',num:1,fmt:fmtInt},
+    {key:'checkout',label:'Checkout',num:1,fmt:fmtInt},{key:'purchase',label:'Purchase (Orders)',num:1,fmt:v=>v>0?fmtInt(v):'0'},
+    {key:'netSales',label:'Sales',num:1,fmt:v=>v>0?fmtMoney(v):'—'},{key:'aov',label:'AOV',num:1,fmt:v=>v==null?'—':fmtMoney(v)},
+    {key:'isRepeat',label:'Customer Type',fmt:v=>v?'<span class="pill ok">Repeat</span>':'<span class="pill">New/Single</span>'},
+    {key:'revenue',label:'Digital Revenue*',num:1,fmt:fmtMoney},{key:'wishlist',label:'Wishlist',num:1,fmt:fmtInt},
+    {key:'plpImpressions',label:'PLP Impr.',num:1,fmt:fmtInt},{key:'removeFromCart',label:'Remove Cart',num:1,fmt:fmtInt},
+    {key:'totalEvents',label:'Total Events',num:1,fmt:fmtInt},{key:'lastSeen',label:'Last Seen'},{key:'firstSeen',label:'First Seen'}
+  ];
+  const rows = applyGeoFilters(D.customers, {stateKey:'state', cityKey:'city', pincodeKey:'pincode'});
+  const t = renderTable({id:'cust-tbl', columns:cols, rows, defaultSort:{key:'totalEvents',dir:-1}, csvName:'customer_level_data', pageSize:50, searchKeys:['pincode','city']});
+  PENDING_MOUNTS.push(() => t.mount());
+  const drilled = STATE.filters.q ? `<span class="pill g" style="margin-left:8px">Filtered to pincode ${esc(STATE.filters.q)}</span>` : '';
+  return secHead('Tab 9 · Customer-Level Detail','Every Real, Mobile-Matched Customer — Own Row, Own KPIs, Never Combined'+drilled,
+    `ALL ${D.customers.length.toLocaleString('en-IN')} real customers who could be identity-linked to a pincode (not a sample) — union of customers with a browsing event (application_view_v1) and customers with a real purchase (marketing_sale); a customer with only one or the other is still shown, not dropped. One canonical pincode per customer (their most recent user_profile_view_v3 record). Purchase/Sales/AOV/Customer Type are real marketing_sale numbers, not GA4/WebEngage-derived. Mobile masked to last 4 digits (PII policy, same as Walk-in Source Intelligence); no full phone/email exposed. Multiple PDP/ATC events for one customer increase that customer's own count — never the customer count.`) +
+    renderGlobalFilters() +
+    card('Customer Table', t.html);
+}
+
+function tabDataQuality(){
+  const D = STATE.data; const dq = D.dataQuality;
+  const we = dq.weProfile;
+  const topEvents = [...dq.eventCoverage].sort((a,b)=>b.eventCount-a.eventCount).slice(0,15);
+  const evCols = [{key:'eventName',label:'Event Name'},{key:'eventCount',label:'Event Count',num:1,fmt:fmtInt},
+    {key:'uniqueDevices',label:'Unique Devices',num:1,fmt:fmtInt},{key:'eventsWithAnyCuid',label:'With Any cuid',num:1,fmt:fmtInt}];
+  const evT = renderTable({id:'dq-event-tbl', columns:evCols, rows:dq.eventCoverage, defaultSort:{key:'eventCount',dir:-1}, csvName:'event_coverage', searchKeys:['eventName']});
+  PENDING_MOUNTS.push(() => evT.mount());
+  return secHead('Tab 12 · Data Quality','Exactly What Is Real, What Is a Proxy, What Is Not Available') +
+    card('GA4 Removal', `<p style="font-size:13px;color:var(--ink-2);line-height:1.7"><b class="pill ok">CONFIRMED</b> ${esc(dq.ga4Removed.note)}</p>`) +
+    `<div class="grid g-4">
+      ${kpi('Total WebEngage Profile Users', fmtInt(we.totalUsers))}
+      ${kpi('Users with ANY Pincode Text', fmtInt(we.usersAnyPincodeText), pctStr(we.usersAnyPincodeText/we.totalUsers*100)+' of total')}
+      ${kpi('Users with Format-Valid Pincode', fmtInt(we.usersFormatValidPincode), pctStr(we.usersFormatValidPincode/we.totalUsers*100)+' of total')}
+      ${kpi('Users on a REAL Matched Pincode', fmtInt(we.usersRealMatchedPincode), pctStr(we.usersRealMatchedPincode/we.totalUsers*100)+' of total — the honest number', 'warn')}
+      ${kpi('Distinct Pincodes Claimed', fmtInt(we.distinctFormatValidPincodes))}
+      ${kpi('Distinct REAL Matched Pincodes', fmtInt(we.distinctRealMatchedPincodes), pctStr(we.distinctRealMatchedPincodes/we.distinctFormatValidPincodes*100)+' of claimed', 'warn')}
+      ${kpi('Users with Coordinates (WebEngage own)', fmtInt(we.usersWithCoords_ALWAYS_ZERO), 'always 0 — dead field, geocoded via India Post master instead', 'crit')}
+      ${kpi('Real Pincodes with EXACT app_events', fmtInt(we.realPincodesWithExactEvents)+' of '+fmtInt(D.pincodes.length), 'mobile-matched application_view_v1 events — sparse by construction, see Mobile Matching below', 'crit')}
+      ${kpi('Total application_view_v1 Events', fmtInt(dq.mobileMatching.totalEvents))}
+      ${kpi('Events with Any cuid', fmtInt(dq.mobileMatching.eventsWithCuid), pctStr(dq.mobileMatching.eventsWithCuid/dq.mobileMatching.totalEvents*100)+' of total')}
+      ${kpi('Events with Valid Mobile Shape', fmtInt(dq.mobileMatching.eventsWithValidMobileShape), pctStr(dq.mobileMatching.coveragePct)+' of total — the honest customer-linkable slice', 'warn')}
+      ${kpi('Distinct Event Names', fmtInt(dq.eventCoverage.length))}
+    </div>` +
+    card('Mobile Matching — Customer Key Hierarchy', `<p style="font-size:12.5px;color:var(--ink-2);line-height:1.7">${esc(dq.mobileMatching.hierarchy)}</p><p style="font-size:12.5px;color:var(--ink-2);line-height:1.7;margin-top:8px"><b>${esc(dq.mobileMatching.note)}</b></p>`) +
+    card('Geography Gap — Why Pincode Comes From a Mobile Join', `<p style="font-size:12.5px;color:var(--ink-2);line-height:1.7">${esc(dq.geographyGap.note)}</p>`) +
+    card('Purchase Count Bug — Found by Testing, Not Review', `<p style="font-size:12.5px;color:var(--ink-2);line-height:1.7"><b class="pill ok">FIXED</b> ${esc(dq.purchaseCityAnomaly.note)}</p>`) +
+    card('City → Pincode → Customer Drill-down — Real Coverage', `<p style="font-size:12.5px;color:var(--ink-2);line-height:1.7">${esc(dq.customerDrilldown.note)}</p>
+      <div class="grid g-3" style="margin-top:12px">
+        ${kpi('Real Customers (drill-down)', fmtInt(dq.customerDrilldown.totalCustomers), 'own row, own KPIs, never combined')}
+        ${kpi('Matchable Profiles', fmtInt(dq.customerDrilldown.totalMatchableProfiles), 'real mobile+pincode, but no linkable event')}
+        ${kpi('Pincodes with ≥1 Customer', fmtInt(dq.customerDrilldown.pincodesWithAnyCustomer)+' of '+fmtInt(D.pincodes.length), 'the rest show 0, honestly — no fabricated numbers', 'warn')}
+      </div>`) +
+    card('LUID vs Mobile — Which Identifier Actually Finds More Real Customers', `<p style="font-size:12.5px;color:var(--ink-2);line-height:1.7">${esc(dq.luidVsMobileComparison.note)}</p>
+      <div class="grid g-2" style="margin-top:12px">
+        ${kpi('Customers found via Mobile (primary)', fmtInt(dq.luidVsMobileComparison.totalCustomersMobile), 'used for the Pincode tab drill-down', 'ok')}
+        ${kpi('Customers found via LUID (comparison)', fmtInt(dq.luidVsMobileComparison.totalCustomersLuid), 'shown per-pincode for transparency, not primary', 'warn')}
+      </div>`) +
+    card('Sales Mapping — marketing_sale, Real Coverage', `<p style="font-size:12.5px;color:var(--ink-2);line-height:1.7">${esc(dq.salesMapping.note)}</p>
+      <div class="grid g-4" style="margin-top:12px">
+        ${kpi('Total Net Sales (all)', fmtMoney(dq.salesMapping.totalNetSales))}
+        ${kpi('Mapped to Real Pincode', fmtMoney(dq.salesMapping.mappedNetSales), dq.salesMapping.mappedCustomerPincodePairs+' customer-pincode pairs', 'warn')}
+        ${kpi('Unmapped Sales', fmtMoney(dq.salesMapping.unmappedNetSales), dq.salesMapping.unmappedLineItems+' line items, '+dq.salesMapping.unmappedOrders+' orders', 'crit')}
+        ${kpi('Unmapped Reason Split', dq.salesMapping.unmappedReasonNoMobile+' no mobile / '+dq.salesMapping.unmappedReasonNoPincodeMatch+' no pincode match')}
+      </div>`) +
+    card('Competitor Coverage — Tanishq / CaratLane, Real Store Presence', `<p style="font-size:12.5px;color:var(--ink-2);line-height:1.7">${esc(dq.competitorCoverage.note)}</p>
+      <div class="grid g-4" style="margin-top:12px">
+        ${kpi('Tanishq Pincodes Matched', fmtInt(dq.competitorCoverage.tanishqPincodesMatched)+' of '+fmtInt(dq.competitorCoverage.tanishqPincodesTotal), 'nationally captured, before matching to our tracked pincodes')}
+        ${kpi('CaratLane Pincodes Matched', fmtInt(dq.competitorCoverage.caratlanePincodesMatched)+' of '+fmtInt(dq.competitorCoverage.caratlanePincodesTotal), 'nationally captured, before matching to our tracked pincodes')}
+      </div>`) +
+    card('Campaign × Purchase — Genuinely Not Available', `<p style="font-size:12.5px;color:var(--ink-2);line-height:1.7">${esc(dq.campaignPurchaseGap.note)}</p>`) +
+    card('Product Data Gap — Why ATC Has No Category, Why Two "PDP View" Events Differ', `<p style="font-size:12.5px;color:var(--ink-2);line-height:1.7">${esc(dq.productDataGap.note)}</p>`) +
+    card('Gender Demand — Not Available', `<p style="font-size:12.5px;color:var(--ink-2);line-height:1.7">${esc(dq.genderUnavailable.note)}</p>`) +
+    card('Opportunity Score Weight Change', `<p style="font-size:12.5px;color:var(--ink-2);line-height:1.7">${esc(dq.conversionScoreDropped.note)}</p>`) +
+    card('Event Coverage — Top 15 by Volume (WHY note: this is the real event_name distribution behind the "Wish_list/ATC/PDP View/Check_out/Purchase" mapping below)', evT.html) +
+    card('Event → Screenshot Mapping', `<ul style="margin:0 0 10px 20px;font-size:12.5px;color:var(--ink-2);line-height:1.8">
+      ${Object.entries(dq.eventMapping).map(([k,v])=>`<li><b>${esc(k)}</b> → ${esc(v)}</li>`).join('')}
+    </ul><p style="font-size:12.3px;color:var(--muted);line-height:1.6">${esc(dq.notCombined)}</p>`) +
+    card('Store Master', `<p style="font-size:12.5px;color:var(--ink-2);line-height:1.7">${esc(dq.storeMaster.note)}<br>Stores: ${dq.storeMaster.stores.join(', ')}</p>`);
+}
+
+function tabLineage(){
+  const D = STATE.data; const dl = D.dataLineage;
+  if(!dl) return secHead('Data Lineage','Table & Join Reference') + card('', '<div class="empty">Not available in this snapshot — rebuild with the current etl/build_store_location_intel_v2.js.</div>');
+
+  const srcCols = [{key:'table',label:'Table',fmt:v=>`<code>${esc(v)}</code>`},{key:'project',label:'Project'},{key:'region',label:'Region'},
+    {key:'role',label:'Role'},{key:'rows',label:'Size'}];
+  const srcT = renderTable({id:'lin-src-tbl', columns:srcCols, rows:dl.sourceTables, defaultSort:{key:'role',dir:1}, csvName:'source_tables'});
+
+  const pullCols = [{key:'file',label:'Raw File'},{key:'query',label:'Query'},{key:'joins',label:'Join'},{key:'grain',label:'Grain'},{key:'produces',label:'Produces'}];
+  const pullT = renderTable({id:'lin-pull-tbl', columns:pullCols, rows:dl.pullQueries, defaultSort:{key:'query',dir:1}, csvName:'pull_queries', pageSize:20});
+
+  const joinCols = [{key:'name',label:'Join'},{key:'type',label:'Type'},{key:'key',label:'Key'},{key:'note',label:'Note'}];
+  const joinT = renderTable({id:'lin-join-tbl', columns:joinCols, rows:dl.joinLogic, defaultSort:{key:'name',dir:1}, csvName:'join_logic'});
+
+  const aliasRows = Object.entries(dl.cityAliasMap).map(([raw,mapped])=>({raw, mapped}));
+  const aliasCols = [{key:'raw',label:'Raw Text (district or WebEngage city, lowercased)'},{key:'mapped',label:'Mapped To'}];
+  const aliasT = renderTable({id:'lin-alias-tbl', columns:aliasCols, rows:aliasRows, defaultSort:{key:'mapped',dir:1}, csvName:'city_alias_map', pageSize:30, searchKeys:['raw','mapped']});
+
+  PENDING_MOUNTS.push(() => srcT.mount(), () => pullT.mount(), () => joinT.mount(), () => aliasT.mount());
+
+  return secHead('Data Lineage','Every Table, Query, and Join Behind This Dashboard', 'Rendered directly from dataLineage in the live snapshot — not hand-written prose that can drift from the real pipeline code (dashboard/sql/store_location_app_events_pull.sql + etl/build_store_location_intel_v2.js).') +
+    card('Source Tables (queried live in BigQuery)', srcT.html) +
+    card('Pull Queries → Raw Files (each becomes a JSON file the merge script reads)', pullT.html) +
+    card('Join Logic', joinT.html) +
+    card('City Alias / Mapping Table — the exact table that caused the "blank PDP/ATC" bug', `<p style="font-size:12.3px;color:var(--ink-2);line-height:1.6;margin-bottom:10px">Reconciles India Post district-name spelling (used by pincode records) with WebEngage's own free-text city field (used by every event aggregate). A pincode's district is normalized, looked up here, and used as the key into the city-level event map. Everything below was a real, live-confirmed mismatch, not a hand-picked example.</p>` + aliasT.html) +
+    card('Mobile Normalization Logic (customer key)', `<p style="font-size:12.5px;color:var(--ink-2);line-height:1.7;font-family:monospace">${esc(dl.mobileNormalizationLogic)}</p>`);
+}
+
+function tabMethodology(){
+  const D = STATE.data;
+  return secHead('Methodology','Scoring Formulas & Attribution Rules, In Plain Language') +
+    card('Pincode Opportunity Score', `<p style="font-size:13px;color:var(--ink-2);line-height:1.8">${esc(D.meta.scoringMethodology.pincodeOpportunityScore)}</p>`) +
+    card('City Opportunity Score', `<p style="font-size:13px;color:var(--ink-2);line-height:1.8">${esc(D.meta.scoringMethodology.cityOpportunityScore)}</p>`) +
+    card('Store Gap Flag', `<p style="font-size:13px;color:var(--ink-2);line-height:1.8">${esc(D.meta.scoringMethodology.storeGapFlag)}</p>`) +
+    card('"(City Est.)" Allocation Formula', `<p style="font-size:13px;color:var(--ink-2);line-height:1.8">${esc(D.meta.scoringMethodology.cityProxyAllocation)}</p>`) +
+    card('Sources', `<ul style="margin:0 0 0 20px;font-size:12.5px;color:var(--ink-2);line-height:1.8">${D.meta.sources.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Pincode-Level Customer Intelligence — new section (spec-driven build).
+   Sources: application_view_v1 + user_profile_view_v3 (WebEngage, joined on
+   normalized_cuid = RIGHT(TRIM(CAST(cuid AS STRING)),10) -- a MANDATED, looser rule than the
+   regex-validated mobile normalization the rest of this dashboard uses, kept deliberately
+   separate) + india_pincode/pincode_geo_lookup (real pincode master) + store_location_store_master
+   + marketing_sale (matched via normalized Cus_mobile against the same key space) + company.
+   Snapshot built by etl/build_pincode_customer_intelligence.js, fetched lazily below (separate
+   ~8.6MB file, not needed by any other tab). See PCI.data.dataQuality for every validation number
+   in spec Section 12 -- rendered in the Data Quality card at the bottom of this tab, not hidden.
+   ══════════════════════════════════════════════════════════════════════ */
+const PCI = {
+  data: null, status: 'idle', error: null,
+  filters: { state:'', city:'', pincode:'', q:'', campaign:'', channel:'', category:'', company:'', onlyActivity:false, dateFrom:'', dateTo:'' },
+  focusPincode: null
+};
+async function loadPCI(){
+  if (PCI.status === 'loading' || PCI.status === 'loaded') return;
+  PCI.status = 'loading';
+  try{
+    const res = await fetch(CONFIG.PCI_URL, {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    PCI.data = await res.json();
+    PCI.status = 'loaded';
+  }catch(e){
+    PCI.status = 'error'; PCI.error = e.message;
+  }
+  render();
+}
+function pciNorm(s){ return String(s||'').trim().toLowerCase(); }
+function pciFiltersActive(){
+  const f = PCI.filters;
+  return !!(f.state||f.city||f.pincode||f.q||f.campaign||f.channel||f.category||f.company||f.onlyActivity||f.dateFrom||f.dateTo);
+}
+// Applies every active filter to the SHIPPED customer-level array (real-pincode customers only --
+// see dataQuality.customersOmittedUnknownBucket for why the 211k "no matched pincode" customers
+// aren't individually filterable; they ARE included in the unfiltered headline KPIs below, which
+// come straight from the build script's own totals, not a client-side recompute).
+function pciFilteredCustomers(){
+  const D = PCI.data; const f = PCI.filters;
+  return D.customers.filter(c=>{
+    if(f.state && pciNorm(c.state)!==pciNorm(f.state)) return false;
+    if(f.city && !pciNorm(c.city).includes(pciNorm(f.city))) return false;
+    if(f.pincode && c.pincode!==f.pincode) return false;
+    if(f.campaign && pciNorm(c.campaignId)!==pciNorm(f.campaign)) return false;
+    if(f.channel && !pciNorm(c.channels).includes(pciNorm(f.channel))) return false;
+    if(f.category && !pciNorm(c.productCategories).includes(pciNorm(f.category))) return false;
+    if(f.company && !pciNorm(c.companyCodes).includes(pciNorm(f.company))) return false;
+    if(f.onlyActivity && !(c.pdpViews||c.atcEvents||c.checkoutEvents||c.orderEvents||c.salesOrders)) return false;
+    if(f.q){
+      const hay = `${c.pincode} ${c.city||''} ${c.fullName||''} ${c.normalizedCuid}`.toLowerCase();
+      if(!hay.includes(f.q.toLowerCase())) return false;
+    }
+    if(f.dateFrom || f.dateTo){
+      const last = c.lastActivity || c.lastOrderDate;
+      if(!last) return false;
+      const d = String(last).slice(0,10);
+      if(f.dateFrom && d < f.dateFrom) return false;
+      if(f.dateTo && d > f.dateTo) return false;
+    }
+    return true;
+  });
+}
+// Re-derives the pincode-level rollup from a (possibly filtered) customer set -- same formulas as
+// the build script's Layer E, so a filtered view and the unfiltered snapshot are always consistent.
+function pciAggregateByPincode(customers, geoByPincode){
+  const byPin = new Map();
+  customers.forEach(c=>{ if(!byPin.has(c.pincode)) byPin.set(c.pincode, []); byPin.get(c.pincode).push(c); });
+  const rows = [];
+  byPin.forEach((custs, pin)=>{
+    const geo = geoByPincode.get(pin) || {};
+    const sum = k => custs.reduce((s,c)=>s+(c[k]||0),0);
+    const uniq = k => custs.filter(c=>c[k]>0).length;
+    const totalPdp=sum('pdpViews'), totalAtc=sum('atcEvents'), totalCheckout=sum('checkoutEvents'), totalOrderEvt=sum('orderEvents');
+    const salesCust = custs.filter(c=>c.hasSale);
+    const totalNetSales = sum('netSales');
+    rows.push({
+      pincode: pin, district: geo.district||null, state: geo.state||null,
+      uniqueCustomers: custs.length,
+      totalPdpViews: totalPdp, uniquePdpCustomers: uniq('pdpViews'),
+      totalAtc: totalAtc, uniqueAtcCustomers: uniq('atcEvents'),
+      totalCheckout: totalCheckout, uniqueCheckoutCustomers: uniq('checkoutEvents'),
+      totalOrderEvents: totalOrderEvt, uniqueOrderEventCustomers: uniq('orderEvents'),
+      salesOrders: sum('salesOrders'), uniqueSalesCustomers: salesCust.length,
+      netSales: Math.round(totalNetSales*100)/100,
+      avgSalesPerCustomer: salesCust.length ? Math.round((totalNetSales/salesCust.length)*100)/100 : null,
+      pdpToAtcPct: totalPdp>0 ? Math.round((totalAtc/totalPdp)*1000)/10 : null,
+      atcToCheckoutPct: totalAtc>0 ? Math.round((totalCheckout/totalAtc)*1000)/10 : null,
+      checkoutToOrderPct: totalCheckout>0 ? Math.round((totalOrderEvt/totalCheckout)*1000)/10 : null,
+    });
+  });
+  return rows;
+}
+function pciKpisFromCustomers(customers){
+  return {
+    totalUniqueCustomers: customers.length,
+    totalPincodes: new Set(customers.map(c=>c.pincode)).size,
+    totalPdpViews: customers.reduce((s,c)=>s+c.pdpViews,0),
+    totalUniquePdpCustomers: customers.filter(c=>c.pdpViews>0).length,
+    totalAtc: customers.reduce((s,c)=>s+c.atcEvents,0),
+    totalUniqueAtcCustomers: customers.filter(c=>c.atcEvents>0).length,
+    totalCheckout: customers.reduce((s,c)=>s+c.checkoutEvents,0),
+    totalUniqueCheckoutCustomers: customers.filter(c=>c.checkoutEvents>0).length,
+    totalOrderEvents: customers.reduce((s,c)=>s+c.orderEvents,0),
+    totalUniqueOrderEventCustomers: customers.filter(c=>c.orderEvents>0).length,
+    totalSalesOrders: customers.reduce((s,c)=>s+c.salesOrders,0),
+    totalUniqueSalesCustomers: customers.filter(c=>c.hasSale).length,
+    totalNetSales: Math.round(customers.reduce((s,c)=>s+c.netSales,0)*100)/100,
+  };
+}
+function pciBarChart(title, rows, valueKey, labelFn, fmtFn, color){
+  const max = Math.max(1, ...rows.map(r=>r[valueKey]||0));
+  const bars = rows.map(r=>{
+    const v = r[valueKey]||0; const pct = Math.max(1.5, (v/max)*100);
+    return `<div style="display:flex;align-items:center;gap:8px;margin:6px 0;font-size:11.5px">
+      <div style="flex:0 0 110px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(labelFn(r))}">${esc(labelFn(r))}</div>
+      <div style="flex:1;background:var(--surface-3);border-radius:4px;height:14px;position:relative;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${color||'var(--gold)'};border-radius:4px"></div>
+      </div>
+      <div style="flex:0 0 auto;min-width:60px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)">${fmtFn(v)}</div>
+    </div>`;
+  }).join('');
+  return `<h4 style="font-size:12.5px;margin:0 0 8px;color:var(--ink-2)">${esc(title)}</h4>${bars || '<p style="font-size:11px;color:var(--muted)">No rows.</p>'}`;
+}
+function pciFunnelChart(k){
+  const steps = [
+    ['Unique Customers', k.totalUniqueCustomers, null],
+    ['PDP Views (customers)', k.totalUniquePdpCustomers, k.totalUniqueCustomers],
+    ['Add to Cart (customers)', k.totalUniqueAtcCustomers, k.totalUniquePdpCustomers],
+    ['Checkout (customers)', k.totalUniqueCheckoutCustomers, k.totalUniqueAtcCustomers],
+    ['Order Event (customers)', k.totalUniqueOrderEventCustomers, k.totalUniqueCheckoutCustomers],
+  ];
+  const max = Math.max(1, ...steps.map(s=>s[1]));
+  return steps.map(([label,val,prev])=>{
+    const pct = Math.max(2,(val/max)*100);
+    const conv = prev ? pctStr(val/prev*100,1) : '';
+    return `<div style="margin:8px 0">
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-2);margin-bottom:3px">
+        <span>${esc(label)}</span><span>${fmtInt(val)} ${conv?`<span style="color:var(--muted)">(${conv} of prior step)</span>`:''}</span>
+      </div>
+      <div style="background:var(--surface-3);border-radius:5px;height:18px;overflow:hidden"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--gold-2),var(--gold-deep))"></div></div>
+    </div>`;
+  }).join('');
+}
+function pciScatterSvg(pincodeRows){
+  const rows = pincodeRows.filter(p=>p.uniqueCustomers>0).slice(0,80);
+  if(!rows.length) return '<p style="font-size:11px;color:var(--muted)">No pincode rows to plot.</p>';
+  const W=560,H=220,PAD=36;
+  const maxX = Math.max(1,...rows.map(r=>r.uniqueCustomers));
+  const maxY = Math.max(1,...rows.map(r=>r.netSales||0));
+  const x = v => PAD + (v/maxX)*(W-PAD*1.5);
+  const y = v => H-PAD - (v/(maxY||1))*(H-PAD*1.5);
+  const pts = rows.map(r=>`<circle cx="${x(r.uniqueCustomers).toFixed(1)}" cy="${y(r.netSales||0).toFixed(1)}" r="4" fill="var(--gold)" fill-opacity="0.75" data-tip="<b>${esc(r.pincode)}</b><br>${fmtInt(r.uniqueCustomers)} customers<br>${fmtMoney(r.netSales||0)} sales"></circle>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:240px">
+    <line x1="${PAD}" y1="${H-PAD}" x2="${W-8}" y2="${H-PAD}" stroke="var(--hair)"/>
+    <line x1="${PAD}" y1="${H-PAD}" x2="${PAD}" y2="10" stroke="var(--hair)"/>
+    <text x="${PAD}" y="${H-10}" font-size="9.5" fill="var(--muted)">0</text>
+    <text x="${W-40}" y="${H-10}" font-size="9.5" fill="var(--muted)">${fmtInt(maxX)} customers</text>
+    <text x="4" y="18" font-size="9.5" fill="var(--muted)">${fmtMoney(maxY)}</text>
+    ${pts}
+  </svg>`;
+}
+function renderPciFilters(){
+  const D = PCI.data; const f = PCI.filters;
+  const states = [...new Set(D.customers.map(c=>c.state).filter(Boolean))].sort();
+  const campaigns = [...new Set(D.customers.map(c=>c.campaignId).filter(Boolean))].sort().slice(0,200);
+  const companies = [...new Set(D.customers.flatMap(c=>(c.companyCodes||'').split(',')).filter(Boolean))].sort();
+  return `<div class="filters-row no-print">
+    <div class="fld"><label>State</label><select class="inp" id="pci-f-state"><option value="">All States</option>${states.map(s=>`<option ${f.state===s?'selected':''}>${esc(s)}</option>`).join('')}</select></div>
+    <div class="fld"><label>City (contains)</label><input class="inp" id="pci-f-city" value="${esc(f.city)}" placeholder="e.g. mumbai"></div>
+    <div class="fld"><label>Pincode</label><input class="inp" id="pci-f-pincode" value="${esc(f.pincode)}" placeholder="e.g. 110063"></div>
+    <div class="fld"><label>Search (pincode/city/name/CUID)</label><input class="inp" id="pci-f-q" value="${esc(f.q)}"></div>
+  </div>
+  <div class="filters-row no-print">
+    <div class="fld"><label>Campaign</label><select class="inp" id="pci-f-campaign"><option value="">All Campaigns</option>${campaigns.map(c=>`<option ${f.campaign===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
+    <div class="fld"><label>Channel (Sales)</label><select class="inp" id="pci-f-channel"><option value="">All Channels</option><option ${f.channel==='Online'?'selected':''}>Online</option><option ${f.channel==='Store'?'selected':''}>Store</option></select></div>
+    <div class="fld"><label>Store / Company (Sales)</label><select class="inp" id="pci-f-company"><option value="">All</option>${companies.map(c=>`<option ${f.company===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
+    <div class="fld"><label>Product Category (Sales)</label><input class="inp" id="pci-f-category" value="${esc(f.category)}" placeholder="e.g. Diamond Jewellery"></div>
+  </div>
+  <div class="filters-row no-print">
+    <div class="fld"><label>Last Activity From</label><input type="date" class="inp" id="pci-f-datefrom" value="${f.dateFrom||''}"></div>
+    <div class="fld"><label>Last Activity To</label><input type="date" class="inp" id="pci-f-dateto" value="${f.dateTo||''}"></div>
+    <div class="fld" style="align-self:flex-end"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="pci-f-activity" ${f.onlyActivity?'checked':''}> Only customers with real activity (PDP/ATC/Checkout/Order/Sale)</label></div>
+    <div class="fld" style="flex:0 0 auto;align-self:flex-end"><button class="btn" id="pci-f-clear">Clear Filters</button></div>
+  </div>`;
+}
+function mountPciFilters(){
+  const ids = ['state','city','pincode','q','campaign','channel','company','category','datefrom','dateto'];
+  const map = {state:'state',city:'city',pincode:'pincode',q:'q',campaign:'campaign',channel:'channel',company:'company',category:'category',datefrom:'dateFrom',dateto:'dateTo'};
+  ids.forEach(id=>{ const el=document.getElementById('pci-f-'+id); if(!el) return;
+    const evt = (el.tagName==='SELECT' || el.type==='date') ? 'onchange' : 'oninput';
+    el[evt] = () => { PCI.filters[map[id]] = el.value; PCI.focusPincode=null; render(); };
+  });
+  const act = document.getElementById('pci-f-activity'); if(act) act.onchange = () => { PCI.filters.onlyActivity = act.checked; render(); };
+  const clear = document.getElementById('pci-f-clear'); if(clear) clear.onclick = () => { PCI.filters = { state:'', city:'', pincode:'', q:'', campaign:'', channel:'', category:'', company:'', onlyActivity:false, dateFrom:'', dateTo:'' }; PCI.focusPincode=null; render(); };
+}
+function pciDrillToPincode(pin){ PCI.focusPincode = pin; render(); }
+function tabPincodeCustomerIntel(){
+  if(PCI.status==='idle'){ loadPCI(); return `<div class="empty">Loading Pincode-Level Customer Intelligence…</div>`; }
+  if(PCI.status==='loading') return `<div class="empty">Loading Pincode-Level Customer Intelligence… (~8.6MB, one-time per session)</div>`;
+  if(PCI.status==='error') return `<div class="empty">Could not load pincode_customer_intelligence.json (${esc(PCI.error)}). Serve this folder over HTTP so the fetch succeeds.</div>`;
+
+  const D = PCI.data;
+  const geoByPincode = new Map(D.pincodes.filter(p=>p.isKnown).map(p=>[p.pincode, p]));
+  const filtersOn = pciFiltersActive();
+  const custView = filtersOn ? pciFilteredCustomers() : D.customers;
+  const k = filtersOn ? pciKpisFromCustomers(custView) : D.kpis;
+  const pincodeRowsRaw = filtersOn ? pciAggregateByPincode(custView, geoByPincode) : D.pincodes.filter(p=>p.isKnown);
+  // Enrich with nearestStore/lat/lon from the precomputed geo (filtered recompute doesn't redo geo/haversine).
+  const pincodeRows = pincodeRowsRaw.map(p=>{
+    const ref = geoByPincode.get(p.pincode);
+    return { ...p, lat: ref?ref.lat:p.lat, lon: ref?ref.lon:p.lon, nearestStore: ref?ref.nearestStore:p.nearestStore, district: p.district||(ref?ref.district:null), state: p.state||(ref?ref.state:null) };
+  }).sort((a,b)=>b.uniqueCustomers-a.uniqueCustomers);
+
+  const cols = [
+    {key:'pincode',label:'Pincode',fmt:(v)=>`<a href="#" class="pci-drill" data-pincode="${esc(v)}" style="color:var(--gold);text-decoration:underline;cursor:pointer">${esc(v)}</a>`},
+    {key:'district',label:'City'},{key:'state',label:'State'},
+    {key:'uniqueCustomers',label:'Unique Customers',num:1,fmt:fmtInt},
+    {key:'totalPdpViews',label:'PDP Views',num:1,fmt:fmtInt},
+    {key:'uniquePdpCustomers',label:'Unique PDP Cust.',num:1,fmt:fmtInt},
+    {key:'totalAtc',label:'ATC',num:1,fmt:fmtInt},
+    {key:'uniqueAtcCustomers',label:'Unique ATC Cust.',num:1,fmt:fmtInt},
+    {key:'totalCheckout',label:'Checkout',num:1,fmt:fmtInt},
+    {key:'uniqueCheckoutCustomers',label:'Unique Checkout Cust.',num:1,fmt:fmtInt},
+    {key:'salesOrders',label:'Sales Orders',num:1,fmt:fmtInt},
+    {key:'uniqueSalesCustomers',label:'Unique Order Cust.',num:1,fmt:fmtInt},
+    {key:'netSales',label:'Sales Amount',num:1,fmt:fmtMoney},
+    {key:'avgSalesPerCustomer',label:'Avg Sales/Customer',num:1,fmt:v=>v==null?'—':fmtMoney(v)},
+    {key:'pdpToAtcPct',label:'PDP→ATC %',num:1,fmt:v=>v==null?'—':v.toFixed(1)+'%'},
+    {key:'atcToCheckoutPct',label:'ATC→Checkout %',num:1,fmt:v=>v==null?'—':v.toFixed(1)+'%'},
+    {key:'checkoutToOrderPct',label:'Checkout→Order %',num:1,fmt:v=>v==null?'—':v.toFixed(1)+'%'},
+  ];
+  const t = renderTable({id:'pci-tbl', columns:cols, rows:pincodeRows, defaultSort:{key:'uniqueCustomers',dir:-1}, csvName:'pincode_customer_intelligence', searchKeys:['pincode','district','state']});
+
+  // Drill-down: click a pincode -> show its customers (spec Section 9)
+  let drill = '';
+  if(PCI.focusPincode){
+    const custs = custView.filter(c=>c.pincode===PCI.focusPincode);
+    const dcols = [
+      {key:'pincode',label:'Pincode'},{key:'normalizedCuid',label:'Normalized CUID'},{key:'fullName',label:'Customer Name',fmt:v=>v||'—'},
+      {key:'city',label:'City',fmt:v=>v||'—'},{key:'state',label:'State',fmt:v=>v||'—'},
+      {key:'pdpViews',label:'PDP Views',num:1,fmt:fmtInt},{key:'atcEvents',label:'ATC',num:1,fmt:fmtInt},
+      {key:'checkoutEvents',label:'Checkout',num:1,fmt:fmtInt},{key:'orderEvents',label:'Order Events',num:1,fmt:fmtInt},
+      {key:'netSales',label:'Sales Amount',num:1,fmt:v=>v?fmtMoney(v):'—'},
+      {key:'firstActivity',label:'First Activity',fmt:v=>v?String(v).slice(0,10):'—'},
+      {key:'lastActivity',label:'Last Activity',fmt:v=>v?String(v).slice(0,10):'—'},
+    ];
+    const dt = renderTable({id:'pci-drill-tbl', columns:dcols, rows:custs, defaultSort:{key:'pdpViews',dir:-1}, csvName:'pincode_'+PCI.focusPincode+'_customers', pageSize:20, searchKeys:['normalizedCuid','fullName','city']});
+    PENDING_MOUNTS.push(()=>dt.mount());
+    drill = card(`Customers in Pincode ${esc(PCI.focusPincode)} (${custs.length.toLocaleString('en-IN')})`, dt.html, {hint:'Click a different pincode to switch'});
+  }
+
+  PENDING_MOUNTS.push(() => { t.mount();
+    document.getElementById('pci-tbl-tbody').addEventListener('click', e=>{
+      const a = e.target.closest('a.pci-drill'); if(!a) return; e.preventDefault(); pciDrillToPincode(a.getAttribute('data-pincode'));
+    });
+    mountPciFilters();
+  });
+
+  const top = (key) => [...pincodeRows].sort((a,b)=>(b[key]||0)-(a[key]||0)).slice(0,10);
+  const dq = D.dataQuality;
+
+  return secHead('Pincode-Level Customer Intelligence','Pincode Par Kitne Unique Customers — Aur Unhone Kitne PDP Views, ATC, Checkout Aur Orders Kiye', `
+    Customer identity here is <b>normalized_cuid = RIGHT(TRIM(CAST(cuid AS STRING)),10)</b> — a
+    looser, spec-mandated rule (not the regex-validated mobile check used elsewhere in this
+    dashboard), joined across <code>application_view_v1</code> (events) and
+    <code>user_profile_view_v3</code> (pincode/profile), with <code>marketing_sale</code> matched
+    in separately via normalized <code>Cus_mobile</code>. Of ${fmtInt(dq.distinctNormCuidCustomers)}
+    distinct customers, only ${fmtInt(dq.customersWithRealPincode)} (${pctStr(dq.customersWithRealPincode/dq.distinctNormCuidCustomers*100,1)})
+    sit on a pincode that matches the real India Post master — the rest appear in the
+    <span class="pill warn">UNKNOWN pincode</span> bucket below, included in every headline KPI,
+    never dropped. ${filtersOn ? '<b>Filters are active — KPIs and the table below reflect the filtered, known-pincode customer set only (the KPI cards show the true unfiltered totals when no filter is set).</b>' : ''}
+  `) +
+    card('Filters', renderPciFilters()) +
+    `<div class="grid g-4" style="margin-bottom:16px">
+      ${kpi('Total Unique Customers', fmtInt(k.totalUniqueCustomers))}
+      ${kpi('Total Pincodes', fmtInt(k.totalPincodes))}
+      ${kpi('Total PDP Views', fmtInt(k.totalPdpViews))}
+      ${kpi('Unique PDP Customers', fmtInt(k.totalUniquePdpCustomers))}
+      ${kpi('Total ATC', fmtInt(k.totalAtc))}
+      ${kpi('Unique ATC Customers', fmtInt(k.totalUniqueAtcCustomers))}
+      ${kpi('Total Checkout', fmtInt(k.totalCheckout))}
+      ${kpi('Unique Checkout Customers', fmtInt(k.totalUniqueCheckoutCustomers))}
+      ${kpi('Order Events (WebEngage)', fmtInt(k.totalOrderEvents))}
+      ${kpi('Unique Order-Event Customers', fmtInt(k.totalUniqueOrderEventCustomers))}
+      ${kpi('Sales Orders (real, marketing_sale)', fmtInt(k.totalSalesOrders), null, 'ok')}
+      ${kpi('Total Sales (real)', fmtMoney(k.totalNetSales), null, 'ok')}
+    </div>` +
+    drill +
+    card('Pincode-Level Table', t.html, {hint:'Click a Pincode to see its customers below · sortable · searchable · CSV export'}) +
+    `<div class="grid g-2" style="margin-bottom:16px">
+      <div class="card"><div class="pad">${pciBarChart('Top Pincodes by Unique Customers', top('uniqueCustomers'), 'uniqueCustomers', r=>r.pincode, fmtInt)}</div></div>
+      <div class="card"><div class="pad">${pciBarChart('Top Pincodes by PDP Views', top('totalPdpViews'), 'totalPdpViews', r=>r.pincode, fmtInt, 'var(--info)')}</div></div>
+      <div class="card"><div class="pad">${pciBarChart('Top Pincodes by Add to Cart', top('totalAtc'), 'totalAtc', r=>r.pincode, fmtInt, 'var(--warn)')}</div></div>
+      <div class="card"><div class="pad">${pciBarChart('Top Pincodes by Checkout', top('totalCheckout'), 'totalCheckout', r=>r.pincode, fmtInt, 'var(--good)')}</div></div>
+      <div class="card"><div class="pad">${pciBarChart('Top Pincodes by Sales Orders', top('salesOrders'), 'salesOrders', r=>r.pincode, fmtInt, 'var(--gold-deep)')}</div></div>
+      <div class="card"><div class="pad">${pciBarChart('Top Pincodes by Sales Amount', top('netSales'), 'netSales', r=>r.pincode, fmtMoney, 'var(--gold-deep)')}</div></div>
+    </div>` +
+    card('Customer Funnel (unique customers at each step, national)', pciFunnelChart(k)) +
+    card('Customer Count vs. Sales — Top 80 Active Pincodes', pciScatterSvg(pincodeRows), {hint:'Each dot = one pincode; x = unique customers, y = sales amount'}) +
+    card('Data Validation (Section 12)', `<div class="grid g-4">
+      ${kpi('Distinct Normalized CUIDs — Events', fmtInt(dq.eventRowsPulled))}
+      ${kpi('Distinct Normalized CUIDs — Profile', fmtInt(dq.profileRowsPulled))}
+      ${kpi('Distinct Customers (union)', fmtInt(dq.distinctNormCuidCustomers))}
+      ${kpi('Malformed/Rejected CUIDs', fmtInt(dq.malformedNormCuidProfile+dq.malformedNormCuidEvent+dq.malformedNormMobileSales), 'e.g. source-corrupted scientific-notation cuid values — excluded, not guessed', 'warn')}
+      ${kpi('Customers — Real Pincode', fmtInt(dq.customersWithRealPincode))}
+      ${kpi('Customers — Unknown/Missing Pincode', fmtInt(dq.customersWithMissingPincode), 'included in every KPI above, never dropped', 'warn')}
+      ${kpi('Customers — Claimed but Invalid Pincode', fmtInt(dq.customersWithClaimedButInvalidPincode), '6-digit-shaped but not a real India Post pincode')}
+      ${kpi('Duplicate Customer Rows Found', fmtInt(dq.duplicateCustomerRows), dq.duplicateCustomerRows===0?'zero — de-dup verified':'', dq.duplicateCustomerRows===0?'ok':'crit')}
+      ${kpi('Sales — Matched to a WebEngage Customer', fmtInt(dq.salesMatchedCuids), pctStr(dq.salesMatchedCuids/(dq.salesMatchedCuids+dq.salesUnmatchedCustomers)*100,1)+' of distinct sales customers')}
+      ${kpi('Sales — Unmatched Customers', fmtInt(dq.salesUnmatchedCustomers), fmtMoney(dq.salesUnmatchedNetSales)+' kept OUT of pincode totals, not invented', 'warn')}
+      ${kpi('Sales Net — Before Join (all of marketing_sale)', fmtMoney(dq.salesTotalNetSalesRaw))}
+      ${kpi('Sales Net — After Join (matched only)', fmtMoney(dq.salesTotalNetSalesMatched))}
+      ${kpi('Event Rows — Before Join', fmtInt(dq.eventTotalRowsRaw))}
+      ${kpi('Event Rows — After Join', fmtInt(dq.eventTotalRowsAfterJoin), dq.eventTotalRowsRaw===dq.eventTotalRowsAfterJoin?'exact match — no fan-out':'', dq.eventTotalRowsRaw===dq.eventTotalRowsAfterJoin?'ok':'crit')}
+      ${kpi('Customer Rows Shipped for Drill-down', fmtInt(dq.customersShippedForDrilldown), fmtInt(dq.customersOmittedUnknownBucket)+' UNKNOWN-bucket customers omitted from this file for size — see note above', 'warn')}
+    </div>
+    <p style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.6">Scope note: "Excel-style column filters" here means the dropdown/text filters above (State, City, Pincode, Campaign, Channel, Company, Product Category, Date Range, Search) plus every table column's own sort — a true per-numeric-column range-filter grid was not built this pass to keep the shared table component (reused by every other tab in this dashboard) unchanged; ask if per-column numeric filters are wanted specifically here.</p>`);
+}
+
+/* ── render dispatcher ─────────────────────────────────────────────── */
+const TAB_FNS = { exec:tabExec, qa:tabQA, pincode:tabPincode, pciTab:tabPincodeCustomerIntel, city:tabCity, state:tabState, map:tabMap, competitor:tabCompetitor, fakepincode:tabFakePincode, campaign:tabCampaign,
+  campaignPincode:tabCampaignPincode, product:tabProduct, priceband:tabPriceband, storegap:tabStoreGap,
+  recommend:tabRecommend, customer:tabCustomer, dataquality:tabDataQuality, methodology:tabMethodology,
+  lineage:tabLineage };
+function render(){
+  if(!STATE.data){ document.getElementById('main').innerHTML = `<div class="empty">${STATE.source==='error' ? 'Could not load the data snapshot. Serve this folder over HTTP (e.g. <code>python -m http.server</code>) so the fetch to store_location_intel.json succeeds — file:// fetches are blocked by the browser.' : 'Loading…'}</div>`; return; }
+  buildNav();
+  PENDING_MOUNTS = [];
+  const fn = TAB_FNS[STATE.tab] || tabExec;
+  document.getElementById('main').innerHTML = fn();
+  PENDING_MOUNTS.forEach(m=>m());
+  mountGlobalFilters();
+  mountDateFilter();
+}
+window.addEventListener('DOMContentLoaded', boot);
+async function boot(){
+  await loadData();
+  const dot=document.getElementById('srcDot'), txt=document.getElementById('srcTxt');
+  if(STATE.data){ dot.classList.add('live'); txt.textContent='Live snapshot · '+ (STATE.data.pincodes?STATE.data.pincodes.length.toLocaleString('en-IN'):'0') +' real pincodes'; }
+  else { txt.textContent='Snapshot unavailable'; }
+  STATE.tab = (location.hash||'#exec').slice(1);
+  if(!TABS.some(t=>t[0]===STATE.tab)) STATE.tab='exec';
+  render();
+  document.getElementById('loader').classList.add('done');
+  document.getElementById('app').classList.add('ready');
+  document.getElementById('btnTheme').onclick = () => { const h=document.documentElement; h.setAttribute('data-theme', h.getAttribute('data-theme')==='dark'?'light':'dark'); render(); };
+  document.getElementById('btnPrint').onclick = () => window.print();
+}
+</script>
+</body>
+</html>

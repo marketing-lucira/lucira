@@ -27,6 +27,42 @@
 -- NOTE: dataset location MUST match the source dataset's location.
 CREATE SCHEMA IF NOT EXISTS `lucirajewelry-prod.sales_dashboard`;
 
+-- ── Cost reference — REAL vendor purchase cost, not an estimate ─────────────
+-- Source: `purchase.invoice_items` (vendor purchase invoices) joined to
+-- `ornaverse_erp_master.items` to translate item_id -> item_code (== Full_sku
+-- format). item_cost is the pre-tax per-LINE cost (metal + labour); dividing
+-- by pieces gives a real per-unit cost. Weighted-average across all purchase
+-- lines per SKU smooths out gold-rate volatility between purchase dates.
+-- Verified live 2026-08-03: 93.8% of distinct sold SKUs have an exact match;
+-- covers 98.6% of sale lines / 94.6% of net revenue (540-day window).
+CREATE OR REPLACE TABLE `lucirajewelry-prod.sales_dashboard.cost_reference` AS
+WITH pcost AS (
+  SELECT
+    i.item_code AS full_sku,
+    SPLIT(i.item_code, '-')[SAFE_OFFSET(1)] AS style_token,
+    p.item_cost, p.pieces
+  FROM `lucirajewelry-prod.purchase.invoice_items` p
+  JOIN `lucirajewelry-prod.ornaverse_erp_master.items` i ON p.item_id = i.item_id
+  WHERE p.item_cost IS NOT NULL AND p.pieces > 0 AND i.item_code IS NOT NULL
+)
+SELECT full_sku, SUM(item_cost) / NULLIF(SUM(pieces), 0) AS unit_cost_sku
+FROM pcost GROUP BY full_sku;
+
+-- Fallback tier — style-level weighted-average cost (2nd hyphen token of the
+-- SKU, e.g. LJ-B00002-14YGLGD-2.7 -> B00002), used only when a sold SKU has
+-- no exact purchase-invoice match (the remaining ~5% of lines/revenue).
+CREATE OR REPLACE TABLE `lucirajewelry-prod.sales_dashboard.cost_reference_style` AS
+WITH pcost AS (
+  SELECT
+    SPLIT(i.item_code, '-')[SAFE_OFFSET(1)] AS style_token,
+    p.item_cost, p.pieces
+  FROM `lucirajewelry-prod.purchase.invoice_items` p
+  JOIN `lucirajewelry-prod.ornaverse_erp_master.items` i ON p.item_id = i.item_id
+  WHERE p.item_cost IS NOT NULL AND p.pieces > 0 AND i.item_code IS NOT NULL
+)
+SELECT style_token, SUM(item_cost) / NULLIF(SUM(pieces), 0) AS unit_cost_style
+FROM pcost WHERE style_token IS NOT NULL GROUP BY style_token;
+
 CREATE OR REPLACE TABLE `lucirajewelry-prod.sales_dashboard.sales_reporting`
 PARTITION BY date
 CLUSTER BY sale_type, store, category
@@ -47,7 +83,7 @@ WITH src AS (
     `city_name`                                                   AS city,
     `state_name`                                                  AS state,
     `country_name`                                                AS region,
-    CAST(`Full_sku` AS STRING)                                    AS sku,
+    CAST(s.`Full_sku` AS STRING)                                  AS sku,
     `Item_name`                                                   AS product_name,
     CAST(`style_code` AS STRING)                                  AS style,
     `type_name`                                                   AS category,
@@ -65,8 +101,17 @@ WITH src AS (
     IFNULL(SAFE_CAST(`discount`   AS FLOAT64), 0)                 AS discount,
     IFNULL(SAFE_CAST(`weight`     AS FLOAT64), 0)                 AS gross_weight,
     IFNULL(SAFE_CAST(`net_weight` AS FLOAT64), 0)                 AS net_weight,
-    IFNULL(SAFE_CAST(`tax_amount` AS FLOAT64), 0)                 AS tax_amount
-  FROM `lucirajewelry-prod.ornaverse_erp_administration.Sales_overview_table`
+    IFNULL(SAFE_CAST(`tax_amount` AS FLOAT64), 0)                 AS tax_amount,
+    -- RULE 6 (margin, added 2026-08-03) — real vendor purchase cost, exact-SKU
+    -- first, style-average fallback second. NULL unit_cost means genuinely no
+    -- cost data exists for that line (flagged, never zero-filled).
+    cr.unit_cost_sku                                              AS unit_cost_sku,
+    crs.unit_cost_style                                           AS unit_cost_style
+  FROM `lucirajewelry-prod.ornaverse_erp_administration.Sales_overview_table` s
+  LEFT JOIN `lucirajewelry-prod.sales_dashboard.cost_reference` cr
+    ON cr.full_sku = CAST(s.`Full_sku` AS STRING)
+  LEFT JOIN `lucirajewelry-prod.sales_dashboard.cost_reference_style` crs
+    ON crs.style_token = SPLIT(CAST(s.`Full_sku` AS STRING), '-')[SAFE_OFFSET(1)]
   WHERE `Transaction_Date` IS NOT NULL
     AND CAST(`Transaction_Date` AS DATE) >= DATE_SUB(CURRENT_DATE('Asia/Kolkata'), INTERVAL 540 DAY)
   -- RULE 3 — DEDUP DISABLED (client request 2026-07-20: "add all data, ignore
@@ -92,6 +137,15 @@ SELECT
   ROUND(gross_weight, 3)                                          AS gross_weight,
   ROUND(net_weight, 3)                                            AS net_weight,
   ROUND(tax_amount, 2)                                            AS tax_amount,
+  -- RULE 6 — margin: unit_cost = real vendor purchase cost (weighted avg),
+  -- cogs = unit_cost * qty (signed, so returns reduce cost too), cost_source
+  -- tells the dashboard/API which tier supplied it (or 'unavailable').
+  COALESCE(unit_cost_sku, unit_cost_style)                        AS unit_cost,
+  CASE WHEN COALESCE(unit_cost_sku, unit_cost_style) IS NULL THEN NULL
+       ELSE ROUND(COALESCE(unit_cost_sku, unit_cost_style) * qty, 2) END AS cogs,
+  CASE WHEN unit_cost_sku IS NOT NULL THEN 'exact_sku'
+       WHEN unit_cost_style IS NOT NULL THEN 'style_avg'
+       ELSE 'unavailable' END                                     AS cost_source,
   -- RULE 4 — normalized sale type
   CASE
     WHEN LOWER(sale_type_raw) LIKE '%return%'                     THEN 'Return'

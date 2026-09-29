@@ -47,7 +47,7 @@ var PRESETS=[['today','Today'],['yesterday','Yesterday'],['thisweek','This Week'
 /* ---------------- state ---------------- */
 var DATA=null, ROWS=[], STORE_LABEL={};
 var TAB='created';
-function newFilter(preset){ var r=presetRange(preset); return {preset:preset, from:r[0], to:r[1], jc:'', city:'', store:'', stage:'', trigger:'', prob:'', mstatus:'', call:'', walk:'', sale:''}; }
+function newFilter(preset){ var r=presetRange(preset); return {preset:preset, from:r[0], to:r[1], jc:'', city:'', store:'', stage:'', trigger:'', prob:'', mtype:'', call:'', walk:'', sale:''}; }
 var F={ created:newFilter('thismonth'), from:newFilter('today') };
 var TBL={ created:{q:'',sort:'created_date',dir:-1,page:1}, from:{q:'',sort:'from_date',dir:1,page:1} };
 var BD={ created:'jc', from:'jc' };
@@ -62,6 +62,10 @@ function prep(r){
   r.k_trigger = r.deal_trigger || (r.deal_id?'Not Set':'No Deal linked');
   r.k_prob = r.probability!=null ? r.probability+'%' : (r.deal_id?'Not Set':'No Deal linked');
   r.k_mstatus = r.meeting_status || 'Not Set';
+  // Meeting Type folded from the free-text Event_Title in the view (23 raw spellings of
+  // "Store Visit" collapse to one). This is the dimension worth filtering on -- Zoho's
+  // Check_In_Status (k_mstatus) reads PLANNED on every record and carries no information.
+  r.k_mtype = r.meeting_type_norm || 'Not Set';
   r.cust_key = r.mobile || (r.deal_id?'d:'+r.deal_id:(r.contact_id?'c:'+r.contact_id:'m:'+r.meeting_id));
   r.calls_after=num(r.calls_after); r.connected_calls=num(r.connected_calls); r.missed_calls=num(r.missed_calls);
   r.walkins_after=num(r.walkins_after); r.sales_after=num(r.sales_after); r.sales_amount_after=num(r.sales_amount_after);
@@ -83,7 +87,7 @@ function passNonDate(r,f){
   if(f.stage && r.k_stage!==f.stage) return false;
   if(f.trigger && r.k_trigger!==f.trigger) return false;
   if(f.prob && r.k_prob!==f.prob) return false;
-  if(f.mstatus && r.k_mstatus!==f.mstatus) return false;
+  if(f.mtype && r.k_mtype!==f.mtype) return false;
   if(f.call==='called' && !r.calls_after) return false;
   if(f.call==='notcalled' && r.calls_after) return false;
   if(f.call==='connected' && !r.connected_calls) return false;
@@ -175,7 +179,7 @@ function filterBar(tab){
     '</div><div class="row" style="margin-top:10px">'+
     sel(p+'jc','JC','jc',f.jc)+sel(p+'city','City','city',f.city)+sel(p+'store','Store','store',f.store)+
     sel(p+'stage','Deal Stage','stage',f.stage)+sel(p+'trigger','Deal Trigger','trigger',f.trigger)+sel(p+'prob','Probability','prob',f.prob)+
-    sel(p+'mstatus','Meeting Status','mstatus',f.mstatus)+
+    sel(p+'mtype','Meeting Type','mtype',f.mtype)+
     sel2(p+'call','Call Status','call',f.call,[['','All'],['called','Called after creation'],['notcalled','Not called'],['connected','Connected (≥30s)'],['notconnected','Called, not connected']])+
     sel2(p+'walk','Walk-in Status','walk',f.walk,[['','All'],['yes','Walk-in after creation'],['no','No walk-in after creation'],['prev','Had previous walk-in']])+
     sel2(p+'sale','Sale Status','sale',f.sale,[['','All'],['yes','Sale after creation'],['no','No sale after creation']])+
@@ -271,7 +275,7 @@ function trendCard(rows,field,title){
 function niceStep(max){ var raw=max/4, p=Math.pow(10,Math.floor(Math.log10(raw||1))), n=raw/p; return Math.max(1,(n<=1?1:n<=2?2:n<=5?5:10)*p); }
 
 /* ---------------- breakdown tables ---------------- */
-var DIMS=[['jc','JC','k_jc'],['city','City','k_city'],['stage','Deal Stage','k_stage'],['trigger','Deal Trigger','k_trigger'],['prob','Probability','k_prob'],['store','Store','k_store']];
+var DIMS=[['jc','JC','k_jc'],['city','City','k_city'],['stage','Deal Stage','k_stage'],['trigger','Deal Trigger','k_trigger'],['prob','Probability','k_prob'],['store','Store','k_store'],['mtype','Meeting Type','k_mtype']];
 function breakdownCard(tab,rows){
   var cur=BD[tab], d=DIMS.filter(function(x){return x[0]===cur;})[0], mlabel=tab==='created'?'Meetings':'Expected Meetings';
   var g={}; rows.forEach(function(r){ (g[r[d[2]]]=g[r[d[2]]]||[]).push(r); });
@@ -303,7 +307,7 @@ var C={
   stage:{l:'Deal Stage',v:function(r){return r.k_stage;}},
   trigger:{l:'Deal Trigger',v:function(r){return r.k_trigger;}},
   prob:{l:'Probability',v:function(r){return r.k_prob;},s:'probability'},
-  mstatus:{l:'Meeting Status',v:function(r){return r.k_mstatus;}},
+  mtype:{l:'Meeting Type',v:function(r){return r.k_mtype;}},
   calls:{l:'Calls After Creation',v:function(r){return r.calls_after;},n:1},
   conn:{l:'Connected Calls',v:function(r){return r.connected_calls;},n:1},
   first_call:{l:'First Call',v:function(r){return fmtDT(r.first_call_ist);},s:'first_call_ist'},
@@ -320,8 +324,8 @@ var C={
   status:{l:'Journey Status',v:function(r){return r.journey_status;},f:function(r){return stBadge(r.journey_status);}}
 };
 var COLS={
-  created:['created_date','created_time','from_date','customer','mobile','meeting_id','deal_id','deal_name','jc','city','store','stage','trigger','prob','mstatus','calls','conn','first_call','last_call','talk','prev_walk','prev_walk_date','walk','walk_date','walk_store','sale','sale_date','sale_amt','status'],
-  from:['from_date','created_date','created_time','customer','mobile','meeting_id','deal_id','jc','city','store','stage','trigger','prob','mstatus','calls','conn','last_call','prev_walk','walk','walk_date','sale','sale_date','sale_amt','status']
+  created:['created_date','created_time','from_date','customer','mobile','meeting_id','deal_id','deal_name','jc','city','store','stage','trigger','prob','mtype','calls','conn','first_call','last_call','talk','prev_walk','prev_walk_date','walk','walk_date','walk_store','sale','sale_date','sale_amt','status'],
+  from:['from_date','created_date','created_time','customer','mobile','meeting_id','deal_id','jc','city','store','stage','trigger','prob','mtype','calls','conn','last_call','prev_walk','walk','walk_date','sale','sale_date','sale_amt','status']
 };
 function sortVal(r,c){ var s=C[c].s; if(s) return r[s]; return C[c].v(r); }
 function tableRows(tab,rows){
@@ -367,7 +371,7 @@ function openJourney(mid){
   $('dBody').innerHTML=
     '<div class="step"><h4>Meeting Created</h4>'+kv([
       ['Created',fmtDT(r.meeting_created_ist)+' IST'],['From Date',fmtDate(r.from_date)+(r.all_day?' (all day)':' '+fmtTime(r.from_ist))],
-      ['Title / Type',esc(dash(r.meeting_title))],['Status',esc(r.k_mstatus)],['Location',esc(dash(r.meeting_location))],
+      ['Title (raw)',esc(dash(r.meeting_title))],['Meeting Type',esc(r.k_mtype)],['Check-in status',esc(r.k_mstatus)+' <span class="muted small">(Zoho check-in is unused &mdash; always PLANNED)</span>'],['Location',esc(dash(r.meeting_location))],
       ['Store (Venue)',esc(r.k_store)+(r.venue&&r.store&&r.store.indexOf('Unmapped')<0?' <span class="muted">(“'+esc(r.venue)+'”)</span>':'')],
       ['Meeting Owner',esc(dash(r.meeting_owner))],['Created By',esc(dash(r.meeting_created_by))],['Related To',esc(dash(r.related_module))],
       ['JC',esc(r.k_jc)+' <span class="muted">('+esc(r.jc_source)+')</span>'],['Deal',esc(dash(r.deal_name))+(r.deal_id?' <span class="muted">'+esc(r.deal_id)+'</span>':'')],
@@ -452,6 +456,7 @@ function renderHelp(){
     '<tr><td><b>Zoho Leads</b></td><td><code>zoho_crm.zoho_leads</code></td><td>periodic load</td><td colspan="2">mobile fallback for Lead-linked meetings only</td></tr>'+
     '<tr><td><b>Store master</b></td><td><code>ornaverse_erp_master.company</code></td><td>ERP reference</td><td colspan="2">store code → store name</td></tr></table>'+
     '<p>All five are combined in one BigQuery view, <code>'+esc((DATA&&DATA.view)||'ds_imputed_reporting.zoho_meeting_journey_v')+'</code> (source SQL: <code>store-visit-intelligence-app/sql/meeting_journey_view.sql</code>). The Zoho tables are the same 30-minute CDC tables already used by the Hourly Deals vs Orders API; walk-ins are the same <code>Walkin_marge</code> table used by Walk-in Source Intelligence; sales follow the Hourly Deals vs Orders rule for <code>marketing_sale</code>.</p>'+
+  '<div class="callout"><b>Deliberately NOT used.</b> This dashboard is intentionally simple: it reads Zoho CRM + store walk-ins + POS sales only. <b>GA4 — not used. PDP / product-view events — not used. Product views — not used. Website &amp; Shopify browsing data — not used. Website analytics — not used.</b> No web/behavioural source feeds any number on this page; if a metric is not derivable from the five sources above, it is not shown.</div>'+
   '<h2>3. KPI definitions</h2><table><tr><th>Metric</th><th>Definition</th></tr>'+
     '<tr><td>Meeting Created</td><td>Zoho Meeting <code>Created_Time</code> (stored with +05:30 offset) shown in IST. Meeting Created Date = its IST calendar date.</td></tr>'+
     '<tr><td>From Date</td><td>Zoho Meeting <code>Start_DateTime</code> in IST. All-day meetings (stored as 00:00 UTC) use their calendar date.</td></tr>'+
@@ -487,7 +492,9 @@ function renderHelp(){
     '<li>Deal <code>Address_City</code> is blank for most meeting deals → large “Not Captured” city bucket.</li>'+
     '<li>Deal <code>Probability</code> is blank for most meeting deals → “Not Set”.</li>'+
     '<li>Calls, walk-ins and sales are counted from creation onward with no end date; a customer with several meetings can have the same later event attributed to each of those meetings (KPI invoice totals are de-duplicated).</li>'+
-    '<li>Walk-ins at non-store codes <code>Amazon</code> and <code>HO</code> (head office) are excluded as not physical store visits.</li></ul>'+
+    '<li>Walk-ins at non-store codes <code>Amazon</code> and <code>HO</code> (head office) are excluded as not physical store visits.</li>'+
+    '<li><b>Meeting Status is not available.</b> Zoho’s <code>Check_In_Status</code> reads <code>PLANNED</code> on every record in the module (check-in is never used), so it carries no information and is shown only in the journey panel, labelled as such. Zoho does have a real <code>Meeting_Status</code> picklist, but it is ~3% populated and is not carried in the CDC feed, so no Meeting Status filter or KPI is offered rather than showing a field that never changes.</li>'+
+    '<li><b>Meeting Type is derived, not a picklist.</b> It is folded from the free-text meeting title, where the same intent appears in many spellings (“Store Visit”, “store visit”, “store vist”, “store viist”, “STORE VISIT” — 23 raw variants collapse to one). Rows whose title mentions “test” are grouped as <b>Test / Internal</b> so they are not counted as real store visits. The raw title is kept in the table and journey panel.</li></ul>'+
   '</div>';
 }
 

@@ -18,6 +18,7 @@
   --shadow:0 1px 2px rgba(11,11,11,.05),0 8px 24px rgba(11,11,11,.06);
   --radius:18px; --radius-sm:12px;
   --s1:#2a78d6;--s2:#008300;--s3:#e87ba4;--s4:#eda100;--s5:#1baf7a;--s6:#eb6834;--s7:#4a3aa7;--s8:#e34948;
+  --brand-brown:#8b6f56; --brand-brown-dark:#6e5744; --brand-mauve:#a05a64; --brand-mauve-light:#d9b8b4; --brand-cream:#fff8f0;
   color-scheme:light;
 }
 :root[data-theme="dark"]{
@@ -51,20 +52,22 @@ a{color:var(--accent);text-decoration:none}
 /* ── Top bar ─────────────────────────────────────────────── */
 .topbar{
   position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:14px;
-  padding:12px 22px; backdrop-filter:blur(18px) saturate(1.4);
-  background:var(--glass); border-bottom:1px solid var(--glass-brd);
+  padding:12px 22px; backdrop-filter:none;
+  background:var(--brand-brown); border-bottom:2px solid var(--brand-brown-dark);
 }
 .brand{display:flex;align-items:center;gap:11px;min-width:0}
 .brand .mark{
-  width:38px;height:38px;border-radius:11px;flex:none;display:grid;place-items:center;
-  background:linear-gradient(135deg,var(--s1),var(--s7)); color:#fff;font-weight:800;font-size:18px;
-  box-shadow:0 6px 18px rgba(42,120,214,.35);
+  width:38px;height:38px;border-radius:50%/42%;flex:none;display:grid;place-items:center;
+  background:var(--brand-cream); border:1.5px solid var(--brand-mauve); color:var(--brand-brown);font-weight:800;font-size:18px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);position:relative;
 }
-.brand h1{font-size:15px;font-weight:700;letter-spacing:.2px;white-space:nowrap}
-.brand small{display:block;font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.3px}
+.brand .mark::after{content:'';position:absolute;bottom:6px;left:50%;width:5px;height:5px;background:var(--brand-mauve);transform:translateX(-50%) rotate(45deg)}
+.brand h1{font-size:15px;font-weight:700;letter-spacing:.2px;white-space:nowrap;color:var(--brand-cream)}
+.brand small{display:block;font-size:11px;color:rgba(255,248,240,.72);font-weight:500;letter-spacing:.3px}
 .spacer{flex:1}
 .livechip{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink2);
   padding:6px 11px;border:1px solid var(--border);border-radius:20px;background:var(--glass)}
+.topbar .livechip{color:var(--brand-cream);background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 4px rgba(250,178,25,.18)}
 .dot.live{background:var(--good);box-shadow:0 0 0 4px rgba(12,163,12,.18)}
 .iconbtn{
@@ -73,6 +76,8 @@ a{color:var(--accent);text-decoration:none}
   transition:.18s; font-size:16px;
 }
 .iconbtn:hover{color:var(--ink);border-color:var(--accent);transform:translateY(-1px)}
+.topbar .iconbtn{color:var(--brand-cream);background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28)}
+.topbar .iconbtn:hover{color:#fff;border-color:rgba(255,255,255,.5)}
 .btn{
   display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:11px;
   border:1px solid var(--border);background:var(--glass);color:var(--ink);font-weight:600;font-size:13px;
@@ -261,7 +266,7 @@ svg{display:block;overflow:visible}
 .ins-tag.focus{background:rgba(12,163,12,.14);color:#0ca30c}.ins-tag.fix{background:rgba(250,178,25,.16);color:#c98500}
 .ins-sub{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:12px 0 4px}
 .ins-sub:first-child{margin-top:0}
-.brand .brandlogo{height:34px;width:auto;display:block}
+.brand .brandlogo{height:34px;width:auto;display:block;background:var(--brand-cream);border-radius:8px;padding:6px 10px}
 .loader-logo{height:54px;width:auto;margin-bottom:22px;animation:logopulse 1.6s ease-in-out infinite}
 @keyframes logopulse{0%,100%{opacity:.5;transform:scale(.97)}50%{opacity:1;transform:scale(1)}}
 </style>
@@ -279,7 +284,7 @@ svg{display:block;overflow:visible}
   </div>
   <div class="spacer"></div>
   <div class="livechip" id="livechip" title="Data source status">
-    <span class="dot" id="livedot"></span><span id="livetxt">Sample data</span>
+    <span class="dot" id="livedot"></span><span id="livetxt">Loading…</span>
   </div>
   <button class="btn primary" id="btnFilters">⛃ Filters<span class="filtcount" id="fcount" style="display:none">0</span></button>
   <button class="iconbtn" id="btnExport" title="Export dashboard">⤓</button>
@@ -350,9 +355,9 @@ svg{display:block;overflow:visible}
 "use strict";
 /* ══════════════════════════════════════════════════════════════════
    LUCIRA GA4 DASHBOARD — self-contained, vanilla JS.
-   Data source: connected GA4 property (via ga4-api Cloud Function).
-   Until the API URL is set, a deterministic seeded GA4 sample renders
-   so the full experience is visible. Set CONFIG.API_BASE to go live.
+   Data source: the live backend snapshot ONLY (CONFIG.SNAPSHOT_URL / API_BASE).
+   No built-in sample/demo data — until a snapshot loads, the dashboard shows
+   an empty/error state.
    ══════════════════════════════════════════════════════════════════ */
 const CONFIG = {
   // Daily-snapshot model (NOT continuous live querying). The dashboard loads ONE
@@ -360,13 +365,13 @@ const CONFIG = {
   // at the next 09:00 IST boundary. Point SNAPSHOT_URL at the prebuilt daily JSON
   // (a public GCS object written by ga4-bq-api /snapshot). If SNAPSHOT_URL is empty
   // but API_BASE is set, the dashboard instead fetches one wide-window payload from
-  // <API_BASE>/data once per day. Both empty = built-in deterministic sample.
+  // <API_BASE>/data once per day.
   SNAPSHOT_URL: "https://storage.googleapis.com/lucirajewelry-prod-dashboards/ga4/unified-latest-000000000000.json",  // LIVE UNIFIED snapshot {session,mart}, refreshed daily 09:00 IST by the BigQuery Scheduled Query (EXPORT DATA)
   API_BASE: "",                 // ga4-bq-api base — used by the AI assistant (/ai) and as a /data snapshot fallback
   SNAPSHOT_DAYS: 400,           // history the snapshot covers; the UI filters client-side within it
   REFRESH_HOUR_IST: 9,          // daily refresh hour, IST
   CURRENCY: "INR",
-  TODAY: "2026-07-16",          // sample anchor; overwritten by the snapshot's window.to
+  TODAY: "2026-07-16",          // overwritten by the snapshot's window.to once it loads
 };
 /* Deploy-time overrides: CI injects an inline <script> at the config marker
    above that sets window.__GA4_CONFIG__ from GitHub repo Variables. Merge
@@ -409,71 +414,6 @@ const byDesc=k=>(a,b)=>b[k]-a[k];
 /* ══════════════════════════════════════════════════════════════════
    CATALOGS  (jewelry e-commerce, India-first)
    ══════════════════════════════════════════════════════════════════ */
-const CH = [ // channel → {sources[], quality (conv propensity), share}
-  {name:'Organic Search', w:26, q:1.0, src:[['google','organic'],['bing','organic'],['duckduckgo','organic']]},
-  {name:'Direct',         w:18, q:1.15,src:[['(direct)','(none)']]},
-  {name:'Paid Search',    w:13, q:1.25,src:[['google','cpc'],['bing','cpc']]},
-  {name:'Organic Social', w:12, q:.6, src:[['instagram','referral'],['facebook','referral'],['pinterest','referral'],['youtube','referral']]},
-  {name:'Paid Social',    w:10, q:.95,src:[['facebook','cpc'],['instagram','paid'],['pinterest','cpc']]},
-  {name:'Email',          w:7,  q:1.5, src:[['newsletter','email'],['klaviyo','email']]},
-  {name:'Referral',       w:5,  q:.8, src:[['justdial.com','referral'],['whatsapp','referral'],['blog.partner.com','referral']]},
-  {name:'Organic Shopping',w:4, q:1.1, src:[['google','organic_shopping']]},
-  {name:'Paid Shopping',  w:3,  q:1.35,src:[['google','shopping'],['meta','shopping']]},
-  {name:'Display',        w:2,  q:.5, src:[['google','display'],['dv360','cpm']]},
-  {name:'Affiliates',     w:1.5,q:.9, src:[['cuelinks','affiliate'],['earnkaro','affiliate']]},
-  {name:'Cross-network',  w:1,  q:1.05,src:[['google','cross-network']]},
-];
-const CAMPAIGNS = ['Diwali Festive','Akshaya Tritiya','Valentine Edit','Bridal Collection','Everyday Gold','Retargeting DPA','Brand Search','Gold Coin Push','Diamond Solitaire','(organic)','(not set)'];
-const CATEGORIES = ['Gold Jewellery','Diamond Jewellery','Silver Jewellery','Platinum Jewellery','Gold Coin'];
-const BRANDS = ['Lucira Signature','Aurelia by Lucira','Everyday Edit','Bridal Atelier','Sacred Gold','Nova Diamonds'];
-const PRODUCTS = [
-  ['Kundan Polki Necklace Set','Gold Jewellery','Bridal Atelier',185000],
-  ['Solitaire Diamond Ring','Diamond Jewellery','Nova Diamonds',142000],
-  ['22K Gold Jhumka Earrings','Gold Jewellery','Lucira Signature',48000],
-  ['Diamond Tennis Bracelet','Diamond Jewellery','Nova Diamonds',96000],
-  ['Temple Gold Haaram','Gold Jewellery','Sacred Gold',312000],
-  ['Rose Gold Mangalsutra','Gold Jewellery','Aurelia by Lucira',54000],
-  ['Platinum Couple Bands','Platinum Jewellery','Bridal Atelier',88000],
-  ['Silver Anklet Pair','Silver Jewellery','Everyday Edit',4200],
-  ['10g Gold Coin 24K','Gold Coin','Sacred Gold',72000],
-  ['Diamond Stud Earrings','Diamond Jewellery','Nova Diamonds',38000],
-  ['Antique Gold Bangles','Gold Jewellery','Sacred Gold',168000],
-  ['Everyday Gold Chain','Gold Jewellery','Everyday Edit',26000],
-  ['Emerald Cocktail Ring','Diamond Jewellery','Lucira Signature',64000],
-  ['Silver Pooja Thali','Silver Jewellery','Sacred Gold',8600],
-  ['Platinum Solitaire Pendant','Platinum Jewellery','Nova Diamonds',110000],
-  ['5g Gold Coin 22K','Gold Coin','Sacred Gold',36000],
-  ['Pearl Choker Set','Gold Jewellery','Aurelia by Lucira',72000],
-  ['Diamond Nose Pin','Diamond Jewellery','Everyday Edit',12000],
-];
-const DEVICES=[{name:'mobile',w:64},{name:'desktop',w:28},{name:'tablet',w:8}];
-const BROWSERS={mobile:[['Chrome',52],['Safari',34],['Samsung Internet',9],['Edge',3],['Opera',2]],
-  desktop:[['Chrome',58],['Edge',18],['Safari',14],['Firefox',7],['Opera',3]],
-  tablet:[['Safari',48],['Chrome',44],['Samsung Internet',8]]};
-const OSMAP={mobile:[['Android',63],['iOS',37]],desktop:[['Windows',68],['Macintosh',26],['Linux',6]],tablet:[['iOS',55],['Android',45]]};
-const RES={mobile:['360x800','390x844','412x915','393x873','414x896'],desktop:['1920x1080','1536x864','1440x900','2560x1440','1366x768'],tablet:['768x1024','810x1080','820x1180']};
-const GEO=[
-  {country:'India',w:78,cur:1,regions:[
-    {region:'Maharashtra',cities:['Mumbai','Pune','Nagpur','Thane']},
-    {region:'Delhi',cities:['New Delhi','Delhi']},
-    {region:'Karnataka',cities:['Bengaluru','Mysuru']},
-    {region:'Tamil Nadu',cities:['Chennai','Coimbatore']},
-    {region:'Telangana',cities:['Hyderabad']},
-    {region:'Gujarat',cities:['Ahmedabad','Surat','Rajkot']},
-    {region:'West Bengal',cities:['Kolkata']},
-    {region:'Uttar Pradesh',cities:['Lucknow','Noida','Kanpur']},
-    {region:'Rajasthan',cities:['Jaipur']},
-    {region:'Kerala',cities:['Kochi','Thiruvananthapuram']},
-  ]},
-  {country:'United States',w:8,cur:1,regions:[{region:'New Jersey',cities:['Edison','Jersey City']},{region:'California',cities:['San Jose','Fremont']},{region:'Texas',cities:['Houston','Dallas']}]},
-  {country:'United Arab Emirates',w:6,cur:1,regions:[{region:'Dubai',cities:['Dubai']},{region:'Abu Dhabi',cities:['Abu Dhabi']}]},
-  {country:'United Kingdom',w:3,cur:1,regions:[{region:'England',cities:['London','Leicester']}]},
-  {country:'Canada',w:2,cur:1,regions:[{region:'Ontario',cities:['Toronto','Brampton']}]},
-  {country:'Australia',w:1.5,cur:1,regions:[{region:'Victoria',cities:['Melbourne']}]},
-  {country:'Singapore',w:1,cur:1,regions:[{region:'Singapore',cities:['Singapore']}]},
-  {country:'Saudi Arabia',w:.8,cur:1,regions:[{region:'Riyadh',cities:['Riyadh']}]},
-];
-const LANGS=[['en-in',44],['en-us',20],['hi-in',16],['en-gb',7],['mr-in',5],['ta-in',4],['te-in',2],['gu-in',2]];
 const PAGES=[
   ['/', 'Lucira Jewelry | Fine Gold & Diamond Jewellery','Home'],
   ['/collections/gold-jewellery','Gold Jewellery Collection','Collections'],
@@ -492,142 +432,11 @@ const PAGES=[
   ['/account','My Account','Account'],
   ['/search','Search Results','Content'],
 ];
-const HOSTS=['www.lucirajewelry.com','lucirajewelry.com','checkout.lucirajewelry.com'];
-const EVENTS=['page_view','session_start','scroll','user_engagement','view_item_list','view_item','select_item','search','add_to_cart','begin_checkout','add_shipping_info','add_payment_info','purchase','refund','sign_up','login','view_promotion','select_promotion'];
-const COUPONS=['DIWALI10','FIRSTBUY','BRIDAL5','GOLDSAVE','NONE','NONE','NONE','NONE'];
-const PROMOS=['Diwali Festive Offer','Akshaya Tritiya Gold','Bridal Season','Everyday Gold Deal','(none)','(none)'];
-
-/* seasonality multiplier for a given date */
-function seasonal(dstr){
-  const d=new Date(dstr),m=d.getMonth(),day=d.getDay();
-  let s=1;
-  if(m===9||m===10)s*=1.7;                 // Oct-Nov Diwali/wedding
-  if(m===3||m===4)s*=1.45;                 // Apr-May Akshaya Tritiya
-  if(m===1)s*=1.3;                         // Feb Valentine
-  if(m===7)s*=.82;                         // Aug lull (shraddh)
-  if(day===0||day===6)s*=1.18;             // weekend uplift
-  return s;
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   SAMPLE GENERATION  (deterministic — seed 20260716)
-   Grain = SESSION.  Each row is one GA4 session with full dimensions.
-   ══════════════════════════════════════════════════════════════════ */
-function buildSample(){
-  const rng=mulberry32(20260716);
-  const SPAN=400, END=CONFIG.TODAY, START=addDays(END,-(SPAN-1));
-  // ---- users ----
-  const NUSERS=7200, users=[];
-  for(let i=0;i<NUSERS;i++){
-    // first-seen date skewed toward recent
-    const off=Math.floor(Math.pow(rng(),1.5)*SPAN);
-    users.push({id:i,first:addDays(END,-off),ltv:0,orders:0,sessions:0});
-  }
-  const rows=[];
-  let sid=0;
-  // Walk each day; volume scales with seasonality + slow growth
-  for(let dOff=SPAN-1;dOff>=0;dOff--){
-    const date=addDays(END,-dOff);
-    const growth=1+(SPAN-1-dOff)/SPAN*0.5;       // +50% over the window
-    const base=26*growth*seasonal(date);
-    const n=Math.max(6,Math.round(base+(rng()-.5)*8));
-    for(let k=0;k<n;k++){
-      // choose user: 55% returning (user whose first<=date), else new
-      let u;
-      if(rng()<0.5){
-        // returning: sample an existing user seen before
-        for(let tries=0;tries<6;tries++){const cand=users[Math.floor(rng()*NUSERS)];if(cand.first<=date && cand.sessions>0){u=cand;break;}}
-      }
-      if(!u){
-        // pick a user whose first == date (new) if possible else any seen
-        for(let tries=0;tries<8;tries++){const cand=users[Math.floor(rng()*NUSERS)];if(cand.first<=date){u=cand;break;}}
-        if(!u)u=users[0];
-      }
-      const isNew = u.sessions===0;              // first session for this user in dataset
-      u.sessions++;
-      const ch=wpick(rng,CH);
-      const s=pick(rng,ch.src);
-      const camp = ch.name.includes('Paid')||ch.name.includes('Shopping')||ch.name==='Display'
-        ? pick(rng,CAMPAIGNS.slice(0,9)) : (ch.name==='Email'?pick(rng,['Diwali Festive','Bridal Collection','Everyday Gold']):'(organic)');
-      const dev=wpick(rng,DEVICES.map(d=>({name:d.name,w:d.w}))).name;
-      const br=wpick(rng,BROWSERS[dev].map(x=>({name:x[0],w:x[1]}))).name;
-      const os=wpick(rng,OSMAP[dev].map(x=>({name:x[0],w:x[1]}))).name;
-      const res=pick(rng,RES[dev]);
-      const geo=wpick(rng,GEO.map(g=>({...g,w:g.w})));
-      const reg=pick(rng,geo.regions);
-      const city=pick(rng,reg.cities);
-      const lang=wpick(rng,LANGS.map(l=>({name:l[0],w:l[1]}))).name;
-      const platform = dev==='desktop'?'web':(os==='iOS'?'iOS':(os==='Android'?'Android':'web'));
-      const host=wpick(rng,[{name:HOSTS[0],w:80},{name:HOSTS[1],w:14},{name:HOSTS[2],w:6}]).name;
-      const land=pick(rng, ch.name.includes('Search')?PAGES.slice(0,9):(ch.name.includes('Social')?[PAGES[5],PAGES[6],PAGES[1],PAGES[2],PAGES[11]]:PAGES));
-      // engagement
-      const engaged = rng() < clamp(0.62*ch.q + (dev==='desktop'?.08:0),0.2,0.94);
-      const pv = engaged? 1+Math.floor(rng()*Math.pow(rng(),.4)*9) : (rng()<.5?1:0);
-      const engTime = engaged? Math.round((20+rng()*rng()*400)*(dev==='desktop'?1.25:1)) : Math.round(rng()*8);
-      // event counts
-      const ev={page_view:pv||1,session_start:1,user_engagement:engaged?1+Math.floor(rng()*4):0,scroll:engaged&&rng()<.7?1:0};
-      // ecommerce funnel — gated by engagement & channel quality
-      const shop = engaged && rng()<clamp(.55*ch.q,.1,.9);
-      let viewItem=0,cart=0,checkout=0,payment=0,purchased=0,items=0,rev=0,cat='',brand='',prodName='',coupon='NONE',promo='(none)',refund=0,refAmt=0;
-      if(shop){
-        viewItem=1+Math.floor(rng()*4); ev.view_item_list=1; ev.view_item=viewItem; ev.select_item=rng()<.6?1:0;
-        if(rng()<clamp(.45*ch.q,.1,.75)){
-          cart=1+Math.floor(rng()*2); ev.add_to_cart=cart;
-          if(rng()<clamp(.55*ch.q,.15,.8)){
-            checkout=1; ev.begin_checkout=1; ev.add_shipping_info=rng()<.85?1:0;
-            if(rng()<clamp(.62*ch.q,.2,.85)){
-              payment=1; ev.add_payment_info=1;
-              if(rng()<clamp(.72*ch.q,.3,.92)){
-                purchased=1; ev.purchase=1;
-                const p=wpick(rng,PRODUCTS.map(pr=>({pr,w: pr[3]>150000?1: pr[3]>60000?3:6})));
-                prodName=p.pr[0];cat=p.pr[1];brand=p.pr[2];
-                items=1+(rng()<.25?1:0)+(rng()<.08?1:0);
-                const seas=seasonal(date);
-                rev=Math.round(p.pr[3]*items*(0.88+rng()*0.3)*(seas>1.3?1.05:1));
-                coupon=pick(rng,COUPONS);
-                promo = camp.includes('Diwali')?'Diwali Festive Offer':camp.includes('Akshaya')?'Akshaya Tritiya Gold':camp.includes('Bridal')?'Bridal Season':pick(rng,PROMOS);
-                if(coupon!=='NONE')rev=Math.round(rev*0.92);
-                u.orders++; u.ltv+=rev;
-                if(rng()<0.035){refund=1;refAmt=Math.round(rev*(rng()<.5?1:0.5));ev.refund=1;}
-              }
-            }
-          }
-        }
-      }
-      if(rng()<.03)ev.search=1;
-      if(isNew&&rng()<.12){ev.sign_up=1;}
-      if(!isNew&&rng()<.18){ev.login=1;}
-      if(promo!=='(none)'){ev.view_promotion=1;ev.select_promotion=rng()<.4?1:0;}
-      const evCount=Object.values(ev).reduce((a,b)=>a+b,0);
-      // key events = purchase + sign_up + (begin_checkout as micro) — GA4 key events are configurable; use purchase+sign_up+add_to_cart-as-KE off
-      const keyEvents=(ev.purchase||0)+(ev.sign_up||0)+(ev.begin_checkout||0);
-      const converted = purchased===1;
-      rows.push({
-        id:sid++, date, uid:u.id, isNew,
-        channel:ch.name, source:s[0], medium:s[1], sourceMedium:s[0]+' / '+s[1], campaign:camp,
-        device:dev, browser:br, os, screenRes:res, platform,
-        country:geo.country, region:reg.region, city, language:lang,
-        landingPage:land[0], pageTitle:land[1], pagePath:land[0], contentGroup:land[2], hostname:host,
-        engaged:engaged?1:0, engTime, pv,
-        ev, evCount, keyEvents, converted:converted?1:0,
-        viewItem,cart,checkout,payment,purchased, items, revenue:rev, aov:purchased?rev/items:0,
-        category:cat,brand,product:prodName, coupon,promo, refund, refAmt,
-        userType: u.orders>0? 'Customer':'Prospect',
-        nr: isNew?'New':'Returning',
-      });
-    }
-  }
-  // user ref (first date within-dataset already = users[].first)
-  const userRef={};
-  users.forEach(u=>{userRef[u.id]={first:u.first,ltv:u.ltv,orders:u.orders,sessions:u.sessions};});
-  return {rows,userRef,meta:{from:START,to:END,generated:END}};
-}
-
 /* ══════════════════════════════════════════════════════════════════
    STATE + FILTER ENGINE
    ══════════════════════════════════════════════════════════════════ */
 const STATE={
-  theme:'dark', tab:'overview', source:'sample',
+  theme:'dark', tab:'overview', source:null,
   rows:[], userRef:{}, meta:{},
   gran:'day',
   legendOff:{},
@@ -1166,8 +975,7 @@ function granToggle(){return tabToggle('gran',STATE.gran,[['day','D'],['week','W
 /* ─── INSIGHTS & ACTIONS ───────────────────────────────────────
    Auto-generated business read from the CURRENT filtered data: executive KPIs,
    ranked actions with estimated revenue impact, the ATC/checkout funnel with
-   the biggest leak, products to push, and where to focus (audience/channels).
-   Works on sample now; becomes real advice once real data is connected. */
+   the biggest leak, products to push, and where to focus (audience/channels). */
 function tabInsights(R){
   const k=kpis(R), p=kpis(filteredPrev());
   const AOV=k.aov||0, overallConv=k.purchaseConvRate||0;
@@ -1599,7 +1407,7 @@ function dropoffChart(steps){
    (ga4_data.ga4_data_part joined to the product master). Product-level
    margin / gender / material / ageing — dimensions the session fact table
    does not carry. Window-level (mart's own 90-day window), independent of
-   the session date filter. Falls back to MART_SAMPLE under file:// / sample. */
+   the session date filter. */
 function tabMerch(R){
   const M=STATE.mart;
   if(!M||!M.totals){return `<div class="card"><div class="cbody"><div class="emptybox">Merchandising needs the <b>mart</b> block of the unified snapshot (product master).<br><span style="color:var(--muted)">No mart data is attached to the current snapshot.</span></div></div></div>`;}
@@ -1647,49 +1455,6 @@ function tabMerch(R){
       {k:'margin',label:'Margin',num:true,fmt:v=>marginPill(v),raw:v=>Math.round(v)}
     ],products,{per:20,sort:7}),{icon:'◆'})}`;
 }
-
-/* Compact merchandising sample so the tab renders under file:// / offline.
-   Real values arrive from the unified snapshot's `mart` block. */
-const MART_SAMPLE={
-  window:{from:'2026-04-22',to:'2026-07-20',days:90},
-  totals:{revenue:2481049,purchases:165,aov:15037,pdpToCartRate:2.6,pdpViews:1195083,sessions:319598},
-  marginRanges:[
-    {name:'High Margin',pdpViews:498000,purchases:100,revenue:1755366,avgMargin:61.5},
-    {name:'Mid Margin',pdpViews:402000,purchases:44,revenue:519507,avgMargin:28.3},
-    {name:'Low Margin',pdpViews:270000,purchases:19,revenue:188995,avgMargin:14.2},
-    {name:'(none)',pdpViews:25083,purchases:2,revenue:17181,avgMargin:-7724}],
-  genders:[
-    {name:'Women',pdpViews:820000,revenue:1720000,purchases:118},
-    {name:'Men',pdpViews:190000,revenue:430000,purchases:28},
-    {name:'Unisex',pdpViews:120000,revenue:230000,purchases:14},
-    {name:'Kids',pdpViews:65083,revenue:101049,purchases:5}],
-  materials:[
-    {name:'Gold & Diamond',pdpViews:540000,addToCart:9800,purchases:92,revenue:1490000},
-    {name:'Gold',pdpViews:360000,addToCart:6100,purchases:48,revenue:720000},
-    {name:'Platinum',pdpViews:180000,addToCart:2400,purchases:16,revenue:190000},
-    {name:'Silver',pdpViews:115083,addToCart:1500,purchases:9,revenue:81049}],
-  productTypes:[
-    {name:'Rings',pdpViews:430000,addToCart:8200,beginCheckout:4100,purchases:70,revenue:1110605},
-    {name:'Earrings',pdpViews:300000,addToCart:5100,beginCheckout:2600,purchases:41,revenue:455507},
-    {name:'Bracelets',pdpViews:210000,addToCart:3400,beginCheckout:1700,purchases:28,revenue:315645},
-    {name:'Pendants',pdpViews:150000,addToCart:2100,beginCheckout:1000,purchases:16,revenue:360000},
-    {name:'Necklaces',pdpViews:105083,addToCart:1400,beginCheckout:700,purchases:10,revenue:239292}],
-  priceRanges:[
-    {name:'₹1L–5L',pdpViews:410000,purchases:70,revenue:1350000},
-    {name:'₹25K–1L',pdpViews:520000,purchases:66,revenue:780000},
-    {name:'Under ₹25K',pdpViews:200000,purchases:24,revenue:210000},
-    {name:'Above ₹5L',pdpViews:65083,purchases:5,revenue:141049}],
-  collections:[
-    {name:'Bridal',pdpViews:280000,purchases:52,revenue:980000},
-    {name:'Everyday',pdpViews:420000,purchases:61,revenue:640000},
-    {name:'Solitaire',pdpViews:180000,purchases:30,revenue:560000}],
-  products:[
-    {title:'6.590ct Oval Solitaire Engagement Ring',sku:'LJ-R00170-18WGLGD-15',productType:'Rings',price:290757,margin:76.7,ageing:55,pdpViews:1200,purchases:1,revenue:307852},
-    {title:'Classic Diamond Halo Ring',sku:'LJ-R00212-18WGLGD-12',productType:'Rings',price:145000,margin:58.2,ageing:41,pdpViews:2100,purchases:3,revenue:435000},
-    {title:'Emerald-Cut Diamond Studs',sku:'LJ-E00088-18WGLGD-00',productType:'Earrings',price:98000,margin:44.1,ageing:73,pdpViews:1800,purchases:2,revenue:196000},
-    {title:'Gold Tennis Bracelet',sku:'LJ-B00051-22YG-07',productType:'Bracelets',price:210000,margin:31.5,ageing:120,pdpViews:900,purchases:1,revenue:210000},
-    {title:'Diamond Cluster Pendant',sku:'LJ-P00133-18WGLGD-00',productType:'Pendants',price:76000,margin:52.0,ageing:34,pdpViews:1500,purchases:2,revenue:152000}]
-};
 
 /* ─── MARKETING ────────────────────────────────────────────── */
 function tabMarketing(R){
@@ -1907,7 +1672,7 @@ async function loadSnapshot(force){
     STATE.source='snapshot'; const w=window.__GA4_SNAPSHOT_DATA__.window||{};
     setLiveChip(true,'Snapshot · '+(w.to||snapshotKey())+' · 09:00 IST'); return true; }catch(e){} }
   const url=snapshotUrl(), key=snapshotKey();
-  if(!url){ setLiveChip(false,'Sample data · configure daily snapshot to go live'); return false; }
+  if(!url){ setLiveChip(false,'No backend configured — set CONFIG.SNAPSHOT_URL or API_BASE'); return false; }
   if(!force){                                                     // reuse today's cached snapshot — no network
     try{ const c=JSON.parse(localStorage.getItem('ga4_snapshot')||'null');
       if(c&&c.key===key&&c.payload){ ingestLive(c.payload); STATE.source='snapshot';
@@ -1922,8 +1687,8 @@ async function loadSnapshot(force){
     setLiveChip(true,'Snapshot · '+((j.window||{}).to||key)+' · 09:00 IST');
     return true;
   }catch(e){
-    setLiveChip(false,'Sample data (snapshot unavailable)');
-    console.warn('GA4 snapshot load failed, using sample:',e.message);
+    setLiveChip(false,'Snapshot unavailable');
+    console.warn('GA4 snapshot load failed:',e.message);
     return false;
   }
 }
@@ -1996,11 +1761,7 @@ function setLiveChip(live,txt){document.getElementById('livedot').classList.togg
 function setTheme(t){document.documentElement.setAttribute('data-theme',t);STATE.theme=t;try{localStorage.setItem('ga4theme',t);}catch(e){}}
 function boot(){
   try{const t=localStorage.getItem('ga4theme');if(t)setTheme(t);}catch(e){}
-  const s=buildSample();
-  STATE.rows=s.rows;STATE.userRef=s.userRef;STATE.meta=s.meta;STATE.mart=MART_SAMPLE;
   const hInit=(location.hash||'').replace('#','');if(TABS.some(t=>t[0]===hInit))STATE.tab=hInit;
-  render();
-  document.getElementById('skel').classList.add('hide');
   // events
   document.getElementById('tabrail').onclick=e=>{const t=e.target.closest('[data-tab]');if(t){location.hash=t.dataset.tab;}};
   const goHash=()=>{const h=(location.hash||'').replace('#','');if(TABS.some(t=>t[0]===h)&&h!==STATE.tab){STATE.tab=h;STATE.legendOff={};render();window.scrollTo({top:0,behavior:'smooth'});}};
@@ -2027,10 +1788,13 @@ function boot(){
   document.getElementById('cbGran').onchange=e=>{STATE.gran=e.target.value;render();};
   document.getElementById('cbFrom').onchange=e=>{STATE.filters.from=e.target.value||null;STATE.filters.preset='custom';render();};
   document.getElementById('cbTo').onchange=e=>{STATE.filters.to=e.target.value||null;STATE.filters.preset='custom';render();};
-  // Daily snapshot: load once (cached), reuse all day, auto-refresh at 09:00 IST.
-  if(snapshotUrl()){ loadSnapshot(false).then(ok=>{if(ok)render();}); scheduleDailyRefresh(); }
-  else setLiveChip(false,'Sample data · configure daily snapshot to go live');
   initAssistant();
+  // Daily snapshot: load once (cached), reuse all day, auto-refresh at 09:00 IST.
+  // No built-in sample fallback — until the first load resolves, the dashboard renders
+  // an empty/zero state (STATE.rows starts []).
+  const finishBoot=()=>{ render(); document.getElementById('skel').classList.add('hide'); };
+  if(snapshotUrl()){ loadSnapshot(false).then(finishBoot); scheduleDailyRefresh(); }
+  else { setLiveChip(false,'No backend configured — set CONFIG.SNAPSHOT_URL or API_BASE'); finishBoot(); }
 }
 
 /* ══════════════════════════════════════════════════════════════════

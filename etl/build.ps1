@@ -132,17 +132,20 @@ foreach($f in $files){
       $subj=[string]$r['Subject']; $phone=''
       if($subj){ $mm=[regex]::Matches($subj,'\(([^)]*\d[^)]*)\)'); if($mm.Count -gt 0){ $phone=Digits10($mm[$mm.Count-1].Groups[1].Value) } }
       $dur = 0; if($null -ne $r['Call_Duration_in_seconds']){ try{$dur=[int]$r['Call_Duration_in_seconds']}catch{$dur=0} }
+      $callResult=''; if($r['Call_Result']){ $callResult=[string]$r['Call_Result'] }
       $calls[$id] = @(
         $id, $ownId, $iso, [string]$r['Call_Type'], $dur,
-        (IstIso([string]$r['Call_Start_Time'])), $whatId, $phone
+        (IstIso([string]$r['Call_Start_Time'])), $whatId, $phone, $callResult
       )
     }
     elseif($keys -contains 'Due_Date' -and $keys -contains 'Status'){
       $iso = IstIso([string]$r['Created_Time']); if($null -eq (DtOf $iso)){ continue }
       if((DtOf $iso) -lt $Cutoff){ continue }
       $ownId=''; if($r['Owner.id']){ $ownId=[string]$r['Owner.id'] } elseif($r['Owner']){ $ownId=[string]$r['Owner'].id }
+      $twhatId=''
+      if($r['What_Id']){ if($r['What_Id'].id){ $twhatId=[string]$r['What_Id'].id } else { $twhatId=[string]$r['What_Id'] } }
       $tasks[$id] = @(
-        $id, $ownId, $iso, [string]$r['Status'], [string]$r['Due_Date'], (IstIso([string]$r['Closed_Time']))
+        $id, $ownId, $iso, [string]$r['Status'], [string]$r['Due_Date'], (IstIso([string]$r['Closed_Time'])), $twhatId
       )
     }
     elseif($keys -contains 'Channel'){

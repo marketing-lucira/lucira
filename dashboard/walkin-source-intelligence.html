@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <title>Lucira · Walk-in Source Intelligence</title>
 <meta name="description" content="Executive Walk-in Source Intelligence for Lucira Jewelry — identifies which channel (Shopify, WebEngage, Zoho Deals, Zoho Leads or Direct Walkin) brought every store walk-in customer.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23f4d78b'/%3E%3Cstop offset='1' stop-color='%23b8860b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='%230b0b0d'/%3E%3Ctext x='50' y='70' font-family='Georgia,serif' font-size='58' font-weight='700' text-anchor='middle' fill='url(%23g)'%3EL%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%238b6f56'/%3E%3Ctext x='50' y='70' font-family='Georgia,serif' font-size='58' font-weight='700' text-anchor='middle' fill='%23fff8f0'%3EL%3C/text%3E%3C/svg%3E">
 <style>
 /* ═══════════════════════════════════════════════════════════════════════
    LUCIRA WALK-IN SOURCE INTELLIGENCE — premium jewellery command center
@@ -23,6 +23,7 @@
   --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   /* categorical: fixed order Zoho Deals > Zoho Leads > Shopify > WebEngage > Direct Walkin (channel priority) */
   --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a; --series-4:#eda100; --series-5:#e87ba4;
+  --brand-brown:#8b6f56; --brand-brown-dark:#6e5744; --brand-mauve:#a05a64; --brand-mauve-light:#d9b8b4; --brand-cream:#fff8f0;
 }
 html[data-theme=dark]{
   --bg:#08080a; --bg-2:#0d0d10; --surface:#141418; --surface-2:#1b1b21; --surface-3:#22222a;
@@ -67,22 +68,25 @@ input,select{font-family:inherit}
 .load-mark svg{width:100%;height:100%}
 .load-ring{position:absolute;inset:-14px;border-radius:50%;border:1.5px solid var(--glass-brd);border-top-color:var(--gold);animation:spin 1.15s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.load-word{font-family:var(--serif);font-size:30px;letter-spacing:6px;background:linear-gradient(100deg,var(--gold-2),var(--gold),var(--gold-deep));-webkit-background-clip:text;background-clip:text;color:transparent;text-transform:uppercase;padding-left:6px}
+.load-word{font-family:var(--serif);font-size:30px;letter-spacing:6px;color:var(--brand-mauve);padding-left:6px}
 .load-sub{font-size:11px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;text-align:center;margin-top:4px}
+.dotless{position:relative;display:inline-block;font-style:normal}
+.dotless::before{content:'';position:absolute;top:-.6em;left:50%;width:4px;height:4px;background:var(--brand-mauve-light);transform:translateX(-50%) rotate(45deg)}
 .load-bar{width:180px;height:2px;background:var(--hair);border-radius:2px;overflow:hidden}
 .load-bar i{display:block;height:100%;width:40%;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:load 1.1s var(--ease) infinite}
 @keyframes load{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
 
 .brand{display:flex;align-items:center;gap:12px}
-.brand .mono{width:36px;height:36px;border-radius:11px;flex:0 0 auto;background:linear-gradient(150deg,#1c1c22,#0c0c0e);border:1px solid var(--glass-brd);display:grid;place-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.brand .mono{width:36px;height:36px;border-radius:50%/42%;flex:0 0 auto;background:var(--brand-cream);border:1.5px solid var(--brand-mauve);display:grid;place-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.4);position:relative}
 .brand .mono svg{width:22px;height:22px}
+.brand .mono::after{content:'';position:absolute;bottom:5px;left:50%;width:5px;height:5px;background:var(--brand-mauve);transform:translateX(-50%) rotate(45deg)}
 .brand .wm{display:flex;flex-direction:column;line-height:1}
-.brand .wm b{font-family:var(--serif);font-size:18px;font-weight:600;letter-spacing:3px;background:linear-gradient(100deg,var(--gold-2),var(--gold-deep));-webkit-background-clip:text;background-clip:text;color:transparent}
-.brand .wm span{font-size:8px;letter-spacing:3px;text-transform:uppercase;margin-top:3px;font-weight:600;color:var(--muted)}
+.brand .wm b{font-family:var(--serif);font-size:18px;font-weight:600;letter-spacing:3px;color:var(--brand-cream)}
+.brand .wm span{font-size:8px;letter-spacing:3px;text-transform:uppercase;margin-top:3px;font-weight:600;color:rgba(255,248,240,.72)}
 
 #app{opacity:0;transition:opacity .6s var(--ease)}
 #app.ready{opacity:1}
-header.top{position:relative;z-index:60;backdrop-filter:blur(18px) saturate(1.3);background:linear-gradient(180deg,var(--glass),transparent);border-bottom:1px solid var(--hair);padding:11px clamp(14px,3vw,30px);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header.top{position:relative;z-index:60;backdrop-filter:none;background:var(--brand-brown);border-bottom:2px solid var(--brand-brown-dark);padding:11px clamp(14px,3vw,30px);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .top .spacer{flex:1}
 .src-dot{display:inline-flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-2);padding:5px 11px;border:1px solid var(--hair);border-radius:20px;background:var(--surface-2)}
 .src-dot i{width:7px;height:7px;border-radius:50%;background:var(--warn);box-shadow:0 0 8px var(--warn)}
@@ -93,6 +97,9 @@ header.top{position:relative;z-index:60;backdrop-filter:blur(18px) saturate(1.3)
 .btn{padding:8px 15px;border-radius:11px;border:1px solid var(--hair);background:var(--surface-2);color:var(--ink);font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:7px;transition:.2s var(--ease)}
 .btn:hover{border-color:var(--glass-brd);transform:translateY(-1px)}
 .btn.gold{background:linear-gradient(120deg,var(--gold),var(--gold-deep));color:#160f00;border:none;font-weight:600;box-shadow:0 8px 20px -8px var(--gold-deep)}
+header.top .src-dot,header.top .fresh{color:var(--brand-cream);background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28)}
+header.top .iconbtn{color:var(--brand-cream);background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28)}
+header.top .iconbtn:hover{color:#fff;border-color:rgba(255,255,255,.5)}
 
 nav.tabs{position:relative;z-index:55;display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;padding:9px clamp(14px,3vw,30px);backdrop-filter:blur(18px);background:linear-gradient(180deg,var(--glass),transparent);border-bottom:1px solid var(--hair)}
 nav.tabs::-webkit-scrollbar{display:none}
@@ -265,19 +272,17 @@ ol.notes li,ul.notes li{margin:6px 0 6px 18px}
 <div id="loader">
   <div class="load-mark">
     <div class="load-ring"></div>
-    <svg viewBox="0 0 100 100"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2d888"/><stop offset="1" stop-color="#b8860b"/></linearGradient></defs>
-      <text x="50" y="72" font-family="Georgia,serif" font-size="66" font-weight="700" text-anchor="middle" fill="url(#lg)">L</text></svg>
+    <svg viewBox="0 0 100 100"><text x="50" y="72" font-family="Georgia,serif" font-size="66" font-weight="700" text-anchor="middle" fill="#a05a64">L</text></svg>
   </div>
-  <div><div class="load-word">Lucira</div><div class="load-sub">Walk-in Source Intelligence</div></div>
+  <div><div class="load-word">Luc<span class="dotless">ı</span>rá</div><div class="load-sub">Walk-in Source Intelligence</div></div>
   <div class="load-bar"><i></i></div>
 </div>
 
 <div id="app">
   <header class="top">
     <div class="brand">
-      <div class="mono"><svg viewBox="0 0 100 100"><text x="50" y="72" font-family="Georgia,serif" font-size="66" font-weight="700" text-anchor="middle" fill="url(#lg2)">L</text>
-        <defs><linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2d888"/><stop offset="1" stop-color="#b8860b"/></linearGradient></defs></svg></div>
-      <div class="wm"><b>LUCIRA</b><span>Walk-in Source Intel</span></div>
+      <div class="mono"><svg viewBox="0 0 100 100"><text x="50" y="68" font-family="Georgia,serif" font-size="62" font-weight="700" text-anchor="middle" fill="#8b6f56">L</text></svg></div>
+      <div class="wm"><b>Luc<span class="dotless">ı</span>rá</b><span>Walk-in Source Intel</span></div>
     </div>
     <div class="src-dot" id="srcDot"><i></i><span id="srcTxt">Sample data</span></div>
     <div class="fresh" id="freshPill">—</div>
@@ -387,11 +392,12 @@ function ingest(j,source){
    DATE RANGES  (relative to STATE.maxDate — the latest date ACTUALLY in
    the data, never the browser's wall-clock date, per data-freshness note)
    ═══════════════════════════════════════════════════════════════════════ */
-const RANGES=[['mrd','Most recent day'],['7d','Last 7 days'],['30d','Last 30 days'],['mtd','Month to date'],['qtd','Quarter to date'],['ytd','Year to date'],['all','All time'],['custom','Custom range']];
+const RANGES=[['mrd','Most recent day'],['yest','Yesterday'],['7d','Last 7 days'],['30d','Last 30 days'],['mtd','Month to date'],['qtd','Quarter to date'],['ytd','Year to date'],['all','All time'],['custom','Custom range']];
 function dateRange(range){
   const D=parseYmd(STATE.maxDate); const f=STATE.filters; let from,to=D;
   switch(range){
     case 'mrd': from=D; break;
+    case 'yest': from=to=addDays(D,-1); break;
     case '7d': from=addDays(D,-6); break;
     case '30d': from=addDays(D,-29); break;
     case 'mtd': from=monthStart(D); break;

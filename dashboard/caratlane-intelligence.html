@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucira — CaratLane Competitive Intelligence</title>
+<link rel="icon" href="https://luciraonline.myshopify.com/cdn/shop/files/Favicon_New_10.png">
+<link rel="preconnect" href="https://luciraonline.myshopify.com">
+<meta name="description" content="Competitive intelligence: CaratLane's public store footprint (pincode/city) and online-catalog assortment mix (category + price band), for benchmarking against Lucira's network.">
+<style>
+:root{
+  color-scheme: dark;
+  --plane:#0c0d0f; --surface:#16181c; --surface-2:#1e2126; --surface-3:#282c33;
+  --ink:#f5f6f8; --ink-2:#b9bec7; --muted:#7e858f;
+  --border:rgba(255,255,255,0.09);
+  --s1:#4a90e2; --s2:#1fae82; --s3:#e0658f; --s4:#e0a020; --s5:#8b6cf0; --s6:#2bb8c4; --s7:#c2c94a;
+  --good:#1fae82; --warn:#e0a020; --serious:#e07a44; --crit:#e0505a;
+  --gold:#d9a441; --gold-2:#b5732a;
+  --radius:15px; --radius-sm:10px;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --brand-brown:#8b6f56; --brand-brown-dark:#6e5744; --brand-mauve:#a05a64; --brand-mauve-light:#d9b8b4; --brand-cream:#fff8f0;
+}
+body.light{
+  color-scheme: light;
+  --plane:#f4f5f3; --surface:#ffffff; --surface-2:#f1f2ee; --surface-3:#e7e8e2;
+  --ink:#191b1e; --ink-2:#464a51; --muted:#767b83;
+  --border:rgba(0,0,0,0.11);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--plane);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--s1);text-decoration:none}
+button{font-family:var(--font);cursor:pointer}
+.tnum{font-variant-numeric:tabular-nums}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:20px}
+
+header.app{position:sticky;top:0;z-index:50;background:var(--brand-brown);border-bottom:2px solid var(--brand-brown-dark);backdrop-filter:none;padding:11px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px;margin-right:auto}
+.brand .mark{width:36px;height:36px;border-radius:50%/42%;display:grid;place-items:center;background:var(--brand-cream);border:1.5px solid var(--brand-mauve);color:var(--brand-brown);font-weight:800;font-size:16px;box-shadow:none;position:relative}
+.brand .mark::after{content:'';position:absolute;bottom:6px;left:50%;width:5px;height:5px;background:var(--brand-mauve);transform:translateX(-50%) rotate(45deg)}
+.brand h1{font-size:15px;margin:0;font-weight:700;letter-spacing:.2px;color:var(--brand-cream)}
+.brand small{display:block;color:rgba(255,248,240,.72);font-size:11px;font-weight:500;letter-spacing:.3px}
+header.app .btn,header.app .themetoggle{color:var(--brand-cream);border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.12)}
+header.app .btn:hover,header.app .themetoggle:hover{background:rgba(255,255,255,.2);color:#fff}
+.dotless{position:relative;display:inline-block;font-style:normal}
+.dotless::before{content:'';position:absolute;top:-.6em;left:50%;width:4px;height:4px;background:var(--brand-mauve-light);transform:translateX(-50%) rotate(45deg)}
+.btn{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--surface-3)}
+.btn.gold{background:var(--gold);border-color:transparent;color:#1a1200}
+.btn.sm{padding:5px 9px;font-size:11.5px}
+.themetoggle{width:34px;height:34px;border-radius:9px;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;color:var(--ink-2);font-size:15px}
+
+main{max-width:1400px;margin:0 auto;padding:18px 22px 70px}
+.eyebrow{font-size:10.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);font-weight:700}
+.h2{font-size:21px;font-weight:800;margin:4px 0 3px;letter-spacing:-.2px}
+.sub{color:var(--muted);font-size:12.5px;margin-bottom:16px;max-width:800px}
+
+.tag-note{display:flex;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);font-size:12.3px;color:var(--ink-2);margin:0 0 18px}
+.tag-note b{color:var(--ink)}
+.tag-note.warn{border-left:3px solid var(--warn)}
+.tag-note ul{margin:6px 0 0;padding-left:18px;line-height:1.7}
+
+.grid{display:grid;gap:13px}
+.kpis{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));margin-bottom:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 17px}
+.kpi{position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold)}
+.kpi .lbl{font-size:10.5px;color:var(--muted);font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+.kpi .val{font-size:23px;font-weight:800;margin-top:7px;letter-spacing:-.5px}
+.kpi .foot{font-size:11.5px;color:var(--ink-2);margin-top:5px}
+
+.two{grid-template-columns:1.15fr 1fr}
+@media(max-width:980px){.two{grid-template-columns:1fr}}
+.card h3{font-size:14px;font-weight:700;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.card h3 .rt{margin-left:auto;font-size:11px;color:var(--muted);font-weight:600}
+
+.barlist{display:flex;flex-direction:column;gap:9px;margin-top:2px}
+.barrow{display:grid;grid-template-columns:118px 1fr 78px;gap:10px;align-items:center;font-size:12px}
+.barrow .nm{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barrow .track{height:9px;border-radius:5px;background:var(--surface-3);overflow:hidden}
+.barrow .fill{height:100%;border-radius:5px}
+.barrow .amt{text-align:right;font-weight:700;color:var(--ink)}
+
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:20px 0 12px}
+.toolbar input[type=search]{background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:8px 12px;font-size:12.5px;color:var(--ink);min-width:220px}
+.toolbar select{background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12.5px;color:var(--ink)}
+.toolbar .cnt{font-size:11.5px;color:var(--muted);margin-left:auto}
+
+.tablewrap{max-height:640px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm)}
+table{width:100%;border-collapse:collapse;font-size:12.3px}
+th{text-align:left;color:var(--muted);font-weight:800;font-size:9.5px;letter-spacing:.4px;text-transform:uppercase;padding:9px 10px;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;background:var(--surface-2);cursor:pointer;user-select:none}
+th:hover{color:var(--ink)}
+th.on{color:var(--gold)}
+th .arrow{font-size:9px;margin-left:3px}
+th.grp{text-align:center;cursor:default;top:0}
+th.grp.cat-grp{background:rgba(74,144,226,.12)}
+th.grp.pb-grp{background:rgba(139,108,240,.12)}
+thead tr:nth-child(2) th{top:31px}
+th.sub{cursor:pointer}
+th.cat-col{background:rgba(74,144,226,.05)}
+th.pb-col{background:rgba(139,108,240,.05)}
+td.cat-col{background:rgba(74,144,226,.04)}
+td.pb-col{background:rgba(139,108,240,.04)}
+td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:hover td{background:var(--surface-3)}
+td.store b{display:block;font-size:12.5px}
+td.store small{color:var(--muted);font-size:10.8px}
+td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.pincode{font-family:var(--mono);font-size:11.5px;color:var(--ink-2)}
+.srclink{font-size:11px;color:var(--muted)}
+.srclink:hover{color:var(--gold)}
+.note-flag{font-size:10px;color:var(--warn);font-style:italic}
+.illustrative{font-size:10.5px;color:var(--muted);font-style:italic;margin-top:8px}
+footer.foot{max-width:1400px;margin:24px auto 0;padding:16px 22px;color:var(--muted);font-size:11px;border-top:1px solid var(--border)}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="brand">
+    <div class="mark">L</div>
+    <div>
+      <h1>CaratLane Competitive Intelligence</h1>
+      <small>Public store footprint &amp; online-catalog assortment mix</small>
+    </div>
+  </div>
+  <button class="btn sm" id="exportBtn">⤓ Export table (CSV)</button>
+  <button class="themetoggle" id="themeBtn" title="Toggle theme">◐</button>
+</header>
+
+<main>
+  <div class="eyebrow">Competitor Benchmark</div>
+  <div class="h2">CaratLane — store network &amp; catalog mix</div>
+  <div class="sub">Every store below is a real, publicly-listed CaratLane location. Pincode, address and city come from that store's own live catalog page on caratlane.com.</div>
+
+  <div class="tag-note warn">
+    <div>
+      <b>Read this before using the numbers.</b> CaratLane does not publish real per-store physical stock anywhere public — no retailer does. The "inventory" figures here are <b>online catalog listing counts</b> pulled from each store's own filter sidebar on caratlane.com (a public proxy for local assortment depth/mix), <b>not</b> audited warehouse or shelf stock.
+      <ul>
+        <li>Every store page also lists more categories and more price bands than captured here — figures below are a <b>floor</b>, not the full catalog.</li>
+        <li>Coverage is 112 of an estimated ~230+ stores nationwide (the 7 metros alone list 148 stores on CaratLane's own city pages) — stores that 404'd during collection were skipped, never guessed.</li>
+        <li>"Diamond / Gold / Gemstone / Platinum" are material filters, not product categories — kept out of the category total to avoid double-counting a piece under both dimensions.</li>
+        <li>2 stores (Phoenix Marketcity Viman Nagar-Pune, ECR Neelankarai-Chennai) show anomalously small catalog counts vs. their city peers — reported as fetched, not corrected, and flagged in the table.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="grid kpis" id="kpiRow"></div>
+
+  <div class="grid two">
+    <div class="card">
+      <h3>Category mix — product-type catalog listings (all captured stores)<span class="rt" id="catTotalTag"></span></h3>
+      <div class="barlist" id="catChart"></div>
+      <div class="illustrative">"Total inventory" per store = sum of these product-type categories only. Bracelets/Bangles/Nose pin only appeared on a handful of store pages during collection — likely present everywhere but not always surfaced by the fetch.</div>
+    </div>
+    <div class="card">
+      <h3>Price-band mix — catalog listings by price tier<span class="rt" id="pbTotalTag"></span></h3>
+      <div class="barlist" id="pbChart"></div>
+      <div class="illustrative">Bands beyond ₹30,000–40,000 exist on every store page but were not reliably captured in this pass.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:13px">
+    <h3>By city<span class="rt" id="cityTag"></span></h3>
+    <div class="barlist" id="cityChart"></div>
+  </div>
+
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="Search store, city, pincode, address…">
+    <select id="cityFilter"><option value="">All cities</option></select>
+    <span class="cnt" id="rowCount"></span>
+  </div>
+
+  <div class="tablewrap">
+    <table id="storeTable">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <footer class="foot">
+    Data collected via public web search + read of individual CaratLane store catalog pages on caratlane.com (no login, no ToS bypass). 112 stores across 27 cities, collected Aug 2026. Not affiliated with or endorsed by CaratLane / Tata / Titan Company. For internal competitive-benchmarking use only.
+  </footer>
+</main>
+
+<script src="caratlane_intel_data.js"></script>
+<script src="caratlane_intel.js"></script>
+</body>
+</html>

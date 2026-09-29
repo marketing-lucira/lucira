@@ -1,0 +1,660 @@
+[
+  {
+    "category": "application", 
+    "event_count": "5668486", 
+    "event_name": "pageView", 
+    "events_with_any_cuid": "12030", 
+    "unique_devices": "2369554"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "3662752", 
+    "event_name": "productView", 
+    "events_with_any_cuid": "9124", 
+    "unique_devices": "1884777"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "1986263", 
+    "event_name": "Product Viewed", 
+    "events_with_any_cuid": "5990", 
+    "unique_devices": "1049192"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "1244832", 
+    "event_name": "promoClick", 
+    "events_with_any_cuid": "7440", 
+    "unique_devices": "308554"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "462580", 
+    "event_name": "Category Viewed", 
+    "events_with_any_cuid": "2827", 
+    "unique_devices": "193911"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "203142", 
+    "event_name": "nitro_view", 
+    "events_with_any_cuid": "30624", 
+    "unique_devices": "31568"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "155787", 
+    "event_name": "nitro_product_view", 
+    "events_with_any_cuid": "39117", 
+    "unique_devices": "40636"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "144417", 
+    "event_name": "Lime Chat", 
+    "events_with_any_cuid": "20203", 
+    "unique_devices": "20203"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "96496", 
+    "event_name": "addToCart", 
+    "events_with_any_cuid": "3415", 
+    "unique_devices": "55405"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "93021", 
+    "event_name": "Nitro Event", 
+    "events_with_any_cuid": "7229", 
+    "unique_devices": "7229"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "87469", 
+    "event_name": "Searched Product", 
+    "events_with_any_cuid": "790", 
+    "unique_devices": "13778"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "78350", 
+    "event_name": "Nitro Backend Product View", 
+    "events_with_any_cuid": "18020", 
+    "unique_devices": "18020"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "71407", 
+    "event_name": "nitro_category_view", 
+    "events_with_any_cuid": "10943", 
+    "unique_devices": "11543"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "50068", 
+    "event_name": "Added To Cart", 
+    "events_with_any_cuid": "1439", 
+    "unique_devices": "25492"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "48384", 
+    "event_name": "Cart Updated", 
+    "events_with_any_cuid": "1447", 
+    "unique_devices": "24511"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "40797", 
+    "event_name": "Deal Event", 
+    "events_with_any_cuid": "4017", 
+    "unique_devices": "4017"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "26300", 
+    "event_name": "viewCart", 
+    "events_with_any_cuid": "1687", 
+    "unique_devices": "8034"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "18841", 
+    "event_name": "Started_Checkout_GK", 
+    "events_with_any_cuid": "1158", 
+    "unique_devices": "14082"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "18782", 
+    "event_name": "N_.walletreward_create", 
+    "events_with_any_cuid": "16672", 
+    "unique_devices": "16672"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "16681", 
+    "event_name": "lead_create", 
+    "events_with_any_cuid": "16259", 
+    "unique_devices": "16259"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "15440", 
+    "event_name": "mobile_number_entered_gk", 
+    "events_with_any_cuid": "2551", 
+    "unique_devices": "3603"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "14890", 
+    "event_name": "unusedwalletcoinrequest_create", 
+    "events_with_any_cuid": "14008", 
+    "unique_devices": "14008"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "14432", 
+    "event_name": "Removed From Cart", 
+    "events_with_any_cuid": "616", 
+    "unique_devices": "4285"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "13779", 
+    "event_name": "Checkout updated", 
+    "events_with_any_cuid": "1382", 
+    "unique_devices": "3257"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "10327", 
+    "event_name": "gokwik_checkout_initiated", 
+    "events_with_any_cuid": "1020", 
+    "unique_devices": "7195"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "10168", 
+    "event_name": "nitro_addtocart", 
+    "events_with_any_cuid": "2617", 
+    "unique_devices": "2689"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "9549", 
+    "event_name": "signup", 
+    "events_with_any_cuid": "9460", 
+    "unique_devices": "9529"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "8098", 
+    "event_name": "addToWishlist", 
+    "events_with_any_cuid": "616", 
+    "unique_devices": "4010"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "7732", 
+    "event_name": "Cart Viewed", 
+    "events_with_any_cuid": "182", 
+    "unique_devices": "5761"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "7553", 
+    "event_name": "priceBreakup", 
+    "events_with_any_cuid": "58", 
+    "unique_devices": "2100"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "6960", 
+    "event_name": "nitro_removefromcart", 
+    "events_with_any_cuid": "903", 
+    "unique_devices": "923"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "6856", 
+    "event_name": "add_shipping_info", 
+    "events_with_any_cuid": "2342", 
+    "unique_devices": "3130"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "6544", 
+    "event_name": "begin_checkout", 
+    "events_with_any_cuid": "1785", 
+    "unique_devices": "2344"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "6069", 
+    "event_name": "zoho_deals", 
+    "events_with_any_cuid": "1646", 
+    "unique_devices": "1646"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "5906", 
+    "event_name": "nitro_is_consented", 
+    "events_with_any_cuid": "4420", 
+    "unique_devices": "4420"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "5539", 
+    "event_name": "removeFromCart", 
+    "events_with_any_cuid": "504", 
+    "unique_devices": "1889"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "5503", 
+    "event_name": "Mobile_Added_GK", 
+    "events_with_any_cuid": "2950", 
+    "unique_devices": "3611"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "5111", 
+    "event_name": "Checkout created", 
+    "events_with_any_cuid": "1146", 
+    "unique_devices": "3041"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "4423", 
+    "event_name": "login", 
+    "events_with_any_cuid": "1939", 
+    "unique_devices": "3812"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "4102", 
+    "event_name": "Checkout Button Clicked", 
+    "events_with_any_cuid": "48", 
+    "unique_devices": "3124"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "3944", 
+    "event_name": "Address_Selected_GK", 
+    "events_with_any_cuid": "1428", 
+    "unique_devices": "1945"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "3599", 
+    "event_name": "Order updated", 
+    "events_with_any_cuid": "805", 
+    "unique_devices": "909"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "3391", 
+    "event_name": "Gokwik Event", 
+    "events_with_any_cuid": "2086", 
+    "unique_devices": "2086"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "2876", 
+    "event_name": "add_payment_info", 
+    "events_with_any_cuid": "1118", 
+    "unique_devices": "1408"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "2696", 
+    "event_name": "coupon_applied_success_gk", 
+    "events_with_any_cuid": "524", 
+    "unique_devices": "1098"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "2581", 
+    "event_name": "Purchase", 
+    "events_with_any_cuid": "339", 
+    "unique_devices": "339"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "2451", 
+    "event_name": "Nitro Backend Product View City Deal", 
+    "events_with_any_cuid": "639", 
+    "unique_devices": "639"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "1494", 
+    "event_name": "Store Visit", 
+    "events_with_any_cuid": "1430", 
+    "unique_devices": "1430"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "1487", 
+    "event_name": "Order created", 
+    "events_with_any_cuid": "799", 
+    "unique_devices": "894"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "1442", 
+    "event_name": "coupon_applied_failed_gk", 
+    "events_with_any_cuid": "423", 
+    "unique_devices": "763"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "1332", 
+    "event_name": "nitro_checkout", 
+    "events_with_any_cuid": "48", 
+    "unique_devices": "77"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "1311", 
+    "event_name": "Payment_Method_Selected_GK", 
+    "events_with_any_cuid": "637", 
+    "unique_devices": "774"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "1307", 
+    "event_name": "reviewrequest_create", 
+    "events_with_any_cuid": "484", 
+    "unique_devices": "484"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "1087", 
+    "event_name": "Notify Me", 
+    "events_with_any_cuid": "22", 
+    "unique_devices": "22"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "664", 
+    "event_name": "Order Completed", 
+    "events_with_any_cuid": "428", 
+    "unique_devices": "438"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "633", 
+    "event_name": "PIN_Code_Added_GK", 
+    "events_with_any_cuid": "481", 
+    "unique_devices": "500"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "517", 
+    "event_name": "kp_mp_phone_number_logged_in", 
+    "events_with_any_cuid": "251", 
+    "unique_devices": "284"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "353", 
+    "event_name": "purchase", 
+    "events_with_any_cuid": "281", 
+    "unique_devices": "306"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "293", 
+    "event_name": "Newsletter Subscribed", 
+    "events_with_any_cuid": "42", 
+    "unique_devices": "184"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "241", 
+    "event_name": "Address_Added_GK", 
+    "events_with_any_cuid": "241", 
+    "unique_devices": "241"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "236", 
+    "event_name": "Order cancelled", 
+    "events_with_any_cuid": "43", 
+    "unique_devices": "68"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "235", 
+    "event_name": "Order Cancelled", 
+    "events_with_any_cuid": "41", 
+    "unique_devices": "41"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "226", 
+    "event_name": "productImpression", 
+    "events_with_any_cuid": "14", 
+    "unique_devices": "202"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "220", 
+    "event_name": "kp_shopify_logged_in", 
+    "events_with_any_cuid": "8", 
+    "unique_devices": "89"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "207", 
+    "event_name": "Payment_Complete_GK", 
+    "events_with_any_cuid": "130", 
+    "unique_devices": "158"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "168", 
+    "event_name": "Spin Wheel Event", 
+    "events_with_any_cuid": "163", 
+    "unique_devices": "163"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "155", 
+    "event_name": "nitro_facebook_identify", 
+    "events_with_any_cuid": "102", 
+    "unique_devices": "103"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "124", 
+    "event_name": "kp_phone_number_logged_in", 
+    "events_with_any_cuid": "42", 
+    "unique_devices": "73"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "105", 
+    "event_name": "Scheme Enrolled", 
+    "events_with_any_cuid": "82", 
+    "unique_devices": "82"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "105", 
+    "event_name": "Insurance Created", 
+    "events_with_any_cuid": "84", 
+    "unique_devices": "84"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "78", 
+    "event_name": "scheme_failed", 
+    "events_with_any_cuid": "21", 
+    "unique_devices": "21"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "59", 
+    "event_name": "kp_successfully_logged_out", 
+    "events_with_any_cuid": "20", 
+    "unique_devices": "43"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "43", 
+    "event_name": "Order fulfilled", 
+    "events_with_any_cuid": "29", 
+    "unique_devices": "33"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "29", 
+    "event_name": "Book Store Visit", 
+    "events_with_any_cuid": "15", 
+    "unique_devices": "15"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "23", 
+    "event_name": "scheme_success", 
+    "events_with_any_cuid": "2", 
+    "unique_devices": "2"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "19", 
+    "event_name": "onsite submitted", 
+    "events_with_any_cuid": "19", 
+    "unique_devices": "19"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "19", 
+    "event_name": "Profile Updated", 
+    "events_with_any_cuid": "1", 
+    "unique_devices": "1"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "15", 
+    "event_name": "Custom Event", 
+    "events_with_any_cuid": "2", 
+    "unique_devices": "2"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "10", 
+    "event_name": "Book Video Call", 
+    "events_with_any_cuid": "6", 
+    "unique_devices": "6"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "9", 
+    "event_name": "order_status", 
+    "events_with_any_cuid": "5", 
+    "unique_devices": "5"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "8", 
+    "event_name": "N_.creditwalletreward_create", 
+    "events_with_any_cuid": "2", 
+    "unique_devices": "2"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "8", 
+    "event_name": "Book Home Trial", 
+    "events_with_any_cuid": "6", 
+    "unique_devices": "6"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "4", 
+    "event_name": "Store Visit Raised", 
+    "events_with_any_cuid": "4", 
+    "unique_devices": "4"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "4", 
+    "event_name": "WhatsappOptIn", 
+    "events_with_any_cuid": "3", 
+    "unique_devices": "3"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "4", 
+    "event_name": "WhatsappOptOut", 
+    "events_with_any_cuid": "4", 
+    "unique_devices": "4"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "3", 
+    "event_name": "Onsite_Survey_Submitted", 
+    "events_with_any_cuid": "2", 
+    "unique_devices": "3"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "3", 
+    "event_name": "Customer Registered", 
+    "events_with_any_cuid": "3", 
+    "unique_devices": "3"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "2", 
+    "event_name": "wallettransaction_update", 
+    "events_with_any_cuid": "1", 
+    "unique_devices": "1"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "1", 
+    "event_name": "Abandoned Checkout", 
+    "events_with_any_cuid": "1", 
+    "unique_devices": "1"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "1", 
+    "event_name": "pos_integration_verification_test", 
+    "events_with_any_cuid": "1", 
+    "unique_devices": "1"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "1", 
+    "event_name": "review_nector.wallettransaction_update", 
+    "events_with_any_cuid": "1", 
+    "unique_devices": "1"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "1", 
+    "event_name": "creditwalletreward_create", 
+    "events_with_any_cuid": "1", 
+    "unique_devices": "1"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "1", 
+    "event_name": "Order partially fulfilled", 
+    "events_with_any_cuid": "1", 
+    "unique_devices": "1"
+  }, 
+  {
+    "category": "application", 
+    "event_count": "1", 
+    "event_name": "Webpush Test", 
+    "events_with_any_cuid": "0", 
+    "unique_devices": "1"
+  }
+]

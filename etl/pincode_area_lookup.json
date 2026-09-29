@@ -1,0 +1,4302 @@
+{
+ "004012": {
+  "areas": [],
+  "district": null,
+  "state": null,
+  "status": "not_found"
+ },
+ "004026": {
+  "areas": [],
+  "district": null,
+  "state": null,
+  "status": "not_found"
+ },
+ "110001": {
+  "areas": [
+   "Baroda House",
+   "Bengali Market",
+   "Bhagat Singh Market",
+   "Connaught Place",
+   "Constitution House",
+   "Election Commission",
+   "Janpath",
+   "Krishi Bhawan",
+   "Lady Harding Medical College",
+   "New Delhi ",
+   "North Avenue",
+   "Parliament House",
+   "Patiala House",
+   "Pragati Maidan",
+   "Pragati Maidan Camp",
+   "Rail Bhawan",
+   "Sansad Marg",
+   "Sansadiya Soudh",
+   "Secretariat North",
+   "Shastri Bhawan",
+   "Supreme Court"
+  ],
+  "district": "Central Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110002": {
+  "areas": [
+   "A.G.C.R.",
+   "Ajmeri Gate Extn.",
+   "Darya Ganj",
+   "Gandhi Smarak Nidhi",
+   "I.P.Estate",
+   "Indraprastha",
+   "Minto Road"
+  ],
+  "district": "Central Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110003": {
+  "areas": [
+   "Aliganj (South Delhi)",
+   "C G O Complex",
+   "Delhi High Court",
+   "Delhi High Court Extension Counter",
+   "Golf Links",
+   "Kasturba Nagar (South Delhi)",
+   "Lodi Road",
+   "Pandara Road",
+   "Pragati Vihar",
+   "Safdarjung Air Port"
+  ],
+  "district": "South Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110005": {
+  "areas": [
+   "Anand Parbat",
+   "Anand Parbat Indl. Area",
+   "Bank Street (Central Delhi)",
+   "Desh Bandhu Gupta Road",
+   "Guru Gobind Singh Marg",
+   "Karol Bagh",
+   "Master Prithvi Nath Marg",
+   "Sat Nagar"
+  ],
+  "district": "Central Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110006": {
+  "areas": [
+   "Baratooti",
+   "Chandni Chowk",
+   "Chawri Bazar",
+   "Dareeba",
+   "Delhi ",
+   "Delhi Sadar Bazar",
+   "Hauz Qazi",
+   "Jama Masjid",
+   "S.T. Road"
+  ],
+  "district": "North Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110008": {
+  "areas": [
+   "Dada Ghosh Bhawan",
+   "Patel Nagar (Central Delhi)",
+   "Patel Nagar East",
+   "Patel Nagar South",
+   "Patel Nagar West"
+  ],
+  "district": "Central Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110012": {
+  "areas": [
+   "I.A.R.I.",
+   "Inderpuri",
+   "National Physical Laboratory"
+  ],
+  "district": "Central Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110019": {
+  "areas": [
+   "Alaknanda",
+   "Chittranjan Park",
+   "Kalkaji",
+   "Nehru Place"
+  ],
+  "district": "South Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110020": {
+  "areas": [
+   "C R R I (South Delhi)",
+   "F F C Okhla",
+   "Okhla Industrial Area Phase-i",
+   "Okhla Industrial Estate",
+   "Tehkhand"
+  ],
+  "district": "South Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110029": {
+  "areas": [
+   "Ansari Nagar",
+   "Nauroji Nagar",
+   "Safdarjung Enclave"
+  ],
+  "district": "South West Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110040": {
+  "areas": [
+   "Bankner",
+   "Bhorgarh",
+   "Kanya Gurukul",
+   "Lampur",
+   "Narela",
+   "Sanoth",
+   "Singhu",
+   "Tikri Khurd"
+  ],
+  "district": "North West Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110041": {
+  "areas": [
+   "Bakkarwala",
+   "Hirankudna",
+   "Mundka",
+   "Nangloi",
+   "Nangloi - II",
+   "Nangloi - III",
+   "Nilothi",
+   "Ranhola",
+   "Tikri Kalan"
+  ],
+  "district": "West Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110043": {
+  "areas": [
+   "Baprola",
+   "Daulatpur",
+   "Dichaun Kalan",
+   "Dindarpur",
+   "Jhatikara",
+   "Mitraon",
+   "Najafgarh",
+   "Pandwala Kalan",
+   "Papravat",
+   "Rewla Khanpur",
+   "Surehra",
+   "Tilangpur Kotla"
+  ],
+  "district": "South West Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110060": {
+  "areas": [
+   "Rajender Nagar"
+  ],
+  "district": "Central Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110061": {
+  "areas": [
+   "Bijwasan",
+   "Shahbad Mohammadpur"
+  ],
+  "district": "South West Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110063": {
+  "areas": [
+   "Jawala Heri",
+   "Madipur Slum Quarter",
+   "Madipur Village",
+   "Paschim Vihar",
+   "Paschim Vihar B Block",
+   "Peeragarhi"
+  ],
+  "district": "West Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110069": {
+  "areas": [
+   "Union Public Service Commission"
+  ],
+  "district": "Central Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110076": {
+  "areas": [
+   "Ali",
+   "Madanpur Khadar",
+   "Sarita Vihar"
+  ],
+  "district": "South Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110084": {
+  "areas": [
+   "Burari",
+   "Jagatpur",
+   "Jharoda Majraa",
+   "Wazirabad Village"
+  ],
+  "district": "North Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110091": {
+  "areas": [
+   "Chilla",
+   "Himmatpuri",
+   "Kalyanpuri",
+   "Kalyanvas",
+   "Mayur Vihar Ph-I",
+   "Patparganj",
+   "Trilok Puri"
+  ],
+  "district": "East Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "110092": {
+  "areas": [
+   "Anand Vihar",
+   "IP Extension",
+   "Laxmi Nagar (East Delhi)",
+   "Mandawali Fazalpur",
+   "Nirman Vihar",
+   "Shakarpur",
+   "Surajmal Vihar",
+   "Yozna Vihar"
+  ],
+  "district": "East Delhi",
+  "state": "Delhi",
+  "status": "ok"
+ },
+ "121002": {
+  "areas": [
+   "Bhaskola",
+   "Faridabad City",
+   "Faridabad Sector 16",
+   "Faridabad Sector 16a ",
+   "Faridabad Sector 18",
+   "Kheri Kalan"
+  ],
+  "district": "Faridabad",
+  "state": "Haryana",
+  "status": "ok"
+ },
+ "122001": {
+  "areas": [
+   "Arjun Nagar",
+   "Basai Road",
+   "Gurgaon",
+   "Gurgaon Kty.",
+   "Gurgaon Sector 17",
+   "Gurgaon South City I",
+   "Khandsa Road",
+   "Mini Sectt.",
+   "New Colony (Gurgaon)",
+   "Shivaji Nagar (Gurgaon)",
+   "Sohna Adda",
+   "Urban Estate (Gurgaon)"
+  ],
+  "district": "Gurgaon",
+  "state": "Haryana",
+  "status": "ok"
+ },
+ "122004": {
+  "areas": [
+   "Khandsa",
+   "Kherki Daula",
+   "Lakhnaula",
+   "Narsinghpur",
+   "Sikanderpur",
+   "Sikohpur"
+  ],
+  "district": "Gurgaon",
+  "state": "Haryana",
+  "status": "ok"
+ },
+ "122015": {
+  "areas": [
+   "Palam Road",
+   "Sarhaul"
+  ],
+  "district": "Gurgaon",
+  "state": "Haryana",
+  "status": "ok"
+ },
+ "122018": {
+  "areas": [
+   "Gurgaon South City II"
+  ],
+  "district": "Gurgaon",
+  "state": "Haryana",
+  "status": "ok"
+ },
+ "125001": {
+  "areas": [
+   "Auto Market Hisar",
+   "Gju Hisar",
+   "H;t;m;hisar",
+   "Hisar",
+   "Hisar  Nai Mandi",
+   "Hisar City",
+   "Hisar Kty",
+   "M.C.Hisar",
+   "Mini. Sectt,hisar",
+   "N A M Hisar",
+   "Patel Nager Hisar"
+  ],
+  "district": "Hisar",
+  "state": "Haryana",
+  "status": "ok"
+ },
+ "125050": {
+  "areas": [
+   "Ahlisadar",
+   "Bangaon",
+   "Banwali",
+   "Bhirrana",
+   "Bhodia Bishnoian",
+   "Bhodia Khera",
+   "Bhuthan Kalan",
+   "Bighar",
+   "Daryapur",
+   "Dhand",
+   "Dhani Majra",
+   "Fatehabad (Fatehabad)",
+   "Fatehabd Kty",
+   "Gillan Khera",
+   "Hajrawan Kalan",
+   "Hajrawan Khurd",
+   "Jhalnia",
+   "Karnoli",
+   "Khairati Khera",
+   "Kukranwali",
+   "Munawali",
+   "Nai Mandi Fatehabad",
+   "Nakhatia",
+   "Ratta Tibba",
+   "Thori"
+  ],
+  "district": "Fatehabad",
+  "state": "Haryana",
+  "status": "ok"
+ },
+ "12850": {
+  "areas": [],
+  "district": null,
+  "state": null,
+  "status": "not_found"
+ },
+ "131001": {
+  "areas": [
+   "Atlas Cycle",
+   "Barwasni",
+   "Bayanpur",
+   "Bhimnagar",
+   "Delhi Road",
+   "Fazilpur",
+   "Ganzbazar",
+   "Gohana Road (Sonipat)",
+   "Harsana Kalan",
+   "Housing Board Colony",
+   "Industrial Area Sonipat",
+   "Kakroi",
+   "Lehrara",
+   "Mehlana",
+   "Model Town, Sonipat",
+   "Mohana",
+   "Ram Bazar-Sonipat",
+   "Rathdhana",
+   "Rathdhana Road Sonipat",
+   "Rattangarh",
+   "Rishikul Vidyapeeth",
+   "Sandal Kalan",
+   "Shapur Turk",
+   "Sonipat",
+   "Sonipat Kty",
+   "Sonipat Mandi",
+   "Sonipat Sector 14",
+   "Tharuoldepur"
+  ],
+  "district": "Sonipat",
+  "state": "Haryana",
+  "status": "ok"
+ },
+ "131301": {
+  "areas": [
+   "Ahulana(Gohana)",
+   "Bali Brahman",
+   "Barota",
+   "Bhainswan Khurd",
+   "Bidhal",
+   "Bidhal Pinana",
+   "Bus Stand Gohana",
+   "Chhichrana",
+   "Gohana",
+   "Gohana Mandi",
+   "Jagsi",
+   "Jauli",
+   "Kathura",
+   "Kathura Block",
+   "Khandrai",
+   "Kheri Damkan",
+   "Lath",
+   "Madina",
+   "Mahra-I",
+   "Mehmoodpur",
+   "Moi Hooda",
+   "Nayat",
+   "Puthi",
+   "Rabra",
+   "Rukhi",
+   "Sikenderpur Majra",
+   "Tihar"
+  ],
+  "district": "Sonipat",
+  "state": "Haryana",
+  "status": "ok"
+ },
+ "132001": {
+  "areas": [
+   "Canal Colony",
+   "Cssri",
+   "Jundla",
+   "Kanral Industrial Area",
+   "Karnal",
+   "Karnal City",
+   "Karnal GBS",
+   "Karnal HBC",
+   "Karnal Kutchery",
+   "Karnal Model Town",
+   "Karnal NDRI",
+   "Karnal New Prem Nagar",
+   "Karnal Partap Pura",
+   "Karnal Railway Road",
+   "Karnal Ram Nagar",
+   "Karnal Sadar Bazar",
+   "Karnal Sector-6",
+   "Mini sectt- sector-12 Kanral",
+   "Sector 4 Karnal",
+   "Sector-8 Karnal"
+  ],
+  "district": "Karnal",
+  "state": "Haryana",
+  "status": "ok"
+ },
+ "132103": {
+  "areas": [
+   "Ansal Sushant City Panipat",
+   "Panipat",
+   "Panipat City",
+   "Panipat GT Road",
+   "Panipat Kishanpura",
+   "Panipat Kranti Nagar",
+   "Panipat Mandi",
+   "Panipat Model Town",
+   "Panipat N.S.M.",
+   "Panipat Patel Nagar",
+   "Panipat Sugar Mills"
+  ],
+  "district": "Panipat",
+  "state": "Haryana",
+  "status": "ok"
+ },
+ "133001": {
+  "areas": [
+   "A.K. Line",
+   "Ambala",
+   "Commissioner Court",
+   "Gobind Nagar",
+   "Hargolal",
+   "Kacha Bazar",
+   "Kharga Canteen",
+   "Mahesh Nagar",
+   "Palam Vihar (Ambala)",
+   "Punjabi Mohalla",
+   "Sadar Bazar (Ambala)",
+   "Top Khana Bazar"
+  ],
+  "district": "Ambala",
+  "state": "Haryana",
+  "status": "ok"
+ },
+ "134007": {
+  "areas": [
+   "Baknaur",
+   "Baldev Nagar",
+   "Ballana",
+   "Bhanokheri",
+   "Budhangpur",
+   "Chaurmastpur",
+   "Danipur",
+   "Dhankaur",
+   "Dhulkot",
+   "Dhurkara",
+   "Geeta Nagri",
+   "Ghail",
+   "Jalbera",
+   "Jansui",
+   "Kakroo",
+   "Kathgarh Chhappar",
+   "Mandhaur",
+   "Matheri Sekhan",
+   "Naggal",
+   "Naneola",
+   "Panjokhara Sahib",
+   "Saunta",
+   "Segti",
+   "Udaipur"
+  ],
+  "district": "Ambala",
+  "state": "Haryana",
+  "status": "ok"
+ },
+ "140308": {
+  "areas": [
+   "Kumbra",
+   "Mauli Baidwan",
+   "Sohana"
+  ],
+  "district": "Rupnagar",
+  "state": "Punjab",
+  "status": "ok"
+ },
+ "140603": {
+  "areas": [
+   "Chhatt",
+   "Dayalpur Sodhian",
+   "Zirakpur"
+  ],
+  "district": "Patiala",
+  "state": "Punjab",
+  "status": "ok"
+ },
+ "141015": {
+  "areas": [
+   "Karyana Kalan",
+   "Mundian Kalan"
+  ],
+  "district": "Ludhiana",
+  "state": "Punjab",
+  "status": "ok"
+ },
+ "141203": {
+  "areas": [
+   "Assi Kalan",
+   "Jartauli",
+   "Lohgarh",
+   "Mehma Singh Wala",
+   "Narangwal"
+  ],
+  "district": "Ludhiana",
+  "state": "Punjab",
+  "status": "ok"
+ },
+ "142022": {
+  "areas": [
+   "Dad",
+   "Dev Nagar",
+   "Hamaunpura",
+   "Lalton Kalan",
+   "Lalton Khurd",
+   "Thakarwal"
+  ],
+  "district": "Ludhiana",
+  "state": "Punjab",
+  "status": "ok"
+ },
+ "143006": {
+  "areas": [
+   "Basti Ram Dhab",
+   "Focal Point SO",
+   "Gandhi Bazar (Amritsar)",
+   "Golden Temple",
+   "Guru Bazar",
+   "Guru Ram Dass Niwas",
+   "Hs College",
+   "Katra Karam Singh",
+   "Katra Sher Singh",
+   "Kot Atma Ram",
+   "Majith Mandi",
+   "Mohan Nagar (Amritsar)",
+   "Sultanwind"
+  ],
+  "district": "Amritsar",
+  "state": "Punjab",
+  "status": "ok"
+ },
+ "144301": {
+  "areas": [
+   "Alawalpur (Jalandhar)",
+   "Kishangarh",
+   "Naugajja",
+   "Sikandarpur"
+  ],
+  "district": "Jalandhar",
+  "state": "Punjab",
+  "status": "ok"
+ },
+ "147103": {
+  "areas": [
+   "Bhankher",
+   "Sanaur"
+  ],
+  "district": "Patiala",
+  "state": "Punjab",
+  "status": "ok"
+ },
+ "148001": {
+  "areas": [
+   "Bhindran",
+   "Mini Secteriate Sangrur",
+   "N G M Sangrur",
+   "Sangrur",
+   "Sangrur Kty"
+  ],
+  "district": "Sangrur",
+  "state": "Punjab",
+  "status": "ok"
+ },
+ "151302": {
+  "areas": [
+   "Behman Jassa Singh Wala",
+   "Behniwal",
+   "Bhagi Bander",
+   "Chehlanwali",
+   "Chethewala",
+   "Dhingar",
+   "Jaga Ram Tirath",
+   "Jiwan Singh Wala",
+   "Kalal Wala",
+   "Kaureana",
+   "Natheha",
+   "Sekhpura",
+   "Singo",
+   "Talwandi Sabo",
+   "Teona Pujarian"
+  ],
+  "district": "Bathinda",
+  "state": "Punjab",
+  "status": "ok"
+ },
+ "160014": {
+  "areas": [
+   "Behlolpur",
+   "Dadu Majra Colony",
+   "Dhanas",
+   "Sector 14 (Chandigarh)",
+   "Tira"
+  ],
+  "district": "Rupnagar",
+  "state": "Punjab",
+  "status": "ok"
+ },
+ "160047": {
+  "areas": [
+   "Burail",
+   "Sector 44 (Chandigarh)",
+   "Sector 47 Chandigarh"
+  ],
+  "district": "Chandigarh",
+  "state": "Chandigarh",
+  "status": "ok"
+ },
+ "160055": {
+  "areas": [
+   "Balongi",
+   "Chandigarh Sector 55",
+   "Chandigarh Sector 56",
+   "Daon"
+  ],
+  "district": "Rupnagar",
+  "state": "Punjab",
+  "status": "ok"
+ },
+ "160062": {
+  "areas": [
+   "Chandigarh Sector 61",
+   "Chandigarh Sector 62",
+   "Chandigarh Sector 65",
+   "Chandigarh Sector 67"
+  ],
+  "district": "Rupnagar",
+  "state": "Punjab",
+  "status": "ok"
+ },
+ "160071": {
+  "areas": [
+   "Chandigarh Sector 71"
+  ],
+  "district": "Rupnagar",
+  "state": "Punjab",
+  "status": "ok"
+ },
+ "160102": {
+  "areas": [
+   "Mauli Jagran",
+   "Raipur Kalan"
+  ],
+  "district": "Chandigarh",
+  "state": "Chandigarh",
+  "status": "ok"
+ },
+ "17078": {
+  "areas": [],
+  "district": null,
+  "state": null,
+  "status": "not_found"
+ },
+ "174311": {
+  "areas": [
+   "Karer",
+   "Kirwin",
+   "Kohdra",
+   "Kulehra",
+   "Salauni",
+   "Sohari"
+  ],
+  "district": "Hamirpur(HP)",
+  "state": "Himachal Pradesh",
+  "status": "ok"
+ },
+ "174505": {
+  "areas": [
+   "Changar",
+   "Dhaned"
+  ],
+  "district": "Hamirpur(HP)",
+  "state": "Himachal Pradesh",
+  "status": "ok"
+ },
+ "176110": {
+  "areas": [
+   "Bir Bagehra",
+   "Charot",
+   "Kanerar",
+   "Sujanpur Tira",
+   "Tira"
+  ],
+  "district": "Hamirpur(HP)",
+  "state": "Himachal Pradesh",
+  "status": "ok"
+ },
+ "180002": {
+  "areas": [
+   "Akalpur",
+   "Bhadrod",
+   "Gol Gujral",
+   "Sangrampur",
+   "Suryavihar",
+   "Talab Tillo"
+  ],
+  "district": "Jammu",
+  "state": "Jammu & Kashmir",
+  "status": "ok"
+ },
+ "180005": {
+  "areas": [
+   "Karan Nagar (Jammu)",
+   "Kotli Colony",
+   "Puran Nagar",
+   "Rehari Mohalla",
+   "Subash Nagar Jammu"
+  ],
+  "district": "Jammu",
+  "state": "Jammu & Kashmir",
+  "status": "ok"
+ },
+ "181132": {
+  "areas": [
+   "Banachak",
+   "Bishnah",
+   "Bishnah Adda",
+   "Chak Umrah",
+   "Darap",
+   "Deoli",
+   "Kanhal",
+   "Kheri",
+   "Kotli Mian Fateh",
+   "Palli",
+   "Pandorian Manhasan",
+   "Rehal"
+  ],
+  "district": "Jammu",
+  "state": "Jammu & Kashmir",
+  "status": "ok"
+ },
+ "190001": {
+  "areas": [
+   "Badyar Balla",
+   "Court Road",
+   "Lal Chowk",
+   "Nehru Park",
+   "S.K.Sectrate",
+   "Sathu",
+   "Srinagar "
+  ],
+  "district": "Srinagar",
+  "state": "Jammu & Kashmir",
+  "status": "ok"
+ },
+ "201002": {
+  "areas": [
+   "Ingram Institute",
+   "Kamla Nehru Nagar",
+   "Kavi Nagar",
+   "New Raj Nagar",
+   "Old Raj Nagar",
+   "Police Line Harsaon",
+   "Raispur",
+   "Rajapur",
+   "RAKNPA",
+   "Sadarpur",
+   "Shahpur Bamheta",
+   "Shastri Nagar",
+   "Vivekanand Nagar"
+  ],
+  "district": "Ghaziabad",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "201009": {
+  "areas": [
+   "Arya Nagar (Ghaziabad)",
+   "B.B.Nagar",
+   "Chhaprola",
+   "Chhipyana",
+   "Dasna Gate Ed",
+   "Dundahera",
+   "Ghaziabad City",
+   "Kaila",
+   "Model Town (Ghaziabad)",
+   "Nasratpura ED",
+   "Roza Yakubpur",
+   "Vijai Nagar (Ghaziabad)"
+  ],
+  "district": "Ghaziabad",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "201017": {
+  "areas": [
+   "Raj Nagar Extension"
+  ],
+  "district": "Ghaziabad",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "201301": {
+  "areas": [
+   "Noida",
+   "Noida Sector 12",
+   "Noida Sector 16",
+   "Noida Sector 27"
+  ],
+  "district": "Gautam Buddha Nagar",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "201311": {
+  "areas": [
+   "Container Depot"
+  ],
+  "district": "Gautam Buddha Nagar",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "203001": {
+  "areas": [
+   "Akabarpur",
+   "Aulina",
+   "Bhoor",
+   "Bulandshahr",
+   "Bulandshahr  Kutchery",
+   "Bulandshahr Tehsil",
+   "Chanderu",
+   "Chitson",
+   "Dariyapur",
+   "Dav   College Bulandshahr",
+   "Deputy  Ganj  Bulandshahr",
+   "Dhamera  Keerat",
+   "Dhatori",
+   "Ghunghraoli Banwaripur",
+   "Guthaoli",
+   "Hattmabad",
+   "Ipdc  Bulandshahr",
+   "Jauly Garh",
+   "Kahira",
+   "Krishananagar",
+   "Lalkuan",
+   "Luharaly Ludhiyana",
+   "Malagarh",
+   "Mirjapur",
+   "Mukeempur",
+   "Naya  Gaon",
+   "Panni  Nagar",
+   "Rangpur",
+   "Salempur",
+   "Sarai Ghashi",
+   "Surjawaly"
+  ],
+  "district": "Bulandshahr",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "203201": {
+  "areas": [
+   "Dankaur",
+   "Dhanouri   Kalan",
+   "Mirzapur Niloni",
+   "Nawada",
+   "Parsol"
+  ],
+  "district": "Bulandshahr",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "208010": {
+  "areas": [
+   "J K Puri",
+   "Shiwans Tanney"
+  ],
+  "district": "Kanpur Nagar",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "208021": {
+  "areas": [
+   "Kasigaon",
+   "Kathongar",
+   "N H Road",
+   "Naubasta",
+   "Pipergaon",
+   "Sanigawan",
+   "Taudhakpur"
+  ],
+  "district": "Kanpur Nagar",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "208027": {
+  "areas": [
+   "Barra",
+   "Barra Vishwa Bank Sector-A"
+  ],
+  "district": "Kanpur Nagar",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "209217": {
+  "areas": [
+   "Baikuthpur",
+   "Bithoor",
+   "Itra",
+   "Mandhana",
+   "Naramau",
+   "Pachor",
+   "Pem",
+   "Tatya Ganj",
+   "Tikra"
+  ],
+  "district": "Kanpur Nagar",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "211002": {
+  "areas": [
+   "Allahabad Kty.",
+   "Allenganj",
+   "Amitco",
+   "Distt.Board",
+   "George Town",
+   "Indian Press",
+   "K G Marg",
+   "Kamlanagar",
+   "Katra (Allahabad)",
+   "Prayag",
+   "Rajapur (Allahabad)",
+   "Ranipur (Allahabad)",
+   "Subhash Ngr",
+   "Tagore Town",
+   "University (Allahabad)"
+  ],
+  "district": "Allahabad",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "211003": {
+  "areas": [
+   "Ahmadganj",
+   "Allahabad Chowk",
+   "Allahabad City",
+   "Attarsuiya",
+   "Bahadurganj (Allahabad)",
+   "Bai Ka Bagh",
+   "Darashahazmal",
+   "Hindi Sahitya Sammelan",
+   "Kalyani Devi",
+   "Katghar (Allahabad)",
+   "Krishna Nagar (Allahabad)",
+   "Mutthiganj",
+   "Nehru Nagar (Allahabad)",
+   "New Bairahana",
+   "Prayag Mahila Vidyapith",
+   "S R Marg",
+   "Satti Chaura",
+   "Tirath Raj Aushadhalaya",
+   "Triveni Marg",
+   "V N Marg"
+  ],
+  "district": "Allahabad",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "211008": {
+  "areas": [
+   "Arail",
+   "Chaka",
+   "Dandi Bazar ED",
+   "I L C",
+   "Naini (Allahabad)",
+   "Naini Pac",
+   "Nibi"
+  ],
+  "district": "Allahabad",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "212601": {
+  "areas": [
+   "Aboonagar",
+   "Ayah",
+   "Banarsi",
+   "Baranpur",
+   "Beragarhiwa",
+   "Bhitaura",
+   "Bilandpur",
+   "Chandiyana",
+   "Churiyani",
+   "Damapur",
+   "Dhakauli",
+   "Fatehpur",
+   "Fatehpur City",
+   "Fatehpur Court",
+   "Fatehpur Town",
+   "Hariharganj",
+   "Kandhi",
+   "Korai",
+   "Meoli",
+   "Ramwan",
+   "Sangaon",
+   "Shah",
+   "Teliyani",
+   "Umari"
+  ],
+  "district": "Fatehpur",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "221010": {
+  "areas": [
+   "Aurangabad (Varanasi)",
+   "Belpco",
+   "Bhelupura",
+   "Gdk",
+   "H.P.S.",
+   "Kamachha",
+   "Khojwa Bazar",
+   "Luxa",
+   "Mahmoorganj",
+   "Mata Kund",
+   "Nagar Maha Palika",
+   "Sigra"
+  ],
+  "district": "Varanasi",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "221401": {
+  "areas": [
+   "Asanao Bazar",
+   "Bhadohi",
+   "Katra Bazar (Varanasi)",
+   "Munsiladpur",
+   "Pipris",
+   "Raya",
+   "Sarroi",
+   "Uchetha"
+  ],
+  "district": "Sant Ravidas Nagar",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "221601": {
+  "areas": [
+   "Bariyadih",
+   "Dhrampur Bisnupur",
+   "Dubari",
+   "Gajiapur",
+   "Gangupur",
+   "Molnapur",
+   "Parasia"
+  ],
+  "district": "Mau",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "222142": {
+  "areas": [
+   "Amahit",
+   "Belhari",
+   "Brahmanpur",
+   "Deduana",
+   "Dehari",
+   "Deokali",
+   "Dilla Ka Pura",
+   "Jaigopalganj",
+   "Kerakat",
+   "Kusaila",
+   "Murki",
+   "Narhan",
+   "Pasewa",
+   "Pesara",
+   "Sarauni"
+  ],
+  "district": "Jaunpur",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "226003": {
+  "areas": [
+   "Amberganj",
+   "Chaupatiyan",
+   "Hasnain Market",
+   "Husainabad",
+   "Lucknow Chowk",
+   "Mansoor Nagar",
+   "Medical College (Lucknow)",
+   "Nadan Mahal",
+   "Naubasta",
+   "Raja Bazar",
+   "Saadatganj (Lucknow)",
+   "Sarai Mali Khan",
+   "Sarfraj",
+   "T. Tib",
+   "Thakurganj",
+   "Victoriaganj",
+   "Yahiaganj"
+  ],
+  "district": "Lucknow",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "226016": {
+  "areas": [
+   "Ghazipur (Lucknow)",
+   "Hal (Lucknow)",
+   "Indira Nagar (Lucknow)",
+   "Indiranagar Sec-14",
+   "Indiranagar Sec-18",
+   "Indiranagar Sec-21",
+   "Narain Nagar",
+   "Sarvoday Nagar",
+   "Sec-B Indira Nagar",
+   "Sec-d Indiranagar"
+  ],
+  "district": "Lucknow",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "226017": {
+  "areas": [
+   "Alamnagar",
+   "Avas Vikas Colony (Lucknow)",
+   "R G C Mill",
+   "Rajajipuram"
+  ],
+  "district": "Lucknow",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "230135": {
+  "areas": [
+   "Bahuta",
+   "Barahupur",
+   "Belarampur",
+   "Beshar",
+   "Bhagwanpur",
+   "Charaiya",
+   "Dhandhar",
+   "Fatehpur",
+   "Kanja Sarai Gulami",
+   "Kansapatti",
+   "Kukuwar",
+   "Muzahi Bazar",
+   "Pandri Mustarka",
+   "Patkhauli",
+   "Patti (Pratapgarh)",
+   "Pirthiganj Bazar",
+   "Rendi Garapur",
+   "Sarai Chheolaha",
+   "Sarai Madhai",
+   "Sarai Mahesh"
+  ],
+  "district": "Pratapgarh",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "244001": {
+  "areas": [
+   "24bn Pac Mbd",
+   "Beejna",
+   "Bhaisian",
+   "Devapur Mustkam Pur",
+   "Faij Ganj Bazar",
+   "Faredi",
+   "Galshaheed",
+   "Gandhi Nagar (Moradabad)",
+   "Godhi",
+   "Hasanpur Katia",
+   "Hathala Colony",
+   "Husainpur Hamir",
+   "Jahangirpur",
+   "Katghar (Moradabad)",
+   "Lakri Fazalpur",
+   "Macharria",
+   "Mandi Naj",
+   "Moradabad",
+   "Moradabad City",
+   "Moradabad Kutchery",
+   "Moradabad R.S.",
+   "Mughal Pura",
+   "Mukarrabpur",
+   "Nai Basti (Moradabad)",
+   "Nawabpura",
+   "Noorpur",
+   "P.A.C. Moradabad",
+   "P.T.C. Moradabad",
+   "R N . Area",
+   "R.T.S. Moradabad",
+   "Rajpur Kesaria",
+   "S.P.F. Mrd",
+   "Sitapuri",
+   "Sonakpur",
+   "Stationroad",
+   "Sultanpur Dost",
+   "Town Hall (Moradabad)",
+   "Tumaria Kalan",
+   "Uncha Gaon"
+  ],
+  "district": "Moradabad",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "247775": {
+  "areas": [
+   "Dundu Khera",
+   "Gangeru",
+   "Ganj Bazar Kandhala",
+   "Garhi Daulat",
+   "Islampur Ghasauli",
+   "Isso Pur Teel",
+   "Jasala",
+   "Kandhala",
+   "Khandrawali",
+   "Kiwana",
+   "Lisarh",
+   "Makhmoolpur",
+   "Parasauli",
+   "Rajpur Chhajpur",
+   "Rasulpur Gujran",
+   "Sunna",
+   "Tahirpur Bhabisa"
+  ],
+  "district": "Muzaffarnagar",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "248001": {
+  "areas": [
+   "Araghar",
+   "Arahat Bazar",
+   "Balawala",
+   "Ballupur",
+   "Bhaniawala",
+   "Cannaught Place",
+   "CDA(A.F)",
+   "Dalanwala",
+   "Dehradun ",
+   "Dehradun City",
+   "Dehradun Kty",
+   "Dilaram Bazar",
+   "Govindgarh (Dehradun)",
+   "Harrawala",
+   "Hathi Barkala",
+   "K.P.Kshetra",
+   "Kanwali",
+   "Kanwali Road",
+   "Karanpur",
+   "Mothrowala",
+   "Neshvilla Road",
+   "Nivh",
+   "Patel Nagar (Dehradun)",
+   "Rispana",
+   "Sachivalaya Parisar",
+   "Sayedwala"
+  ],
+  "district": "Dehradun",
+  "state": "Uttarakhand",
+  "status": "ok"
+ },
+ "248171": {
+  "areas": [
+   "Majra (Dehradun)",
+   "Mehuwala"
+  ],
+  "district": "Dehradun",
+  "state": "Uttarakhand",
+  "status": "ok"
+ },
+ "249401": {
+  "areas": [
+   "Bhimgoda",
+   "Haridwar",
+   "Mayapur (Haridwar)"
+  ],
+  "district": "Haridwar",
+  "state": "Uttarakhand",
+  "status": "ok"
+ },
+ "250001": {
+  "areas": [
+   "Abdullapur",
+   "Abulane",
+   "Bana",
+   "Begum Bagh",
+   "Belvedere",
+   "Bhatipura",
+   "Boundary Road",
+   "Dabka",
+   "Defence Colony (Meerut)",
+   "Ganganagar",
+   "Gurukul Dorli",
+   "Incholi",
+   "Jatauli",
+   "Kanker Khera",
+   "Kaseru Khera",
+   "Kastla Shamshernagar",
+   "Kayastha Badha",
+   "Krishana Nagar",
+   "Mainthna Inder Singh",
+   "Maukhas",
+   "Meerut Cantt",
+   "Mundali",
+   "Muzaffarnagar Saini",
+   "P. R. C.",
+   "Phalauda",
+   "R.A.Bazar",
+   "Rajpura",
+   "Rasulpur Aurangabad",
+   "Rukanpur Morna",
+   "Sardhana Road",
+   "Sikhera",
+   "Victoria Park"
+  ],
+  "district": "Meerut",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "250002": {
+  "areas": [
+   "Anaj Mandi (Meerut)",
+   "Baghpat Gate",
+   "Banker Street",
+   "Budhana Gate",
+   "Budhera Zahidpur",
+   "Chhipi Tank",
+   "Gandhi Ashram (Meerut)",
+   "Ghosipur",
+   "Kabari Bazar",
+   "Kaiser Ganj",
+   "Kishanpura (Meerut)",
+   "Lisari",
+   "Lisari Gate",
+   "Malyana",
+   "Meerut City",
+   "Meerut City R. S.",
+   "Meerut Tehsil",
+   "Nadir Ali & Co.",
+   "Navinmandi",
+   "Panchli Khurd",
+   "Ramlilaground",
+   "Ramnagar (Meerut)",
+   "Rly. Road Meerut",
+   "S.G.Mandi",
+   "Sarrafa Bazar",
+   "Shivpuri (Meerut)",
+   "Suraj Kund Road",
+   "Thapar Nagar",
+   "W. K. Road"
+  ],
+  "district": "Meerut",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "250110": {
+  "areas": [
+   "Dulhera",
+   "Modipuram",
+   "Pabli Khas",
+   "Siwaya"
+  ],
+  "district": "Meerut",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "263642": {
+  "areas": [
+   "Amsarkote",
+   "Are",
+   "Ason",
+   "Bageshwar",
+   "Bahuli",
+   "Baisani",
+   "Bhatoli",
+   "Bilonasera",
+   "Chirang",
+   "Collectorate Bageshwar",
+   "Darimthok",
+   "Dewalchaura",
+   "Doba Katyur",
+   "Falyati",
+   "Gadera",
+   "Ghiroli",
+   "Harbarh",
+   "Harsila",
+   "Jagthana",
+   "Jaulkande",
+   "Kanyalikote",
+   "Kathayatbara",
+   "Malta",
+   "Mandalsera",
+   "Pandrapali",
+   "Purkuni",
+   "Queralli",
+   "Tuper",
+   "Udera"
+  ],
+  "district": "Bageshwar",
+  "state": "Uttarakhand",
+  "status": "ok"
+ },
+ "281004": {
+  "areas": [
+   "Bati",
+   "Krishna Nagar (Mathura)",
+   "Maholi",
+   "Maholi Road",
+   "Satoha",
+   "Usfar"
+  ],
+  "district": "Mathura",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "282001": {
+  "areas": [
+   "15 Btn PAC Agra",
+   "509 Command",
+   "Agra",
+   "Agra Barrcks",
+   "Balu Ganj",
+   "Deori Road",
+   "G. L. Emporiaumi",
+   "Hotal Clarkshiraj",
+   "Idgha Colony",
+   "Indrapuram",
+   "Namner",
+   "P.R.R",
+   "Rakabganj",
+   "Sadar Bazar (Agra)",
+   "Sarai Khawaja",
+   "Seola Jat",
+   "Sultan Pura",
+   "Taj",
+   "Tajganj"
+  ],
+  "district": "Agra",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "282006": {
+  "areas": [
+   "Bamrauli Katara",
+   "Budhana Mustkil",
+   "Chhalesar",
+   "Dhandupura",
+   "Foundry Nagar",
+   "Hazipur Khera",
+   "Industrial Estate (Agra)",
+   "Kalal Kheria",
+   "Nagla Sabla",
+   "Naraich",
+   "Nunhai",
+   "Rehan Kalan",
+   "Yamuna Bridge"
+  ],
+  "district": "Agra",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "282007": {
+  "areas": [
+   "Arsena",
+   "Artoni",
+   "Avas Vikas Colony",
+   "Bainpur",
+   "Bodla",
+   "Dahtora",
+   "Kailash",
+   "Keetham",
+   "Panwari",
+   "Runkata",
+   "Shastripuram",
+   "Sikandra (Agra)",
+   "Subji Mandi"
+  ],
+  "district": "Agra",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "282010": {
+  "areas": [
+   "Bhogipura",
+   "Collectrate",
+   "Nai Ki Mandi",
+   "Police Line",
+   "Prathvi Nath Fatak",
+   "Shahaganj (Agra)"
+  ],
+  "district": "Agra",
+  "state": "Uttar Pradesh",
+  "status": "ok"
+ },
+ "302001": {
+  "areas": [
+   "Ashok Nagar (Jaipur)",
+   "Bhura Tiba",
+   "C.P.M.G",
+   "Chandpole Bazar",
+   "Indra Bazar",
+   "Jaipur ",
+   "M.I.Road",
+   "Purani Basti (Jaipur)",
+   "Rajasthan State Hotel"
+  ],
+  "district": "Jaipur",
+  "state": "Rajasthan",
+  "status": "ok"
+ },
+ "302002": {
+  "areas": [
+   "Amer Road",
+   "Govind Nagar (Jaipur)",
+   "Kishanpole Bazar",
+   "Tripolia Bazar"
+  ],
+  "district": "Jaipur",
+  "state": "Rajasthan",
+  "status": "ok"
+ },
+ "302003": {
+  "areas": [
+   "Haldiyon Ka Rasta",
+   "Jaipur City",
+   "Krishi Upaj Mandi",
+   "Ramganj Bazar"
+  ],
+  "district": "Jaipur",
+  "state": "Rajasthan",
+  "status": "ok"
+ },
+ "302004": {
+  "areas": [
+   "Arjun Lal Sethi Nagar",
+   "Janta Colony",
+   "Jawahar Nagar",
+   "Jhalana Doongri",
+   "Krishna Mandir",
+   "Moti Doongari Road",
+   "Raja Park Colony",
+   "Rajasthan University",
+   "S.M.S.Hospital",
+   "Tilak Nagar (Jaipur)"
+  ],
+  "district": "Jaipur",
+  "state": "Rajasthan",
+  "status": "ok"
+ },
+ "302006": {
+  "areas": [
+   "Ajmer Road",
+   "Industrial Estate (Jaipur)",
+   "Jaipur R.S.",
+   "Khatipura Road",
+   "P.W.D.Office",
+   "Raj Bhawan (Jaipur)",
+   "Station Road (Jaipur)"
+  ],
+  "district": "Jaipur",
+  "state": "Rajasthan",
+  "status": "ok"
+ },
+ "302012": {
+  "areas": [
+   "Bindayaka",
+   "Dhankya",
+   "Hathoj",
+   "Industrial Area Jhotwara",
+   "Jhotwara",
+   "Khatipura",
+   "Khora Bisal",
+   "Kishanpura",
+   "Meena Wala",
+   "Mundia Rampura",
+   "Neemera",
+   "Neendar Banar",
+   "Niwaroo",
+   "Rojda",
+   "Sinwar",
+   "Sirsi"
+  ],
+  "district": "Jaipur",
+  "state": "Rajasthan",
+  "status": "ok"
+ },
+ "302021": {
+  "areas": [
+   "Heerapura",
+   "Vaishali Nagar"
+  ],
+  "district": "Jaipur",
+  "state": "Rajasthan",
+  "status": "ok"
+ },
+ "311026": {
+  "areas": [
+   "Almas",
+   "Bhagwanpura",
+   "Bheemdiyas",
+   "Brahmano Ki Sareri",
+   "Ganglas",
+   "Kabradia",
+   "Karjaliya",
+   "Keriya",
+   "Mod Ka Nimbahera",
+   "Palri",
+   "Rupaheli Khurd",
+   "Sirdiyas"
+  ],
+  "district": "Bhilwara",
+  "state": "Rajasthan",
+  "status": "ok"
+ },
+ "332001": {
+  "areas": [
+   "Bajaj Road-Sikar",
+   "Bhaironpura",
+   "Devipura",
+   "Fatehpuri Gate",
+   "Gandhinagar (Sikar)",
+   "Hospital Road (Sikar)",
+   "Kanwarpura",
+   "Mochiwara",
+   "Nathawatpura",
+   "Sabalpura",
+   "Sikar"
+  ],
+  "district": "Sikar",
+  "state": "Rajasthan",
+  "status": "ok"
+ },
+ "342001": {
+  "areas": [
+   "Agolai",
+   "Bambore Darjiyan",
+   "Barli",
+   "Bavarli",
+   "Chokhan",
+   "Dhandhaniya",
+   "Dhandhaniya Bhayalan",
+   "Jodhpur",
+   "Jodhpur Bhagat Ki Kothi",
+   "Jodhpur City",
+   "Jodhpur Cloth Market",
+   "Jodhpur Girdikot",
+   "Jodhpur University Campus",
+   "Joliyali",
+   "Kabutaron Ka Chowk",
+   "Lodi Daijran",
+   "Railway Office",
+   "Siwanchi Gate",
+   "Surani"
+  ],
+  "district": "Jodhpur",
+  "state": "Rajasthan",
+  "status": "ok"
+ },
+ "360022": {
+  "areas": [
+   "Dholara",
+   "Khokhaddad",
+   "KOTHARIA (Rajkot)",
+   "Kotharia(TB Hosp)"
+  ],
+  "district": "Rajkot",
+  "state": "Gujarat",
+  "status": "ok"
+ },
+ "360410": {
+  "areas": [
+   "Bhader",
+   "Bhola",
+   "Bhukhi",
+   "Chhadvavadar",
+   "Chhatrasa",
+   "Chikhaliya",
+   "Dhoraji",
+   "Dhoraji D.G.",
+   "Dhoraji G.P.",
+   "Dhoraji S.R.",
+   "Dudhivadar",
+   "Jamnavad",
+   "Kalana",
+   "Nagalkhada",
+   "Pipaliya",
+   "Raidi",
+   "Roghel",
+   "Vadodar"
+  ],
+  "district": "Rajkot",
+  "state": "Gujarat",
+  "status": "ok"
+ },
+ "370465": {
+  "areas": [
+   "Bhadai Moti",
+   "Don",
+   "Durgapur",
+   "Kachchh Mandvi",
+   "Kachchh Mandvi Sanjipadi",
+   "Kathda",
+   "Manjal (H)",
+   "Maska",
+   "Merau",
+   "Nagalpar (Dhindh)",
+   "Ratadia",
+   "Rayan Moti",
+   "Salaya Mota",
+   "Sherdi",
+   "Shirva",
+   "Vada"
+  ],
+  "district": "Kachchh",
+  "state": "Gujarat",
+  "status": "ok"
+ },
+ "380001": {
+  "areas": [
+   "Ahmedabad ",
+   "Dariapur (Ahmedabad)",
+   "District Court (Ahmedabad)",
+   "Gandhi Road (Ahmedabad)",
+   "Gheekanta Road",
+   "Jamalpur (Ahmedabad)",
+   "Kalupur Chakla",
+   "Khadia",
+   "Khanpur (Ahmedabad)",
+   "Lal Darwaja",
+   "Manek Chowk",
+   "Municipal Corporation",
+   "Raikhad",
+   "Raipur (Ahmedabad)"
+  ],
+  "district": "Ahmedabad",
+  "state": "Gujarat",
+  "status": "ok"
+ },
+ "380004": {
+  "areas": [
+   "Cantonment",
+   "Delhi Gate (Ahmedabad)",
+   "Dudheshwar Tavdipura",
+   "Girdharnagar",
+   "Madhupura Market",
+   "Shahibag",
+   "Shahpur (Ahmedabad)",
+   "Sub Foreign"
+  ],
+  "district": "Ahmedabad",
+  "state": "Gujarat",
+  "status": "ok"
+ },
+ "380007": {
+  "areas": [
+   "Anandnagar (Ahmedabad)",
+   "Narayannagar",
+   "Paldi (Ahmedabad)",
+   "Sarkhej Road",
+   "Shardanagar"
+  ],
+  "district": "Ahmedabad",
+  "state": "Gujarat",
+  "status": "ok"
+ },
+ "380008": {
+  "areas": [
+   "Daxini Society",
+   "Jawahar Chowk",
+   "Khokhara Mehmadabad",
+   "L G Hospital",
+   "Maninagar",
+   "S A Mills",
+   "Vasisthnagar"
+  ],
+  "district": "Ahmedabad",
+  "state": "Gujarat",
+  "status": "ok"
+ },
+ "380009": {
+  "areas": [
+   "Ashram Road",
+   "Darpan Society",
+   "Gujarat University",
+   "Navrangpura"
+  ],
+  "district": "Ahmedabad",
+  "state": "Gujarat",
+  "status": "ok"
+ },
+ "380059": {
+  "areas": [
+   "Shilaj",
+   "Thaltej"
+  ],
+  "district": "Ahmedabad",
+  "state": "Gujarat",
+  "status": "ok"
+ },
+ "390001": {
+  "areas": [
+   "Baranpura",
+   "Khanderao Market",
+   "Madanzampa",
+   "Mandvi (Vadodara)",
+   "SRP Group I",
+   "Vadodara"
+  ],
+  "district": "Vadodara",
+  "state": "Gujarat",
+  "status": "ok"
+ },
+ "393105": {
+  "areas": [
+   "Bhalod (Vadodara)",
+   "Koral",
+   "Lilod",
+   "Navitothidra",
+   "Oz",
+   "Rarod",
+   "Ropa",
+   "Sayar"
+  ],
+  "district": "Vadodara",
+  "state": "Gujarat",
+  "status": "ok"
+ },
+ "395005": {
+  "areas": [
+   "Ambheta",
+   "Ariana",
+   "Barbodhan",
+   "Bhandut",
+   "Bhesan",
+   "Dihen",
+   "Narthan",
+   "Pinjrat",
+   "Rander",
+   "Segva Chhama",
+   "Selut"
+  ],
+  "district": "Surat",
+  "state": "Gujarat",
+  "status": "ok"
+ },
+ "395007": {
+  "areas": [
+   "Abhva",
+   "Athwa",
+   "Bharthana",
+   "Gavier",
+   "Khajod",
+   "Magdalla",
+   "Piplod (Surat)",
+   "Svr College",
+   "Umra",
+   "Veer Narmad South Gujarat University",
+   "Vesu"
+  ],
+  "district": "Surat",
+  "state": "Gujarat",
+  "status": "ok"
+ },
+ "396001": {
+  "areas": [
+   "Dhamdachi",
+   "Ghadoi",
+   "Kewada",
+   "Khajurdi",
+   "Palan",
+   "Sarodhi",
+   "Saron",
+   "Tithal",
+   "Valsad",
+   "Valsad Chhipwad",
+   "Valsad Mograwadi",
+   "Valsad Mota Bazar"
+  ],
+  "district": "Valsad",
+  "state": "Gujarat",
+  "status": "ok"
+ },
+ "400012": {
+  "areas": [
+   "BEST STaff Quarters",
+   "Chamarbaug",
+   "Haffkin Institute",
+   "Lal Baug",
+   "Parel",
+   "Parel Naka",
+   "Parel Rly Work Shop"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400013": {
+  "areas": [
+   "Delisle Road"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400014": {
+  "areas": [
+   "Dadar",
+   "Dadar Colony",
+   "Naigaon (Mumbai)"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400015": {
+  "areas": [
+   "Sewri"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400016": {
+  "areas": [
+   "Kapad Bazar",
+   "Mahim",
+   "Mahim Bazar",
+   "Mahim East",
+   "Mori Road"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400017": {
+  "areas": [
+   "Dharavi",
+   "Dharavi Road"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400018": {
+  "areas": [
+   "Worli",
+   "Worli Naka"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400019": {
+  "areas": [
+   "Matunga"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400022": {
+  "areas": [
+   "Chunabhatti",
+   "Raoli Camp",
+   "Sion",
+   "Transit Camp"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400025": {
+  "areas": [
+   "New Prabhadevi Road",
+   "Prabhadevi"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400031": {
+  "areas": [
+   "Kidwai Nagar (Mumbai)",
+   "Wadala",
+   "Wadala Rs"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400032": {
+  "areas": [
+   "High Court Building (Mumbai)",
+   "Mantralaya (Mumbai)",
+   "Secretariate"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400033": {
+  "areas": [
+   "Cotton Exchange",
+   "Kalachowki",
+   "L B S N E collage",
+   "Reay Road",
+   "Tank Road"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400034": {
+  "areas": [
+   "Haji Ali",
+   "Tulsiwadi"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400037": {
+  "areas": [
+   "Antop Hill",
+   "B P T Colony",
+   "C G S Colony",
+   "Wadala Truck Terminal"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400059": {
+  "areas": [
+   "J.B. Nagar",
+   "Marol Bazar",
+   "Marol Naka"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400091": {
+  "areas": [
+   "Borivali"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400104": {
+  "areas": [
+   "Bangur Nagar",
+   "Goregaon (Mumbai)",
+   "Goregaon RS",
+   "Motilal Nagar"
+  ],
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400601": {
+  "areas": [
+   "Thane",
+   "Thane Bazar",
+   "Thane R.S."
+  ],
+  "district": "Thane",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400604": {
+  "areas": [
+   "Wagle I.E."
+  ],
+  "district": "Thane",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400606": {
+  "areas": [
+   "Jekegram"
+  ],
+  "district": "Thane",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400612": {
+  "areas": [
+   "Dahisar",
+   "Dawale",
+   "Diwa",
+   "Kausa",
+   "Mumbra",
+   "Waklan"
+  ],
+  "district": "Thane",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400614": {
+  "areas": [
+   "Belapur Node- V",
+   "Belapur Node-- III",
+   "Konkan Bhavan"
+  ],
+  "district": "Thane",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "400703": {
+  "areas": [
+   "K.U.Bazar",
+   "Sanpada",
+   "Turbhe",
+   "Turbhe Market",
+   "Vashi (Thane)",
+   "Vashi Sec-26",
+   "Vashi-VII"
+  ],
+  "district": "Thane",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "403002": {
+  "areas": [
+   "Caranzalem"
+  ],
+  "district": "North Goa",
+  "state": "Goa",
+  "status": "ok"
+ },
+ "410209": {
+  "areas": [],
+  "district": null,
+  "state": null,
+  "status": "not_found"
+ },
+ "411001": {
+  "areas": [
+   "C D A (O)",
+   "Dr.B.A. Chowk",
+   "Ghorpuri Bazar",
+   "N.W. College",
+   "Pune",
+   "Pune Cantt East",
+   "Pune New Bazar",
+   "Sachapir Street"
+  ],
+  "district": "Pune",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "411003": {
+  "areas": [
+   "Ammunition Factory Khadki",
+   "East Khadki",
+   "H.E. Factory",
+   "Khadki",
+   "Khadki Bazar"
+  ],
+  "district": "Pune",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "411004": {
+  "areas": [
+   "A.R. Shala",
+   "Deccan Gymkhana",
+   "Film Institute"
+  ],
+  "district": "Pune",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "411005": {
+  "areas": [
+   "Congress House Road",
+   "S.S.C.Exam Board",
+   "Shivajinagar",
+   "Shivajinagar (Pune)"
+  ],
+  "district": "Pune",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "411007": {
+  "areas": [
+   "Aundh",
+   "Aundh T.S.",
+   "Ganeshkhind"
+  ],
+  "district": "Pune",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "411009": {
+  "areas": [
+   "Parvati",
+   "Parvati Gaon"
+  ],
+  "district": "Pune",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "411015": {
+  "areas": [
+   "Dhanori",
+   "Dighi Camp",
+   "Vishrantwadi"
+  ],
+  "district": "Pune",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "411016": {
+  "areas": [
+   "Gokhalenagar",
+   "Govt. Polytechnic",
+   "Model Colony",
+   "Shivaji Housing Society"
+  ],
+  "district": "Pune",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "411017": {
+  "areas": [
+   "Kalewadi",
+   "Pimpri Colony",
+   "Pimpri Waghire"
+  ],
+  "district": "Pune",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "411018": {
+  "areas": [
+   "Masulkar Colony",
+   "Nehrunagar (Pune)",
+   "Pimpri P F"
+  ],
+  "district": "Pune",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "411019": {
+  "areas": [
+   "Chinchwad East",
+   "M.Phulenagar"
+  ],
+  "district": "Pune",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "413002": {
+  "areas": [
+   "Arali",
+   "Belati",
+   "Boramani",
+   "Darganhalli",
+   "Dayanand Collage",
+   "Degaon",
+   "Dongaon",
+   "Hagloor",
+   "Honsal",
+   "Ingalgi",
+   "Kasegaon",
+   "Kavathe",
+   "Mangalwar Peth (Solapur)",
+   "Mardi",
+   "Musti",
+   "Pathari",
+   "Solapur Mkt",
+   "Tandulwadi",
+   "Tirhe",
+   "Ule",
+   "Umedpur"
+  ],
+  "district": "Solapur",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "416216": {
+  "areas": [
+   "Gorambe",
+   "Kagal",
+   "Karnur",
+   "Kasba Sangaon",
+   "Kenavade",
+   "Lingnur Dumala",
+   "Mhakave",
+   "Mouje Sangaon",
+   "Pimpalgaon KH",
+   "Sulkud",
+   "Vandur",
+   "Vhannur"
+  ],
+  "district": "Kolhapur",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "421306": {
+  "areas": [
+   "Dwarli",
+   "Ganeshwadi (Thane)",
+   "Katemanivali",
+   "Mangrul",
+   "Pisavli",
+   "Wadi"
+  ],
+  "district": "Thane",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "422222": {
+  "areas": [
+   "Gangapur",
+   "Ycm Open Univesity"
+  ],
+  "district": "Nashik",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "423601": {
+  "areas": [
+   "Bramhangaon",
+   "Chandekasare",
+   "Derde Korhale",
+   "Dharangaon",
+   "Jeur Kumbhari",
+   "Kokamthan",
+   "Kopergaon",
+   "Kopergaon Bet",
+   "Madhi BK",
+   "Murshatpur",
+   "Ravande",
+   "Takali",
+   "Yesgaon"
+  ],
+  "district": "Ahmed Nagar",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "431001": {
+  "areas": [
+   "Aurangabad (MH)",
+   "Aurangabad City",
+   "Fazalpura",
+   "Medical College (Aurangabad)",
+   "Samarthnagar",
+   "Saraswati Colony",
+   "Shahaganj (Aurangabad)"
+  ],
+  "district": "Aurangabad",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "431007": {
+  "areas": [
+   "Adgaon BK",
+   "Airport, Chikalthana",
+   "Bhalgaon",
+   "Chikalthana",
+   "Chittepimpalgaon",
+   "Ghardon",
+   "Kachner",
+   "Khodegaon",
+   "Naregaon",
+   "Pimpri Raja"
+  ],
+  "district": "Aurangabad",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "431720": {
+  "areas": [
+   "Kerwadi",
+   "Palam",
+   "Pethpimpalgaon",
+   "Pethshivani",
+   "Pharkanda",
+   "Sailu",
+   "Shikh Rajura"
+  ],
+  "district": "Parbhani",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "440001": {
+  "areas": [
+   "Bureau Of Mines",
+   "Coal Estate",
+   "Kasturchand Park",
+   "Mohan Nagar (Nagpur)",
+   "Nagpur GPO",
+   "Ravi Nagar",
+   "Sadar Bazar (Nagpur)"
+  ],
+  "district": "Nagpur",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "440003": {
+  "areas": [
+   "Ajni",
+   "Imamwada",
+   "Medical College (Nagpur)"
+  ],
+  "district": "Nagpur",
+  "state": "Maharashtra",
+  "status": "ok"
+ },
+ "452001": {
+  "areas": [
+   "Indore ",
+   "Indore CGO Complex",
+   "Indore Manorama Ganj",
+   "Indore Takshashila",
+   "Indore Tukoganj",
+   "Indore Uchchanyayalay",
+   "Radio Colony Indore"
+  ],
+  "district": "Indore",
+  "state": "Madhya Pradesh",
+  "status": "ok"
+ },
+ "452009": {
+  "areas": [
+   "Lokmanya Nagar Indore",
+   "Sudama Nagar"
+  ],
+  "district": "Indore",
+  "state": "Madhya Pradesh",
+  "status": "ok"
+ },
+ "452016": {
+  "areas": [
+   "Baoliakhurd",
+   "Bicholi Mardana",
+   "Burankhedi",
+   "Dudhia",
+   "Indore Kanadia Road",
+   "Indore Khajrana",
+   "Jhalaria",
+   "Kanadia",
+   "Khudel",
+   "Sanawadia",
+   "Semlia Chau",
+   "Sivani"
+  ],
+  "district": "Indore",
+  "state": "Madhya Pradesh",
+  "status": "ok"
+ },
+ "453441": {
+  "areas": [
+   "Ambachandan",
+   "Badgonda",
+   "Bai",
+   "Bhagora",
+   "Bhatkhedi",
+   "Choral",
+   "Chordia",
+   "Dharnaka",
+   "Gawlipalasia",
+   "Gujarkheda",
+   "Harsola",
+   "Jamli",
+   "Kelod",
+   "Kishanganj",
+   "Kodria",
+   "Men",
+   "Mhow",
+   "Mhow Cantt",
+   "Mhow Gaon",
+   "Mhow Railway Stattion"
+  ],
+  "district": "Indore",
+  "state": "Madhya Pradesh",
+  "status": "ok"
+ },
+ "462016": {
+  "areas": [
+   "1100 Qrts.",
+   "E-2 Sector",
+   "Mahaveer Nagar",
+   "MP Bhoj Open University",
+   "R.S.Market",
+   "R.S.Nagar",
+   "Shivaji Nagar (Bhopal)"
+  ],
+  "district": "Bhopal",
+  "state": "Madhya Pradesh",
+  "status": "ok"
+ },
+ "462022": {
+  "areas": [
+   "Anand Nagar (Bhopal)",
+   "Barkheda H.E.",
+   "Bhel",
+   "Jamunia Kalan",
+   "Khajuri Kalan",
+   "Kokata",
+   "Kolua Khurd"
+  ],
+  "district": "Bhopal",
+  "state": "Madhya Pradesh",
+  "status": "ok"
+ },
+ "464993": {
+  "areas": [
+   "Ankalpur",
+   "Ashapuri",
+   "Barkheda",
+   "Bhojpur",
+   "Bilakhedi",
+   "Bishankhedi",
+   "Dahod",
+   "Dewatia",
+   "Iklama",
+   "Noorganj",
+   "Obedullaganj",
+   "Premtalab",
+   "Salkani"
+  ],
+  "district": "Raisen",
+  "state": "Madhya Pradesh",
+  "status": "ok"
+ },
+ "482001": {
+  "areas": [
+   "Baghraji",
+   "Bai Ka Bagicha",
+   "Dehri Khurd",
+   "Dhanwahi",
+   "Gangai Padaria",
+   "Gupteshwar",
+   "H.R.Lines",
+   "Hathital",
+   "High Court (Jabalpur)",
+   "Howbagh",
+   "Imlai",
+   "Jabalpur",
+   "Jabalpur Cantt",
+   "Jeewan Bima Nigam",
+   "Kasturba Nagar (Jabalpur)",
+   "Kutchery (Jabalpur)",
+   "Lac Lines",
+   "Luhkari",
+   "Napier Lines",
+   "Napier Town",
+   "Piparia",
+   "Prem Nagar (Jabalpur)",
+   "Regimental Bazar",
+   "Roberts Line (Jabalpur)",
+   "Sarswati Vihar",
+   "T.T.C.",
+   "Temarbhita",
+   "Tilsani"
+  ],
+  "district": "Jabalpur",
+  "state": "Madhya Pradesh",
+  "status": "ok"
+ },
+ "486111": {
+  "areas": [
+   "Akauri",
+   "Delhi",
+   "Deogaon",
+   "Dubahai Khurd",
+   "Dubgawan",
+   "Gangeo",
+   "Ghopi",
+   "Joraut",
+   "Madhi",
+   "Mahmoodpur",
+   "Mangawan",
+   "Nawagaon",
+   "Pachpahra",
+   "Raghurajgarh",
+   "Sirsa",
+   "Teoni"
+  ],
+  "district": "Rewa",
+  "state": "Madhya Pradesh",
+  "status": "ok"
+ },
+ "490023": {
+  "areas": [
+   "Kohka Bhilai",
+   "Supela Bhilai",
+   "Vaishali Nagar Bhilai"
+  ],
+  "district": "Durg",
+  "state": "Chattisgarh",
+  "status": "ok"
+ },
+ "491441": {
+  "areas": [
+   "Arjuni",
+   "Baghera",
+   "Bajrangpur Nawagaon",
+   "Bakal",
+   "Bazar Rajnadngaon",
+   "Bharregaon",
+   "Bhedikala",
+   "Bori",
+   "Dhangaon",
+   "Dilapahari",
+   "Dumardihkhurd",
+   "G G Chowk Rajnandgaon",
+   "Haldi",
+   "Jangalpur",
+   "Kanharpuri",
+   "Karamtaa",
+   "Khaprikhurd",
+   "Lakholi",
+   "Mangata",
+   "Padumtaa",
+   "Paneka",
+   "Pendri",
+   "Rajnandgaon",
+   "Rajnandgaon Kutchery",
+   "Rajnandgaon Stadium",
+   "Rengakathera",
+   "Singhola",
+   "Somni",
+   "Surgi",
+   "Tedesara",
+   "Tumdibod"
+  ],
+  "district": "Rajnandgaon",
+  "state": "Chattisgarh",
+  "status": "ok"
+ },
+ "492013": {
+  "areas": [
+   "Mathpurena",
+   "Raipura",
+   "Rajkumar College",
+   "Sunder Nagar"
+  ],
+  "district": "Raipur",
+  "state": "Chattisgarh",
+  "status": "ok"
+ },
+ "493221": {
+  "areas": [
+   "Birgaon",
+   "Deori",
+   "Dharsiwa",
+   "Khairkhut",
+   "Kurra",
+   "Sarora",
+   "Sondra",
+   "Tarpongi"
+  ],
+  "district": "Raipur",
+  "state": "Chattisgarh",
+  "status": "ok"
+ },
+ "500001": {
+  "areas": [
+   "Gandhi Bhawan (Hyderabad)",
+   "Hyderabad ",
+   "Moazzampura",
+   "Seetharampet",
+   "State Bank Of Hyderabad"
+  ],
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500003": {
+  "areas": [
+   "Begumpet Policelines",
+   "Kingsway",
+   "MG Road",
+   "Secunderabad"
+  ],
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500004": {
+  "areas": [
+   "A.Gs Office",
+   "Anandnagar (Hyderabad)",
+   "Bazarghat (Hyderabad)",
+   "Khairatabad",
+   "Parishram Bhawan",
+   "Vidhan Sabha (Hyderabad)"
+  ],
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500007": {
+  "areas": [
+   "Administrative Buildings",
+   "IICT",
+   "Jama I Osmania",
+   "Ngri",
+   "Tarnaka"
+  ],
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500009": {
+  "areas": [
+   "Manovikasnagar",
+   "Picket"
+  ],
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500028": {
+  "areas": [
+   "Humayunnagar",
+   "Murad Nagar (Hyderabad)",
+   "Shantinagar (Hyderabad)"
+  ],
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500034": {
+  "areas": [
+   "Banjara Hills"
+  ],
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500036": {
+  "areas": [
+   "Malakpet Colony",
+   "Old Malakpet",
+   "Osmannagar (Hyderabad)",
+   "Sripuram Colony"
+  ],
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500038": {
+  "areas": [
+   "Sanjeev Reddy Nagar",
+   "Vengal Rao Nagar"
+  ],
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500048": {
+  "areas": [
+   "Attapur",
+   "Hyderguda"
+  ],
+  "district": "K.V.Rangareddy",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500055": {
+  "areas": [
+   "Gajularamaram",
+   "IDA Jeedimetla",
+   "Kutbullapur",
+   "Suraram"
+  ],
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500056": {
+  "areas": [
+   "Neredmet",
+   "Ramakrishna Puram"
+  ],
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500060": {
+  "areas": [
+   "Chaithanyapuri Colony",
+   "Dilsukhnagar Colony",
+   "P & T Colony (K.V.Rangareddy)"
+  ],
+  "district": "K.V.Rangareddy",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500061": {
+  "areas": [
+   "Sitaphalmandi"
+  ],
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500062": {
+  "areas": [
+   "Dr As Rao Nagar",
+   "Ecil",
+   "Jai Jawan Colony",
+   "Kushaiguda"
+  ],
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500067": {
+  "areas": [
+   "Suchitra Junction"
+  ],
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "500068": {
+  "areas": [
+   "Gsi(Sr) Bandlaguda",
+   "Mansoorabad"
+  ],
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "503246": {
+  "areas": [
+   "Ailapur",
+   "Ashok Farm",
+   "Binola",
+   "Chikli",
+   "Gandhinagar",
+   "Gotmukla",
+   "Jannepalli",
+   "Kondur",
+   "Kothapalli",
+   "Nalleshwar",
+   "Palda",
+   "Pothangal",
+   "Tungini"
+  ],
+  "district": "Nizamabad",
+  "state": "Telangana",
+  "status": "ok"
+ },
+ "516002": {
+  "areas": [
+   "Buddayapalli",
+   "Chinnachowk",
+   "Degalavandlapalli",
+   "Jayanagar (Cuddapah)",
+   "Lingampalli",
+   "Machupalli",
+   "Patha Cuddapah",
+   "Ramanjaneyapuram",
+   "Ramarajupalli",
+   "RIMS",
+   "RTC Work Shop",
+   "Shankarapuram (Cuddapah)",
+   "Takkolu",
+   "Ukkayapalle"
+  ],
+  "district": "Cuddapah",
+  "state": "Andhra Pradesh",
+  "status": "ok"
+ },
+ "518222": {
+  "areas": [
+   "B.Ramadurgam",
+   "Bogolu",
+   "Chityala",
+   "Dharmavaram",
+   "Dhone",
+   "Dhone-bazar",
+   "Jagadurthi",
+   "Kamaganikuntla",
+   "Kamalapuram",
+   "Katarukonda",
+   "Koilakonda",
+   "Kotchervu",
+   "Malkapuram",
+   "Malliyala",
+   "Sudepalli",
+   "Udumulapadu",
+   "Ungaralagundla"
+  ],
+  "district": "Kurnool",
+  "state": "Andhra Pradesh",
+  "status": "ok"
+ },
+ "520010": {
+  "areas": [
+   "Chandramoulipuram",
+   "Moghalrajpuram",
+   "Patamata",
+   "Punnamathota",
+   "Venkateswarapuram"
+  ],
+  "district": "Krishna",
+  "state": "Andhra Pradesh",
+  "status": "ok"
+ },
+ "520013": {
+  "areas": [
+   "Krishnalanka",
+   "Panditnehru Bus Station"
+  ],
+  "district": "Krishna",
+  "state": "Andhra Pradesh",
+  "status": "ok"
+ },
+ "522236": {
+  "areas": [
+   "Anantavaram",
+   "Nekkallu",
+   "Pedaparimi",
+   "Tadikonda",
+   "Vaddamanu"
+  ],
+  "district": "Guntur",
+  "state": "Andhra Pradesh",
+  "status": "ok"
+ },
+ "522501": {
+  "areas": [
+   "Kunchanapalle",
+   "Penumaka",
+   "Polakampadu Ind. Area",
+   "Prathuru",
+   "Ramayalam",
+   "Tadepalle",
+   "Undavalli"
+  ],
+  "district": "Guntur",
+  "state": "Andhra Pradesh",
+  "status": "ok"
+ },
+ "522503": {
+  "areas": [
+   "Apsp Colony(Mangalagiri)",
+   "Mangalagiri",
+   "Mangalagiri Bazar",
+   "Mangalagiri Busstand",
+   "Old Mangalagiri"
+  ],
+  "district": "Guntur",
+  "state": "Andhra Pradesh",
+  "status": "ok"
+ },
+ "522509": {
+  "areas": [
+   "Gollamudi",
+   "Pathuru",
+   "Pedakakani",
+   "Reddypalem",
+   "Takkellapadu",
+   "Uppalapadu",
+   "Venigandla",
+   "Venkatakrishnapuram"
+  ],
+  "district": "Guntur",
+  "state": "Andhra Pradesh",
+  "status": "ok"
+ },
+ "522616": {
+  "areas": [
+   "Annavaram",
+   "Chilakaluripet",
+   "Chilakaluripet Bazar",
+   "Edavalli",
+   "Gottipadu",
+   "Komaravallipadu",
+   "Maddirala",
+   "Manukondavaripalem",
+   "Pasumarru",
+   "Pothavaram",
+   "Purushothapatnam",
+   "Subbaiah Thota",
+   "Uppalapadu"
+  ],
+  "district": "Guntur",
+  "state": "Andhra Pradesh",
+  "status": "ok"
+ },
+ "523001": {
+  "areas": [
+   "Addanki Gate",
+   "Dcp(O)",
+   "Gopala Nagar (O)",
+   "N.S.C Colony (O)",
+   "Ongole",
+   "Ongole Bazar",
+   "Prakasam Bhavan",
+   "Ramnagar(O)",
+   "Santhapeta (O)",
+   "Seetharamapuram (O)",
+   "Thurupupalem"
+  ],
+  "district": "Prakasam",
+  "state": "Andhra Pradesh",
+  "status": "ok"
+ },
+ "530011": {
+  "areas": [
+   "Malkapuram"
+  ],
+  "district": "Visakhapatnam",
+  "state": "Andhra Pradesh",
+  "status": "ok"
+ },
+ "530026": {
+  "areas": [
+   "Gajuwaka"
+  ],
+  "district": "Visakhapatnam",
+  "state": "Andhra Pradesh",
+  "status": "ok"
+ },
+ "533005": {
+  "areas": [
+   "Apiic",
+   "APSP Camp (East Godavari)",
+   "Atchampeta",
+   "Madhavapatnam",
+   "Nemam",
+   "Panasapadu",
+   "Panduru",
+   "Ramanayyapeta",
+   "Sarpavaram",
+   "Thammavaram",
+   "Thimmaparam",
+   "Valasapakala"
+  ],
+  "district": "East Godavari",
+  "state": "Andhra Pradesh",
+  "status": "ok"
+ },
+ "534211": {
+  "areas": [
+   "Hanumantharaopeta",
+   "Sajjapuram",
+   "Tanuku",
+   "Tanuku Bazar",
+   "Tanuku Old Town"
+  ],
+  "district": "West Godavari",
+  "state": "Andhra Pradesh",
+  "status": "ok"
+ },
+ "560001": {
+  "areas": [
+   "Bangalore ",
+   "Bangalore Bazaar",
+   "CMM Court Complex",
+   "Dr. Ambedkar Veedhi",
+   "HighCourt",
+   "Legislators Home",
+   "Mahatma Gandhi Road",
+   "Rajbhavan (Bangalore)",
+   "Vasanthanagar",
+   "Vidhana Soudha"
+  ],
+  "district": "Bangalore",
+  "state": "Karnataka",
+  "status": "ok"
+ },
+ "560010": {
+  "areas": [
+   "Industrial Estate (Bangalore)",
+   "Rajajinagar",
+   "Rajajinagar IVth Block"
+  ],
+  "district": "Bangalore",
+  "state": "Karnataka",
+  "status": "ok"
+ },
+ "562114": {
+  "areas": [
+   "Doddagattiganabbe",
+   "Doddanallala",
+   "Hasigala",
+   "Hoskote",
+   "Hoskote Indl. Area",
+   "Jadigenahalli",
+   "Jodidasarahalli",
+   "Kattigenahalli",
+   "Kembliganahalli",
+   "Kollathur",
+   "Kumbalahalli",
+   "Lakkondanahalli",
+   "Mugabala",
+   "Vagata Agrahara"
+  ],
+  "district": "Bangalore Rural",
+  "state": "Karnataka",
+  "status": "ok"
+ },
+ "562123": {
+  "areas": [
+   "Arasinakunte",
+   "Budihal",
+   "Gollahalli",
+   "Honnasandra",
+   "Jakkanahalli",
+   "Madalakote",
+   "Mahadevapura",
+   "Mallarabanavadi",
+   "Mandigere",
+   "Mylanahalli",
+   "Nelamangala",
+   "Teppadabeguru",
+   "Yentiganahalli"
+  ],
+  "district": "Bangalore Rural",
+  "state": "Karnataka",
+  "status": "ok"
+ },
+ "562130": {
+  "areas": [
+   "Chikkanahalli",
+   "Chunchanakuppe",
+   "Kadabagere",
+   "Kithanahalli",
+   "Soladevanahalli",
+   "Sondekoppa",
+   "Tavarekere (Bangalore)"
+  ],
+  "district": "Bangalore",
+  "state": "Karnataka",
+  "status": "ok"
+ },
+ "574142": {
+  "areas": [
+   "Adyapady",
+   "Bajpe",
+   "Bajpe Airport",
+   "Kalavara",
+   "Kenjar",
+   "Kolambe",
+   "Paduperar",
+   "Pejavara"
+  ],
+  "district": "Dakshina Kannada",
+  "state": "Karnataka",
+  "status": "ok"
+ },
+ "576101": {
+  "areas": [
+   "Adi-udupi",
+   "Bannanje",
+   "Chitpadi",
+   "Kukkikatte",
+   "Mission Compound",
+   "Udupi",
+   "Udupi Courts"
+  ],
+  "district": "Udupi",
+  "state": "Karnataka",
+  "status": "ok"
+ },
+ "577598": {
+  "areas": [
+   "Alur",
+   "Babbur Farm",
+   "Dindavara",
+   "Doddaghatta",
+   "Gowdanahally",
+   "Halmadenahalli",
+   "Hiriyur",
+   "Huvinahole",
+   "Kasavanahally",
+   "Peelali",
+   "Uduvally",
+   "Yalanadu",
+   "Yelladakere"
+  ],
+  "district": "Chitradurga",
+  "state": "Karnataka",
+  "status": "ok"
+ },
+ "580024": {
+  "areas": [
+   "Anchatageri",
+   "Belagali",
+   "Guddadhulikatti",
+   "Hubli Nekarnagar",
+   "Hubli Siddharoodnagar",
+   "Karadikoppa",
+   "Katnur",
+   "Malali",
+   "Old Hubli",
+   "Ramankoppa",
+   "Rayanal"
+  ],
+  "district": "Dharwad",
+  "state": "Karnataka",
+  "status": "ok"
+ },
+ "600001": {
+  "areas": [
+   "Chennai ",
+   "Flower Bazaar",
+   "Govt Stanley Hospital",
+   "Mannady (Chennai)",
+   "Mint Building",
+   "MPT AO",
+   "Sowcarpet"
+  ],
+  "district": "Chennai",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "600004": {
+  "areas": [
+   "Mandaveli",
+   "Mylapore",
+   "Vivekananda College Madras"
+  ],
+  "district": "Chennai",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "600009": {
+  "areas": [
+   "Fort St George"
+  ],
+  "district": "Chennai",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "600017": {
+  "areas": [
+   "Hindi Prachar Sabha",
+   "Thygarayanagar",
+   "Thygarayanagar North ND",
+   "Thygarayanagar South"
+  ],
+  "district": "Chennai",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "600039": {
+  "areas": [
+   "Vyasar Nagar Colony",
+   "Vyasarpadi"
+  ],
+  "district": "Chennai",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "600042": {
+  "areas": [
+   "Velacheri"
+  ],
+  "district": "Chennai",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "600049": {
+  "areas": [
+   "Rajajinagar",
+   "Srinivasanagar",
+   "Tirumangalam Road",
+   "Villivakkam"
+  ],
+  "district": "Tiruvallur",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "600078": {
+  "areas": [
+   "Kalaignar Karunanidhi Nagar"
+  ],
+  "district": "Chennai",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "600082": {
+  "areas": [
+   "Agaram",
+   "G K M Colony",
+   "Jawahar Nagar (Chennai)",
+   "Kumaran Nagar"
+  ],
+  "district": "Chennai",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "621011": {
+  "areas": [
+   "Nachilipatti",
+   "Periyamangalam",
+   "Puthur",
+   "Thanneerpallam",
+   "Top Sengattupatti",
+   "Uppliapuram",
+   "Venkatachalapuram"
+  ],
+  "district": "Tiruchirappalli",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "625009": {
+  "areas": [
+   "Anuppanadi Housing Board Colon",
+   "Anuppanady",
+   "Chintamani",
+   "Ma Munichalai Road",
+   "Panaiyur",
+   "Samanatham",
+   "Thiagarajar College",
+   "Viradhanur",
+   "Viraganur"
+  ],
+  "district": "Madurai",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "629001": {
+  "areas": [
+   "Catherin Booth Hospital",
+   "Krishnancoil",
+   "Nagercoil",
+   "Nagercoil Bazaar",
+   "Nagercoil Collectorate",
+   "Nagercoil Town",
+   "Nagercoil West",
+   "Nesamony Nagar",
+   "Oluganacheri",
+   "Putheri",
+   "Vadasery",
+   "Vadiveeswaram"
+  ],
+  "district": "Kanyakumari",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "629702": {
+  "areas": [
+   "Kanniyakumari",
+   "Kovalam",
+   "Leepuram",
+   "Mahadanapuram",
+   "Vivekanandapuram"
+  ],
+  "district": "Kanyakumari",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "630551": {
+  "areas": [
+   "Andichoorani",
+   "K.Sukkanurani",
+   "Kalayarkoil",
+   "Marakathur",
+   "Marathur",
+   "Mudikarai",
+   "Pallithammam",
+   "Paruthikanmoi",
+   "Pulikanmoi",
+   "Thuvaralankanmoi"
+  ],
+  "district": "Sivaganga",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "635109": {
+  "areas": [
+   "Avalapalli",
+   "Basthi",
+   "Bukkasagaram",
+   "Chennathur",
+   "Doripalli",
+   "Hosur (Dharmapuri)",
+   "Hosur East",
+   "Kamandoddi",
+   "Kothagondapalli",
+   "Kothapeta(Hosur)",
+   "Kumudepalli",
+   "Muthali",
+   "Onnalvadi",
+   "Perandapalli",
+   "Thorapalli Agraharam",
+   "Venkatesapuram"
+  ],
+  "district": "Krishnagiri",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "635126": {
+  "areas": [
+   "Begepalli",
+   "Hosur Indl. Complex",
+   "Mookandapalli"
+  ],
+  "district": "Krishnagiri",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "636007": {
+  "areas": [
+   "Hasthampatti",
+   "Maravaneri",
+   "Peramanur",
+   "Salem Dt. Court Buildings",
+   "Salem Extension",
+   "Salem North"
+  ],
+  "district": "Salem",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "638504": {
+  "areas": [
+   "Chennampatti",
+   "Guruvareddiyur",
+   "Komarayanur",
+   "Murali",
+   "Palakuttaipattipudur",
+   "Reddipalayam"
+  ],
+  "district": "Erode",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "641001": {
+  "areas": [
+   "Coimbatore",
+   "Coimbatore Bazaar",
+   "Coimbatore Fort",
+   "Coimbatore West",
+   "Sukrawarpettai"
+  ],
+  "district": "Coimbatore",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "641011": {
+  "areas": [
+   "P&t Staff Quarters",
+   "Saibaba Mission"
+  ],
+  "district": "Coimbatore",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "641015": {
+  "areas": [
+   "Uppilipalayam"
+  ],
+  "district": "Coimbatore",
+  "state": "Tamil Nadu",
+  "status": "ok"
+ },
+ "676517": {
+  "areas": [
+   "Melmuri",
+   "Pookkottur",
+   "Vellur"
+  ],
+  "district": "Malappuram",
+  "state": "Kerala",
+  "status": "ok"
+ },
+ "676519": {
+  "areas": [
+   "Downhill",
+   "Hajiarpalli",
+   "Oorakam Kizhumuri",
+   "Oorakam Melmuri",
+   "Pattarkadavu"
+  ],
+  "district": "Malappuram",
+  "state": "Kerala",
+  "status": "ok"
+ },
+ "680010": {
+  "areas": [
+   "Kolazhi RM",
+   "Viyyur"
+  ],
+  "district": "Thrissur",
+  "state": "Kerala",
+  "status": "ok"
+ },
+ "682024": {
+  "areas": [
+   "Edapally",
+   "Edapally North"
+  ],
+  "district": "Ernakulam",
+  "state": "Kerala",
+  "status": "ok"
+ },
+ "682030": {
+  "areas": [
+   "Kakkanad",
+   "Kakkanad West",
+   "Kusumagiri",
+   "Thengod"
+  ],
+  "district": "Ernakulam",
+  "state": "Kerala",
+  "status": "ok"
+ },
+ "683514": {
+  "areas": [
+   "Cherai"
+  ],
+  "district": "Ernakulam",
+  "state": "Kerala",
+  "status": "ok"
+ },
+ "686010": {
+  "areas": [
+   "Vadavathoor"
+  ],
+  "district": "Kottayam",
+  "state": "Kerala",
+  "status": "ok"
+ },
+ "686543": {
+  "areas": [
+   "Cheruvally",
+   "Erathuvadakara",
+   "Manimala"
+  ],
+  "district": "Kottayam",
+  "state": "Kerala",
+  "status": "ok"
+ },
+ "695004": {
+  "areas": [
+   "Goureesapattom",
+   "Mg College",
+   "Pattom Palace"
+  ],
+  "district": "Thiruvananthapuram",
+  "state": "Kerala",
+  "status": "ok"
+ },
+ "695005": {
+  "areas": [
+   "Ambalamukku",
+   "Perurkada"
+  ],
+  "district": "Thiruvananthapuram",
+  "state": "Kerala",
+  "status": "ok"
+ },
+ "695020": {
+  "areas": [
+   "Nemom",
+   "Ookode",
+   "Pallichal",
+   "Pravachambalam"
+  ],
+  "district": "Thiruvananthapuram",
+  "state": "Kerala",
+  "status": "ok"
+ },
+ "700002": {
+  "areas": [
+   "Cossipore",
+   "Cossipore Gun Factory",
+   "Indian Research",
+   "Kolkata Armed Police",
+   "Paikapara",
+   "Postal Stores Depot",
+   "Satchasipara",
+   "Tala"
+  ],
+  "district": "Kolkata",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "700004": {
+  "areas": [
+   "R.G.Kar Medical College",
+   "Shyambazar Mail",
+   "Ultadanga"
+  ],
+  "district": "Kolkata",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "700023": {
+  "areas": [
+   "Khiddirpore",
+   "Mansatala",
+   "Raja J.N.Market",
+   "Watgunge"
+  ],
+  "district": "Kolkata",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "700026": {
+  "areas": [
+   "Kalighat",
+   "Kalimandir",
+   "Keoratala",
+   "R.K.Seva Pratisthan",
+   "Sahanagar (Kolkata)",
+   "Southern Market"
+  ],
+  "district": "Kolkata",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "700032": {
+  "areas": [
+   "Bijoygarh",
+   "Jadavpur University",
+   "Pgh Shah Road"
+  ],
+  "district": "Kolkata",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "700038": {
+  "areas": [
+   "Sahapur"
+  ],
+  "district": "Kolkata",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "700054": {
+  "areas": [
+   "Bengal Chemical",
+   "Cmda Abasan",
+   "Kankurgachi",
+   "Phulbagan",
+   "Ram Krishna Samadhi Road"
+  ],
+  "district": "Kolkata",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "700061": {
+  "areas": [
+   "Jairampur (Kolkata)",
+   "Kasthadanga",
+   "Sarsoona"
+  ],
+  "district": "Kolkata",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "700063": {
+  "areas": [
+   "Kalagachia (Kolkata)",
+   "Paschim Barisha",
+   "Thakurpukur"
+  ],
+  "district": "Kolkata",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "700068": {
+  "areas": [
+   "Jodhpur Park"
+  ],
+  "district": "Kolkata",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "700072": {
+  "areas": [
+   "Hindustan Building",
+   "Princep Street",
+   "Sooterkin Street"
+  ],
+  "district": "Kolkata",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "700075": {
+  "areas": [
+   "Garfa",
+   "Santoshpur",
+   "Santoshpur Avenue",
+   "Viveknagar (Kolkata)"
+  ],
+  "district": "Kolkata",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "700082": {
+  "areas": [
+   "Haridevpur",
+   "K.P.Bazar (Kolkata)"
+  ],
+  "district": "Kolkata",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "700099": {
+  "areas": [
+   "Kalikapur",
+   "Mukundapur"
+  ],
+  "district": "Kolkata",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "713325": {
+  "areas": [
+   "Burnpur",
+   "Burnpur Mkt",
+   "Burnpur Works",
+   "Dharampur",
+   "Hirapur",
+   "Kalajhoria",
+   "Narsinghbandh",
+   "Radhanagar",
+   "Rahmatdanga",
+   "Rambandh",
+   "Santa",
+   "Santinagar (Bardhaman)"
+  ],
+  "district": "Bardhaman",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "721303": {
+  "areas": [
+   "Kalaikunda A F"
+  ],
+  "district": "West Midnapore",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "721442": {
+  "areas": [
+   "Baikunthapur",
+   "Bankiput",
+   "Basantia (East Midnapore)",
+   "Benichak",
+   "Chapatala",
+   "Dariapur",
+   "Dholmari",
+   "Safiabad",
+   "Uttarharaschak"
+  ],
+  "district": "East Midnapore",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "731204": {
+  "areas": [
+   "Adityapur",
+   "Albandha",
+   "Bagdowra",
+   "Bolpur",
+   "Bolpur Bazar",
+   "Bolpur Court",
+   "Bolpur Trisulapatty",
+   "Bolpur Ukilpatty",
+   "Darpasila",
+   "Kuchligopalpur",
+   "Laldaha",
+   "Muluk",
+   "Raipur",
+   "Rajatpur",
+   "Sian",
+   "Sitapur",
+   "Supur"
+  ],
+  "district": "Birbhum",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "734001": {
+  "areas": [
+   "Mahananda Bridge",
+   "Rath Khola",
+   "Saktigarh (Jalpaiguri)",
+   "Sevoke Road",
+   "Siliguri",
+   "Siliguri Junction",
+   "Siliguri New Market",
+   "Siliguri Road",
+   "Subashpally",
+   "Vivekanandapally"
+  ],
+  "district": "Darjiling",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "734010": {
+  "areas": [
+   "Matigara",
+   "Nemai"
+  ],
+  "district": "Darjiling",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "737126": {
+  "areas": [
+   "Assangthang",
+   "Damthang",
+   "Kitam",
+   "Maniram",
+   "Mic Khola",
+   "Namchi",
+   "Nandugaon",
+   "Pabong",
+   "Perbing",
+   "Phalidara",
+   "Poklok",
+   "Rong",
+   "Shalghari",
+   "Singhithang",
+   "Sorok",
+   "Wok"
+  ],
+  "district": "South Sikkim",
+  "state": "Sikkim",
+  "status": "ok"
+ },
+ "741245": {
+  "areas": [
+   "Alaipur",
+   "Ananda Nagar",
+   "Birohiedso",
+   "Chandamari",
+   "Ghoragacha",
+   "Kalipur",
+   "Madanpur (Nadia)",
+   "Saguna"
+  ],
+  "district": "Nadia",
+  "state": "West Bengal",
+  "status": "ok"
+ },
+ "751031": {
+  "areas": [],
+  "district": null,
+  "state": null,
+  "status": "not_found"
+ },
+ "752069": {
+  "areas": [
+   "Nayagarh",
+   "Nayagarh College",
+   "Sinduria"
+  ],
+  "district": "Nayagarh",
+  "state": "Odisha",
+  "status": "ok"
+ },
+ "752101": {
+  "areas": [
+   "Balianta",
+   "Benupur",
+   "Jagannathpur",
+   "Jayapur",
+   "Naharakanta",
+   "Pahal"
+  ],
+  "district": "Khorda",
+  "state": "Odisha",
+  "status": "ok"
+ },
+ "752115": {
+  "areas": [
+   "Bhatpatna"
+  ],
+  "district": "Khorda",
+  "state": "Odisha",
+  "status": "ok"
+ },
+ "769003": {
+  "areas": [
+   "Kacharu",
+   "Rourkela - 3",
+   "Sector - 15",
+   "Sector - 16",
+   "Sector - 7"
+  ],
+  "district": "Sundergarh",
+  "state": "Odisha",
+  "status": "ok"
+ },
+ "781030": {
+  "areas": [
+   "Barbaka",
+   "Dopdar",
+   "Madhyamkhanda",
+   "North Guwahati",
+   "Rongmahal"
+  ],
+  "district": "Kamrup",
+  "state": "Assam",
+  "status": "ok"
+ },
+ "782003": {
+  "areas": [
+   "Amolapatty",
+   "Chottahaibor",
+   "Dakarghat",
+   "Dimaruguri",
+   "Hatipara",
+   "Itachali",
+   "Madhupur",
+   "Majpathori",
+   "Mohkhuli",
+   "Nagaon Padel",
+   "Palasani",
+   "Pathori",
+   "Uriagaon"
+  ],
+  "district": "Nagaon",
+  "state": "Assam",
+  "status": "ok"
+ },
+ "793001": {
+  "areas": [
+   "Meghalaya Secretariat",
+   "Oakland",
+   "Shillong "
+  ],
+  "district": "East Khasi Hills",
+  "state": "Meghalaya",
+  "status": "ok"
+ },
+ "795002": {
+  "areas": [
+   "Ahallup",
+   "Awangpotshangbam",
+   "Heingang",
+   "Karakhul",
+   "Khonghampat",
+   "Khurukhul",
+   "Konthakhabam",
+   "Loitang Leikinthabi",
+   "Luwangsangbam",
+   "Mantripukhri",
+   "Tendongyang (P)"
+  ],
+  "district": "Imphal West",
+  "state": "Manipur",
+  "status": "ok"
+ },
+ "797112": {
+  "areas": [
+   "Dimapur",
+   "Doyapur",
+   "Hening Kunglwa",
+   "Jalukiekam",
+   "Khermahal",
+   "Kuda",
+   "Nuiland",
+   "Phaipijan",
+   "Ralan",
+   "Razaphima",
+   "Singrijan",
+   "Yampha"
+  ],
+  "district": "Dimapur",
+  "state": "Nagaland",
+  "status": "ok"
+ },
+ "800001": {
+  "areas": [
+   "B.C. Road",
+   "B.P.S.C.",
+   "Bank Road (Patna)",
+   "C.R. Building",
+   "Chiraiyatand",
+   "Darul Mallick",
+   "Gardanibagh",
+   "Hotel Republic",
+   "Indian Nation",
+   "Jamal Road",
+   "Kidwaipuri",
+   "L.I.C",
+   "Mithapur (Patna)",
+   "Navshakti",
+   "New Jakkanpur",
+   "Patna ",
+   "Patna Collectoriate",
+   "Postal Park",
+   "Punaichak",
+   "R.Block",
+   "Rajapur Mainpura",
+   "Sri Krishnapuri"
+  ],
+  "district": "Patna",
+  "state": "Bihar",
+  "status": "ok"
+ },
+ "800020": {
+  "areas": [
+   "Ashok Nagar (Patna)",
+   "Chitragupta Nagar",
+   "Dhelwan",
+   "K.Sector",
+   "Lohia Nagar",
+   "R.M.S. Colony",
+   "West Lohianagar"
+  ],
+  "district": "Patna",
+  "state": "Bihar",
+  "status": "ok"
+ },
+ "800023": {
+  "areas": [
+   "L.B.S Nagar"
+  ],
+  "district": "Patna",
+  "state": "Bihar",
+  "status": "ok"
+ },
+ "828130": {
+  "areas": [
+   "B.Polytechnic"
+  ],
+  "district": "Dhanbad",
+  "state": "Jharkhand",
+  "status": "ok"
+ },
+ "828306": {
+  "areas": [
+   "Baghmara Bazar",
+   "Khario",
+   "Nawagarh (Dhanbad)",
+   "Pochari",
+   "Ramakunda"
+  ],
+  "district": "Dhanbad",
+  "state": "Jharkhand",
+  "status": "ok"
+ },
+ "831001": {
+  "areas": [
+   "Bistupur Bazar",
+   "Bistupur Gate",
+   "Civil Court",
+   "Co-Op  College",
+   "Jamshedpur",
+   "Sakchi",
+   "Sakchi Court"
+  ],
+  "district": "East Singhbhum",
+  "state": "Jharkhand",
+  "status": "ok"
+ },
+ "834001": {
+  "areas": [
+   "Church Road",
+   "Chutia",
+   "Hindpiri",
+   "Indrapuri Colony",
+   "Kantatoli",
+   "Kokar",
+   "Lalpur (Ranchi)",
+   "Lower Bazar",
+   "Ncdc",
+   "Old Commissioner Compound",
+   "Ranchi ",
+   "Ranchi Court"
+  ],
+  "district": "Ranchi",
+  "state": "Jharkhand",
+  "status": "ok"
+ },
+ "834008": {
+  "areas": [
+   "Adalhatu",
+   "Kanke Road",
+   "Morabadi",
+   "New Area Marabadi",
+   "Ranchi University"
+  ],
+  "district": "Ranchi",
+  "state": "Jharkhand",
+  "status": "ok"
+ },
+ "834009": {
+  "areas": [
+   "Bariatu",
+   "Lame Baragaon",
+   "Ranchi Medical College",
+   "Ranchi Medical College Campus"
+  ],
+  "district": "Ranchi",
+  "state": "Jharkhand",
+  "status": "ok"
+ },
+ "834010": {
+  "areas": [
+   "Bara Ghaghra",
+   "Jamchuajaria",
+   "Khijri",
+   "Lali",
+   "Namkum",
+   "Rajaulatu",
+   "Tetri"
+  ],
+  "district": "Ranchi",
+  "state": "Jharkhand",
+  "status": "ok"
+ },
+ "841226": {
+  "areas": [
+   "Amlori",
+   "Barheya",
+   "Barkagaon",
+   "Bhantapokher",
+   "Chakra",
+   "Chapia Bujurg",
+   "Chapra Road",
+   "Dhanuti",
+   "Habibnagar",
+   "Hardia",
+   "Jiyan",
+   "Mahodipur",
+   "Markan",
+   "Partap Pur",
+   "S.S.Factory",
+   "Sarsar",
+   "Satation Road",
+   "Siwan",
+   "Siwan Chowk Bazar",
+   "Tarwa",
+   "Tetria"
+  ],
+  "district": "Siwan",
+  "state": "Bihar",
+  "status": "ok"
+ },
+ "843113": {
+  "areas": [
+   "A.Bishanpur",
+   "Bhatauna",
+   "Bishundatpur",
+   "Chamarua",
+   "Damodarpur",
+   "Kharauna",
+   "Ladaura Pakari",
+   "Marwan",
+   "Pakari Pakohi",
+   "Patahi (Muzaffarpur)",
+   "Simra Urf Afzalpur",
+   "Subhankarpur"
+  ],
+  "district": "Muzaffarpur",
+  "state": "Bihar",
+  "status": "ok"
+ },
+ "848101": {
+  "areas": [
+   "B.Ailoth",
+   "B.R.B.College",
+   "Begampur",
+   "Bh.Dhurlak",
+   "Hansa",
+   "Harpur Ailoth",
+   "Kashipur (Samastipur)",
+   "L.B.Pura",
+   "Lagunia Raghukanth",
+   "Lagunia Surya Kanth",
+   "Mathurapur",
+   "Mohanpur",
+   "Rahmatpur",
+   "Rampur Dudhpura",
+   "Samastipur",
+   "Samastipur Bazar",
+   "Sari",
+   "Satmalpur",
+   "Shekhopur"
+  ],
+  "district": "Samastipur",
+  "state": "Bihar",
+  "status": "ok"
+ }
+}

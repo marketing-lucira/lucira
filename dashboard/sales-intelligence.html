@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <title>Lucira · Sales Intelligence Command Center</title>
 <meta name="description" content="Executive Sales Intelligence Platform for Lucira Jewelry — CEO command center reading the daily Sales_overview reporting layer.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23f4d78b'/%3E%3Cstop offset='1' stop-color='%23b8860b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='%230b0b0d'/%3E%3Ctext x='50' y='70' font-family='Georgia,serif' font-size='58' font-weight='700' text-anchor='middle' fill='url(%23g)'%3EL%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%238b6f56'/%3E%3Ctext x='50' y='70' font-family='Georgia,serif' font-size='58' font-weight='700' text-anchor='middle' fill='%23fff8f0'%3EL%3C/text%3E%3C/svg%3E">
 <style>
 /* ═══════════════════════════════════════════════════════════════════════
    LUCIRA SALES INTELLIGENCE — premium luxury jewellery command center
@@ -20,6 +20,7 @@
   --ease:cubic-bezier(.22,.61,.36,1);
   --serif:"Cormorant Garamond","Playfair Display",Georgia,"Times New Roman",serif;
   --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --brand-brown:#8b6f56; --brand-brown-dark:#6e5744; --brand-mauve:#a05a64; --brand-mauve-light:#d9b8b4; --brand-cream:#fff8f0;
 }
 html[data-theme=dark]{
   --bg:#08080a; --bg-2:#0d0d10; --surface:#141418; --surface-2:#1b1b21; --surface-3:#22222a;
@@ -64,33 +65,37 @@ input,select{font-family:inherit}
   border-top-color:var(--gold);animation:spin 1.15s linear infinite}
 .load-ring.r2{inset:-26px;border-top-color:transparent;border-right-color:var(--royal);opacity:.5;animation-duration:2.1s;animation-direction:reverse}
 @keyframes spin{to{transform:rotate(360deg)}}
-.load-word{font-family:var(--serif);font-size:34px;letter-spacing:8px;
-  background:linear-gradient(100deg,var(--gold-2),var(--gold),var(--gold-deep));-webkit-background-clip:text;background-clip:text;color:transparent;
-  text-transform:uppercase;padding-left:8px}
+.load-word{font-family:var(--serif);font-size:34px;letter-spacing:1px;color:var(--brand-mauve);padding-left:8px}
 .load-sub{font-size:11px;letter-spacing:5px;color:var(--muted);text-transform:uppercase}
+.dotless{position:relative;display:inline-block;font-style:normal}
+.dotless::before{content:'';position:absolute;top:-.6em;left:50%;width:4px;height:4px;background:var(--brand-mauve-light);transform:translateX(-50%) rotate(45deg)}
 .load-bar{width:190px;height:2px;background:var(--hair);border-radius:2px;overflow:hidden}
 .load-bar i{display:block;height:100%;width:40%;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:load 1.1s var(--ease) infinite}
 @keyframes load{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
 
 /* ── Brand mark ─────────────────────────────────────────────── */
 .brand{display:flex;align-items:center;gap:12px}
-.brand .mono{width:38px;height:38px;border-radius:11px;flex:0 0 auto;
-  background:linear-gradient(150deg,#1c1c22,#0c0c0e);border:1px solid var(--glass-brd);display:grid;place-items:center;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
-.brand .mono svg{width:24px;height:24px}
+.brand .mono{width:38px;height:44px;border-radius:50%/42%;flex:0 0 auto;
+  background:var(--brand-cream);border:1.5px solid var(--brand-mauve);display:grid;place-items:center;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);position:relative}
+.brand .mono svg{width:22px;height:22px}
+.brand .mono::after{content:'';position:absolute;bottom:6px;width:5px;height:5px;background:var(--brand-mauve);transform:rotate(45deg)}
 .brand .wm{display:flex;flex-direction:column;line-height:1}
-.brand .wm b{font-family:var(--serif);font-size:19px;font-weight:600;letter-spacing:3px;
-  background:linear-gradient(100deg,var(--gold-2),var(--gold-deep));-webkit-background-clip:text;background-clip:text;color:transparent}
-.brand .wm span{font-size:8.5px;letter-spacing:3.4px;text-transform:uppercase;margin-top:3px;font-weight:600;
-  background:linear-gradient(100deg,var(--gold-2),var(--gold-deep));-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand .wm b{font-family:var(--serif);font-size:19px;font-weight:600;letter-spacing:1px;color:var(--brand-cream);text-transform:none}
+.brand .wm span{font-size:8.5px;letter-spacing:3.4px;text-transform:uppercase;margin-top:3px;font-weight:600;color:rgba(255,248,240,.72)}
 
 /* ── App layout ─────────────────────────────────────────────── */
 #app{opacity:0;transition:opacity .6s var(--ease)}
 #app.ready{opacity:1}
-header.top{position:relative;z-index:60;backdrop-filter:blur(18px) saturate(1.3);
-  background:linear-gradient(180deg,var(--glass),transparent);border-bottom:1px solid var(--hair);
+header.top{position:relative;z-index:60;backdrop-filter:none;
+  background:var(--brand-brown);border-bottom:2px solid var(--brand-brown-dark);
   padding:11px clamp(14px,3vw,30px);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .top .spacer{flex:1}
+header.top .clock{color:rgba(255,248,240,.78)}
+header.top .clock b{color:#fff}
+header.top .src-dot{color:var(--brand-cream);border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.12)}
+header.top .iconbtn{color:var(--brand-cream);border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.12)}
+header.top .iconbtn:hover{color:#fff;border-color:rgba(255,255,255,.5)}
 .clock{font-variant-numeric:tabular-nums;font-size:12px;color:var(--ink-2);text-align:right;line-height:1.35}
 .clock b{color:var(--gold);font-weight:600;letter-spacing:.5px}
 .src-dot{display:inline-flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-2);
@@ -359,12 +364,10 @@ body.modal-open{overflow:hidden}
 <div id="loader">
   <div class="load-mark">
     <div class="load-ring"></div><div class="load-ring r2"></div>
-    <svg viewBox="0 0 100 100"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f2d888"/><stop offset="1" stop-color="#b8860b"/></linearGradient></defs>
-      <text x="50" y="72" font-family="Georgia,serif" font-size="66" font-weight="700" text-anchor="middle" fill="url(#lg)">L</text></svg>
+    <svg viewBox="0 0 100 100"><text x="50" y="72" font-family="Georgia,serif" font-size="66" font-weight="700" text-anchor="middle" fill="#a05a64">L</text></svg>
   </div>
   <div style="text-align:center">
-    <div class="load-word">Lucira</div>
+    <div class="load-word">Luc<span class="dotless">ı</span>rá</div>
     <div class="load-sub">Jewelry</div>
   </div>
   <div class="load-bar"><i></i></div>
@@ -374,14 +377,13 @@ body.modal-open{overflow:hidden}
 <div id="app">
   <header class="top">
     <div class="brand">
-      <div class="mono"><svg viewBox="0 0 100 100"><text x="50" y="72" font-family="Georgia,serif" font-size="66" font-weight="700" text-anchor="middle" fill="url(#lg2)">L</text>
-        <defs><linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2d888"/><stop offset="1" stop-color="#b8860b"/></linearGradient></defs></svg></div>
-      <div class="wm"><b>LUCIRA</b><span>Jewelry</span></div>
+      <div class="mono"><svg viewBox="0 0 100 100"><text x="50" y="68" font-family="Georgia,serif" font-size="62" font-weight="700" text-anchor="middle" fill="#8b6f56">L</text></svg></div>
+      <div class="wm"><b>Luc<span class="dotless">ı</span>rá</b><span>Jewelry</span></div>
     </div>
     <div class="src-dot" id="srcDot"><i></i><span id="srcTxt">Sample data</span></div>
     <div class="spacer"></div>
     <div class="clock"><div id="clkDate">—</div><b id="clkTime">—</b></div>
-    <select id="hdrRange" title="Date range — applies to every tab" style="background:var(--surface,#141418);color:var(--ink);border:1px solid var(--glass-brd,rgba(212,175,55,.22));border-radius:10px;padding:8px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer"></select>
+    <select id="hdrRange" title="Date range — applies to every tab" style="background:rgba(255,255,255,.12);color:#fff8f0;border:1px solid rgba(255,255,255,.28);border-radius:10px;padding:8px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer"></select>
     <button class="iconbtn" id="btnCompare" title="Comparison period">⇄</button>
     <button class="iconbtn" id="btnTheme" title="Toggle theme">◐</button>
     <button class="iconbtn" id="btnFull" title="Fullscreen">⛶</button>
@@ -586,7 +588,8 @@ function buildSample(){
           city:cust.city,state:cust.state,region:cust.region,sku:st.style+'-'+String.fromCharCode(65+l),
           product_name:st.prod,style:st.style,category:st.cat,sub_category:'',collection:st.coll,metal:st.metal,
           price_band:realBand(gross),customer_type:'',sale_type:saleType,
-          qty,gross,net:net(gross),discount,gross_weight:round3(grossW),net_weight:round3(netW),cogs:null,
+          qty,gross,net:net(gross),discount,gross_weight:round3(grossW),net_weight:round3(netW),
+          cogs:Math.round(net(gross)*(1-(0.18+rnd()*0.20))),
           store:store.s,salesperson:person,channel:store.s==='Online'?'Online':'Store'});
       }
     }
@@ -627,7 +630,7 @@ async function loadData(){
   if(!SAMPLE) SAMPLE=buildSample();
   ingest({items:SAMPLE.items,styleRef:[...SAMPLE.styleRef.values()],customerRef:[...SAMPLE.custRef.values()],
     asOf:maxDate(SAMPLE.items),currency:'INR',gst_divisor:GST,
-    capabilities:{margin:false,inventory:false,selling_days:false,customer:true,salesperson:false,sale_type:true,weights:true,price_band:true,customer_type:true}},'sample');
+    capabilities:{margin:true,inventory:false,selling_days:false,customer:true,salesperson:false,sale_type:true,weights:true,price_band:true,customer_type:true}},'sample');
 }
 function maxDate(items){ let m=null; for(const it of items) if(!m||it.date>m) m=it.date; return m; }
 function dedupKey(it){ return it.gross+'|'+it.date+'|'+it.document_no+'|'+it.net_weight; }
@@ -803,11 +806,14 @@ function segmentOf(c){
 function computeMetrics(items,win){
   const M={gross:0,net:0,discount:0,salesGross:0,returnGross:0,exchangeGross:0,mtoNet:0,rtsNet:0,tahNet:0,
     units:0,posUnits:0,orderSet:new Set(),returnOrderSet:new Set(),exchOrderSet:new Set(),cancelOrderSet:new Set(),
-    custSet:new Set(),cogs:0,hasCogs:false};
+    custSet:new Set(),cogs:0,coveredNet:0,hasCogs:false};
   for(const it of items){
     M.gross+=it.gross; M.net+=it.net; M.discount+=it.discount||0;
     M.orderSet.add(it.document_no); if(it.customer_id&&it.customer_id!=='-')M.custSet.add(it.customer_id);
-    if(it.cogs!=null){ M.cogs+=it.cogs; M.hasCogs=true; }
+    // Margin is computed only over lines with a real cost match (cogs!=null) —
+    // dividing by TOTAL net would silently treat uncosted revenue as zero-cost
+    // and overstate margin. coveredNet is the honest denominator.
+    if(it.cogs!=null){ M.cogs+=it.cogs; M.coveredNet+=it.net; M.hasCogs=true; }
     const st=it.sale_type;
     if(st==='Return'){ M.returnGross+=it.gross; M.returnOrderSet.add(it.document_no); }
     else if(st==='Exchange'){ M.exchangeGross+=it.gross; M.exchOrderSet.add(it.document_no); }
@@ -841,7 +847,8 @@ function computeMetrics(items,win){
     returnPct: orders?retOrders/orders*100:0, exchangePct: orders?exchOrders/orders*100:0,
     cancellationPct: 0,
     discountPct: M.salesGross?M.discount/M.salesGross*100:0,
-    profit: M.hasCogs?M.net-M.cogs:null, margin: (M.hasCogs&&M.net)?(M.net-M.cogs)/M.net*100:null,
+    profit: M.hasCogs?M.coveredNet-M.cogs:null, margin: (M.hasCogs&&M.coveredNet)?(M.coveredNet-M.cogs)/M.coveredNet*100:null,
+    costCoveragePct: M.net?M.coveredNet/M.net*100:0,
     revPerCustomer: M.net/nc, revPerStore: stores?M.net/stores:0, revPerExec: execs?M.net/execs:null,
     stores, execs, retOrders, exchOrders
   };
@@ -903,14 +910,18 @@ const KPIS=[
 function groupAgg(items,keyFn){
   const m=new Map();
   for(const it of items){ const k=keyFn(it); if(k==null||k===''||k==='—') continue;
-    let g=m.get(k); if(!g){ g={key:k,net:0,gross:0,disc:0,units:0,orders:new Set(),cust:new Set(),ret:0,retNet:0,mto:0,rts:0,weight:0}; m.set(k,g); }
+    let g=m.get(k); if(!g){ g={key:k,net:0,gross:0,disc:0,units:0,orders:new Set(),cust:new Set(),ret:0,retNet:0,mto:0,rts:0,weight:0,cogs:0,coveredNet:0}; m.set(k,g); }
     g.net+=it.net; g.gross+=it.gross; g.disc+=it.discount||0; g.units+=Math.abs(it.qty); g.orders.add(it.document_no);
     if(it.customer_id&&it.customer_id!=='-')g.cust.add(it.customer_id); g.weight+=it.net_weight||0;
     if(it.sale_type==='Return'){ g.ret++; g.retNet+=it.net; } if(it.sale_type==='MTO')g.mto+=it.net; if(it.sale_type==='RTS')g.rts+=it.net;
+    if(it.cogs!=null){ g.cogs+=it.cogs; g.coveredNet+=it.net; }
   }
   return [...m.values()].map(g=>({...g,orders:g.orders.size,customers:g.cust.size,
     aov:g.orders.size?g.net/g.orders.size:0,discPct:g.gross?g.disc/g.gross*100:0,
-    retPct:g.orders.size?g.ret/g.orders.size*100:0}));
+    retPct:g.orders.size?g.ret/g.orders.size*100:0,
+    profit:g.coveredNet?g.coveredNet-g.cogs:null,
+    marginPct:g.coveredNet?(g.coveredNet-g.cogs)/g.coveredNet*100:null,
+    costCoveragePct:g.net?g.coveredNet/g.net*100:0}));
 }
 function rank(arr,key,dir){ return [...arr].sort((a,b)=>(dir===1?a[key]-b[key]:b[key]-a[key])); }
 function sum(arr,f){ return arr.reduce((s,x)=>s+(f?f(x):x),0); }
@@ -999,8 +1010,8 @@ const KINFO={
  cancellationPct:{shows:"Share of orders cancelled.",why:"Cancellations point to fulfilment or payment friction.",read:"Lower is better.",good:"Low.",bad:"Rising.",formula:"Cancelled orders ÷ total orders.",actions:"Not tracked in the current source — add a cancellation flag to enable."},
  refundAmt:{shows:"Total value refunded through returns.",why:"The direct cash impact of returns.",read:"Read alongside Return %.",good:"Small and stable.",bad:"Large or growing.",formula:"Σ |gross| of return transactions.",actions:"Reducing return drivers directly shrinks this."},
  discountPct:{shows:"Discount as a share of sales gross.",why:"Discounting protects volume but erodes margin.",read:"Rising discount with flat revenue is a red flag.",good:"Controlled.",bad:"Creeping up.",formula:"Σ discount ÷ sales gross.",actions:"Tie discounts to clear rules; watch impact on AOV and ASP."},
- profit:{shows:"Gross profit after cost of goods.",why:"Revenue only matters net of what stock costs.",read:"The true bottom-line contribution.",good:"Growing.",bad:"Falling despite revenue growth.",formula:"Net − COGS.",actions:"Not available — add a COGS/cost column to the source to unlock."},
- margin:{shows:"Profit as a percentage of revenue.",why:"Efficiency of turning sales into profit.",read:"Higher is healthier.",good:"Stable or rising.",bad:"Compressing.",formula:"(Net − COGS) ÷ net.",actions:"Needs a COGS column in the source to compute."},
+ profit:{shows:"Gross profit after cost of goods, on cost-covered revenue only.",why:"Revenue only matters net of what stock costs.",read:"The true bottom-line contribution. See the Margin tab for the full breakdown.",good:"Growing.",bad:"Falling despite revenue growth.",formula:"Covered Net − COGS (real vendor purchase cost).",actions:"Protect margin on low-margin styles flagged in the Margin tab."},
+ margin:{shows:"Profit as a percentage of cost-covered revenue.",why:"Efficiency of turning sales into profit.",read:"Higher is healthier. Excludes the small share of revenue with no matched purchase-cost record.",good:"Stable or rising.",bad:"Compressing.",formula:"(Covered Net − COGS) ÷ Covered Net.",actions:"See Margin tab for top/bottom SKUs and category breakdown."},
  revPerCustomer:{shows:"Average net revenue per active customer this period.",why:"Shows how hard each customer relationship works.",read:"Rising means deeper wallets or better up-sell.",good:"Increasing.",bad:"Falling.",formula:"Net ÷ active customers.",actions:"Lift with cross-sell and loyalty tiers.",src:INFO_CUST},
  revPerStore:{shows:"Average net revenue per store.",why:"A productivity check across the store network.",read:"Compare to spot under-performing locations.",good:"Rising.",bad:"Dragged down by weak stores.",formula:"Net ÷ number of active stores.",actions:"Coach low producers using the Stores tab."},
  revPerExec:{shows:"Average net revenue per sales executive.",why:"Measures sales-team productivity.",read:"Needs per-executive data to be meaningful.",good:"Rising.",bad:"Falling.",formula:"Net ÷ number of executives.",actions:"Not populated — add a salesperson field to the source to enable.",src:"Needs salesperson field in source"}
@@ -1194,7 +1205,8 @@ function generateAlerts(){
   if(big>0) A.push({level:'info',ic:'◆',title:`${big} large orders`,text:`${big} orders above ${money(CONFIG.HIGHVAL_LTV)} booked this period.`,meta:'Large Order'});
   // trend from sparkline
   const s=sparkFor('revenue'); if(s.length>=3){ const slope=s[s.length-1]-s[0]; A.push(slope>=0?{level:'good',ic:'↗',title:'Positive revenue trend',text:'Trailing trend within the window is upward.',meta:'Positive Trend'}:{level:'warn',ic:'↘',title:'Negative revenue trend',text:'Trailing trend within the window is downward — monitor.',meta:'Negative Trend'}); }
-  if(!STATE.caps.margin) A.push({level:'info',ic:'ⓘ',title:'Margin analytics unavailable',text:'Sales_overview_table has no COGS column — Profit, Margin and Margin-Loss alerts activate once a cost column is added.',meta:'Inventory Risk'});
+  if(!STATE.caps.margin) A.push({level:'info',ic:'ⓘ',title:'Margin analytics unavailable',text:'Fewer than half of sold SKUs in this window have a matched vendor purchase-cost record — Profit, Margin and the Margin tab activate once coverage crosses 50%.',meta:'Inventory Risk'});
+  else if(M.margin!=null&&M.margin<15) A.push({level:'crit',ic:'₹',title:'Margin compressing',text:`Gross margin is ${pctStr(M.margin)} on cost-covered revenue — below the 15% floor. See the Margin tab for the styles/categories dragging it down.`,meta:'Margin Loss'});
   return A;
 }
 
@@ -1244,6 +1256,7 @@ const TABS=[
   {id:'returns',label:'Returns & Exchange',ic:'↩'},
   {id:'stores',label:'Stores',ic:'⌂'},
   {id:'products',label:'Products',ic:'◇'},
+  {id:'margin',label:'Margin',ic:'₹'},
   {id:'geo',label:'Geography',ic:'✦'},
   {id:'team',label:'Sales Team',ic:'☰'},
   {id:'ai',label:'AI Assistant',ic:'✧'},
@@ -1637,6 +1650,47 @@ VIEW.products=function(){
     `<div style="margin-bottom:16px">${fulTable}</div>`+
     `<div class="grid g-3" style="margin-bottom:16px">${dimCard('Category Performance',STATE.byCat,'category')}${dimCard('Collection Performance',STATE.byColl,'collection')}${dimCard('Metal Performance',groupAgg(STATE.items,i=>i.metal),'metal')}</div>`+
     `<div class="grid g-2">${dimCard('Price-Band Performance',groupAgg(STATE.items,i=>i.price_band),'band')}${fbtCard}</div>`;
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VIEW · MARGIN INTELLIGENCE  (Sale − Cost, % margin report)
+   Cost = real vendor purchase cost (purchase.invoice_items, weighted avg per
+   SKU, style-average fallback) joined in sql/refresh_reporting.sql RULE 6.
+   Every figure here is scoped to lines with cogs!=null — never zero-filled.
+   ═══════════════════════════════════════════════════════════════════════ */
+VIEW.margin=function(){
+  const M=STATE.M;
+  if(!STATE.caps.margin){
+    return secHead('Profitability','Margin Intelligence','Sale − Cost, % margin report')+
+      `<div class="banner">ⓘ Margin analytics unavailable — fewer than half of sold SKUs in this window have a matched purchase cost record. Check sales_dashboard.cost_reference coverage.</div>`;
+  }
+  const covered=STATE.items.filter(i=>i.cogs!=null);
+  const kpiStrip=miniRow([
+    {l:'Net Revenue (Cost-Covered)',v:money(sum(covered,i=>i.net))},
+    {l:'Total Cost (COGS)',v:money(sum(covered,i=>i.cogs))},
+    {l:'Gross Profit',v:money(M.profit),color:M.profit>=0?'var(--good)':'var(--crit)'},
+    {l:'Gross Margin %',v:pctStr(M.margin),color:M.margin>=25?'var(--good)':M.margin>=15?'var(--gold)':'var(--crit)'},
+    {l:'Cost Coverage',v:pctStr(M.costCoveragePct),d:`${fmtInt(covered.length)} of ${fmtInt(STATE.items.length)} lines`}
+  ]);
+  const coverageBanner=M.costCoveragePct<99.5?`<div class="banner">ⓘ ${pctStr(100-M.costCoveragePct)} of net revenue has no matched vendor purchase-cost record (new/uncatalogued SKUs) and is excluded from margin — never treated as zero-cost.</div>`:'';
+  // margin leaders — grouped by full SKU, minimum 3 units sold to avoid single-sale noise
+  const skuAgg=groupAgg(covered,i=>i.sku).filter(s=>s.units>=3&&s.marginPct!=null);
+  const topMargin=rank(skuAgg,'marginPct').slice(0,10), bottomMargin=rank(skuAgg,'marginPct',1).slice(0,10);
+  const marginTable=(title,data)=>card(title,`<table class="dt"><thead><tr><th>SKU</th><th class="num">Units</th><th class="num">Revenue</th><th class="num">Profit</th><th class="num">Margin %</th></tr></thead><tbody>`+
+    data.map(s=>`<tr><td>${esc(trunc(s.key,28))}</td><td class="num">${fmtInt(s.units)}</td><td class="num">${money(s.net)}</td><td class="num">${money(s.profit)}</td><td class="num"><span class="pill ${s.marginPct>=25?'ok':s.marginPct>=10?'warn':'bad'}">${pctStr(s.marginPct)}</span></td></tr>`).join('')+
+    `</tbody></table>`,{hint:'min 3 units sold, cost-covered lines only'});
+  const dimMarginCard=(title,arr,click)=>{ const rows=rank(arr.filter(x=>x.marginPct!=null),'net').slice(0,7);
+    return card(title,hbars(rows.map(x=>({label:x.key,value:x.marginPct,key:x.key})),{click,fmt:pctStr}),{hint:'bar = margin %, ranked by revenue'}); };
+  const byCat=groupAgg(covered,i=>i.category), byColl=groupAgg(covered,i=>i.collection), byMetal=groupAgg(covered,i=>i.metal);
+  const byStore=groupAgg(covered,i=>i.store), bySaleType=groupAgg(covered,i=>i.sale_type);
+  const saleTypeTable=card('Margin by Sale Type',`<table class="dt"><thead><tr><th>Type</th><th class="num">Revenue</th><th class="num">Cost</th><th class="num">Profit</th><th class="num">Margin %</th></tr></thead><tbody>`+
+    rank(bySaleType,'net').map(r=>`<tr><td><span class="pill" style="background:${saleColor(r.key)}22;color:${saleColor(r.key)}">${esc(r.key)}</span></td><td class="num">${money(r.net)}</td><td class="num">${money(r.cogs)}</td><td class="num">${money(r.profit)}</td><td class="num">${pctStr(r.marginPct)}</td></tr>`).join('')+
+    `</tbody></table>`,{});
+  return secHead('Profitability','Margin Intelligence','Sale − Cost, % margin report · real vendor purchase cost')+
+    coverageBanner+kpiStrip+
+    `<div class="grid g-2" style="margin-bottom:16px">${marginTable('Top 10 Margin SKUs',topMargin)}${marginTable('Bottom 10 Margin SKUs',bottomMargin)}</div>`+
+    `<div class="grid g-3" style="margin-bottom:16px">${dimMarginCard('Margin % by Category',byCat,'category')}${dimMarginCard('Margin % by Collection',byColl,'collection')}${dimMarginCard('Margin % by Metal',byMetal,'metal')}</div>`+
+    `<div class="grid g-2">${dimMarginCard('Margin % by Store',byStore,'store')}${saleTypeTable}</div>`;
 };
 
 /* ═══════════════════════════════════════════════════════════════════════

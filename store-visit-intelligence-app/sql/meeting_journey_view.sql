@@ -257,8 +257,28 @@ SELECT
   b.from_date,
   FORMAT_TIMESTAMP('%Y-%m-%dT%H:%M:%S', b.from_ts, 'Asia/Kolkata')                 AS from_ist,
   b.all_day,
+  -- Zoho's Check_In_Status. It reads 'PLANNED' on every record in the module (check-in is
+  -- never used in this org), so it carries no information. Exposed only so the Help tab can
+  -- say so honestly rather than have it look like a live status. Zoho DOES have a real
+  -- Meeting_Status picklist, but it is ~3% populated AND is not carried in the CDC JSON feed,
+  -- so it cannot be used here.
   b.meeting_status,
   b.meeting_title                                                                  AS meeting_type,
+  -- Event_Title is free text and the same intent is spread across case and spelling variants
+  -- ("Store Visit" / "store visit" / "store vist" / "store viist" / "STORE VISIT"). Grouping
+  -- on the raw value splinters every breakdown, so this folds it to a category while the raw
+  -- value stays available above. Test rows are matched FIRST so "Store Visit - Test" is not
+  -- counted as a real store visit.
+  CASE
+    WHEN b.meeting_title IS NULL OR TRIM(b.meeting_title) = '' THEN NULL
+    WHEN REGEXP_CONTAINS(LOWER(b.meeting_title), r'test')                    THEN 'Test / Internal'
+    WHEN REGEXP_CONTAINS(LOWER(b.meeting_title), r'st[o0]re\s*v')            THEN 'Store Visit'
+    WHEN REGEXP_CONTAINS(LOWER(b.meeting_title), r'vid[e]?[o0]\s*cal')       THEN 'Video Call'
+    WHEN REGEXP_CONTAINS(LOWER(b.meeting_title), r'try\s*at\s*home|\btah\b') THEN 'Try at Home'
+    WHEN REGEXP_CONTAINS(LOWER(b.meeting_title), r'new\s*meeting')           THEN 'New Meeting'
+    WHEN REGEXP_CONTAINS(LOWER(b.meeting_title), r'follow\s*up')             THEN 'Follow Up'
+    ELSE 'Other'
+  END                                                                              AS meeting_type_norm,
   b.meeting_location,
   b.venue,
   b.meeting_store_code,

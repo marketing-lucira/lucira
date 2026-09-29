@@ -1,0 +1,17 @@
+[
+  {
+    "distinct_campaign_ids": "1307", 
+    "max_last_seen": "2026-09-16 13:23:49", 
+    "min_created": "2025-04-17 07:13:31", 
+    "total_users": "1733159", 
+    "users_any_pincode": "203793", 
+    "users_format_valid_pincode": "141638", 
+    "users_with_acquisition_source": "0", 
+    "users_with_campaign_id": "469918", 
+    "users_with_campaign_source": "1092584", 
+    "users_with_city": "1300167", 
+    "users_with_coords": "0", 
+    "users_with_locality": "0", 
+    "users_with_region": "1293892"
+  }
+]
