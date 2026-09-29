@@ -2958,6 +2958,24 @@ function buildAssistant(){
     var followupToday=tk.filter(function(t){return t.due&&dayKey(t.due)===todayKey&&!isDone(t);}).length;
     var followupTomorrow=tk.filter(function(t){return t.due&&dayKey(t.due)===tmrwKey&&!isDone(t);}).length;
 
+    /* Store City = deal Address_City in one of the 5 store cities. Zoho stores district-level
+       names ("Central Delhi", "South Delhi", "Bangalore Rural"), so match on the city word, not
+       exact text. Per business rule, the Mumbai region (Thane, Navi Mumbai, Borivali and other
+       MMR suburbs) maps to Mumbai, and Delhi-NCR (Noida / Gautam Buddha Nagar, Ghaziabad,
+       Faridabad) maps to Delhi → Store City. Blank / unmatched city counts as Non-Store. */
+    var STORE_CITY_RE=new RegExp('\\b('+[
+      'mumbai','bombay','thane','borivali','andheri','bandra','kandivali','malad','goregaon','dadar',
+      'kurla','ghatkopar','mulund','chembur','powai','kalyan','dombivli','bhiwandi','mira road',
+      'bhayandar','vasai','virar','panvel','kharghar','vashi','airoli','ulhasnagar','ambernath','badlapur',
+      'pune','poona','pimpri','chinchwad',
+      'delhi','karawal nagar','noida','gautam buddha nagar','ghaziabad','gaziabad','faridabad',
+      'gurgaon','gurugram',
+      'bangalore','bengaluru'
+    ].join('|')+')\\b');
+    function isStoreCity(c){
+      var s=String(c||'').toLowerCase().replace(/[^a-z ]/g,' ').replace(/\s+/g,' ').trim();
+      return !!s && STORE_CITY_RE.test(s);
+    }
     /* ---- per-owner extensions (won/lost/whatsapp/work-hour/activity split, store, score) ---- */
     var allAct=tk.concat(on).concat(ev);
     var taskNoCallRows=[]; // raw dump backing the "Task Created, No Call" drill-down, for cross-verification
@@ -2965,6 +2983,7 @@ function buildAssistant(){
       if(isWon(j.deal)) o.won=(o.won||0)+1; if(isLost(j.deal)) o.lost=(o.lost||0)+1;
       if(isWhatsApp(j.deal)) o.wa=(o.wa||0)+1; else o.other=(o.other||0)+1;
       if(inWorkHours(j.deal.created)) o.workHr=(o.workHr||0)+1; else o.nonWorkHr=(o.nonWorkHr||0)+1;
+      if(isStoreCity(j.deal.city)) o.storeCity=(o.storeCity||0)+1; else o.nonStoreCity=(o.nonStoreCity||0)+1;
       o.acts=(o.acts||0)+(+j.deal.numAct||0);
       if(j.contacted&&j.frt!=null){ if(j.frt<=30) o.first30=(o.first30||0)+1; else o.firstAfter30=(o.firstAfter30||0)+1; }
       if(!isWhatsApp(j.deal)) o.callsNotConn=(o.callsNotConn||0)+j.calls.filter(function(c){return !(c.dur>0);}).length;
@@ -3609,19 +3628,22 @@ function buildAssistant(){
     }
 
     // ===== SECTION 4 — Owner Performance =====
-    var p3=panel('👥 Owner Performance','WhatsApp broken out per the business rule · First Call = earliest call after Deal Creation · talk time in HH:MM:SS · "Call Not Connected" excludes WhatsApp deals · "Task Created, No Call" = a follow-up task exists but the deal was never actually dialed, for leads received 10AM-9PM · "Due Today"/"Overdue" are based on Open/WIP deals created before the REAL current date and ignore the date-range filter above — an overdue follow-up stays Overdue every day until its Task is completed, never reset by changing the date range. 🏆 top Owner Score · ⚠ needs coaching.'); v.appendChild(p3);
+    var p3=panel('👥 Owner Performance','WhatsApp broken out per the business rule · First Call = earliest call after Deal Creation · talk time in HH:MM:SS · "Call Not Connected" excludes WhatsApp deals · "Task Created, No Call" = a follow-up task exists but the deal was never actually dialed, for leads received 10AM-9PM · "Due Today"/"Overdue" are based on Open/WIP deals created before the REAL current date and ignore the date-range filter above — an overdue follow-up stays Overdue every day until its Task is completed, never reset by changing the date range. "Store City Deals" = deal Address_City in Mumbai, Pune, Delhi (incl. Central/South/East/West/North Delhi, New Delhi), Gurgaon/Gurugram or Bangalore/Bengaluru — Mumbai includes Thane, Navi Mumbai, Borivali and other Mumbai-region suburbs; Delhi includes Noida, Ghaziabad and Faridabad. Everything else, incl. deals with no city captured, is "Non-Store City". 🏆 top Owner Score · ⚠ needs coaching.'); v.appendChild(p3);
     var bestO=M.ranking[0]?M.ranking[0].owner:null, worstO=M.ranking.length?M.ranking[M.ranking.length-1].owner:null;
     var ownHeaders=['Owner','Total Deals','Working Hr Deals','WhatsApp Deals','Other Deals','1st Call <30m','1st Call >30m','Total Calls','Talk Time','Connected Calls','Call Not Connected (excl. WhatsApp)','Customer Activity','Due Today','Overdue','Task Created, No Call (10AM-9PM)'];
+    // Owner table only: Store City / Non-Store City Deals right after Total Deals. ownHeaders itself
+    // stays unchanged — the City/State/Trigger tables below copy it and don't carry these columns.
+    var ownTblHeaders=ownHeaders.slice(0,2).concat(['Store City Deals','Non-Store City Deals'],ownHeaders.slice(2));
     var ownRows=M.owners.map(function(o){ var medal=(o.name===bestO)?'🏆 ':(o.name===worstO)?'⚠ ':'';
-      return [ {html:medal+esc(o.name),text:o.name}, o.deals, o.workHr||0, o.wa||0, o.other||0,
+      return [ {html:medal+esc(o.name),text:o.name}, o.deals, o.storeCity||0, o.nonStoreCity||0, o.workHr||0, o.wa||0, o.other||0,
         o.first30||0, o.firstAfter30||0, o.calls, {html:hms(o.talk||0),text:o.talk||0}, o.connected30||0,
         {html:(o.callsNotConn?'<b style="color:var(--bad)">'+o.callsNotConn+'</b>':'0'),text:o.callsNotConn||0},
         o.acts||0,
         o.dueDealsToday||0,
         {html:(o.overdueDeals?'<b style="color:var(--bad)">'+o.overdueDeals+'</b>':'0'),text:o.overdueDeals||0},
         {html:(o.taskNoCall?'<b style="color:var(--bad)">'+o.taskNoCall+'</b>':'0'),text:o.taskNoCall||0} ]; });
-    table(p3.__body,ownHeaders,ownRows,{key:'own3',numCols:[1,2,3,4,5,6,7,9,10,11,12,13,14]});
-    addExport(p3,'owner_performance',ownHeaders,M.owners.map(function(o){return [o.name,o.deals,o.workHr||0,o.wa||0,o.other||0,o.first30||0,o.firstAfter30||0,o.calls,o.talk||0,o.connected30||0,o.callsNotConn||0,o.acts||0,o.dueDealsToday||0,o.overdueDeals||0,o.taskNoCall||0];}));
+    table(p3.__body,ownTblHeaders,ownRows,{key:'own3',numCols:[1,2,3,4,5,6,7,8,9,11,12,13,14,15,16]});
+    addExport(p3,'owner_performance',ownTblHeaders,M.owners.map(function(o){return [o.name,o.deals,o.storeCity||0,o.nonStoreCity||0,o.workHr||0,o.wa||0,o.other||0,o.first30||0,o.firstAfter30||0,o.calls,o.talk||0,o.connected30||0,o.callsNotConn||0,o.acts||0,o.dueDealsToday||0,o.overdueDeals||0,o.taskNoCall||0];}));
     if(M.taskNoCallRows.length){
       var tnBtn=el('button','mini','🔍 View Raw Data — Task Created, No Call ('+num(M.taskNoCallRows.length)+')');
       tnBtn.title='Every deal counted in the "Task Created, No Call" column, for cross-verification (WhatsApp deals already excluded)';
