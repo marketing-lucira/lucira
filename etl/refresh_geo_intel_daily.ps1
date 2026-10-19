@@ -71,7 +71,7 @@ try {
   Log "  -> $($factRes.Output | Select-String 'affected rows' | Select-Object -Last 1)"
 
   # 2) Re-run the geo-intel queries that feed the dashboard snapshot.
-  $queries = @('q1_national_totals_fact','q2_city_users_fact','q3_national_daily_fact','q4_session_analysis_fact','q5_funnel_fact','q6_zoho_pincode','q7_city_ga4_daily','q8_webengage_pincode')
+  $queries = @('q1_national_totals_fact','q2_city_users_fact','q3_national_daily_fact','q4_session_analysis_fact','q5_funnel_fact','q6_zoho_pincode','q6b_zoho_pincode_coverage','q7_city_ga4_daily','q8_webengage_pincode','q9_sales_pincode','q10_pincode_meta')
   foreach ($q in $queries) {
     Log "Refreshing $q"
     $sqlPath = Join-Path $GeoSqlDir "$q.sql"

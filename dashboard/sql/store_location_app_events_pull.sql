@@ -364,15 +364,33 @@ SELECT mobile, postal_code FROM (
 -- test-webengage queries above in one job). Feeds sales_raw.json. Mobile normalized inline, same
 -- rule as every other query in this file, so it can be matched client-side against
 -- canonical_mobile_pincode.json's mobile.
+-- 2026-10-19: the sale's OWN pincode now comes from ERP, not just an address regex. marketing_sale
+-- has a real Pin_code column (84% of Online line items), plus the POS invoice shipping_pin_code
+-- (by document_no) and the ERP customer master party.pin_code (by party_id -- the ONLY source for
+-- most Store-channel sales). Tiers are resolved client-side (first real India-Post pincode wins).
+WITH inv AS (
+  SELECT document_no, ANY_VALUE(TRIM(CAST(shipping_pin_code AS STRING))) AS pin
+  FROM `lucirajewelry-prod.ornaverse_erp_pos.invoice` GROUP BY 1
+), pty AS (
+  SELECT CAST(party_id AS STRING) AS party_id, ANY_VALUE(TRIM(CAST(pin_code AS STRING))) AS pin
+  FROM `lucirajewelry-prod.ornaverse_erp_master.party` GROUP BY 1
+)
 SELECT
-  document_no, Transaction_Date, net_sale, discount, pieces,
+  s.document_no, s.Transaction_Date, s.net_sale, s.discount, s.pieces,
+  s.Channel AS channel, s.company_code,
   CASE
-    WHEN REGEXP_CONTAINS(REGEXP_REPLACE(Cus_mobile, r'[^0-9]', ''), r'^91[6-9][0-9]{9}$') THEN SUBSTR(REGEXP_REPLACE(Cus_mobile, r'[^0-9]', ''), 3)
-    WHEN REGEXP_CONTAINS(REGEXP_REPLACE(Cus_mobile, r'[^0-9]', ''), r'^0[6-9][0-9]{9}$') THEN SUBSTR(REGEXP_REPLACE(Cus_mobile, r'[^0-9]', ''), 2)
-    WHEN REGEXP_CONTAINS(REGEXP_REPLACE(Cus_mobile, r'[^0-9]', ''), r'^[6-9][0-9]{9}$') THEN REGEXP_REPLACE(Cus_mobile, r'[^0-9]', '')
+    WHEN REGEXP_CONTAINS(REGEXP_REPLACE(s.Cus_mobile, r'[^0-9]', ''), r'^91[6-9][0-9]{9}$') THEN SUBSTR(REGEXP_REPLACE(s.Cus_mobile, r'[^0-9]', ''), 3)
+    WHEN REGEXP_CONTAINS(REGEXP_REPLACE(s.Cus_mobile, r'[^0-9]', ''), r'^0[6-9][0-9]{9}$') THEN SUBSTR(REGEXP_REPLACE(s.Cus_mobile, r'[^0-9]', ''), 2)
+    WHEN REGEXP_CONTAINS(REGEXP_REPLACE(s.Cus_mobile, r'[^0-9]', ''), r'^[6-9][0-9]{9}$') THEN REGEXP_REPLACE(s.Cus_mobile, r'[^0-9]', '')
     ELSE NULL
-  END AS mobile
-FROM `lucirajewelry-prod.ds_imputed_reporting.marketing_sale`;
+  END AS mobile,
+  TRIM(CAST(s.Pin_code AS STRING)) AS sale_pincode,
+  inv.pin AS invoice_pincode,
+  pty.pin AS party_pincode,
+  REGEXP_EXTRACT(CONCAT(IFNULL(s.address, ''), ' ', IFNULL(s.address_1, '')), r'([1-9][0-9]{5})') AS address_pincode
+FROM `lucirajewelry-prod.ds_imputed_reporting.marketing_sale` s
+LEFT JOIN inv ON inv.document_no = s.document_no
+LEFT JOIN pty ON pty.party_id = CAST(s.party_id AS STRING);
 
 -- Q12: Customer x Pincode purchase revenue (same JOIN pattern as Q11, applied to Purchase events'
 -- items[] array). BASE TABLE application_view_v1, JOINED TABLE profile_geo (itself sourced from
@@ -409,3 +427,18 @@ JOIN profile_geo p ON p.mobile = CASE   -- <-- THE JOIN: INNER JOIN on mobile
   ELSE NULL END
 WHERE a.event_name = 'Purchase' AND a.json_data IS NOT NULL AND a.cuid IS NOT NULL
 GROUP BY pincode, p.mobile;
+
+-- Q14b (added 2026-10-19): customer mobile -> pincode from typed customer records, used as a sale
+-- pincode fallback (tier 5, after the sale's own ERP pincodes, before WebEngage). Feeds
+-- customer_master_pincode.json. Priority: ERP CRM customer (ornaverse_crm_data.customer) >
+-- Shopify customer > ds_imputed_reporting.customer. Only real 6-digit values kept.
+SELECT mobile, ARRAY_AGG(pin ORDER BY prio LIMIT 1)[OFFSET(0)] AS pincode, ARRAY_AGG(src ORDER BY prio LIMIT 1)[OFFSET(0)] AS src
+FROM (
+  SELECT RIGHT(REGEXP_REPLACE(CAST(mobile AS STRING), r'[^0-9]', ''), 10) AS mobile, TRIM(CAST(pin_code AS STRING)) AS pin, 1 AS prio, 'erp_crm_customer' AS src FROM `lucirajewelry-prod.ornaverse_crm_data.customer`
+  UNION ALL
+  SELECT RIGHT(REGEXP_REPLACE(CAST(mobile AS STRING), r'[^0-9]', ''), 10), TRIM(CAST(zip_code AS STRING)), 2, 'shopify_customer' FROM `lucirajewelry-prod.ds_imputed_reporting.Shopify_customer`
+  UNION ALL
+  SELECT RIGHT(REGEXP_REPLACE(CAST(mobile AS STRING), r'[^0-9]', ''), 10), TRIM(CAST(pincode AS STRING)), 3, 'imputed_customer' FROM `lucirajewelry-prod.ds_imputed_reporting.customer`
+)
+WHERE REGEXP_CONTAINS(mobile, r'^[6-9][0-9]{9}$') AND REGEXP_CONTAINS(pin, r'^[1-9][0-9]{5}$')
+GROUP BY mobile;

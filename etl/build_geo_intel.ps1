@@ -32,6 +32,19 @@ $funnel    = LoadJson $NewOut 'q5_funnel_fact.json'
 $zohoZip   = LoadJson $NewOut 'q6_zoho_pincode.json'
 $cityGa4Daily = LoadJson $NewOut 'q7_city_ga4_daily.json'
 $webengagePincode = LoadJson $NewOut 'q8_webengage_pincode.json'
+# 2026-10-19: Pin Code page merged with Store Location Intelligence logic --
+#   q6  = live zoho_crm.cdc_deals, deal zip / address patch / contact Mailing_Zip, real pincodes only
+#   q6b = daily deals total vs deals-with-pincode (coverage KPIs)
+#   q9  = REAL sales (marketing_sale) on the sale's own ERP pincode, day x channel
+#   q10 = per-pincode nearest Lucira store + km, all-time buyers, and sales reconciliation totals
+$zohoPinCoverage = LoadJson $NewOut 'q6b_zoho_pincode_coverage.json'
+$salesPincode    = LoadJson $NewOut 'q9_sales_pincode.json'
+$pincodeMetaAll  = LoadJson $NewOut 'q10_pincode_meta.json'
+$pincodeMeta     = @($pincodeMetaAll | Where-Object { $_.pincode -ne '__totals__' } | ForEach-Object { $_.PSObject.Properties.Remove('totals_json'); $_ })
+$salesTotalsRow  = $pincodeMetaAll | Where-Object { $_.pincode -eq '__totals__' } | Select-Object -First 1
+# kept as the raw JSON string -- PS 5.1 ConvertFrom-Json/ConvertTo-Json round-trips a 1-level array
+# into {value:[...],Count:n}; the dashboard JSON.parses it instead.
+$salesTotalsJson = if ($salesTotalsRow) { [string]$salesTotalsRow.totals_json } else { '[]' }
 
 # ---- CaratLane competitive data (public store catalog pages, hand/agent-collected -- not a
 # BigQuery query, so it lives as a static JSON source instead of etl/geo_intel_sql/out) ----
@@ -89,7 +102,8 @@ $payload = [ordered]@{
     generated_at     = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ssK')
     ga4_mart_source  = 'lucirajewelry-prod.ga4_data.ga4_data'
     ga4_fact_source  = 'lucirajewelry-prod.ga4_dashboard.ga4_fact_sessions'
-    zoho_source      = 'lucirajewelry-prod.Lucira_Prod.lucira_zoho_Deals'
+    zoho_source      = 'lucirajewelry-prod.Lucira_Prod.lucira_zoho_Deals (city pages); zoho_crm.cdc_deals (Pin Code page)'
+    sales_source     = 'lucirajewelry-prod.ds_imputed_reporting.marketing_sale (Pin Code page, sale-pincode mapped)'
     erp_source       = 'Ornaverse ERP live snapshot (fetched client-side, same as Sales Intelligence)'
     ga4_fact_window  = [ordered]@{ min = $natTotalsRow.min_date; max = $natTotalsRow.max_date }
     zoho_window      = [ordered]@{ min = $coverage.min_date; max = $coverage.max_date }
@@ -113,6 +127,10 @@ $payload = [ordered]@{
   zohoStages      = @($q7c)
   zohoLeadSource  = @($q7d)
   devices         = @($q8old)
+  zohoPincodeCoverage = @($zohoPinCoverage)
+  salesPincode    = @($salesPincode)
+  pincodeMeta     = $pincodeMeta
+  salesTotalsJson = $salesTotalsJson
 }
 
 $json = $payload | ConvertTo-Json -Depth 10 -Compress

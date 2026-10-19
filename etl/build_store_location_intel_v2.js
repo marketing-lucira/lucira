@@ -183,6 +183,21 @@ for (const s of caratlaneCatalog) {
 // (confirmed live: "Access Denied" when attempted in a single query).
 const canonicalMobilePincode = loadJSON('canonical_mobile_pincode.json');
 const salesRaw = loadJSON('sales_raw.json');
+const customerMasterPincode = loadJSON('customer_master_pincode.json'); // Q14b: typed customer-record pincode by mobile (ERP CRM > Shopify > imputed customer)
+
+// ---------- Zoho CRM Deals + Google Ads geo (added 2026-09-29, dashboard/sql/store_location_zoho_ads_pull.sql) ----------
+// Zoho: one row per deal, pincode = Deal zip else linked Contact's Mailing_Zip. Validated live
+// against the sale's OWN address pincode for the 65 buyers that have both: only 2 exact matches,
+// 71% same state, 26% same district, median 37km apart -- i.e. APPROXIMATE (looks IP-derived;
+// NitroProductView-triggered, ISP-hub pincodes like 562130/110001 dominate). So Zoho deals are
+// shown and rolled up to City/State, but carry 0% weight in the PINCODE Opportunity Score.
+// Google Ads: geographic_view, 100% LOCATION_OF_PRESENCE (Google's own user-location), decoded
+// via Google's public geotargets CSV -- only "Postal Code" targets map to a pincode.
+const zohoDealsRaw = loadJSON('zoho_deals_pincode.json');
+const zohoMobilePincode = loadJSON('zoho_mobile_pincode.json');
+const gadsGeoSpend = loadJSON('gads_geo_spend.json');
+const geotargetsInPostal = loadJSON('geotargets_in_postal.json'); // criteria id -> {pincode, canonical}
+const ADS_MIN_SPEND_FOR_UNIVERSE = 1000; // Rs, all-time: an ads-only pincode joins the pincode universe above this
 
 // city-text -> app-event city agg (normalized key; sum on collision, same pattern as v1)
 const appCityMap = new Map();
@@ -284,14 +299,69 @@ for (const r of customerPincodeEventsLuid) {
 console.log('Merging real sales data (marketing_sale x canonical mobile-pincode map)...');
 const canonicalPincodeByMobile = new Map(canonicalMobilePincode.map(r => [r.mobile, r.postal_code]));
 const salesByCustomerPincode = new Map(); // "mobile|pincode" -> {orders:Set, netSales, grossSales, units, first, last, isNew/isRepeat via orders.size}
+const zohoPincodeByMobile = new Map(zohoMobilePincode.map(r => [r.mobile, r.pincode]));
 let unmappedSales = { orders: new Set(), netSales: 0, grossSales: 0, units: 0, lineItems: 0, reasonNoMobile: 0, reasonNoPincodeMatch: 0 };
+// Pincode tiers for a sale (REWRITTEN 2026-10-19 -- user: "use the SALE pincode, from marketing_sale").
+// First real India-Post pincode wins:
+//   1) marketing_sale.Pin_code (the ERP customer/shipping pincode on the sale itself)
+//   2) ornaverse_erp_pos.invoice.shipping_pin_code (same document_no)
+//   3) ornaverse_erp_master.party.pin_code (ERP customer master, by party_id -- the main source for
+//      Store-channel sales, which carry no Pin_code on the sale row)
+//   4) a 6-digit pincode inside the sale's own free-text address
+//   4b) typed customer record by mobile (ERP CRM customer > Shopify customer > ds_imputed_reporting.customer)
+//   5) the customer's WebEngage canonical profile pincode (mobile) -- last-resort, browsing location
+// A sale with none of these is NOT guessed: if the mobile has an (APPROXIMATE) Zoho Contact pincode
+// it surfaces separately as netSales_zohoApprox, otherwise it is reported as unmapped.
+const salesTierCounts = { sale_pincode: 0, invoice_pincode: 0, party_pincode: 0, address: 0, customer_master: 0, webengage: 0, zohoApprox: 0 };
+const salesTierNet = { sale_pincode: 0, invoice_pincode: 0, party_pincode: 0, address: 0, customer_master: 0, webengage: 0 };
+const customerMasterPinByMobile = new Map(customerMasterPincode.map(r => [r.mobile, r.pincode]));
+const salesChannelTotals = {}; // channel -> {net, mappedNet, orders:Set, mappedOrders:Set}
+const salesChannelByPincode = new Map(); // pincode -> {Online:{net,orders:Set}, Store:{...}, Other:{...}}
+let salesAtStoreOwnPincode = { lineItems: 0, net: 0 }; // party pincode == the selling store's own pincode (possible default fill)
+const storePincodeByCode = new Map(storeMaster.map(s => [s.storeCode, s.pincode]));
+storePincodeByCode.set('FCS', storePincodeByCode.get('CS1')); // same physical Chembur address
+const realPin = v => (v && pincodeGeoMap.get(String(v).trim())) ? String(v).trim() : null;
+const chanBucket = c => c === 'Online' ? 'Online' : c === 'Store' ? 'Store' : 'Other';
+const salesApproxByPincode = new Map(); // pincode -> {orders:Set, customers:Set, netSales}
+let salesMinDate = null, salesMaxDate = null;
 for (const r of salesRaw) {
   const netSale = num(r.net_sale), discount = num(r.discount), units = num(r.pieces);
   const grossSale = netSale + discount;
-  if (!r.mobile) { unmappedSales.orders.add(r.document_no); unmappedSales.netSales += netSale; unmappedSales.grossSales += grossSale; unmappedSales.units += units; unmappedSales.lineItems++; unmappedSales.reasonNoMobile++; continue; }
-  const pincode = canonicalPincodeByMobile.get(r.mobile);
-  if (!pincode || !pincodeGeoMap.get(pincode)) { unmappedSales.orders.add(r.document_no); unmappedSales.netSales += netSale; unmappedSales.grossSales += grossSale; unmappedSales.units += units; unmappedSales.lineItems++; unmappedSales.reasonNoPincodeMatch++; continue; }
-  const key = `${r.mobile}|${pincode}`;
+  if (!salesMinDate || r.Transaction_Date < salesMinDate) salesMinDate = r.Transaction_Date;
+  if (!salesMaxDate || r.Transaction_Date > salesMaxDate) salesMaxDate = r.Transaction_Date;
+  const ch = r.channel || 'Unknown';
+  const ct = salesChannelTotals[ch] || (salesChannelTotals[ch] = { net: 0, mappedNet: 0, orders: new Set(), mappedOrders: new Set(), lineItems: 0, mappedLineItems: 0 });
+  ct.net += netSale; ct.orders.add(r.document_no); ct.lineItems++;
+  // Amazon / Management / TAH sales are NOT customer-located: their ERP party is the marketplace or
+  // an internal account (verified: all Amazon orders resolve to Amazon's own 560055 party pincode),
+  // so mapping them would plant fake demand on one pincode. Counted in totals, never on a pincode.
+  if (ch !== 'Online' && ch !== 'Store') {
+    unmappedSales.orders.add(r.document_no); unmappedSales.netSales += netSale; unmappedSales.grossSales += grossSale; unmappedSales.units += units; unmappedSales.lineItems++;
+    unmappedSales.reasonNonRetailChannel = (unmappedSales.reasonNonRetailChannel || 0) + 1; unmappedSales.nonRetailNet = (unmappedSales.nonRetailNet || 0) + netSale;
+    continue;
+  }
+  const wePin = r.mobile ? realPin(canonicalPincodeByMobile.get(r.mobile)) : null;
+  let tier = null, pincode = null;
+  for (const [t, v] of [['sale_pincode', r.sale_pincode], ['invoice_pincode', r.invoice_pincode], ['party_pincode', r.party_pincode], ['address', r.address_pincode], ['customer_master', r.mobile ? customerMasterPinByMobile.get(r.mobile) : null], ['webengage', wePin]]) {
+    const rp = realPin(v); if (rp) { tier = t; pincode = rp; break; }
+  }
+  if (!pincode) {
+    const zPin = r.mobile ? realPin(zohoPincodeByMobile.get(r.mobile)) : null;
+    if (zPin) {
+      const a = salesApproxByPincode.get(zPin) || { orders: new Set(), customers: new Set(), netSales: 0 };
+      a.orders.add(r.document_no); a.customers.add(r.mobile); a.netSales += netSale; salesApproxByPincode.set(zPin, a);
+      salesTierCounts.zohoApprox++;
+    }
+    unmappedSales.orders.add(r.document_no); unmappedSales.netSales += netSale; unmappedSales.grossSales += grossSale; unmappedSales.units += units; unmappedSales.lineItems++;
+    if (r.mobile) unmappedSales.reasonNoPincodeMatch++; else unmappedSales.reasonNoMobile++;
+    continue;
+  }
+  salesTierCounts[tier]++; salesTierNet[tier] += netSale;
+  ct.mappedNet += netSale; ct.mappedOrders.add(r.document_no); ct.mappedLineItems++;
+  if (tier === 'party_pincode' && storePincodeByCode.get(r.company_code) === pincode) { salesAtStoreOwnPincode.lineItems++; salesAtStoreOwnPincode.net += netSale; }
+  const cb = salesChannelByPincode.get(pincode) || { Online: { net: 0, orders: new Set() }, Store: { net: 0, orders: new Set() }, Other: { net: 0, orders: new Set() } };
+  cb[chanBucket(ch)].net += netSale; cb[chanBucket(ch)].orders.add(r.document_no); salesChannelByPincode.set(pincode, cb);
+  const key = `${r.mobile || 'doc:' + r.document_no}|${pincode}`;
   const cur = salesByCustomerPincode.get(key) || { mobile: r.mobile, pincode, orders: new Set(), netSales: 0, grossSales: 0, units: 0, first: null, last: null };
   cur.orders.add(r.document_no); cur.netSales += netSale; cur.grossSales += grossSale; cur.units += units;
   if (!cur.first || r.Transaction_Date < cur.first) cur.first = r.Transaction_Date;
@@ -312,6 +382,83 @@ function sumSalesRows(rows) {
 const totalMappedSales = [...salesByCustomerPincode.values()].reduce((a, c) => a + c.netSales, 0);
 console.log(`  Sales: ${salesRaw.length} line items, ${[...new Set(salesRaw.map(r=>r.document_no))].length} distinct orders, Rs ${Math.round(totalMappedSales + unmappedSales.netSales).toLocaleString('en-IN')} total net sales.`);
 console.log(`  Mapped to a real pincode: Rs ${Math.round(totalMappedSales).toLocaleString('en-IN')} (${salesByCustomerPincode.size} customers). Unmapped: Rs ${Math.round(unmappedSales.netSales).toLocaleString('en-IN')} (${unmappedSales.reasonNoMobile} no-mobile line items, ${unmappedSales.reasonNoPincodeMatch} no-real-pincode-match line items).`);
+console.log(`  Sales pincode tiers (line items): ${JSON.stringify(salesTierCounts)}; at selling store's own pincode via party master: ${salesAtStoreOwnPincode.lineItems} line items.`);
+for (const [ch, t] of Object.entries(salesChannelTotals)) console.log(`    ${ch}: Rs ${Math.round(t.net).toLocaleString('en-IN')} / ${t.orders.size} orders, mapped Rs ${Math.round(t.mappedNet).toLocaleString('en-IN')} (${round1(t.mappedNet / (t.net || 1) * 100)}%)`);
+
+// ---------- Zoho Deals per pincode (APPROXIMATE location -- see validation note at load) ----------
+const zohoMaxDate = zohoDealsRaw.reduce((m, r) => r.created_date > m ? r.created_date : m, '');
+const zohoMinDate = zohoDealsRaw.reduce((m, r) => r.created_date && (!m || r.created_date < m) ? r.created_date : m, '');
+const daysBefore = (iso, n) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+const zohoCut30 = daysBefore(zohoMaxDate, 29), zohoCut7 = daysBefore(zohoMaxDate, 6);
+const ZOHO_OPEN_STAGES = new Set(['Prospect', 'Payment', 'Add to Cart', 'Checkout', 'Negotiation/Review', 'Website_Chat']);
+const zohoByPincode = new Map();
+const zohoTotals = { deals: 0, deals30: 0, deals7: 0, withAnyPincode: 0, withRealPincode: 0, realPincode30: 0, fromDealZip: 0, fromContactZip: 0, won: 0 };
+for (const r of zohoDealsRaw) {
+  zohoTotals.deals++;
+  const in30 = r.created_date >= zohoCut30, in7 = r.created_date >= zohoCut7;
+  if (in30) zohoTotals.deals30++; if (in7) zohoTotals.deals7++;
+  if (r.stage === 'Closed Won') zohoTotals.won++;
+  if (!r.pincode) continue;
+  zohoTotals.withAnyPincode++;
+  if (!pincodeGeoMap.get(r.pincode)) continue;
+  zohoTotals.withRealPincode++; if (in30) zohoTotals.realPincode30++;
+  zohoTotals[r.pincode_source === 'deal' ? 'fromDealZip' : 'fromContactZip']++;
+  const z = zohoByPincode.get(r.pincode) || { deals: 0, deals30: 0, deals7: 0, mobiles: new Set(), won: 0, open: 0, lost: 0, triggers: new Map(), dealZip: 0, contactZip: 0 };
+  if (r.pincode_source === 'deal') z.dealZip++; else z.contactZip++;
+  z.deals++; if (in30) z.deals30++; if (in7) z.deals7++;
+  if (r.mobile) z.mobiles.add(r.mobile);
+  if (r.stage === 'Closed Won') z.won++; else if (ZOHO_OPEN_STAGES.has(r.stage)) z.open++; else z.lost++;
+  const t = r.trigger_event || '(none)'; z.triggers.set(t, (z.triggers.get(t) || 0) + 1);
+  zohoByPincode.set(r.pincode, z);
+}
+// Live accuracy check (recomputed every build, replaces the hardcoded 2026-09-29 numbers): for
+// buyers whose SALE has an ERP pincode (tiers 1-3), compare to the pincode on their Zoho deal(s),
+// split by where the deal pincode came from (deal's own Address_Zip vs Contact Mailing_Zip).
+const zohoPinsByMobile = new Map(); // mobile -> {deal:Set, contact:Set}
+for (const r of zohoDealsRaw) {
+  if (!r.mobile || !realPin(r.pincode)) continue;
+  const m = zohoPinsByMobile.get(r.mobile) || { deal: new Set(), contact: new Set() };
+  m[r.pincode_source === 'deal' ? 'deal' : 'contact'].add(r.pincode); zohoPinsByMobile.set(r.mobile, m);
+}
+const saleErpPinByMobile = new Map();
+for (const r of salesRaw) { if (!r.mobile) continue; const p = realPin(r.sale_pincode) || realPin(r.invoice_pincode) || realPin(r.party_pincode); if (p) saleErpPinByMobile.set(r.mobile, p); }
+function zohoValidation(src) {
+  const out = { buyersCompared: 0, exactPincodeMatch: 0, sameDistrict: 0, sameState: 0, kms: [] };
+  for (const [mob, sp] of saleErpPinByMobile) {
+    const z = zohoPinsByMobile.get(mob); if (!z || !z[src].size) continue;
+    const zp = [...z[src]][0], g1 = pincodeGeoMap.get(sp), g2 = pincodeGeoMap.get(zp);
+    out.buyersCompared++;
+    if (z[src].has(sp)) out.exactPincodeMatch++;
+    if (g1.district === g2.district) out.sameDistrict++;
+    if (g1.state === g2.state) out.sameState++;
+    out.kms.push(haversineKm(num(g1.latitude), num(g1.longitude), num(g2.latitude), num(g2.longitude)));
+  }
+  out.kms.sort((a, b) => a - b);
+  out.medianKmApart = out.kms.length ? Math.round(out.kms[Math.floor(out.kms.length / 2)]) : null;
+  delete out.kms; return out;
+}
+const zohoValidationLive = { dealZip: zohoValidation('deal'), contactZip: zohoValidation('contact') };
+console.log(`  Zoho pincode accuracy vs ERP sale pincode: ${JSON.stringify(zohoValidationLive)}`);
+console.log(`  Zoho deals: ${zohoTotals.deals} (${zohoTotals.deals30} in last 30d to ${zohoMaxDate}), ${zohoTotals.withRealPincode} on a real pincode across ${zohoByPincode.size} pincodes (APPROXIMATE location).`);
+
+// ---------- Google Ads spend per pincode (Postal Code geo targets only) ----------
+const gadsByPincode = new Map();
+const gadsTotals = { spend30: 0, spendAll: 0, postalSpend30: 0, postalSpendAll: 0, nonPostalSpend30: 0, nonPostalSpendAll: 0, postalNotInMasterSpendAll: 0, firstDate: null, lastDate: null };
+for (const r of gadsGeoSpend) {
+  const s30 = num(r.spend30), sAll = num(r.spend_all);
+  gadsTotals.spend30 += s30; gadsTotals.spendAll += sAll;
+  if (!gadsTotals.firstDate || r.first_date < gadsTotals.firstDate) gadsTotals.firstDate = r.first_date;
+  if (!gadsTotals.lastDate || r.last_date > gadsTotals.lastDate) gadsTotals.lastDate = r.last_date;
+  const t = geotargetsInPostal[r.loc];
+  if (!t) { gadsTotals.nonPostalSpend30 += s30; gadsTotals.nonPostalSpendAll += sAll; continue; }
+  if (!pincodeGeoMap.get(t.pincode)) { gadsTotals.postalNotInMasterSpendAll += sAll; gadsTotals.nonPostalSpend30 += s30; gadsTotals.nonPostalSpendAll += sAll; continue; }
+  gadsTotals.postalSpend30 += s30; gadsTotals.postalSpendAll += sAll;
+  const g = gadsByPincode.get(t.pincode) || { spend30: 0, spendAll: 0, clicks30: 0, clicksAll: 0, impressionsAll: 0, conversionsAll: 0 };
+  g.spend30 += s30; g.spendAll += sAll; g.clicks30 += num(r.clicks30); g.clicksAll += num(r.clicks_all);
+  g.impressionsAll += num(r.impressions_all); g.conversionsAll += num(r.conversions_all);
+  gadsByPincode.set(t.pincode, g);
+}
+console.log(`  Google Ads: Rs ${Math.round(gadsTotals.spend30).toLocaleString('en-IN')} last 30d (${round1(gadsTotals.postalSpend30 / gadsTotals.spend30 * 100)}% on an exact postal code), ${gadsByPincode.size} pincodes with any spend.`);
 
 function nearestStoreInfo(lat, lon) {
   if (!lat || !lon) return null;
@@ -336,7 +483,22 @@ for (const r of appPincodeCampaign) {
 
 let pincodes = [];
 let unmatchedFormatValidUsers = 0, unmatchedFormatValidPincodes = 0;
-for (const r of wePincodeAgg) {
+// Pincode universe (widened 2026-09-29): every real pincode from WebEngage profiles, PLUS any real
+// pincode that has Zoho deals, mapped sales, or >= Rs ADS_MIN_SPEND_FOR_UNIVERSE of Google Ads
+// spend. Previously WebEngage-only, which silently dropped e.g. 720 of the 919 Zoho-deal pincodes.
+// Non-WebEngage rows get zero profile Users (true -- no WebEngage profile claims that pincode).
+const wePincodeSet = new Set(wePincodeAgg.map(r => r.pincode));
+const extraPincodeSources = new Map(); // pincode -> Set of source tags
+const addExtra = (pc, tag) => { if (!pc || wePincodeSet.has(pc) || !pincodeGeoMap.get(pc)) return; const s = extraPincodeSources.get(pc) || new Set(); s.add(tag); extraPincodeSources.set(pc, s); };
+for (const pc of zohoByPincode.keys()) addExtra(pc, 'zoho');
+for (const pc of salesRowsByPincode.keys()) addExtra(pc, 'sales');
+for (const pc of salesApproxByPincode.keys()) addExtra(pc, 'sales_zoho_approx');
+for (const [pc, g] of gadsByPincode) if (g.spendAll >= ADS_MIN_SPEND_FOR_UNIVERSE) addExtra(pc, 'google_ads');
+const pincodeUniverseRows = [
+  ...wePincodeAgg.map(r => ({ ...r, _sources: ['webengage'] })),
+  ...[...extraPincodeSources].map(([pc, tags]) => ({ pincode: pc, city: null, region: null, users: 0, campaign_users: 0, users_with_phone: 0, _sources: [...tags] }))
+];
+for (const r of pincodeUniverseRows) {
   const geo = pincodeGeoMap.get(r.pincode);
   if (!geo) { unmatchedFormatValidUsers += num(r.users); unmatchedFormatValidPincodes++; continue; }
   const cityKey = normCity(geo.district || r.city);
@@ -353,10 +515,28 @@ for (const r of wePincodeAgg) {
   const tanishqHere = tanishqByPincode.get(r.pincode) || [];
   const caratlaneHere = caratlaneByPincode.get(r.pincode) || [];
   const caratlaneCatalogHere = caratlaneCatalogByPincode.get(r.pincode) || [];
+  const zoho = zohoByPincode.get(r.pincode);
+  const gads = gadsByPincode.get(r.pincode);
+  const salesApprox = salesApproxByPincode.get(r.pincode);
+  const chanHere = salesChannelByPincode.get(r.pincode);
   pincodes.push({
     pincode: r.pincode,
     district: geo.district, state: geo.state, lat: num(geo.latitude), lon: num(geo.longitude),
     weCity: r.city, weRegion: r.region,
+    sources: r._sources, inWebEngage: r._sources.includes('webengage'),
+    // Zoho CRM Deals -- APPROXIMATE location (Contact Mailing_Zip; validated ~26% same-district
+    // vs real sale addresses). Shown + rolled up to City/State; 0% weight in the pincode score.
+    zohoDeals: zoho ? zoho.deals : 0, zohoDeals30: zoho ? zoho.deals30 : 0, zohoDeals7: zoho ? zoho.deals7 : 0,
+    zohoDealCustomers: zoho ? zoho.mobiles.size : 0, zohoWon: zoho ? zoho.won : 0, zohoOpen: zoho ? zoho.open : 0, zohoLost: zoho ? zoho.lost : 0,
+    zohoTopTriggers: zoho ? [...zoho.triggers].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t, n]) => ({ trigger: t, deals: n })) : [],
+    // Google Ads -- Google's own LOCATION_OF_PRESENCE for users in this exact postal code.
+    gadsSpend30: gads ? Math.round(gads.spend30) : 0, gadsSpendAll: gads ? Math.round(gads.spendAll) : 0,
+    gadsClicks30: gads ? gads.clicks30 : 0, gadsClicksAll: gads ? gads.clicksAll : 0,
+    gadsImpressionsAll: gads ? gads.impressionsAll : 0, gadsConversionsAll: gads ? round1(gads.conversionsAll) : 0,
+    // Sales whose ONLY pincode is the approximate Zoho one -- never mixed into netSales.
+    netSales_zohoApprox: salesApprox ? Math.round(salesApprox.netSales) : 0,
+    salesOrders_zohoApprox: salesApprox ? salesApprox.orders.size : 0,
+    salesCustomers_zohoApprox: salesApprox ? salesApprox.customers.size : 0,
     // Competitor presence -- real, matched by exact pincode string (not geocoded), same one-time
     // public-store-locator capture the GA4 Geo Intelligence dashboard's CaratLane layer already
     // uses. A pincode with no competitor listed here means none was found in that capture, not a
@@ -382,6 +562,12 @@ for (const r of wePincodeAgg) {
     // instruction to use marketing_sale as the authoritative sales number, not GA4/WebEngage.
     salesOrders: sales.orders, salesCustomers: sales.customers, salesUnits: sales.units,
     netSales: sales.netSales, grossSales: sales.grossSales, aov: sales.aov, repeatSalesCustomers: sales.repeatCustomers,
+    // Channel split of the SAME mapped sales (2026-10-19) -- Online sales far from a store are the
+    // purest "demand without a store" signal; Store sales show an existing store's catchment.
+    netSales_online: chanHere ? Math.round(chanHere.Online.net) : 0, salesOrders_online: chanHere ? chanHere.Online.orders.size : 0,
+    netSales_store: chanHere ? Math.round(chanHere.Store.net) : 0, salesOrders_store: chanHere ? chanHere.Store.orders.size : 0,
+    netSales_other: chanHere ? Math.round(chanHere.Other.net) : 0, salesOrders_other: chanHere ? chanHere.Other.orders.size : 0,
+    zohoDeals_dealZip: zoho ? zoho.dealZip : 0, zohoDeals_contactZip: zoho ? zoho.contactZip : 0,
     sessions_exact: exact.sessions,
     pdpViews_exact: exact.pdpViews,
     addToCart_exact: exact.addToCart,
@@ -429,13 +615,19 @@ const rankCheckoutPerCust = percentileRanker(pincodes.map(p => p.uniqueCustomers
 const rankConversion = percentileRanker(pincodes.map(p => p.uniqueCustomers_exact ? p.salesCustomers / p.uniqueCustomers_exact : 0));
 const rankSalesPerCust = percentileRanker(pincodes.map(p => p.salesCustomers ? p.netSales / p.salesCustomers : 0));
 const rankDistance = percentileRanker(pincodes.map(p => p.nearestStore ? p.nearestStore.distanceKm : 0));
+const rankAdClicks = percentileRanker(pincodes.map(p => p.gadsClicksAll));
 
+// v4 (2026-09-29): added Paid Search Demand = Google Ads clicks from users Google locates IN this
+// exact postal code (the densest location-reliable signal available: 16.5K pincodes). WebEngage
+// funnel weights reduced to make room. Zoho deals deliberately NOT a component (approximate
+// location -- they would push ISP-hub pincodes to the top); they feed City/State scores instead.
 const SCORE_WEIGHTS = {
-  customerDemand: 0.15,     // Unique Customers (WebEngage-identified, mobile-matched)
-  activeCustomerRate: 0.10, // % of those customers with any real funnel activity (not just a session)
-  pdpEngagement: 0.10,      // PDP Views per customer
-  cartIntent: 0.10,         // Add to Cart per customer
-  checkoutIntent: 0.10,     // Checkout per customer
+  customerDemand: 0.10,     // Unique Customers (WebEngage-identified, mobile-matched)
+  activeCustomerRate: 0.05, // % of those customers with any real funnel activity (not just a session)
+  pdpEngagement: 0.05,      // PDP Views per customer
+  cartIntent: 0.05,         // Add to Cart per customer
+  checkoutIntent: 0.05,     // Checkout per customer
+  paidSearchDemand: 0.25,   // Google Ads clicks, all-time, Google LOCATION_OF_PRESENCE postal code
   conversion: 0.15,         // % of customers who actually PURCHASED (marketing_sale-mapped)
   salesPerformance: 0.15,   // Real net sales per purchasing customer (marketing_sale, not GA4/WebEngage)
   storeGap: 0.15            // Distance to nearest existing store
@@ -447,6 +639,7 @@ for (const p of pincodes) {
     pdpEngagementScore: round1(rankPdpPerCust(p.uniqueCustomers_exact ? p.pdpViews_exact / p.uniqueCustomers_exact : 0)),
     cartIntentScore: round1(rankAtcPerCust(p.uniqueCustomers_exact ? p.addToCart_exact / p.uniqueCustomers_exact : 0)),
     checkoutIntentScore: round1(rankCheckoutPerCust(p.uniqueCustomers_exact ? p.checkout_exact / p.uniqueCustomers_exact : 0)),
+    paidSearchDemandScore: round1(rankAdClicks(p.gadsClicksAll)),
     conversionScore: round1(rankConversion(p.uniqueCustomers_exact ? p.salesCustomers / p.uniqueCustomers_exact : 0)),
     salesPerformanceScore: round1(rankSalesPerCust(p.salesCustomers ? p.netSales / p.salesCustomers : 0)),
     storeGapScore: round1(rankDistance(p.nearestStore ? p.nearestStore.distanceKm : 0))
@@ -454,13 +647,14 @@ for (const p of pincodes) {
   const overall = round1(
     s.customerDemandScore * SCORE_WEIGHTS.customerDemand + s.activeCustomerRateScore * SCORE_WEIGHTS.activeCustomerRate +
     s.pdpEngagementScore * SCORE_WEIGHTS.pdpEngagement + s.cartIntentScore * SCORE_WEIGHTS.cartIntent +
-    s.checkoutIntentScore * SCORE_WEIGHTS.checkoutIntent + s.conversionScore * SCORE_WEIGHTS.conversion +
+    s.checkoutIntentScore * SCORE_WEIGHTS.checkoutIntent + s.paidSearchDemandScore * SCORE_WEIGHTS.paidSearchDemand +
+    s.conversionScore * SCORE_WEIGHTS.conversion +
     s.salesPerformanceScore * SCORE_WEIGHTS.salesPerformance + s.storeGapScore * SCORE_WEIGHTS.storeGap
   );
   p.scoreComponents = s;
   p.scores = { opportunityScore: overall };
-  const demandHigh = s.customerDemandScore >= 66 || s.pdpEngagementScore >= 66;
-  const demandMed = s.customerDemandScore >= 33 || s.pdpEngagementScore >= 33;
+  const demandHigh = s.customerDemandScore >= 66 || s.pdpEngagementScore >= 66 || s.paidSearchDemandScore >= 66;
+  const demandMed = s.customerDemandScore >= 33 || s.pdpEngagementScore >= 33 || s.paidSearchDemandScore >= 33;
   const dist = p.nearestStore ? p.nearestStore.distanceKm : 0;
   p.storeGapFlag = (demandHigh && dist > 15) ? 'HIGH' : ((demandMed && dist > 5) ? 'MEDIUM' : 'LOW');
 }
@@ -502,8 +696,16 @@ for (const [key, cur] of appCityMap) {
   // Real sales rollup, bottom-up from the same pincode records (never re-derived separately).
   const salesHere = realPincodesHere.reduce((a, p) => ({
     orders: a.orders + p.salesOrders, customers: a.customers + p.salesCustomers, units: a.units + p.salesUnits,
-    netSales: a.netSales + p.netSales, grossSales: a.grossSales + p.grossSales, repeatCustomers: a.repeatCustomers + p.repeatSalesCustomers
-  }), { orders: 0, customers: 0, units: 0, netSales: 0, grossSales: 0, repeatCustomers: 0 });
+    netSales: a.netSales + p.netSales, grossSales: a.grossSales + p.grossSales, repeatCustomers: a.repeatCustomers + p.repeatSalesCustomers,
+    online: a.online + p.netSales_online, onlineOrders: a.onlineOrders + p.salesOrders_online, store: a.store + p.netSales_store, storeOrders: a.storeOrders + p.salesOrders_store,
+    other: a.other + p.netSales_other, otherOrders: a.otherOrders + p.salesOrders_other, dealZip: a.dealZip + p.zohoDeals_dealZip
+  }), { orders: 0, customers: 0, units: 0, netSales: 0, grossSales: 0, repeatCustomers: 0, online: 0, onlineOrders: 0, store: 0, storeOrders: 0, other: 0, otherOrders: 0, dealZip: 0 });
+  const zohoHere = realPincodesHere.reduce((a, p) => ({
+    deals: a.deals + p.zohoDeals, deals30: a.deals30 + p.zohoDeals30, deals7: a.deals7 + p.zohoDeals7,
+    customers: a.customers + p.zohoDealCustomers, won: a.won + p.zohoWon, open: a.open + p.zohoOpen,
+    gSpend30: a.gSpend30 + p.gadsSpend30, gSpendAll: a.gSpendAll + p.gadsSpendAll, gClicksAll: a.gClicksAll + p.gadsClicksAll,
+    salesApprox: a.salesApprox + p.netSales_zohoApprox
+  }), { deals: 0, deals30: 0, deals7: 0, customers: 0, won: 0, open: 0, gSpend30: 0, gSpendAll: 0, gClicksAll: 0, salesApprox: 0 });
   // BUG FIX 2026-09-02, found by user inspection: this city's total PDP/ATC/Checkout/Purchase/
   // Revenue was previously REPEATED UNCHANGED on every one of its real pincodes (e.g. every Delhi
   // pincode showed Delhi's full city PDP total) -- correct as "this pincode's city, for context",
@@ -529,7 +731,14 @@ for (const [key, cur] of appCityMap) {
   }
   cities.push({
     city: [...cur.rawCities][0], allCityTextVariants: [...cur.rawCities],
-    state: appStateCity.find(r => normCity(r.city) === key)?.state || null,
+    // Fixed 2026-09-29: previously the FIRST WebEngage free-text row with this city name supplied the
+    // state, which picked noise rows (live showed "New Delhi, Uttar Pradesh", "Mumbai, Gujarat").
+    // Now = the most common India-Post state among this city's own real pincodes; old lookup is the fallback.
+    state: (() => {
+      const cnt = new Map(); for (const p of realPincodesHere) if (p.state) cnt.set(p.state, (cnt.get(p.state) || 0) + 1);
+      const best = [...cnt].sort((a, b) => b[1] - a[1])[0];
+      return best ? best[0] : (appStateCity.find(r => normCity(r.city) === key)?.state || null);
+    })(),
     users: usersHere,
     pdpViews: cur.pdp_views, addToCart: cur.add_to_cart, checkout: cur.begin_checkout,
     purchase: cityPurchaseCountMap.has(key) ? cityPurchaseCountMap.get(key) : 0,
@@ -546,12 +755,22 @@ for (const [key, cur] of appCityMap) {
     salesOrders: salesHere.orders, salesCustomers: salesHere.customers, salesUnits: salesHere.units,
     netSales: Math.round(salesHere.netSales), grossSales: Math.round(salesHere.grossSales),
     aov: salesHere.orders ? Math.round(salesHere.netSales / salesHere.orders) : null, repeatSalesCustomers: salesHere.repeatCustomers,
-    existingStoreCount: storesByCity.get(key) || 0, avgDistanceToStoreKm: avgDist, highOpportunityPincodeCount: highOppPincodes
+    existingStoreCount: storesByCity.get(key) || 0, avgDistanceToStoreKm: avgDist, highOpportunityPincodeCount: highOppPincodes,
+    // Zoho Deals (approximate pincode, but ~71% same-state -- city/state rollups are where it is most usable).
+    zohoDeals: zohoHere.deals, zohoDeals30: zohoHere.deals30, zohoDeals7: zohoHere.deals7,
+    zohoDealCustomers: zohoHere.customers, zohoWon: zohoHere.won, zohoOpen: zohoHere.open,
+    gadsSpend30: zohoHere.gSpend30, gadsSpendAll: zohoHere.gSpendAll, gadsClicksAll: zohoHere.gClicksAll,
+    netSales_zohoApprox: zohoHere.salesApprox,
+    netSales_online: salesHere.online, salesOrders_online: salesHere.onlineOrders, netSales_store: salesHere.store, salesOrders_store: salesHere.storeOrders,
+    netSales_other: salesHere.other, salesOrders_other: salesHere.otherOrders, zohoDeals_dealZip: salesHere.dealZip
   });
 }
+// v4 (2026-09-29): Zoho deals + Google Ads clicks added -- both far denser than WebEngage profile Users.
 const rankCityUsers = percentileRanker(cities.map(c => c.users));
-const rankCityRevenue = percentileRanker(cities.map(c => c.netSales || 0));
-for (const c of cities) c.opportunityScore = round1(rankCityUsers(c.users) * 0.55 + rankCityRevenue(c.netSales || 0) * 0.45);
+const rankCityRevenue = percentileRanker(cities.map(c => (c.netSales || 0) + (c.netSales_zohoApprox || 0)));
+const rankCityDeals = percentileRanker(cities.map(c => c.zohoDeals));
+const rankCityClicks = percentileRanker(cities.map(c => c.gadsClicksAll));
+for (const c of cities) c.opportunityScore = round1(rankCityUsers(c.users) * 0.20 + rankCityDeals(c.zohoDeals) * 0.30 + rankCityClicks(c.gadsClicksAll) * 0.20 + rankCityRevenue((c.netSales || 0) + (c.netSales_zohoApprox || 0)) * 0.30);
 const rankCityOpportunity = percentileRanker(cities.map(c => c.opportunityScore));
 for (const c of cities) { const r = rankCityOpportunity(c.opportunityScore); c.priority = r >= 90 ? 'High' : r >= 70 ? 'Medium' : r >= 40 ? 'Low' : 'Watch'; }
 cities.sort((a, b) => b.opportunityScore - a.opportunityScore);
@@ -561,7 +780,8 @@ console.log('Building state rollup...');
 const stateMap = new Map();
 for (const p of pincodes) {
   const st = p.state || 'Unknown';
-  const cur = stateMap.get(st) || { cities: new Set(), pincodes: 0, users: 0, pdpViews: 0, addToCart: 0, checkout: 0, purchase: 0, revenue: 0, highOppCities: new Set(), highOppPincodes: 0, uniqueCustomers_exact: 0, sessions_exact: 0, pdpViews_exact: 0, addToCart_exact: 0, checkout_exact: 0, purchase_exact: 0, revenue_exact: 0, salesOrders: 0, salesCustomers: 0, salesUnits: 0, netSales: 0, grossSales: 0, repeatSalesCustomers: 0 };
+  const cur = stateMap.get(st) || { cities: new Set(), pincodes: 0, users: 0, pdpViews: 0, addToCart: 0, checkout: 0, purchase: 0, revenue: 0, highOppCities: new Set(), highOppPincodes: 0, uniqueCustomers_exact: 0, sessions_exact: 0, pdpViews_exact: 0, addToCart_exact: 0, checkout_exact: 0, purchase_exact: 0, revenue_exact: 0, salesOrders: 0, salesCustomers: 0, salesUnits: 0, netSales: 0, grossSales: 0, repeatSalesCustomers: 0, zohoDeals: 0, zohoDeals30: 0, zohoDeals7: 0, zohoDealCustomers: 0, zohoWon: 0, zohoOpen: 0, gadsSpend30: 0, gadsSpendAll: 0, gadsClicksAll: 0, netSales_zohoApprox: 0 };
+  for (const k of ['zohoDeals','zohoDeals30','zohoDeals7','zohoDealCustomers','zohoWon','zohoOpen','gadsSpend30','gadsSpendAll','gadsClicksAll','netSales_zohoApprox','netSales_online','salesOrders_online','netSales_store','salesOrders_store','netSales_other','salesOrders_other','zohoDeals_dealZip']) cur[k] = (cur[k] || 0) + (p[k] || 0);
   cur.cities.add(p.district); cur.pincodes++; cur.users += p.users;
   cur.pdpViews += (p.pdpViews_cityProxy || 0); cur.addToCart += (p.addToCart_cityProxy || 0);
   cur.checkout += (p.checkout_cityProxy || 0); cur.purchase += (p.purchase_cityProxy || 0);
@@ -590,12 +810,19 @@ for (const [st, cur] of stateMap) {
     salesOrders: cur.salesOrders, salesCustomers: cur.salesCustomers, salesUnits: cur.salesUnits,
     netSales: Math.round(cur.netSales), grossSales: Math.round(cur.grossSales),
     aov: cur.salesOrders ? Math.round(cur.netSales / cur.salesOrders) : null, repeatSalesCustomers: cur.repeatSalesCustomers,
-    existingStores: storesByState.get(st) || 0, highOpportunityCities: cur.highOppCities.size, highOpportunityPincodes: cur.highOppPincodes
+    existingStores: storesByState.get(st) || 0, highOpportunityCities: cur.highOppCities.size, highOpportunityPincodes: cur.highOppPincodes,
+    zohoDeals: cur.zohoDeals, zohoDeals30: cur.zohoDeals30, zohoDeals7: cur.zohoDeals7, zohoDealCustomers: cur.zohoDealCustomers, zohoWon: cur.zohoWon, zohoOpen: cur.zohoOpen,
+    gadsSpend30: cur.gadsSpend30, gadsSpendAll: cur.gadsSpendAll, gadsClicksAll: cur.gadsClicksAll, netSales_zohoApprox: cur.netSales_zohoApprox,
+    netSales_online: cur.netSales_online, salesOrders_online: cur.salesOrders_online, netSales_store: cur.netSales_store, salesOrders_store: cur.salesOrders_store,
+    netSales_other: cur.netSales_other, salesOrders_other: cur.salesOrders_other, zohoDeals_dealZip: cur.zohoDeals_dealZip
   });
 }
 const rankStateUsers = percentileRanker(states.map(s => s.users));
 const rankStateSales = percentileRanker(states.map(s => s.netSales || 0));
-for (const s of states) s.opportunityScore = round1(rankStateUsers(s.users) * 0.6 + rankStateSales(s.netSales || 0) * 0.4);
+const rankStateDeals = percentileRanker(states.map(s => s.zohoDeals));
+const rankStateClicks = percentileRanker(states.map(s => s.gadsClicksAll));
+const rankStateSalesAll = percentileRanker(states.map(s => (s.netSales || 0) + (s.netSales_zohoApprox || 0)));
+for (const s of states) s.opportunityScore = round1(rankStateUsers(s.users) * 0.20 + rankStateDeals(s.zohoDeals) * 0.30 + rankStateClicks(s.gadsClicksAll) * 0.20 + rankStateSalesAll((s.netSales || 0) + (s.netSales_zohoApprox || 0)) * 0.30);
 const rankStateOpportunity = percentileRanker(states.map(s => s.opportunityScore));
 for (const s of states) { const r = rankStateOpportunity(s.opportunityScore); s.priority = r >= 90 ? 'High' : r >= 70 ? 'Medium' : r >= 40 ? 'Low' : 'Watch'; }
 states.sort((a, b) => b.opportunityScore - a.opportunityScore);
@@ -751,7 +978,8 @@ for (const c of allCustomerRows) {
   });
 }
 for (const s of salesByCustomerPincode.values()) {
-  const key = `${maskMobile(s.mobile)}|${s.pincode}`;
+  // Address-pincode sales can have no mobile at all -- key those per order so they never collide.
+  const key = s.mobile ? `${maskMobile(s.mobile)}|${s.pincode}` : `no-mobile:${[...s.orders][0]}|${s.pincode}`;
   const existing = customerUnionMap.get(key);
   const salesFields = { orders: s.orders.size, purchase: s.orders.size, netSales: Math.round(s.netSales), aov: s.orders.size ? Math.round(s.netSales / s.orders.size) : null, isRepeat: s.orders.size > 1 };
   if (existing) { Object.assign(existing, salesFields); }
@@ -790,11 +1018,16 @@ const dataQuality = {
     note: 'postal_code is 0% populated on application_view_v1 (13.26M rows, zero, confirmed live). Pincode-exact event rows exist ONLY for events with a valid mobile cuid that also matches a real pincode via a same-project join to user_profile_view_v3 (both tables live in test-webengage.11b56595a_shared, so this join is NOT cross-region). city is 88% populated directly on application_view_v1 and is the basis of every city/state/campaign table that is not pincode-exact.'
   },
   salesMapping: {
-    note: `Real sales from lucirajewelry-prod.ds_imputed_reporting.marketing_sale (Online/Store/Amazon/TAH channels, ${salesRaw.length} line items, ${[...new Set(salesRaw.map(r=>r.document_no))].length} distinct orders, 2025-08-18 to 2026-08-31) -- NOT GA4, NOT WebEngage. This table has no pincode column at all (city_name/address are 60-90% NULL) -- every pincode-mapped sale got there via the SAME normalized-mobile join used for events, against user_profile_view_v3's canonical (most-recent) pincode per customer. Mapped: Rs ${Math.round(totalMappedSales).toLocaleString('en-IN')} across ${salesByCustomerPincode.size} customer-pincode pairs. Unmapped: Rs ${Math.round(unmappedSales.netSales).toLocaleString('en-IN')} (${unmappedSales.lineItems} line items) -- ${unmappedSales.reasonNoMobile} had no usable mobile at all, ${unmappedSales.reasonNoPincodeMatch} had a mobile but it never matched a real India-Post pincode in user_profile_view_v3. Never forced to a guessed pincode.`,
+    note: `Real sales from lucirajewelry-prod.ds_imputed_reporting.marketing_sale (all channels: ${Object.keys(salesChannelTotals).join(' / ')}; ${salesRaw.length.toLocaleString('en-IN')} line items, ${[...new Set(salesRaw.map(r=>r.document_no))].length.toLocaleString('en-IN')} distinct orders, ${salesMinDate} to ${salesMaxDate}) -- NOT GA4, NOT WebEngage. Pincode = the SALE's own pincode (rebuilt 2026-10-19), first real India-Post pincode wins: 1) marketing_sale.Pin_code (${salesTierCounts.sale_pincode} line items), 2) ERP POS invoice shipping_pin_code (${salesTierCounts.invoice_pincode}), 3) ERP customer master party.pin_code (${salesTierCounts.party_pincode} -- the main source for Store-channel sales), 4) a pincode inside the sale's address text (${salesTierCounts.address}), 5) the customer's typed record by mobile -- ERP CRM customer / Shopify customer (${salesTierCounts.customer_master}), 6) last resort the customer's WebEngage profile pincode by mobile (${salesTierCounts.webengage}). ${salesAtStoreOwnPincode.lineItems} line items (Rs ${Math.round(salesAtStoreOwnPincode.net).toLocaleString('en-IN')}) resolve via the party master to the SELLING STORE's own pincode -- may be genuine local customers or a store-pincode default typed at billing; kept, disclosed. A further ${salesTierCounts.zohoApprox} line items only map via the APPROXIMATE Zoho Contact pincode -- shown separately as "Sales (Zoho approx.)", never mixed into Sales. Mapped: Rs ${Math.round(totalMappedSales).toLocaleString('en-IN')}. Unmapped: Rs ${Math.round(unmappedSales.netSales).toLocaleString('en-IN')} (${unmappedSales.lineItems} line items) -- of which Rs ${Math.round(unmappedSales.nonRetailNet || 0).toLocaleString('en-IN')} is Amazon / Management / TAH (not customer-located: their ERP party is the marketplace or an internal account, so deliberately NOT put on any pincode), the rest has no pincode in any ERP/customer source. Never forced to a guessed pincode.`,
+    unmappedNonRetailNetSales: Math.round(unmappedSales.nonRetailNet || 0),
+    minDate: salesMinDate, maxDate: salesMaxDate, tierNetSales: Object.fromEntries(Object.entries(salesTierNet).map(([k, v]) => [k, Math.round(v)])),
+    atStoreOwnPincode: { lineItems: salesAtStoreOwnPincode.lineItems, netSales: Math.round(salesAtStoreOwnPincode.net) },
+    byChannel: Object.entries(salesChannelTotals).map(([channel, t]) => ({ channel, netSales: Math.round(t.net), orders: t.orders.size, lineItems: t.lineItems, mappedNetSales: Math.round(t.mappedNet), mappedOrders: t.mappedOrders.size, mappedLineItems: t.mappedLineItems })).sort((x, y) => y.netSales - x.netSales),
     totalNetSales: Math.round(totalMappedSales + unmappedSales.netSales),
     mappedNetSales: Math.round(totalMappedSales), mappedCustomerPincodePairs: salesByCustomerPincode.size,
     unmappedNetSales: Math.round(unmappedSales.netSales), unmappedLineItems: unmappedSales.lineItems, unmappedOrders: unmappedSales.orders.size,
-    unmappedReasonNoMobile: unmappedSales.reasonNoMobile, unmappedReasonNoPincodeMatch: unmappedSales.reasonNoPincodeMatch
+    unmappedReasonNoMobile: unmappedSales.reasonNoMobile, unmappedReasonNoPincodeMatch: unmappedSales.reasonNoPincodeMatch,
+    tierLineItems: salesTierCounts, zohoApproxNetSales: Math.round([...salesApproxByPincode.values()].reduce((a, c) => a + c.netSales, 0))
   },
   customerDrilldown: {
     note: `City -> Pincode -> Customer drill-down (added 2026-09-01). Real ceiling, confirmed live: 64,015 customers have a real mobile+pincode profile in user_profile_view_v3, but only ${customers.length} of them ever generated an application_view_v1 event with that same mobile attached -- everyone else's events are real but not identity-linkable (no reliable mobile on the event). Canonical pincode per customer = their MOST RECENT user_profile_view_v3 record by last_seen (not an arbitrary pick, not a duplicate across pincodes -- confirmed live: ${customers.length} rows, ${customers.length} distinct mobiles). Every "_exact" number on Pincode/City/State (uniqueCustomers_exact, sessions_exact, pdpViews_exact, etc.) is summed bottom-up from these same ${customers.length} customer rows, so pincode/city/state totals always reconcile exactly with "sum of their customers" -- never re-derived from a separate aggregate query that could drift.`,
@@ -840,13 +1073,35 @@ const dataQuality = {
     note: 'The old Opportunity Score had a 10% "Conversion Score" component from GA4 city-level conversion%. Without a session/visit denominator on a single event table, an equivalent conversion rate is not directly available; that 10% weight was folded into Revenue Score (15% -> 25%) rather than silently dropped -- see meta.scoringMethodology.'
   },
   storeMaster: { note: '6 real customer-facing addresses from ornaverse_erp_master.company, unchanged from the v1 build (never GA4-sourced).', stores: storeMaster.map(s => s.storeCode) },
+  zohoDeals: {
+    note: `Zoho CRM Deals (zoho_crm.cdc_deals, live CDC, ~30-min sync). ${zohoTotals.deals.toLocaleString('en-IN')} deals created ${zohoMinDate} to ${zohoMaxDate} (${zohoTotals.deals30.toLocaleString('en-IN')} in the last 30 days, ~${Math.round(zohoTotals.deals30 / 30)}/day). Pincode = the deal's own Address_Zip_Postal_Code (CDC, or zoho_crm.deals_address_live_patch) if 6-digit (${zohoTotals.fromDealZip.toLocaleString('en-IN')} deals) else the linked Contact's Mailing_Zip (${zohoTotals.fromContactZip.toLocaleString('en-IN')}); ${zohoTotals.withRealPincode.toLocaleString('en-IN')} deals (${round1(zohoTotals.withRealPincode / zohoTotals.deals * 100)}%) land on a real India-Post pincode, across ${zohoByPincode.size} pincodes; the rest have no usable pincode in Zoho at all. ACCURACY, re-checked live every build against the ERP sale pincode of the same buyer (mobile): deal-zip ${zohoValidationLive.dealZip.exactPincodeMatch}/${zohoValidationLive.dealZip.buyersCompared} exact, ${zohoValidationLive.dealZip.sameDistrict} same district; contact-zip ${zohoValidationLive.contactZip.exactPincodeMatch}/${zohoValidationLive.contactZip.buyersCompared} exact, ${zohoValidationLive.contactZip.sameDistrict} same district. Treat Zoho deal pincodes as approximate (reliable at city/state level) -- 0% weight in the Pincode Opportunity Score, 30% in City/State scores.`,
+    totalDeals: zohoTotals.deals, deals30: zohoTotals.deals30, deals7: zohoTotals.deals7, maxDate: zohoMaxDate,
+    dealsWithRealPincode: zohoTotals.withRealPincode, realPincodeDeals30: zohoTotals.realPincode30,
+    dealsWithAnyPincodeText: zohoTotals.withAnyPincode, pincodesWithDeals: zohoByPincode.size,
+    fromDealZip: zohoTotals.fromDealZip, fromContactZip: zohoTotals.fromContactZip, closedWon: zohoTotals.won,
+    validation: (() => { const d = zohoValidationLive.dealZip, c = zohoValidationLive.contactZip; const n = d.buyersCompared + c.buyersCompared;
+      return { buyersCompared: n, exactPincodeMatch: d.exactPincodeMatch + c.exactPincodeMatch, sameState: d.sameState + c.sameState, sameDistrict: d.sameDistrict + c.sameDistrict,
+        medianKmApart: c.medianKmApart != null ? c.medianKmApart : d.medianKmApart }; })(),
+    validationBySource: zohoValidationLive, minDate: zohoMinDate
+  },
+  googleAds: {
+    note: `Google Ads geographic_view (google_ads.ads_GeoStats_2348623547, ${gadsTotals.firstDate} to ${gadsTotals.lastDate}) added 2026-09-29. 100% of spend is LOCATION_OF_PRESENCE (Google's own estimate of where the user physically is). Location ids decoded with Google's public geotargets CSV (2026-08-12 release). Rs ${Math.round(gadsTotals.spend30).toLocaleString('en-IN')} spent in the last 30 days (~Rs ${Math.round(gadsTotals.spend30 / 30).toLocaleString('en-IN')}/day); ${round1(gadsTotals.postalSpend30 / gadsTotals.spend30 * 100)}% of it (Rs ${Math.round(gadsTotals.postalSpend30).toLocaleString('en-IN')}) sits on an exact real postal code and is shown per pincode. The rest was reported at City / Neighborhood / District level by Google and is NOT spread onto pincodes. Pincodes with only Google Ads activity join the pincode universe once all-time spend >= Rs ${ADS_MIN_SPEND_FOR_UNIVERSE}. Meta Ads is NOT included: meta_ads.AdInsights stopped syncing on 2026-01-06 and only has state-level Region.`,
+    spend30: Math.round(gadsTotals.spend30), spendAll: Math.round(gadsTotals.spendAll),
+    postalSpend30: Math.round(gadsTotals.postalSpend30), postalSpendAll: Math.round(gadsTotals.postalSpendAll),
+    nonPostalSpend30: Math.round(gadsTotals.nonPostalSpend30), nonPostalSpendAll: Math.round(gadsTotals.nonPostalSpendAll),
+    pincodesWithSpend: gadsByPincode.size, pincodesInUniverseWithSpend: pincodes.filter(p => p.gadsSpendAll > 0).length,
+    spendAllInUniverse: pincodes.reduce((a, p) => a + p.gadsSpendAll, 0), spend30InUniverse: pincodes.reduce((a, p) => a + p.gadsSpend30, 0),
+    firstDate: gadsTotals.firstDate, lastDate: gadsTotals.lastDate, minSpendForUniverse: ADS_MIN_SPEND_FOR_UNIVERSE
+  },
   weProfile: {
     totalUsers: num(weDataQuality.total_users),
     usersAnyPincodeText: num(weDataQuality.users_any_pincode),
     usersFormatValidPincode: num(weDataQuality.users_format_valid_pincode),
     usersRealMatchedPincode: pincodes.reduce((a, p) => a + p.users, 0),
-    distinctFormatValidPincodes: unmatchedFormatValidPincodes + pincodes.length,
-    distinctRealMatchedPincodes: pincodes.length,
+    distinctFormatValidPincodes: unmatchedFormatValidPincodes + pincodes.filter(p => p.inWebEngage).length,
+    distinctRealMatchedPincodes: pincodes.filter(p => p.inWebEngage).length,
+    totalPincodesInUniverse: pincodes.length,
+    extraPincodesFromOtherSources: pincodes.filter(p => !p.inWebEngage).length,
     usersWithCity: num(weDataQuality.users_with_city),
     usersWithCoords_ALWAYS_ZERO: num(weDataQuality.users_with_coords),
     usersWithCampaignSource: num(weDataQuality.users_with_campaign_source),
@@ -868,13 +1123,15 @@ const snapshot = {
       'test-webengage.11b56595a_shared.user_profile_view_v3 (WebEngage profile, region US) -- profile Users count + canonical-pincode geo enrichment (mobile-matched)',
       'lucirajewelry-prod.ds_imputed_reporting.marketing_sale (real company sales ledger, Online/Store/Amazon/TAH) -- PRIMARY sales, NOT GA4/WebEngage-derived',
       'lucirajewelry-prod.ornaverse_erp_master.company (real store addresses)',
+      'lucirajewelry-prod.zoho_crm.cdc_deals + cdc_contacts (Zoho CRM Deals, live CDC) -- deal volume, APPROXIMATE pincode (Contact Mailing_Zip)',
+      'lucirajewelry-prod.google_ads.ads_GeoStats_2348623547 (Google Ads geographic_view, LOCATION_OF_PRESENCE) + Google public geotargets CSV -- spend/clicks per postal code',
       'lucirajewelry-prod.ds_india_geo.india_pincode (real India Post pincode/lat/lon master)'
     ],
     ga4Dependency: 'NONE',
     scoringMethodology: {
-      pincodeOpportunityScore: 'Weighted percentile-rank blend, 0-100, 8 visible components (see scoreComponents on every pincode): 15% Customer Demand (unique mobile-matched customers) + 10% Active Customer Rate (% of those customers with real PDP/ATC/Checkout activity, not just a session) + 10% PDP Engagement (PDP views per customer) + 10% Cart Intent (ATC per customer) + 10% Checkout Intent (checkout per customer) + 15% Conversion (% of customers who actually purchased, from marketing_sale) + 15% Sales Performance (real net sales per purchasing customer, marketing_sale) + 15% Store Gap (distance to nearest real store). Per-customer ratios are used for engagement/funnel components so a pincode with 5,000 customers and one with 5 are compared on intensity, not raw size. Priority = percentile-of-the-blended-score: High = top 10%, Medium = next 20%, Low = next 30%, else Watch. Opportunity Flag (separate from Priority) = EXISTING STORE if a real store sits within 5km regardless of score, else HIGH/MEDIUM/LOW OPPORTUNITY by the same percentile tiers.',
-      cityOpportunityScore: '55% User percentile-rank (WebEngage profile) + 45% real Net Sales percentile-rank (marketing_sale). Same percentile-tier method.',
-      stateOpportunityScore: '60% User percentile-rank + 40% real Net Sales percentile-rank.',
+      pincodeOpportunityScore: 'v4 (2026-09-29). Weighted percentile-rank blend, 0-100, 9 visible components (see scoreComponents on every pincode): 10% Customer Demand (unique mobile-matched WebEngage customers) + 5% Active Customer Rate + 5% PDP Engagement (PDP views per customer) + 5% Cart Intent (ATC per customer) + 5% Checkout Intent (checkout per customer) + 25% Paid Search Demand (Google Ads clicks from users Google locates in this exact postal code, all-time) + 15% Conversion (% of customers who purchased, marketing_sale) + 15% Sales Performance (net sales per purchasing customer, marketing_sale) + 15% Store Gap (distance to nearest real store). Zoho Deals are shown but carry 0% here, because their pincode is approximate (see Data Quality). Priority = percentile of the blended score: High = top 10%, Medium = next 20%, Low = next 30%, else Watch. Opportunity Flag (separate from Priority) = EXISTING STORE if a real store sits within 5km regardless of score, else HIGH OPPORTUNITY = top 30% of scores, MEDIUM = next 30%, LOW = the rest.',
+      cityOpportunityScore: 'v4 (2026-09-29): 30% Zoho Deals + 20% Google Ads clicks + 20% WebEngage profile Users + 30% Net Sales (marketing_sale, incl. Zoho-approx-mapped sales), each as a percentile rank. Same percentile-tier method.',
+      stateOpportunityScore: 'v4 (2026-09-29): same blend as City -- 30% Zoho Deals + 20% Google Ads clicks + 20% profile Users + 30% Net Sales.',
       storeGapFlag: 'HIGH = top-tercile demand AND >15km from nearest store. MEDIUM = mid/high demand AND 5-15km. LOW = otherwise.',
       cityProxyAllocation: 'Every pincode\'s "(City Est.)" PDP/ATC/Checkout/Purchase/Revenue value is that pincode\'s ALLOCATED SHARE of its city\'s total application_view_v1 activity -- pincode.metric = city.metric_total * (pincode.users / SUM(users across every real pincode in that city)), where "users" is the real, pincode-level WebEngage profile Users count (never itself an estimate). Falls back to an equal split across the city\'s real pincodes only if none of them have any profile Users at all. Fixed 2026-09-02 (previously the full, un-allocated city total was repeated unchanged on every pincode in that city -- correct as "this pincode\'s city, for context" but read as a bug, and silently multiplied the city total once per real pincode when summed into the State rollup). Because the weights sum to 1 across a city\'s pincodes, these values now sum back to the true city total exactly.'
     },

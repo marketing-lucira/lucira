@@ -389,7 +389,7 @@ const PAGE_META = {
   exec:{t:'Executive Summary', s:'CEO Command Center'},
   cityoverview:{t:'City Overview & Map', s:'Every city, one leaderboard + geo map'},
   cityperf:{t:'City Performance', s:'Rankings · heatmaps · correlations'},
-  pincode:{t:'Pin Code Intelligence', s:'Real deals + modelled demand, pin-code by pin-code — store-opening candidates'},
+  pincode:{t:'Pin Code Intelligence', s:'Real Zoho deals + real marketing_sale sales by pincode, nearest Lucira store, modelled GA4 demand — store-opening candidates'},
   caratlane:{t:'CaratLane Info', s:"Competitor's public store footprint & catalog mix"},
   salesorders:{t:'Sales & Orders (ERP)', s:'Real completed-order revenue by customer city'},
   sessionanalysis:{t:'Session Analysis', s:'Source · Medium · Campaign · Landing Page — real session-grain'},
@@ -420,6 +420,7 @@ const DATE_SCOPE = {
   today:          {mode:'fixed', note:"Always the most recent GA4 day available — doesn't change with the date filter above."},
   docs:           {mode:'na'}, dictionary:{mode:'na'}, chat:{mode:'na'},
   journey:        {mode:'na'},
+  pincode:        {mode:'own', note:'Deals & Sales use the window chosen on this page (All time by default, or the date filter). Modelled GA4 columns always use the date filter.'},
 };
 /* Reasons shown on every gated (not-available) section — single source of truth so the
    wording never drifts between the section itself, Documentation and the Data Dictionary. */
@@ -598,6 +599,7 @@ function renderDateRangeChip(){
   chip.style.display='inline-flex';
   if(scope.mode==='fixed'){ lbl.textContent = '📅 Latest day: '+fmtShortDate(STATE.D.dateBounds && STATE.D.dateBounds.max); }
   else if(scope.mode==='full'){ lbl.textContent = '📅 Full window (not date-filtered)'; }
+  else if(scope.mode==='own' && (STATE.pinWindow||'all')==='all'){ lbl.textContent = '📅 Deals & Sales: All time'; }
   else { lbl.textContent = '📅 '+fmtShortDate(dr.start)+' → '+fmtShortDate(dr.end); }
   chip.title = scope.note ? scope.note : 'Click to change the date range that this and every other filterable tab uses.';
 }
@@ -858,7 +860,7 @@ function buildData(){
     material: distinctSorted(src.products, r=>r.material_type),
     stage: distinctSorted(src.zohoStages, r=>r.stage),
     leadSource: distinctSorted(src.zohoLeadSource, r=>r.lead_source),
-    pincode: distinctSorted(src.zohoPincode, r=>r.pincode),
+    pincode: distinctSorted((src.zohoPincode||[]).concat(src.salesPincode||[]), r=>r.pincode),
   };
 
   STATE.D = { RAW: src, CITY, OPTIONS, dateBounds, coverage: src.coverage, luxByCity, campByCity, deviceByCity, pincodeByCity,
@@ -1355,21 +1357,54 @@ function filteredZohoDaily(){ return STATE.D.RAW.zohoDaily.filter(r=>inDateRange
 function filteredZohoCity(){ return STATE.D.RAW.zohoCity.filter(r=> matchMulti('city', normCity(r.city))); }
 function filteredZohoStages(){ return sel('dealStage') ? STATE.D.RAW.zohoStages.filter(r=>sel('dealStage').includes(r.stage)) : STATE.D.RAW.zohoStages; }
 function filteredZohoLeadSource(){ return sel('leadSource') ? STATE.D.RAW.zohoLeadSource.filter(r=>sel('leadSource').includes(r.lead_source)) : STATE.D.RAW.zohoLeadSource; }
+/* Pin Code page window (2026-10-19 merge with Store Location Intelligence): Zoho deals and
+   marketing_sale sales run from Nov 2025 / Aug 2025 to today, far beyond the GA4 fact window the
+   global date filter is bounded to. 'all' (default) = every deal and sale; 'filter' = the global
+   date range. Modelled GA4 columns always follow the global date range. */
+function setPinWindow(w){ STATE.pinWindow = w; renderActivePage(); }
+function inPinWindow(d){ return (STATE.pinWindow||'all')==='all' ? true : inDateRange(d); }
+function pinWindowLabel(){
+  if((STATE.pinWindow||'all')==='all'){
+    const z = STATE.D.RAW.zohoPincodeCoverage||[], s = STATE.D.RAW.salesPincode||[];
+    const zmin = z.length ? z[0].d : '—', zmax = z.length ? z[z.length-1].d : '—';
+    const smin = s.reduce((m,r)=>!m||r.d<m?r.d:m,null)||'—', smax = s.reduce((m,r)=>!m||r.d>m?r.d:m,null)||'—';
+    return `All time — deals ${zmin} → ${zmax}, sales ${smin} → ${smax}`;
+  }
+  const dr = STATE.filters.dateRange||{}; return `Date filter — ${dr.start||'—'} → ${dr.end||'—'}`;
+}
+let PINCODE_META = null;
+function pincodeMetaAt(pin){
+  if(!PINCODE_META){ PINCODE_META = new Map((STATE.D.RAW.pincodeMeta||[]).map(r=>[String(r.pincode), r])); }
+  return PINCODE_META.get(String(pin)) || null;
+}
 function filteredZohoPincode(){
-  // zohoPincode is day-level (one row per pincode per day it had deal activity) so the date
-  // range filter can actually change these numbers -- re-aggregate back to one row per pincode
-  // across whichever window is currently selected.
-  const dayRows = (STATE.D.RAW.zohoPincode||[]).filter(r=> inDateRange(r.d) && matchMulti('city', normCity(r.city)) && matchMulti('pincode', r.pincode));
+  // zohoPincode is day-level (one row per pincode per day per pincode_source) -- re-aggregate to
+  // one row per pincode across the Pin Code page window.
+  const dayRows = (STATE.D.RAW.zohoPincode||[]).filter(r=> inPinWindow(r.d) && matchMulti('city', normCity(r.city)) && matchMulti('pincode', r.pincode));
   const byPin = new Map();
   for(const r of dayRows){
     let cur = byPin.get(r.pincode);
-    if(!cur){ cur = {pincode:r.pincode, city:r.city, state:r.state, area:r.area, deals:0, won:0, amount:0}; byPin.set(r.pincode, cur); }
+    if(!cur){ cur = {pincode:r.pincode, city:r.city, state:r.state, area:r.area, deals:0, won:0, amount:0, dealsDealZip:0, dealsContactZip:0}; byPin.set(r.pincode, cur); }
     cur.deals += n(r.deals); cur.won += n(r.won); cur.amount += n(r.amount);
+    if(r.pincode_source==='deal') cur.dealsDealZip += n(r.deals); else cur.dealsContactZip += n(r.deals);
     if(!cur.city && r.city) cur.city = r.city;
     if(!cur.state && r.state) cur.state = r.state;
     if(!cur.area && r.area) cur.area = r.area;
   }
   return Array.from(byPin.values());
+}
+/* Real sales (marketing_sale) on the sale's own ERP pincode -- see etl/geo_intel_sql/q9_sales_pincode.sql. */
+function filteredSalesPincode(){
+  const dayRows = (STATE.D.RAW.salesPincode||[]).filter(r=> inPinWindow(r.d) && matchMulti('city', normCity(r.city)) && matchMulti('pincode', r.pincode));
+  const byPin = new Map();
+  for(const r of dayRows){
+    let cur = byPin.get(r.pincode);
+    if(!cur){ cur = {pincode:r.pincode, city:r.city, state:r.state, saleOrders:0, saleValue:0, onlineSales:0, onlineOrders:0, storeSales:0, storeOrders:0, units:0}; byPin.set(r.pincode, cur); }
+    cur.saleOrders += n(r.orders); cur.saleValue += n(r.net_sales); cur.units += n(r.units);
+    if(r.channel==='Online'){ cur.onlineSales += n(r.net_sales); cur.onlineOrders += n(r.orders); }
+    else { cur.storeSales += n(r.net_sales); cur.storeOrders += n(r.orders); }
+  }
+  return byPin;
 }
 function filteredSessionAnalysis(){ return (STATE.D.RAW.sessionAnalysis||[]).filter(r=> matchMulti('campaignSource', r.source) && matchMulti('campaignMedium', r.medium) && matchMulti('campaignName', r.campaign)); }
 
@@ -2242,7 +2277,12 @@ function aiStoreOpeningInsight(c){
   const heavyTanishq = hasTanishq && tq.storeCount>=3;
   const heavyCompetition = heavyCaratlane || heavyTanishq;
   const checkoutLeak = c.atc>50 && c.chk!=null && safeDiv(c.chk,c.atc) < 0.15;
-  const demandFulfilGap = c.sessions!=null && c.sessions>0 && (c.orders==null || c.orders < c.sessions*0.01);
+  const demandFulfilGap = (c.sessions!=null && c.sessions>0 && (c.orders==null || c.orders < c.sessions*0.01)) || (c.deals>=10 && (c.orders||0) < c.deals*0.05);
+  const insideCatchment = c.nearestKm!=null && c.nearestKm<=5;
+  // 2026-10-19: real sales are part of the demand evidence now, not just deals.
+  const demandTxt = `${fmtInt(c.deals)} CRM deals (${fmtInt(c.won)} won) and ${fmtMoney(c.saleValue||0)} of real sales (${fmtInt(c.saleOrders||0)} orders)`;
+  const contactsTxt = [c.deals?`${fmtInt(c.deals)} CRM contacts`:'', c.buyersAllTime?`${fmtInt(c.buyersAllTime)} past buyers`:''].filter(Boolean).join(' and ') || 'local prospects';
+  const salesStrong = (c.saleOrders||0)>=5 && (c.nearestKm==null || c.nearestKm>15);
   const declining = cityObj && cityObj.growthPct!=null && cityObj.growthPct < -10;
 
   let growthLine;
@@ -2253,7 +2293,11 @@ function aiStoreOpeningInsight(c){
   } else {
     growthLine = 'Growth trend: Data unavailable (not enough prior-period session history for this city yet).';
   }
-  const nearbyStoreLine = 'Nearby existing Lucira store: Data unavailable — no store-location master (a list of Lucira\'s own store addresses/coordinates) is connected to any source in this dashboard, so cannibalisation risk from an existing store nearby cannot be checked from this data.';
+  const nearbyStoreLine = c.nearestStore
+    ? (c.nearestKm<=5 ? `Nearest Lucira store: <b>${esc(c.nearestStore)}</b>, only <b>${fmtNum(c.nearestKm,1)} km</b> away — this pin code is already inside an existing store's catchment; a new store here risks cannibalising it.`
+      : c.nearestKm<=15 ? `Nearest Lucira store: <b>${esc(c.nearestStore)}</b>, ${fmtNum(c.nearestKm,1)} km away — partly served today; check how many of these buyers already travel to it.`
+      : `Nearest Lucira store: <b>${esc(c.nearestStore)}</b>, <b>${fmtNum(c.nearestKm,1)} km</b> away — no Lucira store serves this pin code today.`)
+    : 'Nearest Lucira store: distance unavailable (no coordinates for this pin code in the India Post master).';
   const caratlaneLine = hasStore
     ? `CaratLane already operates <b>${cl.storeCount}</b> store(s) here${cl.status?` (status: ${esc(cl.status)})`:''}${cl.rating!=null?`, rated ${fmtNum(cl.rating,1)}/5`:''}${cl.catalogTotal?`, with a public catalog of ~${fmtInt(cl.catalogTotal)} listed items`:''} — this pin code is <b>contested</b>, not open ground.`
     : `No CaratLane store was found at this exact pin code in either capture we have — a possible <b>whitespace</b> opportunity, though that is not proof of zero competitor presence; verify on the ground.`;
@@ -2262,25 +2306,28 @@ function aiStoreOpeningInsight(c){
     : `No Tanishq store was found at this exact pin code in the official store locator.`;
 
   let rec, recClass;
-  if (declining || (heavyCompetition && c.deals<10)) { rec='Low-priority location'; recClass='crit'; }
+  if (insideCatchment) { rec='Already served by an existing Lucira store'; recClass=''; }
+  else if (declining || (heavyCompetition && c.deals<10)) { rec='Low-priority location'; recClass='crit'; }
   else if (checkoutLeak && c.deals<10) { rec='Demand exists but conversion is weak'; recClass='warn'; }
+  else if (salesStrong && !heavyCompetition) { rec='Strong location — consider opening'; recClass='good'; }
+  else if (salesStrong) { rec='Promising — validate with marketing/store-visit activity first'; recClass='warn'; }
   else if (c.deals>=10 && demandFulfilGap && !heavyCompetition) { rec='Strong location — consider opening'; recClass='good'; }
-  else if (c.deals>=5) { rec='Promising — validate with marketing/store-visit activity first'; recClass='warn'; }
+  else if (c.deals>=5 || (c.saleOrders||0)>=3) { rec='Promising — validate with marketing/store-visit activity first'; recClass='warn'; }
   else { rec='Not enough evidence to open'; recClass=''; }
 
-  const narrative = `Pin code ${esc(c.pincode)} (${cityState}) looks like a ${rec.startsWith('Strong')||rec.startsWith('Promising')?'notable':'mixed'} store-opening signal: it has generated <b>${fmtInt(c.deals)} real CRM deals</b> (${fmtInt(c.won)} won) with zero Lucira store nearby${sessionsTxt?`, alongside ${sessionsTxt} modelled sessions and ${usersTxt} distinct users allocated to it from ${esc(c.city)}'s real GA4 activity`:''} — demand exists, but only <b>${ordersTxt}</b> modelled orders have been fulfilled from here so far, and ${anyCompetitor?`${hasStore&&hasTanishq?'both CaratLane and Tanishq are':hasStore?'CaratLane is':'Tanishq is'} already on the ground`:'no organised-jewellery competitor has been confirmed on the ground'}.`;
+  const narrative = `Pin code ${esc(c.pincode)} (${cityState}) looks like a ${rec.startsWith('Strong')||rec.startsWith('Promising')?'notable':'mixed'} store-opening signal: it has generated <b>${fmtInt(c.deals)} real CRM deals</b> (${fmtInt(c.won)} won) and <b>${fmtMoney(c.saleValue||0)}</b> of real sales (${fmtInt(c.saleOrders||0)} orders, marketing_sale)${c.nearestStore?`, ${fmtNum(c.nearestKm,1)} km from the nearest Lucira store`:''}${sessionsTxt?`, alongside ${sessionsTxt} modelled sessions and ${usersTxt} distinct users allocated to it from ${esc(c.city)}'s real GA4 activity`:''} — demand exists, and <b>${ordersTxt}</b> real orders have been delivered or billed to this pin code so far, and ${anyCompetitor?`${hasStore&&hasTanishq?'both CaratLane and Tanishq are':hasStore?'CaratLane is':'Tanishq is'} already on the ground`:'no organised-jewellery competitor has been confirmed on the ground'}.`;
 
-  const why = `Real deal creation (${fmtInt(c.deals)}, ${fmtInt(c.won)} won) plus modelled digital interest${sessionsTxt?` (${sessionsTxt} sessions / ${usersTxt} users)`:''} together show this is not a cold pin code — people here are already engaging with Lucira online and by deal, without a store to walk into. ${growthLine} ${caratlaneLine} ${tanishqLine}`;
+  const why = `Real demand — ${demandTxt} — plus modelled digital interest${sessionsTxt?` (${sessionsTxt} sessions / ${usersTxt} users)`:''} together show this is not a cold pin code — people here are already engaging with Lucira online and by deal, without a store to walk into. ${growthLine} ${caratlaneLine} ${tanishqLine}`;
 
-  const opportunity = `The gap between demand and fulfilment is the opportunity: ${sessionsTxt?`~${fmtInt(c.sessions)} modelled sessions produced only ${ordersTxt} modelled completed orders`:`real deal activity (${fmtInt(c.deals)}) has produced only ${ordersTxt} modelled completed orders`} — a physical presence (store or pop-up) closes the last-mile gap that a website alone hasn't.`;
+  const opportunity = `The gap between demand and fulfilment is the opportunity: ${sessionsTxt?`~${fmtInt(c.sessions)} modelled sessions produced ${ordersTxt} real orders`:`real deal activity (${fmtInt(c.deals)}) has produced ${ordersTxt} real orders`} — a physical presence (store or pop-up) closes the last-mile gap that a website alone hasn't.`;
 
-  const benefit = `Opening here converts demand that already exists into revenue, rather than generating new demand from scratch: ${fmtInt(c.deals)} CRM deals (${fmtInt(c.won)} won)${sessionsTxt?` and ${sessionsTxt} modelled sessions`:''} from this exact pin code currently have nowhere local to convert into a walk-in sale — for jewellery, a considered, try-before-you-buy purchase, a nearby store typically converts a meaningfully higher share of that existing interest than the website alone. ${anyCompetitor
+  const benefit = `Opening here converts demand that already exists into revenue, rather than generating new demand from scratch: ${demandTxt}${sessionsTxt?` and ${sessionsTxt} modelled sessions`:''} from this exact pin code currently have nowhere local to convert into a walk-in sale — for jewellery, a considered, try-before-you-buy purchase, a nearby store typically converts a meaningfully higher share of that existing interest than the website alone. ${anyCompetitor
     ? `It also means Lucira would be competing for a market ${hasStore&&hasTanishq?'CaratLane and Tanishq have':hasStore?'CaratLane has':'Tanishq has'} already proven out here${hasStore?` (CaratLane: ${cl.storeCount} store${cl.storeCount>1?'s':''}${cl.rating!=null?`, rated ${fmtNum(cl.rating,1)}/5`:''}${cl.catalogTotal?`, ~${fmtInt(cl.catalogTotal)} catalog items`:''})`:''}${hasTanishq?` (Tanishq: ${tq.storeCount} store${tq.storeCount>1?'s':''})`:''} instead of ceding that proven demand to them by default.`
     : `Because no CaratLane or Tanishq presence was found at this exact pin code, Lucira would also be first to market here rather than following a competitor in.`}`;
 
-  const action = `Run a pin-code-targeted local campaign — geo-fenced ads plus outreach (call/WhatsApp/SMS) to the ${fmtInt(c.deals)} existing CRM contacts here — inviting them into the nearest current Lucira store or a temporary pop-up, to prove digital demand converts to a physical visit before committing capital to a permanent store.${c.webengage?` <b>${fmtInt(c.webengage.webengage_contacts)}</b> of these contacts are already reachable on WebEngage (having received ${fmtInt(c.webengage.total_sent)} messages historically) — reuse that existing, already-permissioned list for the launch campaign instead of building a new one from scratch.`:''}${checkoutLeak?' Checkout*/ATC* conversion is unusually low here too, so also review the online checkout experience (payment options, delivery promise) for this region — part of the gap may be a website friction issue, not a store-need issue.':''}`;
+  const action = `Run a pin-code-targeted local campaign — geo-fenced ads plus outreach (call/WhatsApp/SMS) to the ${contactsTxt} here — inviting them into the nearest current Lucira store or a temporary pop-up, to prove digital demand converts to a physical visit before committing capital to a permanent store.${c.webengage?` <b>${fmtInt(c.webengage.webengage_contacts)}</b> of these contacts are already reachable on WebEngage (having received ${fmtInt(c.webengage.total_sent)} messages historically) — reuse that existing, already-permissioned list for the launch campaign instead of building a new one from scratch.`:''}${checkoutLeak?' Checkout*/ATC* conversion is unusually low here too, so also review the online checkout experience (payment options, delivery promise) for this region — part of the gap may be a website friction issue, not a store-need issue.':''}`;
 
-  const plan1 = `Validate demand: 30-day local geo-targeted campaign + direct outreach to the ${fmtInt(c.deals)} existing CRM leads in this pin code; track store-visit/pop-up footfall as the primary metric, not sessions.`;
+  const plan1 = `Validate demand: 30-day local geo-targeted campaign + direct outreach to the ${contactsTxt} in this pin code; track store-visit/pop-up footfall as the primary metric, not sessions.`;
   const plan2 = `If footfall is positive, finalize a location and soft-launch with an offer targeted at this same pin code's existing lead list; track walk-ins and walk-in-to-sale conversion.`;
   const plan3 = `Push toward profitability: convert Month 1-2 walk-ins into repeat visits with a loyalty/referral offer, and reassess ${hasStore&&hasTanishq?"CaratLane's and Tanishq's":hasStore?"CaratLane's":hasTanishq?"Tanishq's":"the local competitive"} response (pricing/promotions) before scaling further.`;
 
@@ -2288,7 +2335,7 @@ function aiStoreOpeningInsight(c){
   if (declining) riskParts.push(`${esc(c.city)}'s underlying session trend is declining — opening now risks entering a shrinking market.`);
   if (heavyCaratlane) riskParts.push(`CaratLane already runs ${cl.storeCount} store(s) here${cl.rating!=null?` (avg rating ${fmtNum(cl.rating,1)}/5)`:''} — this is a contested market, not whitespace.`);
   if (heavyTanishq) riskParts.push(`Tanishq already runs ${tq.storeCount} store(s) here (official store locator) — another established competitor already on the ground.`);
-  if (c.deals<10) riskParts.push(`Real deal volume (${fmtInt(c.deals)}) is still a small sample — the modelled Sessions/Users/ATC/Checkout numbers derived from it are directional, not precise.`);
+  if (c.deals<10 && (c.saleOrders||0)<10) riskParts.push(`Real volume (${fmtInt(c.deals)} deals, ${fmtInt(c.saleOrders||0)} sale orders) is still a small sample — the modelled Sessions/Users/ATC/Checkout numbers derived from it are directional, not precise.`);
   riskParts.push(nearbyStoreLine);
   const risk = riskParts.join(' ');
 
@@ -2311,8 +2358,28 @@ function aiStoreOpeningInsight(c){
 }
 
 PAGE_RENDERERS.pincode = function(){
-  const rows = filteredZohoPincode().slice().sort(byDesc(r=>r.deals));
-  const cov = STATE.D.coverage;
+  // 2026-10-19: rows = every pincode with a Zoho deal OR a real sale (marketing_sale) in the window.
+  const salesByPin = filteredSalesPincode();
+  const dealRows = filteredZohoPincode();
+  const dealPins = new Set(dealRows.map(r=>r.pincode));
+  const salesOnlyRows = Array.from(salesByPin.values()).filter(r=>!dealPins.has(r.pincode))
+    .map(r=>({pincode:r.pincode, city:r.city, state:r.state, area:null, deals:0, won:0, amount:0, dealsDealZip:0, dealsContactZip:0}));
+  const rows = dealRows.concat(salesOnlyRows).map(r=>{
+    const sp = salesByPin.get(r.pincode) || {};
+    const meta = pincodeMetaAt(r.pincode);
+    return {...r, area: r.area || (meta && meta.office) || null,
+      saleOrders: sp.saleOrders||0, saleValue: sp.saleValue||0, onlineSales: sp.onlineSales||0, onlineOrders: sp.onlineOrders||0,
+      storeSales: sp.storeSales||0, storeOrders: sp.storeOrders||0, buyersAllTime: meta ? n(meta.buyers_all_time) : 0,
+      nearestStore: meta && meta.nearest_store ? meta.nearest_store : null, nearestKm: meta && meta.nearest_store_km!=null ? n(meta.nearest_store_km) : null};
+  }).sort(byDesc(r=>r.saleValue*1e6 + r.deals));
+  const covRows = (STATE.D.RAW.zohoPincodeCoverage||[]).filter(r=>inPinWindow(r.d));
+  const cov = { deals_total: sumBy(covRows,r=>n(r.deals_total)), deals_with_zip: sumBy(covRows,r=>n(r.deals_with_pincode)) };
+  cov.deals_without_zip = cov.deals_total - cov.deals_with_zip;
+  cov.deals_with_zip_pct = cov.deals_total ? Math.round(cov.deals_with_zip/cov.deals_total*1000)/10 : 0;
+  let salesTotals = []; try { salesTotals = JSON.parse(STATE.D.RAW.salesTotalsJson||'[]'); } catch(e){}
+  const stAll = salesTotals.reduce((a,c)=>({net:a.net+n(c.net_sales), mapped:a.mapped+n(c.mapped_net_sales), orders:a.orders+n(c.orders), mappedOrders:a.mappedOrders+n(c.mapped_orders)}), {net:0,mapped:0,orders:0,mappedOrders:0});
+  const stOnline = salesTotals.find(c=>c.channel==='Online')||{}, stStore = salesTotals.find(c=>c.channel==='Store')||{};
+  const winAll = (STATE.pinWindow||'all')==='all';
 
   // denominator for the allocation share = total REAL deals across pin codes known within that city
   // (not the city's full deal count, so shares sum to 1 across the pin codes we can actually show)
@@ -2336,7 +2403,7 @@ PAGE_RENDERERS.pincode = function(){
     const users = cityObj ? share*(cityObj.usersReal!=null?cityObj.usersReal:cityObj.sessions) : null;
     const atc = cityObj ? share*cityObj.add_to_cart : null;
     const chk = cityObj ? share*cityObj.begin_checkout : null;
-    const orders = erp ? share*erp.orders : null;
+    const orders = r.saleOrders; // REAL marketing_sale orders on this pincode (was: ERP city orders x deal-share)
     const caratlane = mergeCaratlane(r.pincode);
     const webengage = webengageAt(r.pincode);
     const tanishq = tanishqAt(r.pincode);
@@ -2349,8 +2416,11 @@ PAGE_RENDERERS.pincode = function(){
 
   // store-opening candidates: enough real deal signal (5+), meaningful modelled demand,
   // but modelled order fulfilment still low relative to that demand — a demand/fulfilment gap.
-  const candidates = enriched.filter(r=>r.deals>=5 && r.sessions!=null)
-    .sort(byDesc(r=> r.sessions * (1/(1+(r.orders||0))) )).slice(0,5);
+  // 2026-10-19: real sales + distance now available. Candidates are SALES-led (sale pincode is
+  // accurate; Zoho deal pincodes are approximate and pile onto ISP-hub pincodes like 562130/110001):
+  // 3+ real sale orders, NOT inside an existing store's 5 km catchment, ranked by real sale value.
+  const candidates = enriched.filter(r=>r.saleOrders>=3 && !(r.nearestKm!=null && r.nearestKm<=5))
+    .sort(byDesc(r=> r.saleValue )).slice(0,5);
 
   // ---- FULL OUTER JOIN on Pincode (2026-08-10 spec, merged 2026-08-10): dashboard/session
   // pincodes (Zoho, `enriched` above) ∪ EVERY CaratLane pincode from BOTH captures (old
@@ -2371,32 +2441,46 @@ PAGE_RENDERERS.pincode = function(){
       return {
         pincode: pin, area: null, city: caratlane.city || '—', state: '—',
         deals: 0, won: 0, share: 0, sessions: null, pdp: null, users: null, atc: null, chk: null, orders: null,
+        dealsDealZip: 0, saleOrders: 0, saleValue: 0, onlineSales: 0, storeSales: 0, buyersAllTime: 0,
+        nearestStore: (pincodeMetaAt(pin)||{}).nearest_store || null, nearestKm: pincodeMetaAt(pin) && pincodeMetaAt(pin).nearest_store_km!=null ? n(pincodeMetaAt(pin).nearest_store_km) : null,
         caratlane, webengage: webengageAt(pin), tanishq: tanishqAt(pin), storeOnly: true,
       };
     });
-  const fullOuterRows = enriched.concat(storeOnlyRows).sort(byDesc(r=>r.deals));
+  const fullOuterRows = enriched.concat(storeOnlyRows).sort(byDesc(r=>r.saleValue*1e6 + r.deals));
 
   const topAtc = enriched.filter(r=>r.atc!=null && r.atc>0).slice().sort(byDesc(r=>r.atc)).slice(0,15).map(r=>({label:r.pincode+' · '+(r.city||'—'), value:r.atc}));
   const topChk = enriched.filter(r=>r.chk!=null && r.chk>0).slice().sort(byDesc(r=>r.chk)).slice(0,15).map(r=>({label:r.pincode+' · '+(r.city||'—'), value:r.chk}));
 
   return `
   ${renderChipsRow()}
-  <div class="sec-head"><div><h2>Pin Code Intelligence</h2><p>Pin Code, City, State and Deals Created are <b>real</b> (Zoho <code>Address_Zip</code>). Sessions, PDP, Users, ATC and Checkout are <b>modelled</b> — GA4's export carries no postal/pin-code field anywhere (confirmed against the raw event schema; the only shipping-related signal is an add_shipping_info event count, not an address), so these are allocated from that pin code's city-level GA4 totals <b>for the currently selected date range</b> (city sessions/pdp/etc. are tracked day-by-day, same as the pin code deals), weighted by its share of real deals within the city for that same range (marked * throughout) — narrowing to a single day changes both consistently. Known/Identified Users has no source at ANY grain and is never modelled — shown as N/A, not estimated. <b>The table below is a full outer join on Pincode</b> — every pincode from Zoho deals OR either of the two CaratLane captures (206-store catalog dataset + 308-pincode GBP store master, merged into one CaratLane view) is shown; pincodes with a store but no Lucira deals yet show 0/— for the deal/session columns rather than being hidden.</p></div>
-    <span class="chip warn">○ ${fmtInt(rows.length)} pin codes tracked · ${cov.deals_with_city_pct}%-class Zoho coverage</span></div>
+  <div class="card" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+    <b style="font-size:12.5px">Deals &amp; Sales window:</b>
+    <button class="btn ${winAll?'gold':''}" onclick="setPinWindow('all')">All time</button>
+    <button class="btn ${!winAll?'gold':''}" onclick="setPinWindow('filter')">Use date filter</button>
+    <span class="hint" style="margin:0">${esc(pinWindowLabel())} · modelled GA4 columns (*) always follow the date filter</span>
+  </div>
+  <div class="sec-head"><div><h2>Pin Code Intelligence</h2><p><b>Merged 2026-10-19 with the Store Location Intelligence logic.</b> <b>Deals Created</b> = every Zoho CRM deal (live <code>zoho_crm.cdc_deals</code>) placed on the deal's own Address_Zip, else its Contact's Mailing_Zip — real India-Post pincodes only. Deal counts are real but the deal pincode is <b>approximate</b> (checked against the same buyers' sale pincode: ~4% exact, ~25% same district) — read deals at city level. <b>Sale Orders / Sale Value</b> are <b>real sales from <code>marketing_sale</code></b> placed on the sale's own pincode (Pin_code → invoice shipping → ERP customer master → CRM/Shopify customer) — pincode-accurate. <b>Nearest Lucira Store / km</b> = straight-line distance to the closest of our 6 stores. Earlier wording, still true for the modelled columns: Sessions, PDP, Users, ATC and Checkout are <b>modelled</b> — GA4's export carries no postal/pin-code field anywhere (confirmed against the raw event schema; the only shipping-related signal is an add_shipping_info event count, not an address), so these are allocated from that pin code's city-level GA4 totals <b>for the currently selected date range</b> (city sessions/pdp/etc. are tracked day-by-day, same as the pin code deals), weighted by its share of real deals within the city for that same range (marked * throughout) — narrowing to a single day changes both consistently. Known/Identified Users has no source at ANY grain and is never modelled — shown as N/A, not estimated. <b>The table below is a full outer join on Pincode</b> — every pincode from Zoho deals OR either of the two CaratLane captures (206-store catalog dataset + 308-pincode GBP store master, merged into one CaratLane view) is shown; pincodes with a store but no Lucira deals yet show 0/— for the deal/session columns rather than being hidden.</p></div>
+    <span class="chip warn">○ ${fmtInt(rows.length)} pin codes tracked · ${cov.deals_with_zip_pct}% of Zoho deals on a pincode</span></div>
 
   <div class="card" style="margin-bottom:14px">
     <h3 style="font-size:13.5px;margin-bottom:6px">✦ Key Insights</h3>
-    ${insightBox(`<b>Pin code capture gap</b>: only <b>${cov.deals_with_zip_pct}%</b> of all Zoho deals (${fmtInt(cov.deals_with_zip)} of ${fmtInt(cov.deals_total)}) have Address_Zip filled in — the other <b>${fmtInt(cov.deals_without_zip)}</b> deals are invisible to this entire page. Getting sales to capture pin code at deal creation is the single biggest unlock for everything below.`)}
+    ${insightBox(`<b>Deal pincode coverage</b>: <b>${cov.deals_with_zip_pct}%</b> of Zoho deals in this window (${fmtInt(cov.deals_with_zip)} of ${fmtInt(cov.deals_total)}) resolve to a real pincode (deal zip or contact Mailing_Zip) — the other <b>${fmtInt(cov.deals_without_zip)}</b> have no usable pincode in Zoho. Getting sales to capture the customer's pincode at deal creation is still the biggest unlock.`)}
+    ${insightBox(`<b>Real sales by pincode</b>: ${fmtMoney(stAll.mapped)} of ${fmtMoney(stAll.net)} total marketing_sale (${fmtNum(stAll.net?stAll.mapped/stAll.net*100:0,1)}%, all time) sits on a real pincode — Online ${fmtNum(n(stOnline.net_sales)?n(stOnline.mapped_net_sales)/n(stOnline.net_sales)*100:0,0)}%, Store ${fmtNum(n(stStore.net_sales)?n(stStore.mapped_net_sales)/n(stStore.net_sales)*100:0,0)}%. Store bills often land on the store's own pincode (staff typed it) — read each store's own pincode with care. Amazon / Management / TAH are never put on a pincode. <b>Online sales far from a store</b> are the cleanest "demand without a store" signal — sort the table by Online Sales and check Distance km.`)}
     ${insightBox(`<b>CaratLane overlap</b>: CaratLane already has a store in <b>${pct1(safeDiv(pinsWithCaratlane,rows.length)*100)}</b> of tracked pin codes (${fmtInt(pinsWithCaratlane)} of ${fmtInt(rows.length)}) — plus <b>${fmtInt(storeOnlyRows.length)}</b> pin codes where CaratLane has a store but Lucira has zero deals yet (see Store-Only Pincodes).`)}
     ${insightBox(`<b>WebEngage reach</b>: WebEngage's own data has no pin code field at all, but matching its contacts to Zoho by mobile number reaches <b>${fmtInt(pinsWithWebengage)}</b> real pin codes (of ${fmtInt(WEBENGAGE_BY_PINCODE.size)} reachable network-wide) — a small but real, already-permissioned audience worth reusing for local campaigns before building a new one from scratch.`)}
     ${insightBox(`<b>Tanishq overlap</b>: Tanishq (official store locator, 541 stores) already has a store in <b>${pct1(safeDiv(pinsWithTanishq,rows.length)*100)}</b> of tracked pin codes (${fmtInt(pinsWithTanishq)} of ${fmtInt(rows.length)}) — check this alongside CaratLane presence above before treating a pin code as whitespace.`)}
   </div>
 
   <div class="grid kpi-grid" style="margin-bottom:4px">
-    ${kpiCardText('Pin Codes Tracked', fmtInt(rows.length), 'real, from Zoho Address_Zip')}
-    ${kpiCard({label:'Deals Created', value:sumBy(rows,r=>r.deals), fmt:fmtInt})}
-    ${kpiCardText('All Zoho Deals — With Pin Code', fmtInt(cov.deals_with_zip)+' of '+fmtInt(cov.deals_total)+' ('+cov.deals_with_zip_pct+'%)', 'full connected window '+cov.min_date+' → '+cov.max_date+' — real, not date-filtered')}
-    ${kpiCardText('All Zoho Deals — Without Pin Code', fmtInt(cov.deals_without_zip)+' of '+fmtInt(cov.deals_total)+' ('+fmtNum(100-cov.deals_with_zip_pct,1)+'%)', 'sales team left Address_Zip blank — this is why Deals Created above looks low vs. Zoho\'s real daily deal volume')}
+    ${kpiCardText('Pin Codes Tracked', fmtInt(rows.length), 'real India-Post pincodes with a Zoho deal or a real sale in this window')}
+    ${kpiCard({label:'Deals Created (on a pincode)', value:sumBy(rows,r=>r.deals), fmt:fmtInt})}
+    ${kpiCardText('All Zoho Deals Created', fmtInt(cov.deals_total), 'every deal in the window, with or without a pincode')}
+    ${kpiCardText('Zoho Deals — Without Pin Code', fmtInt(cov.deals_without_zip)+' ('+fmtNum(100-cov.deals_with_zip_pct,1)+'%)', 'no usable pincode on the deal or its contact')}
+    ${kpiCard({label:'Sale Orders (marketing_sale)', value:sumBy(rows,r=>r.saleOrders), fmt:fmtInt})}
+    ${kpiCard({label:'Sale Value (marketing_sale)', value:sumBy(rows,r=>r.saleValue), fmt:fmtMoney})}
+    ${kpiCardText('Online / Store Sale Value', fmtMoney(sumBy(rows,r=>r.onlineSales))+' / '+fmtMoney(sumBy(rows,r=>r.storeSales)), 'real, on the sale\'s own pincode')}
+    ${kpiCardText('Total marketing_sale (all time)', fmtMoney(stAll.net), fmtMoney(stAll.mapped)+' ('+fmtNum(stAll.net?stAll.mapped/stAll.net*100:0,1)+'%) on a pincode · '+fmtInt(stAll.orders)+' orders')}
+    ${kpiCardText('Pin Codes > 15 km From a Lucira Store', fmtInt(rows.filter(r=>r.nearestKm!=null && r.nearestKm>15 && (r.saleOrders>0||r.deals>0)).length), 'with deals or sales but no store nearby')}
     ${kpiCard({label:'Modelled Sessions (sum)', value:sumBy(enriched,r=>r.sessions||0), fmt:fmtInt})}
     ${kpiCard({label:'Modelled Users (sum)', value:sumBy(enriched,r=>r.users||0), fmt:fmtInt})}
     ${kpiCard({label:'Modelled PDP Views (sum)', value:sumBy(enriched,r=>r.pdp||0), fmt:fmtInt})}
@@ -2415,19 +2499,28 @@ PAGE_RENDERERS.pincode = function(){
     <div class="card chart-card"><div class="hd"><h3>Top 15 Pin Codes — Checkout*</h3></div>${topChk.length?barChart(topChk,{horizontal:true,height:Math.max(220,topChk.length*26)}):'<div class="empty-note">No pin code has modelled Checkout &gt; 0 in the current date range.</div>'}</div>
   </div>
 
-  ${simpleTable('pincodeTbl', ['#','Pin Code','Area','City','State','Sessions*','PDP*','Users*','Known Users','ATC*','Checkout*','Deals Created','CaratLane Present','CaratLane Store(s)','Business Status','Rating','Total Catalog Items†']
+  ${simpleTable('pincodeTbl', ['#','Pin Code','Area','City','State','Deals Created','Deals (deal zip)','Deals Won','Sale Orders','Sale Value','Online Sales','Store Sales','Buyers (all time)','Nearest Lucira Store','Distance km','Sessions*','PDP*','Users*','Known Users','ATC*','Checkout*','CaratLane Present','CaratLane Store(s)','Business Status','Rating','Total Catalog Items†']
       .concat(CARATLANE_CAT_KEYS.map(k=>'CL '+k+'†'))
       .concat(CARATLANE_PB_BANDS.map(b=>'CL '+b.label+'†'))
       .concat(['Tanishq Present','Tanishq Store(s)','Tanishq Store Type','Tanishq Status','Tanishq Rating']),
     fullOuterRows.map((r,i)=>{ const cl = r.caratlane; const tq = r.tanishq; return [
     [i+1,i+1], esc(r.pincode), esc(r.area||'—'), esc(r.city||'—'), esc(r.state||'—'),
+    [r.deals?fmtInt(r.deals):`<span style="color:var(--muted)">0</span>`, n(r.deals)],
+    [r.dealsDealZip?fmtInt(r.dealsDealZip):'—', n(r.dealsDealZip)],
+    [r.won?fmtInt(r.won):'—', n(r.won)],
+    [r.saleOrders?fmtInt(r.saleOrders):'—', n(r.saleOrders)],
+    [r.saleValue?fmtMoney(r.saleValue):'—', n(r.saleValue)],
+    [r.onlineSales?fmtMoney(r.onlineSales):'—', n(r.onlineSales)],
+    [r.storeSales?fmtMoney(r.storeSales):'—', n(r.storeSales)],
+    [r.buyersAllTime?fmtInt(r.buyersAllTime):'—', n(r.buyersAllTime)],
+    r.nearestStore ? esc(r.nearestStore) : '—',
+    [r.nearestKm!=null?fmtNum(r.nearestKm,1):'—', r.nearestKm!=null?r.nearestKm:99999],
     [r.sessions!=null?fmtInt(r.sessions):'—', r.sessions||0],
     [r.pdp!=null?fmtInt(r.pdp):'—', r.pdp||0],
     [r.users!=null?fmtInt(r.users):'—', r.users||0],
     'N/A',
     [r.atc!=null?fmtInt(r.atc):'—', r.atc||0],
     [r.chk!=null?fmtInt(r.chk):'—', r.chk||0],
-    [r.storeOnly?`<span style="color:var(--muted)">0</span>`:fmtInt(r.deals), n(r.deals)],
     [cl.available?`<span class="chip good">● TRUE</span>`:`<span class="chip">— FALSE</span>`, cl.available?1:0],
     cl.storeCount ? esc(cl.storeNames.join('; ')) : '—',
     cl.status ? esc(cl.status) : '—',
@@ -2448,13 +2541,13 @@ PAGE_RENDERERS.pincode = function(){
        avgRating!=null?[fmtNum(avgRating,1),avgRating]:'—',
      ];
    })()); }
-  ), {title:'Pin Code Detail  ·  * = modelled (allocated from real city totals by deal-share, not directly measured)  ·  † = CaratLane public catalog listing count, not stock', searchable:true,
+  ), {title:'Pin Code Detail  ·  Deals = Zoho (approx. location) · Sale = marketing_sale (real, sale pincode) · * = modelled from city GA4 by deal-share · † = CaratLane catalog count, not stock', searchable:true,
     hint:'Area = the locality/post-office name(s) served by that pin code, resolved from the public India Post pincode directory (api.postalpincode.in) — real reference data, not modelled from Lucira\'s own sources (no Pin→Area field exists in Zoho or GA4). Pin codes covering many post offices show the first few + a "+N more" count rather than picking one arbitrarily; "—" means the directory had no record for that (or a malformed) pin code. Modelled columns assume a pin code\'s share of its city\'s real GA4/ERP activity equals its share of real Zoho deals within that city — a reasonable proxy, not a measurement. Pin codes with very few deals (1-2) produce noisy modelled numbers; treat those directionally only, and lean on the Deals Created column (real) for anything decision-critical. <b>CaratLane columns are MERGED from two separate captures</b>: an older 206-store online-catalog dataset (gives Total Catalog Items† + the per-category/per-price-band CL…† columns — public assortment-depth proxy, not stock) and a newer 308-pincode Google-Business-Profile store directory (gives Business Status/Rating, and contributes extra names to CaratLane Store(s)). <b>CaratLane Present</b> is TRUE if EITHER capture has a match at that exact pincode; <b>CaratLane Store(s)</b> is the union of store names from both. Business Status/Rating are blank where only the older capture has a match (it never collected those fields), and Total Catalog Items†/CL…† columns are blank where only the newer capture has a match (it never collected catalog counts) — nothing is invented to fill either gap. <b>Tanishq columns are REAL</b>, from the official Tanishq store-locator export (541 stores, 509 pin codes) — Tanishq Present is an exact pin-code match, Tanishq Store(s)/Store Type/Status/Rating are pulled directly from that export with no allocation or estimation. Its SKU/inventory field is 100% "Not Available" at the source (WAF-blocked when collected) and is intentionally not shown anywhere on this page — no Tanishq equivalent of CaratLane\'s Total Catalog Items† exists. Click column headers to sort — e.g. sort by real Deals Created descending, then scan the CaratLane/Tanishq columns, to spot high-demand pin codes neither competitor has reached yet.'})}
 
   <div class="card" style="margin-top:16px">
     <h3 style="font-size:14px;margin-bottom:10px">🤖 AI Store-Opening Insights — Pin Code Level</h3>
-    <div class="hint" style="margin-bottom:10px">For each pin code with enough real deal signal (5+ Zoho deals), the AI below connects real deals/won, GA4-modelled Sessions/PDP/Users/ATC/Checkout, ERP-modelled Orders, the city's real GA4 growth trend and merged CaratLane presence into a plain-English read — not a repeat of the numbers already in the table above. The FINAL AI RECOMMENDATION is a transparent rule over these same fields (shown in WHY/RISK), not a hidden score. Anything with no connected source in this dashboard (e.g. distance to an existing Lucira store) is marked "Data unavailable", never estimated.</div>
-    ${candidates.length ? candidates.map(c=>aiStoreOpeningInsight(c)).join('') : '<div class="empty-note">No pin code currently has enough real deal volume (5+) to generate a store-opening insight confidently.</div>'}
+    <div class="hint" style="margin-bottom:10px">For the top 5 pin codes by real sale value (3+ marketing_sale orders) that are NOT already within 5 km of a Lucira store, the AI below connects real deals/won, real marketing_sale orders/value, distance to the nearest Lucira store, GA4-modelled Sessions/PDP/Users/ATC/Checkout, the city's real GA4 growth trend and merged CaratLane presence into a plain-English read — not a repeat of the numbers already in the table above. The FINAL AI RECOMMENDATION is a transparent rule over these same fields (shown in WHY/RISK), not a hidden score. Anything with no connected source is marked "Data unavailable", never estimated.</div>
+    ${candidates.length ? candidates.map(c=>aiStoreOpeningInsight(c)).join('') : '<div class="empty-note">No pin code outside an existing store\'s 5 km catchment currently has enough real sales (3+ orders) to generate a store-opening insight confidently.</div>'}
   </div>
   `;
 };
