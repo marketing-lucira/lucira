@@ -407,7 +407,7 @@ for (const r of zohoDealsRaw) {
   const z = zohoByPincode.get(r.pincode) || { deals: 0, deals30: 0, deals7: 0, mobiles: new Set(), won: 0, open: 0, lost: 0, triggers: new Map(), dealZip: 0, contactZip: 0 };
   if (r.pincode_source === 'deal') z.dealZip++; else z.contactZip++;
   z.deals++; if (in30) z.deals30++; if (in7) z.deals7++;
-  if (r.mobile) z.mobiles.add(r.mobile);
+  if (r.mobile) { z.mobiles.add(r.mobile); z.dealsByMobile = z.dealsByMobile || new Map(); z.dealsByMobile.set(r.mobile, (z.dealsByMobile.get(r.mobile) || 0) + 1); }
   if (r.stage === 'Closed Won') z.won++; else if (ZOHO_OPEN_STAGES.has(r.stage)) z.open++; else z.lost++;
   const t = r.trigger_event || '(none)'; z.triggers.set(t, (z.triggers.get(t) || 0) + 1);
   zohoByPincode.set(r.pincode, z);
@@ -440,6 +440,14 @@ function zohoValidation(src) {
 }
 const zohoValidationLive = { dealZip: zohoValidation('deal'), contactZip: zohoValidation('contact') };
 console.log(`  Zoho pincode accuracy vs ERP sale pincode: ${JSON.stringify(zohoValidationLive)}`);
+// WebEngage customers per pincode (2026-10-19, user request): distinct mobiles whose canonical
+// (most recent) user_profile_view_v3 pincode is this pincode -- the SAME mobile key as Zoho deals, so
+// "Total Customers" can be a true de-duplicated union of deal customers + WebEngage customers.
+const weMobilesByPincode = new Map();
+for (const r of canonicalMobilePincode) {
+  const pc = realPin(r.postal_code); if (!pc || !r.mobile) continue;
+  const set = weMobilesByPincode.get(pc) || new Set(); set.add(r.mobile); weMobilesByPincode.set(pc, set);
+}
 console.log(`  Zoho deals: ${zohoTotals.deals} (${zohoTotals.deals30} in last 30d to ${zohoMaxDate}), ${zohoTotals.withRealPincode} on a real pincode across ${zohoByPincode.size} pincodes (APPROXIMATE location).`);
 
 // ---------- Google Ads spend per pincode (Postal Code geo targets only) ----------
@@ -492,6 +500,7 @@ const wePincodeSet = new Set(wePincodeAgg.map(r => r.pincode));
 const extraPincodeSources = new Map(); // pincode -> Set of source tags
 const addExtra = (pc, tag) => { if (!pc || wePincodeSet.has(pc) || !pincodeGeoMap.get(pc)) return; const s = extraPincodeSources.get(pc) || new Set(); s.add(tag); extraPincodeSources.set(pc, s); };
 for (const pc of zohoByPincode.keys()) addExtra(pc, 'zoho');
+for (const pc of weMobilesByPincode.keys()) addExtra(pc, 'webengage_mobile');
 for (const pc of salesRowsByPincode.keys()) addExtra(pc, 'sales');
 for (const pc of salesApproxByPincode.keys()) addExtra(pc, 'sales_zoho_approx');
 for (const [pc, g] of gadsByPincode) if (g.spendAll >= ADS_MIN_SPEND_FOR_UNIVERSE) addExtra(pc, 'google_ads');
@@ -569,6 +578,16 @@ for (const r of pincodeUniverseRows) {
     netSales_store: chanHere ? Math.round(chanHere.Store.net) : 0, salesOrders_store: chanHere ? chanHere.Store.orders.size : 0,
     netSales_other: chanHere ? Math.round(chanHere.Other.net) : 0, salesOrders_other: chanHere ? chanHere.Other.orders.size : 0,
     zohoDeals_dealZip: zoho ? zoho.dealZip : 0, zohoDeals_contactZip: zoho ? zoho.contactZip : 0,
+    // Unique customers (by normalised mobile): deal customers, WebEngage customers, and their union.
+    // Repeat % = deal customers who created 2+ deals on this pincode / all deal customers here.
+    ...(() => {
+      const dm = zoho && zoho.dealsByMobile ? zoho.dealsByMobile : new Map();
+      const wm = weMobilesByPincode.get(r.pincode) || new Set();
+      let union = wm.size; for (const m of dm.keys()) if (!wm.has(m)) union++;
+      const repeat = [...dm.values()].filter(n => n > 1).length;
+      return { weCustomers: wm.size, totalUniqueCustomers: union, repeatDealCustomers: repeat,
+        repeatDealPct: dm.size ? round1(repeat / dm.size * 100) : null };
+    })(),
     sessions_exact: exact.sessions,
     pdpViews_exact: exact.pdpViews,
     addToCart_exact: exact.addToCart,

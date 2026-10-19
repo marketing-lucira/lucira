@@ -563,6 +563,12 @@ function tabExec(){
     // Deals & Sales merged into the Main Table (2026-10-19, same fields as the Deals & Sales tab):
     // Zoho deals created (approximate location) next to real marketing_sale sales on the sale pincode.
     {key:'zohoDeals',label:'Deals Created (approx.)',num:1,tone:'proxy',fmt:fmtInt},
+    // Unique customers by mobile (2026-10-19): deal customers, WebEngage customers, their de-duplicated
+    // union, and the share of deal customers who created 2+ deals here.
+    {key:'zohoDealCustomers',label:'Deal Customers (unique)',num:1,tone:'proxy',fmt:fmtInt},
+    {key:'weCustomers',label:'WebEngage Customers (unique)',num:1,fmt:fmtInt},
+    {key:'totalUniqueCustomers',label:'Total Customers (unique)',num:1,fmt:v=>`<b>${fmtInt(v)}</b>`},
+    {key:'repeatDealPct',label:'Repeat Deal %',num:1,fmt:(v,r)=>v==null?'—':`${v.toFixed(1)}% <span style="color:var(--muted);font-size:11px">(${fmtInt(r.repeatDealCustomers)})</span>`},
     {key:'zohoDeals30',label:'Deals 30d',num:1,tone:'proxy',fmt:fmtInt},
     {key:'zohoWon',label:'Deals Won',num:1,tone:'proxy',fmt:fmtInt},
     {key:'salesOrders',label:'Sale Orders',num:1,tone:'exact',fmt:fmtInt},
@@ -584,6 +590,8 @@ function tabExec(){
     uniqueCustomers_exact:p.uniqueCustomers_exact, pdpViews_exact:p.pdpViews_exact, addToCart_exact:p.addToCart_exact,
     checkout_exact:p.checkout_exact, salesOrders:p.salesOrders, netSales:p.netSales, attribution:p.attribution,
     zohoDeals:p.zohoDeals||0, zohoDeals30:p.zohoDeals30||0, zohoWon:p.zohoWon||0, gadsSpend30:p.gadsSpend30||0,
+    zohoDealCustomers:p.zohoDealCustomers||0, weCustomers:p.weCustomers||0, totalUniqueCustomers:p.totalUniqueCustomers||0,
+    repeatDealPct:p.repeatDealPct==null?null:p.repeatDealPct, repeatDealCustomers:p.repeatDealCustomers||0,
     netSales_online:p.netSales_online||0, netSales_store:p.netSales_store||0, salesCustomers:p.salesCustomers||0,
     _distanceKm: p.nearestStore?p.nearestStore.distanceKm:null, opportunityScore:p.scores.opportunityScore, priority:p.priority
   }));
@@ -1640,6 +1648,10 @@ function tabDealsSales(){
   const cols = [
     {key:'pincode',label:'Pincode'},{key:'district',label:'City'},{key:'state',label:'State'},
     {key:'zohoDeals',label:'Deals Created',num:1,tone:'proxy',fmt:fmtInt},
+    {key:'zohoDealCustomers',label:'Deal Customers',num:1,tone:'proxy',fmt:fmtInt},
+    {key:'weCustomers',label:'WebEngage Customers',num:1,fmt:fmtInt},
+    {key:'totalUniqueCustomers',label:'Total Customers (unique)',num:1,fmt:fmtInt},
+    {key:'repeatDealPct',label:'Repeat Deal %',num:1,fmt:v=>v==null?'—':v.toFixed(1)+'%'},
     {key:'zohoDeals30',label:'Deals 30d',num:1,tone:'proxy',fmt:fmtInt},
     {key:'zohoDeals_dealZip',label:'Deals (deal zip)',num:1,tone:'proxy',fmt:fmtInt},
     {key:'zohoWon',label:'Deals Won',num:1,tone:'proxy',fmt:fmtInt},
@@ -1658,6 +1670,7 @@ function tabDealsSales(){
   const rows = pc.map(p=>({
     pincode:p.pincode, district:p.district, state:p.state,
     zohoDeals:p.zohoDeals||0, zohoDeals30:p.zohoDeals30||0, zohoDeals_dealZip:p.zohoDeals_dealZip||0, zohoWon:p.zohoWon||0,
+    zohoDealCustomers:p.zohoDealCustomers||0, weCustomers:p.weCustomers||0, totalUniqueCustomers:p.totalUniqueCustomers||0, repeatDealPct:p.repeatDealPct==null?null:p.repeatDealPct,
     salesOrders:p.salesOrders||0, netSales:p.netSales||0, salesCustomers:p.salesCustomers||0, aov:p.aov,
     netSales_online:p.netSales_online||0, salesOrders_online:p.salesOrders_online||0,
     netSales_store:p.netSales_store||0, salesOrders_store:p.salesOrders_store||0,
