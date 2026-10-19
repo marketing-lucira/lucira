@@ -560,13 +560,20 @@ function tabExec(){
   const cols = [
     {key:'rank',label:'#',fmt:(v,r)=>`<span class="rank ${r._rank<=3?'r'+r._rank:''}">${r._rank}</span>`},
     {key:'state',label:'State'},{key:'district',label:'City'},{key:'pincode',label:'Pincode'},
+    // Deals & Sales merged into the Main Table (2026-10-19, same fields as the Deals & Sales tab):
+    // Zoho deals created (approximate location) next to real marketing_sale sales on the sale pincode.
+    {key:'zohoDeals',label:'Deals Created (approx.)',num:1,tone:'proxy',fmt:fmtInt},
+    {key:'zohoDeals30',label:'Deals 30d',num:1,tone:'proxy',fmt:fmtInt},
+    {key:'zohoWon',label:'Deals Won',num:1,tone:'proxy',fmt:fmtInt},
+    {key:'salesOrders',label:'Sale Orders',num:1,tone:'exact',fmt:fmtInt},
+    {key:'netSales',label:'Sale Value',num:1,tone:'exact',fmt:fmtMoney},
+    {key:'netSales_online',label:'Online Sales',num:1,tone:'exact',fmt:v=>v?fmtMoney(v):'—'},
+    {key:'netSales_store',label:'Store Sales',num:1,tone:'exact',fmt:v=>v?fmtMoney(v):'—'},
+    {key:'salesCustomers',label:'Buyers',num:1,tone:'exact',fmt:fmtInt},
     {key:'uniqueCustomers_exact',label:'Unique Customers',num:1,tone:'exact',fmt:(v,r)=>v>0?`<a href="#" class="drill" data-pincode="${esc(r.pincode)}" style="color:var(--gold);text-decoration:underline;cursor:pointer">${fmtInt(v)} →</a>`:'0'},
     {key:'pdpViews_exact',label:'PDP Views (Exact)',num:1,tone:'exact',fmt:fmtInt},
     {key:'addToCart_exact',label:'ATC (Exact)',num:1,tone:'exact',fmt:fmtInt},
     {key:'checkout_exact',label:'Checkout (Exact)',num:1,tone:'exact',fmt:fmtInt},
-    {key:'salesOrders',label:'Purchases',num:1,tone:'exact',fmt:fmtInt},
-    {key:'netSales',label:'Sales',num:1,tone:'exact',fmt:fmtMoney},
-    {key:'zohoDeals',label:'Zoho Deals (approx.)',num:1,tone:'proxy',fmt:fmtInt},
     {key:'gadsSpend30',label:'Google Ads 30d',num:1,fmt:fmtMoney},
     {key:'_distanceKm',label:'Existing Store Distance',num:1,fmt:v=>v==null?'—':v+' km'},
     {key:'opportunityScore',label:'Opportunity Score',num:1,fmt:v=>v==null?'—':v.toFixed(1)},
@@ -576,7 +583,8 @@ function tabExec(){
     _rank:i+1, state:p.state, district:p.district, pincode:p.pincode, users:p.users, totalEvents_exact:p.totalEvents_exact,
     uniqueCustomers_exact:p.uniqueCustomers_exact, pdpViews_exact:p.pdpViews_exact, addToCart_exact:p.addToCart_exact,
     checkout_exact:p.checkout_exact, salesOrders:p.salesOrders, netSales:p.netSales, attribution:p.attribution,
-    zohoDeals:p.zohoDeals||0, gadsSpend30:p.gadsSpend30||0,
+    zohoDeals:p.zohoDeals||0, zohoDeals30:p.zohoDeals30||0, zohoWon:p.zohoWon||0, gadsSpend30:p.gadsSpend30||0,
+    netSales_online:p.netSales_online||0, netSales_store:p.netSales_store||0, salesCustomers:p.salesCustomers||0,
     _distanceKm: p.nearestStore?p.nearestStore.distanceKm:null, opportunityScore:p.scores.opportunityScore, priority:p.priority
   }));
   const t = renderTable({id:'exec-tbl', columns:cols, rows, defaultSort:{key:'opportunityScore',dir:-1}, csvName:'executive_store_opportunity'});

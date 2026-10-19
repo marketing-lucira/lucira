@@ -13,7 +13,10 @@ env vars on the service to change them; defaults below match what's
 currently issued to the Lucira team.
 """
 import hmac
+import logging
 import os
+import threading
+import time
 
 from flask import Flask, Response, request, send_from_directory
 
@@ -39,6 +42,45 @@ def _require_login():
         "Authentication required.", 401,
         {"WWW-Authenticate": 'Basic realm="Lucira Dashboard"'},
     )
+
+
+# ---- Daily data (2026-10-19) ----------------------------------------------------------------
+# The pincode-refresh Cloud Run Job rebuilds geo_intel_data.js every morning and writes it to a
+# PRIVATE bucket. Serve that copy (cached in memory for DATA_TTL seconds) so the dashboard updates
+# without redeploying; fall back to the copy baked into static/ if GCS is unreachable or unset.
+DATA_BUCKET = os.environ.get("DATA_BUCKET", "lucirajewelry-prod-pincode-refresh")
+DATA_OBJECT = os.environ.get("DATA_OBJECT", "ga4-geo/geo_intel_data.js")
+DATA_TTL = int(os.environ.get("DATA_TTL", "600"))
+_cache = {"body": None, "at": 0.0, "generation": None}
+_lock = threading.Lock()
+
+
+def _live_data():
+    if not DATA_BUCKET:
+        return None
+    with _lock:
+        if _cache["body"] is not None and time.time() - _cache["at"] < DATA_TTL:
+            return _cache["body"]
+        try:
+            from google.cloud import storage  # imported lazily: local runs need no GCP libs
+            blob = storage.Client().bucket(DATA_BUCKET).get_blob(DATA_OBJECT)
+            if blob is None:
+                return _cache["body"]
+            if blob.generation != _cache["generation"]:
+                _cache["body"] = blob.download_as_bytes()
+                _cache["generation"] = blob.generation
+            _cache["at"] = time.time()
+        except Exception:  # keep serving the last good copy (or the static one) on any GCS error
+            logging.exception("geo_intel_data.js fetch from GCS failed")
+        return _cache["body"]
+
+
+@app.route("/geo_intel_data.js")
+def geo_data():
+    body = _live_data()
+    if body is None:
+        return send_from_directory(app.static_folder, "geo_intel_data.js")
+    return Response(body, mimetype="application/javascript", headers={"Cache-Control": "no-cache"})
 
 
 @app.route("/health")

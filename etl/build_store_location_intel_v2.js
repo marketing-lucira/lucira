@@ -39,8 +39,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const RAW = path.join(__dirname, 'raw', 'store_location_v2');
-const OUT = path.join(__dirname, 'out');
+// SLI_RAW_DIR / SLI_OUT_DIR let the daily pincode-refresh Cloud Run Job run this same file from /tmp.
+const RAW = process.env.SLI_RAW_DIR || path.join(__dirname, 'raw', 'store_location_v2');
+const OUT = process.env.SLI_OUT_DIR || path.join(__dirname, 'out');
 if (!fs.existsSync(OUT)) fs.mkdirSync(OUT, { recursive: true });
 
 function loadJSON(name) { return JSON.parse(fs.readFileSync(path.join(RAW, name), 'utf8')); }
