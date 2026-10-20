@@ -250,7 +250,7 @@ for (const r of customerPincodeEvents) {
   const geo = pincodeGeoMap.get(r.pincode);
   const rev = customerRevenueMap.get(`${r.mobile}|${r.pincode}`) || { revenue: 0, purchaseEvents: 0 };
   const row = {
-    mobile_masked: maskMobile(r.mobile), pincode: r.pincode, district: geo ? geo.district : null, state: geo ? geo.state : null,
+    mobile_masked: maskMobile(r.mobile), _mobile: r.mobile, pincode: r.pincode, district: geo ? geo.district : null, state: geo ? geo.state : null,
     sessions: num(r.sessions), pdpViews: num(r.pdp_views), addToCart: num(r.add_to_cart),
     checkout: num(r.begin_checkout), purchase: num(r.purchase), wishlist: num(r.wishlist),
     plpImpressions: num(r.plp_impressions), removeFromCart: num(r.remove_from_cart),
@@ -986,20 +986,23 @@ console.log('Building customer-level sample (mobile masked)...');
 // Union of event-customers and sales-customers, keyed by mobile|pincode -- a customer who bought
 // but never generated an identifiable browsing event (or vice versa) is NOT dropped, per the
 // explicit "never hide unmapped records" instruction.
+// 2026-10-19: keyed by the REAL mobile (internal only) -- masked last-4 collides between different
+// people -- and Zoho deal customers are now part of the union too (user: "merge deals into Unique
+// Customers"), so a pincode's Unique Customers = distinct people with a browsing event, a sale or a deal.
 const customerUnionMap = new Map();
 for (const c of allCustomerRows) {
-  const key = `${c.mobile_masked}|${c.pincode}`; // mobile_masked is already the masked form, unique enough as a join key here since it's derived 1:1 from the real mobile
+  const key = `${c._mobile}|${c.pincode}`;
   customerUnionMap.set(key, {
     mobile_masked: c.mobile_masked, pincode: c.pincode, city: c.district, state: c.state,
     sessions: c.sessions, pdpViews: c.pdpViews, addToCart: c.addToCart, checkout: c.checkout,
     checkoutEvents: c.checkout, wishlist: c.wishlist, plpImpressions: c.plpImpressions, removeFromCart: c.removeFromCart,
     totalEvents: c.totalEvents, firstSeen: c.firstSeen, lastSeen: c.lastSeen,
-    orders: 0, purchase: 0, netSales: 0, aov: null, isRepeat: false
+    orders: 0, purchase: 0, netSales: 0, aov: null, isRepeat: false, deals: 0, dealsWon: 0
   });
 }
 for (const s of salesByCustomerPincode.values()) {
   // Address-pincode sales can have no mobile at all -- key those per order so they never collide.
-  const key = s.mobile ? `${maskMobile(s.mobile)}|${s.pincode}` : `no-mobile:${[...s.orders][0]}|${s.pincode}`;
+  const key = s.mobile ? `${s.mobile}|${s.pincode}` : `no-mobile:${[...s.orders][0]}|${s.pincode}`;
   const existing = customerUnionMap.get(key);
   const salesFields = { orders: s.orders.size, purchase: s.orders.size, netSales: Math.round(s.netSales), aov: s.orders.size ? Math.round(s.netSales / s.orders.size) : null, isRepeat: s.orders.size > 1 };
   if (existing) { Object.assign(existing, salesFields); }
@@ -1007,11 +1010,33 @@ for (const s of salesByCustomerPincode.values()) {
     customerUnionMap.set(key, {
       mobile_masked: maskMobile(s.mobile), pincode: s.pincode, city: pincodeGeoMap.get(s.pincode)?.district || null, state: pincodeGeoMap.get(s.pincode)?.state || null,
       sessions: 0, pdpViews: 0, addToCart: 0, checkout: 0, checkoutEvents: 0, wishlist: 0, plpImpressions: 0, removeFromCart: 0,
-      totalEvents: 0, firstSeen: s.first, lastSeen: s.last, ...salesFields
+      totalEvents: 0, firstSeen: s.first, lastSeen: s.last, deals: 0, dealsWon: 0, ...salesFields
     });
   }
 }
-const customers = [...customerUnionMap.values()].sort((a, b) => (b.totalEvents + b.orders * 100) - (a.totalEvents + a.orders * 100));
+// Zoho deal customers (deal pincode is APPROXIMATE -- see zohoDeals note) -- one row per mobile|pincode.
+const wonByMobilePincode = new Map();
+for (const r of zohoDealsRaw) if (r.mobile && r.stage === 'Closed Won' && pincodeGeoMap.get(r.pincode)) wonByMobilePincode.set(`${r.mobile}|${r.pincode}`, (wonByMobilePincode.get(`${r.mobile}|${r.pincode}`) || 0) + 1);
+for (const [pc, z] of zohoByPincode) {
+  for (const [m, n] of (z.dealsByMobile || new Map())) {
+    const key = `${m}|${pc}`;
+    const existing = customerUnionMap.get(key);
+    if (existing) { existing.deals = n; existing.dealsWon = wonByMobilePincode.get(key) || 0; continue; }
+    const geo = pincodeGeoMap.get(pc);
+    customerUnionMap.set(key, {
+      mobile_masked: maskMobile(m), pincode: pc, city: geo ? geo.district : null, state: geo ? geo.state : null,
+      sessions: 0, pdpViews: 0, addToCart: 0, checkout: 0, checkoutEvents: 0, wishlist: 0, plpImpressions: 0, removeFromCart: 0,
+      totalEvents: 0, firstSeen: null, lastSeen: null, orders: 0, purchase: 0, netSales: 0, aov: null, isRepeat: false,
+      deals: n, dealsWon: wonByMobilePincode.get(key) || 0
+    });
+  }
+}
+// Per-pincode Unique Customers (events + sales + deals), counted from the SAME rows the Customer tab
+// shows, so the Executive/Pincode number always equals the drill-down row count.
+const uniqueAllByPincode = new Map();
+for (const c of customerUnionMap.values()) uniqueAllByPincode.set(c.pincode, (uniqueAllByPincode.get(c.pincode) || 0) + 1);
+for (const p of pincodes) p.uniqueCustomers_all = uniqueAllByPincode.get(p.pincode) || 0;
+const customers = [...customerUnionMap.values()].sort((a, b) => (b.totalEvents + b.orders * 100 + b.deals) - (a.totalEvents + a.orders * 100 + a.deals));
 
 // ---------- Data Quality (Tab 12) ----------
 console.log('Assembling data quality summary...');

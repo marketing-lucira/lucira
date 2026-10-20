@@ -576,7 +576,9 @@ function tabExec(){
     {key:'netSales_online',label:'Online Sales',num:1,tone:'exact',fmt:v=>v?fmtMoney(v):'—'},
     {key:'netSales_store',label:'Store Sales',num:1,tone:'exact',fmt:v=>v?fmtMoney(v):'—'},
     {key:'salesCustomers',label:'Buyers',num:1,tone:'exact',fmt:fmtInt},
-    {key:'uniqueCustomers_exact',label:'Unique Customers',num:1,tone:'exact',fmt:(v,r)=>v>0?`<a href="#" class="drill" data-pincode="${esc(r.pincode)}" style="color:var(--gold);text-decoration:underline;cursor:pointer">${fmtInt(v)} →</a>`:'0'},
+    // 2026-10-19: Unique Customers = distinct people (by mobile) with a browsing event, a sale OR a Zoho
+    // deal on this pincode -- equals the number of rows the click-through Customer tab shows.
+    {key:'uniqueCustomers_all',label:'Unique Customers (events + sales + deals)',num:1,fmt:(v,r)=>v>0?`<a href="#" class="drill" data-pincode="${esc(r.pincode)}" style="color:var(--gold);text-decoration:underline;cursor:pointer">${fmtInt(v)} →</a>`:'0'},
     {key:'pdpViews_exact',label:'PDP Views (Exact)',num:1,tone:'exact',fmt:fmtInt},
     {key:'addToCart_exact',label:'ATC (Exact)',num:1,tone:'exact',fmt:fmtInt},
     {key:'checkout_exact',label:'Checkout (Exact)',num:1,tone:'exact',fmt:fmtInt},
@@ -590,7 +592,7 @@ function tabExec(){
     uniqueCustomers_exact:p.uniqueCustomers_exact, pdpViews_exact:p.pdpViews_exact, addToCart_exact:p.addToCart_exact,
     checkout_exact:p.checkout_exact, salesOrders:p.salesOrders, netSales:p.netSales, attribution:p.attribution,
     zohoDeals:p.zohoDeals||0, zohoDeals30:p.zohoDeals30||0, zohoWon:p.zohoWon||0, gadsSpend30:p.gadsSpend30||0,
-    zohoDealCustomers:p.zohoDealCustomers||0, weCustomers:p.weCustomers||0, totalUniqueCustomers:p.totalUniqueCustomers||0,
+    zohoDealCustomers:p.zohoDealCustomers||0, weCustomers:p.weCustomers||0, totalUniqueCustomers:p.totalUniqueCustomers||0, uniqueCustomers_all:p.uniqueCustomers_all||0,
     repeatDealPct:p.repeatDealPct==null?null:p.repeatDealPct, repeatDealCustomers:p.repeatDealCustomers||0,
     netSales_online:p.netSales_online||0, netSales_store:p.netSales_store||0, salesCustomers:p.salesCustomers||0,
     _distanceKm: p.nearestStore?p.nearestStore.distanceKm:null, opportunityScore:p.scores.opportunityScore, priority:p.priority
@@ -734,7 +736,8 @@ function tabPincode(){
   const D = STATE.data; const pc = filteredPincodes();
   const cols = [
     {key:'pincode',label:'Pincode'},{key:'district',label:'City'},{key:'state',label:'State'},
-    {key:'uniqueCustomers_exact',label:'Unique Customers',num:1,tone:'exact',fmt:(v,r)=>v>0?`<a href="#" class="drill" data-pincode="${esc(r.pincode)}" style="color:var(--gold);text-decoration:underline;cursor:pointer">${fmtInt(v)} →</a>`:'0'},
+    {key:'uniqueCustomers_all',label:'Unique Customers (events + sales + deals)',num:1,fmt:(v,r)=>v>0?`<a href="#" class="drill" data-pincode="${esc(r.pincode)}" style="color:var(--gold);text-decoration:underline;cursor:pointer">${fmtInt(v)} →</a>`:'0'},
+    {key:'uniqueCustomers_exact',label:'Browsing Customers (Exact)',num:1,tone:'exact',fmt:fmtInt},
     {key:'activeCustomers_exact',label:'Active Customers',num:1,tone:'exact',fmt:fmtInt},
     {key:'uniqueCustomers_luid',label:'Unique Customers (LUID, comparison)',num:1,fmt:v=>v>0?fmtInt(v):'—'},
     {key:'pdpViews_exact',label:'PDP Views (Exact)',num:1,tone:'exact',fmt:fmtInt},
@@ -769,7 +772,7 @@ function tabPincode(){
   ];
   const rows = pc.map(p=>({
     state:p.state, district:p.district, pincode:p.pincode, lat:p.lat, lon:p.lon,
-    uniqueCustomers_exact:p.uniqueCustomers_exact, activeCustomers_exact:p.activeCustomers_exact,
+    uniqueCustomers_exact:p.uniqueCustomers_exact, uniqueCustomers_all:p.uniqueCustomers_all||0, activeCustomers_exact:p.activeCustomers_exact,
     uniqueCustomers_luid:p.uniqueCustomers_luid,
     pdpViews_exact:p.pdpViews_exact, addToCart_exact:p.addToCart_exact, checkout_exact:p.checkout_exact,
     salesOrders:p.salesOrders, netSales:p.netSales,
@@ -1167,6 +1170,7 @@ function tabCustomer(){
     {key:'checkout',label:'Checkout',num:1,fmt:fmtInt},{key:'purchase',label:'Purchase (Orders)',num:1,fmt:v=>v>0?fmtInt(v):'0'},
     {key:'netSales',label:'Sales',num:1,fmt:v=>v>0?fmtMoney(v):'—'},{key:'aov',label:'AOV',num:1,fmt:v=>v==null?'—':fmtMoney(v)},
     {key:'isRepeat',label:'Customer Type',fmt:v=>v?'<span class="pill ok">Repeat</span>':'<span class="pill">New/Single</span>'},
+    {key:'deals',label:'Zoho Deals',num:1,fmt:v=>v>0?fmtInt(v):'—'},{key:'dealsWon',label:'Deals Won',num:1,fmt:v=>v>0?fmtInt(v):'—'},
     {key:'revenue',label:'Digital Revenue*',num:1,fmt:fmtMoney},{key:'wishlist',label:'Wishlist',num:1,fmt:fmtInt},
     {key:'plpImpressions',label:'PLP Impr.',num:1,fmt:fmtInt},{key:'removeFromCart',label:'Remove Cart',num:1,fmt:fmtInt},
     {key:'totalEvents',label:'Total Events',num:1,fmt:fmtInt},{key:'lastSeen',label:'Last Seen'},{key:'firstSeen',label:'First Seen'}
@@ -1176,7 +1180,7 @@ function tabCustomer(){
   PENDING_MOUNTS.push(() => t.mount());
   const drilled = STATE.filters.q ? `<span class="pill g" style="margin-left:8px">Filtered to pincode ${esc(STATE.filters.q)}</span>` : '';
   return secHead('Tab 9 · Customer-Level Detail','Every Real, Mobile-Matched Customer — Own Row, Own KPIs, Never Combined'+drilled,
-    `ALL ${D.customers.length.toLocaleString('en-IN')} real customers who could be identity-linked to a pincode (not a sample) — union of customers with a browsing event (application_view_v1) and customers with a real purchase (marketing_sale); a customer with only one or the other is still shown, not dropped. One canonical pincode per customer (their most recent user_profile_view_v3 record). Purchase/Sales/AOV/Customer Type are real marketing_sale numbers, not GA4/WebEngage-derived. Mobile masked to last 4 digits (PII policy, same as Walk-in Source Intelligence); no full phone/email exposed. Multiple PDP/ATC events for one customer increase that customer's own count — never the customer count.`) +
+    `ALL ${D.customers.length.toLocaleString('en-IN')} real customers who could be identity-linked to a pincode (not a sample) — union (by mobile) of customers with a browsing event (application_view_v1), a real purchase (marketing_sale) or a Zoho deal (deal pincode is approximate); a customer with only one of these is still shown, not dropped. One canonical pincode per customer (their most recent user_profile_view_v3 record). Purchase/Sales/AOV/Customer Type are real marketing_sale numbers, not GA4/WebEngage-derived. Mobile masked to last 4 digits (PII policy, same as Walk-in Source Intelligence); no full phone/email exposed. Multiple PDP/ATC events for one customer increase that customer's own count — never the customer count.`) +
     renderGlobalFilters() +
     card('Customer Table', t.html);
 }
