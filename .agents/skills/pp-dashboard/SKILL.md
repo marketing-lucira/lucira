@@ -44,7 +44,10 @@ them to. A full `mto_margin_rows()` run takes 2–4 minutes.
 
 ## 3. Deploy
 
+Run from the repo root (the folder with `.git`), not from a sub-folder:
+
 ```powershell
+cd (git rev-parse --show-toplevel)
 powershell -ExecutionPolicy Bypass -File .agents/skills/pp-dashboard/scripts/deploy.ps1           # API + page
 powershell -ExecutionPolicy Bypass -File .agents/skills/pp-dashboard/scripts/deploy.ps1 -Refresh  # + rebuild prices
 ```
