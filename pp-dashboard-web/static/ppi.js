@@ -2,6 +2,10 @@
 /* ══════════════════════════════════════════════════════════════════════════
    Product Pricing & Cost Configuration Intelligence — Lucira Jewelry
 
+   Changing this dashboard? Rules: pos-price-api/AGENTS.md. Test + deploy
+   runbook: .agents/skills/pp-dashboard/SKILL.md. Edit THIS file, not the copy
+   in pp-dashboard-web/static/ (the deploy script copies it there).
+
    Base dataset (BigQuery, project lucirajewelry-prod):
      Lucira_Prod.Lucira_Shopify_product_variant_metafields (key='variant_config')
        LEFT JOIN ornaverse_erp_master.items ON owner_id = external_variant_id
