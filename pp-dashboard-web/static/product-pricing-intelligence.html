@@ -47,6 +47,7 @@ header.app .btn:hover{background:rgba(255,255,255,.2);color:#fff}
 .btn{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .btn:hover{background:var(--surface-3)}
 .btn.sm{padding:5px 9px;font-size:11.5px}
+.btn.on{background:var(--brand-mauve);color:#fff;border-color:transparent}
 .shell{display:flex;min-height:calc(100vh - 59px)}
 aside.filters{flex:0 0 var(--sidebar-w);min-width:0;border-right:1px solid var(--border);background:var(--surface);position:sticky;top:59px;height:calc(100vh - 59px);overflow:hidden;transition:flex-basis .22s ease,opacity .18s ease,border-color .22s ease}
 body.filters-collapsed aside.filters{flex-basis:0;opacity:0;border-color:transparent;pointer-events:none}
@@ -169,6 +170,13 @@ tr:hover td{background:var(--surface-2)}
 .vl-chip-x:hover{color:var(--crit);background:rgba(224,80,90,.14)}
 #page-variant th{white-space:nowrap}
 @media(max-width:900px){:root{--sidebar-w:240px}body:not(.filters-collapsed) main{display:none}}
+body:not(.can-edit) .edit-only{display:none !important}
+body.can-edit .view-only{display:none !important}
+.ed-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px}
+.ed-box{width:min(380px,100%)}
+.ed-l{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:10px}
+.ed-l input{display:block;width:100%;min-width:0;margin-top:4px;box-sizing:border-box}
+.mto-xd{width:96px;min-width:0;text-align:right;padding:4px 7px}
 #mtoPrintHead{display:none}
 @media print{
   header.app, aside.filters, .toolbar, #page-mto .no-print{display:none !important}
@@ -179,6 +187,7 @@ tr:hover td{background:var(--surface-2)}
   #mtoPrintHead{display:block !important;margin-bottom:14px}
   #mtoPrintHead h2{margin:0 0 2px}
   #mtoPrintHead .sub{margin:0}
+  #page-mto .tbl-wrap{max-height:none !important;overflow:visible !important}
   body{background:#fff !important;color:#000 !important}
   .card,.tbl-wrap{border:none !important;box-shadow:none !important}
   table{color:#000 !important}
@@ -193,6 +202,7 @@ tr:hover td{background:var(--surface-2)}
     <div><h1>Product Pricing & Cost Configuration Intelligence</h1><small>Per-SKU metal, purity, gold rate, making charges, stones & discounts</small></div>
   </div>
   <div class="hdr-status"><span class="dot" id="statusDot"></span><span id="statusText">Loading…</span><span id="snapshotBadge" style="margin-left:10px;opacity:.85"></span></div>
+  <button class="btn sm" id="editorBtn" type="button">🔒 Editor login</button>
   <button class="btn sm" id="themeBtn">◑ Theme</button>
 </header>
 <div class="shell">
@@ -207,6 +217,7 @@ tr:hover td{background:var(--surface-2)}
       <nav class="tabs" id="nav"></nav>
       <input class="search" id="itemSearch" placeholder="🔍 Search all columns…" style="margin-left:auto;min-width:240px">
     </div>
+    <div id="goldStrip"></div>
     <div id="pages"></div>
   </main>
 </div>

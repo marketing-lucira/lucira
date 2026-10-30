@@ -30,7 +30,7 @@ Response (default, JSON):
 
 Deploy: see deploy.sh / README.md.
 """
-import csv, gzip, io, json, math, os, time
+import base64, csv, gzip, hashlib, hmac, io, json, math, os, time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
@@ -117,6 +117,13 @@ COLUMNS = [
 # metal_amount and sp_ct collapse into one column since a row is always METAL
 # xor STONE, never both. Labels match dashboard/ppi.js's PP_COLS exactly.
 CSV_COLUMNS = [c for c in COLUMNS if c not in ("metal_amount", "sp_ct")]
+# Attribute = common_attributes.attribute of the stone_rates row that priced
+# this line (same match as Purchase Rate); blank when no rate matched.
+CSV_COLUMNS.insert(CSV_COLUMNS.index("item_name") + 1, "attribute")
+# Cost Price / Sale Price = Stone Rate Slab purchase_rate / sales_rate for this
+# row's Attribute + Carat Weight (see slab_priced in _g2d_ranked_cte).
+CSV_COLUMNS.insert(CSV_COLUMNS.index("attribute") + 1, "cost_price")
+CSV_COLUMNS.insert(CSV_COLUMNS.index("cost_price") + 1, "sale_price")
 CSV_COLUMNS.insert(CSV_COLUMNS.index("item_group_name") + 1, "discount_pct")
 CSV_COLUMNS.insert(CSV_COLUMNS.index("discount_pct") + 1, "diamond_disc_pct")
 CSV_COLUMNS.insert(CSV_COLUMNS.index("Diamond_type"), "metal_amount")
@@ -128,7 +135,7 @@ CSV_COLUMNS.append("purchase_rate")
 CSV_COLUMNS.append("purchase_amount")
 CSV_COLUMNS.append("diamond_cp")
 CSV_LABELS = {
-    "item_code": "Item Code", "item_name": "Item Name", "weight": "Weight", "pieces": "Pieces",
+    "item_code": "Item Code", "item_name": "Item Name", "attribute": "Attribute", "cost_price": "Cost Price", "sale_price": "Sale Price", "weight": "Weight", "pieces": "Pieces",
     "net_weight": "Net Weight", "purity": "Purity", "pure_weight": "Pure Weight", "bom_rate": "BOM Rate",
     "bom_base_amount": "BOM Base Amount", "center_stone": "Center Stone", "item_group_name": "Item Group",
     "discount_pct": "Making Discount %", "diamond_disc_pct": "Diamond Disc%",
@@ -170,9 +177,10 @@ def _discount_pct_case(discounts):
         bigquery.ScalarQueryParameter("disc_other", "FLOAT64", discounts.get("other", 0.0)),
     ]
     case_sql = r"""
-        CASE item_group_name
-          WHEN 'Gold' THEN @disc_gold
-          WHEN 'Diamond' THEN @disc_diamond
+        CASE
+          WHEN STARTS_WITH(UPPER(item_code), 'LJ-GC') THEN 0
+          WHEN item_group_name = 'Gold' THEN @disc_gold
+          WHEN item_group_name = 'Diamond' THEN @disc_diamond
           ELSE @disc_other
         END AS discount_pct
     """
@@ -387,16 +395,28 @@ def diamond_slab_update(code, disc_pct):
     return diamond_slab_list()
 
 
-# Labour -- master table gold_rates.labour_rates (FOR ALL PRODUCTS / BELOW
-# 1.5 GMS), single source of truth for Variant Level's "CP. pr gm making"
-# column. Editable Amount from the Slab tab -- never hard-coded here.
-LABOUR_TABLE = os.environ.get("LABOUR_TABLE", "lucirajewelry-prod.gold_rates.labour_rates")
-LABOUR_KEYS = ["for_all", "below_1_5"]
+# Labour -- Variant Level's "CP. pr gm making" now reads the ERP Labour Rate
+# Slab (gold_rates.labour_rate_slab view = Lucira_Prod.labour_rates x
+# common_attributes; see LABOUR_RATE_SLAB_VIEW / fetch_labour_rate_slab). The
+# old editable gold_rates.labour_rates table (FOR ALL PRODUCTS / BELOW 1.5 GMS)
+# was removed 2026-10-01 per the user. Same calculation shape as before:
+#   Net Weight <= cutoff -> a FIXED amount (unchanged);
+#   Net Weight >  cutoff -> Net Weight x Labour Charge, where Labour Charge is
+#   the slab matching the variant's own item group + type (Rings, Pendants...;
+#   falls back to that group's "NA" type) and weight -- G2D ratio for
+#   Diamond/Platinum Jewellery (their bands are the G2D ranges), Net Weight for
+#   every other group. No matching slab -> Labour Charge blank, CP 0.
 LABOUR_NET_WEIGHT_CUTOFF = 1.5  # GM
-# CP. pr gm making, <= cutoff: a FIXED amount, not a per-gram rate and not
-# looked up from the Labour table (explicit spec) -- unlike the > cutoff
-# case, which is Net Weight * the Labour table's "for_all" rate.
 CP_PR_GM_MAKING_FIXED_BELOW_CUTOFF = 1500.0
+
+# Gold coins = item codes starting LJ-GC (the silver coin is LJ-SC, untouched).
+GOLD_COIN_MAKING_CHARGE_PER_G = float(os.environ.get("GOLD_COIN_MAKING_CHARGE_PER_G", "500"))
+GOLD_COIN_CP_MAKING_PER_G = float(os.environ.get("GOLD_COIN_CP_MAKING_PER_G", "200"))
+
+
+def _is_gold_coin(item_code):
+    return (item_code or "").strip().upper().startswith("LJ-GC")
+LABOUR_G2D_GROUPS = ("diamond jewellery", "platinum jewellery")
 
 # Cash Back -- Variant Level only, from Product Composition + Final After
 # GST Overall, against master table gold_rates.cash_back_rates (editable
@@ -501,63 +521,45 @@ def _cash_back_pct(product_composition, has_diamond, final_after_gst_overall, ca
     return pct
 
 
-def labour_rates_list():
-    bq = _client()
-    rows = bq.query(
-        f"SELECT rate_key, sort_order, label, amount, updated_at "
-        f"FROM `{LABOUR_TABLE}` ORDER BY sort_order"
-    ).result()
-    out = []
-    for r in rows:
-        out.append({
-            "rate_key": r["rate_key"], "sort_order": int(r["sort_order"]),
-            "label": r["label"], "amount": float(r["amount"]),
-            "updated_at": r["updated_at"].isoformat() if r["updated_at"] else None,
-        })
-    return out
+_LABOUR_SLAB_CACHE = {"ts": 0.0, "data": {}}
 
 
-def labour_rates_update(rate_key, amount):
-    if rate_key not in LABOUR_KEYS:
-        raise ValueError(f"unknown rate_key {rate_key!r}")
-    if not (amount > 0):
-        raise ValueError("amount must be a positive number")
-    bq = _client()
-    bq.query(
-        f"UPDATE `{LABOUR_TABLE}` SET amount = @a, updated_at = CURRENT_TIMESTAMP() WHERE rate_key = @rate_key",
-        job_config=bigquery.QueryJobConfig(query_parameters=[
-            bigquery.ScalarQueryParameter("a", "FLOAT64", amount),
-            bigquery.ScalarQueryParameter("rate_key", "STRING", rate_key),
-        ]),
-    ).result()
-    # Invalidate the 60s TTL cache immediately -- see the matching comment in
-    # diamond_slab_update.
-    _LABOUR_RATES_CACHE["ts"] = 0.0
-    _LABOUR_RATES_CACHE["data"] = {}
-    return labour_rates_list()
-
-
-_LABOUR_RATES_CACHE = {"ts": 0.0, "data": {}}
-
-
-def fetch_labour_rates():
-    """{"for_all": amount, "below_1_5": amount} -- cached 60s (see
-    _SMALL_CONFIG_TTL_SEC above) so a Slab tab edit is reflected within a
-    minute, not necessarily on the very next request."""
+def fetch_labour_rate_slab():
+    """{(item_group_lower, type_lower): [(from_weight, to_weight, rate), ...]}
+    from the Labour Rate Slab view -- cached like the other small configs."""
     now = time.time()
-    if _LABOUR_RATES_CACHE["data"] and (now - _LABOUR_RATES_CACHE["ts"]) < _SMALL_CONFIG_TTL_SEC:
-        return _LABOUR_RATES_CACHE["data"]
-    rates = {}
+    if _LABOUR_SLAB_CACHE["data"] and (now - _LABOUR_SLAB_CACHE["ts"]) < _SMALL_CONFIG_TTL_SEC:
+        return _LABOUR_SLAB_CACHE["data"]
+    out = {}
     try:
         bq = _client()
-        rows = bq.query(f"SELECT rate_key, amount FROM `{LABOUR_TABLE}`").result()
-        rates = {r["rate_key"]: float(r["amount"]) for r in rows}
-    except Exception:
-        pass
-    if rates:
-        _LABOUR_RATES_CACHE["data"] = rates
-        _LABOUR_RATES_CACHE["ts"] = now
-    return rates or _LABOUR_RATES_CACHE["data"]
+        rows = bq.query(
+            f"SELECT item_group_name, type_name, from_weight, to_weight, purchase_rate "
+            f"FROM `{LABOUR_RATE_SLAB_VIEW}` WHERE purchase_rate IS NOT NULL"
+        ).result()
+        for r in rows:
+            k = ((r["item_group_name"] or "").strip().lower(), (r["type_name"] or "").strip().lower())
+            out.setdefault(k, []).append((float(r["from_weight"]), float(r["to_weight"]), float(r["purchase_rate"])))
+    except Exception as e:
+        print(f"[labour-slab] query failed: {e}")
+    if out:
+        _LABOUR_SLAB_CACHE["data"] = out
+        _LABOUR_SLAB_CACHE["ts"] = now
+    return out or _LABOUR_SLAB_CACHE["data"]
+
+
+def labour_charge_for(labour_slab, group, type_name, net_weight, g2d):
+    """Labour Charge (per gram) for one variant, or None if no slab matches.
+    Exact type first, then the group's "NA" type; narrowest slab wins."""
+    g = (group or "").strip().lower()
+    if not g or not labour_slab:
+        return None
+    w = (g2d or 0.0) if g in LABOUR_G2D_GROUPS else (net_weight or 0.0)
+    for t in ((type_name or "").strip().lower(), "na"):
+        hits = [s for s in labour_slab.get((g, t), []) if s[0] <= w <= s[1]]
+        if hits:
+            return min(hits, key=lambda s: s[1] - s[0])[2]
+    return None
 
 
 _DIAMOND_SLAB_DISCOUNTS_CACHE = {"ts": 0.0, "data": {}}
@@ -830,6 +832,40 @@ def build_variant_classification_map():
 # it's cached the same 30-min way to keep that cost off the common path.
 _VARIANT_MD_CACHE = {"ts": 0.0, "data": {}}
 METAL_GROUPS = ("Gold", "Silver", "Platinum")
+# Gemstone = every non-diamond stone line of the BOM (user, 2026-10-29).
+GEMSTONE_GROUPS = ("Color Stone", "Cubic Zirconia")
+_GEM_IN_SQL = ", ".join(f"'{g}'" for g in GEMSTONE_GROUPS)
+_METAL_IN_SQL = ", ".join(f"'{g}'" for g in METAL_GROUPS)
+
+
+def _stone_extras_sql(selling_case_sql):
+    """Per-variant diamond pieces + "Other BOM" columns (internally still
+    gemstone_*), from the BOM lines (Product_price): Type ("Green Pear
+    (Synthetic)", NA parts dropped), Pcs, Wt (ct) for the stone lines, and
+    Amount = the Selling Price of EVERY BOM line that is neither metal nor
+    diamond (colour stone, CZ, accessories -- same rule as Diamond Amount).
+    That amount is part of Final After GST (user, 2026-10-30); accessories'
+    names / pieces / CP are added from the ERP BOM by _with_accessories."""
+    na = lambda c: f"UPPER(TRIM(IFNULL({c}, 'NA'))) IN ('NA', '', 'MIX')"
+    gem_type = f"""NULLIF(TRIM(CONCAT(
+          IF(item_group_name = 'Cubic Zirconia', 'CZ ', ''),
+          IF({na('stone_color_name')}, '', CONCAT(TRIM(stone_color_name), ' ')),
+          IF({na('shape_name')}, '', TRIM(shape_name)),
+          IF({na('quality_name')}, '', CONCAT(' (', TRIM(quality_name), ')')))), '')"""
+    return f"""
+          SUM(IF(item_group_name = 'Diamond', IFNULL(pieces, 0), 0)) AS diamond_pieces,
+          STRING_AGG(DISTINCT IF(item_group_name IN ({_GEM_IN_SQL}), {gem_type}, NULL), ', ') AS gemstone_type,
+          SUM(IF(item_group_name IN ({_GEM_IN_SQL}), IFNULL(pieces, 0), 0)) AS gemstone_pieces,
+          SUM(IF(item_group_name IN ({_GEM_IN_SQL}), IFNULL(net_weight, 0), 0)) AS gemstone_weight,
+          SUM(IF(item_group_name NOT IN ({_METAL_IN_SQL}, 'Diamond'), IFNULL(ROUND({selling_case_sql}, 2), 0), 0)) AS gemstone_amount"""
+
+
+def _stone_extras(row):
+    """The _stone_extras_sql columns of one result row, as md_map fields."""
+    f = lambda v: round(float(v), 3) if v is not None else 0.0
+    return {"diamond_pieces": f(row["diamond_pieces"]), "gemstone_type": row["gemstone_type"],
+            "gemstone_pieces": f(row["gemstone_pieces"]), "gemstone_weight": f(row["gemstone_weight"]),
+            "gemstone_amount": round(float(row["gemstone_amount"] or 0), 2)}
 
 
 def build_variant_metal_diamond_map():
@@ -851,7 +887,8 @@ def build_variant_metal_diamond_map():
     sql = f"""
         SELECT item_code,
           SUM(IF(item_group_name IN ({metal_list_sql}), IFNULL(ROUND({case_sql}, 2), 0), 0)) AS metal_amount,
-          SUM(IF(item_group_name = 'Diamond', IFNULL(ROUND({case_sql}, 2), 0), 0)) AS diamond_amount
+          SUM(IF(item_group_name = 'Diamond', IFNULL(ROUND({case_sql}, 2), 0), 0)) AS diamond_amount,
+          {_stone_extras_sql(case_sql)}
         FROM `{TABLE}`
         GROUP BY item_code
     """
@@ -861,6 +898,7 @@ def build_variant_metal_diamond_map():
         result[row["item_code"]] = {
             "metal_amount": round(float(row["metal_amount"]), 2) if row["metal_amount"] is not None else 0.0,
             "diamond_amount": round(float(row["diamond_amount"]), 2) if row["diamond_amount"] is not None else 0.0,
+            **_stone_extras(row),
         }
     _VARIANT_MD_CACHE["data"] = result
     _VARIANT_MD_CACHE["ts"] = now
@@ -876,6 +914,39 @@ def build_variant_metal_diamond_map():
 _VARIANT_DIAMOND_CP_CACHE = {"ts": 0.0, "data": {}}
 
 
+# Main Shape per Variant -- for the Margin tab's "Shape" breakdown. The
+# centre stone's shape (Product_price.center_stone = 1) when the variant has
+# one, else the shape of its single largest diamond (carat weight = net
+# weight / pieces). Variants with no diamond line have no shape (blank).
+_VARIANT_SHAPE_CACHE = {"ts": 0.0, "data": {}}
+
+
+def build_variant_shape_map():
+    now = time.time()
+    if _VARIANT_SHAPE_CACHE["data"] and (now - _VARIANT_SHAPE_CACHE["ts"]) < VARIANT_AGG_TTL_SEC:
+        return _VARIANT_SHAPE_CACHE["data"]
+    bq = _client()
+    sql = f"""
+        SELECT item_code, shape_name
+        FROM `{TABLE}`
+        WHERE item_group_name = 'Diamond' AND shape_name IS NOT NULL AND TRIM(shape_name) NOT IN ('', 'NA')
+        QUALIFY ROW_NUMBER() OVER (
+          PARTITION BY item_code
+          ORDER BY IFNULL(center_stone, 0) DESC, SAFE_DIVIDE(net_weight, pieces) DESC, shape_name
+        ) = 1
+    """
+    result = {}
+    try:
+        for row in bq.query(sql).result(page_size=10000):
+            result[row["item_code"]] = row["shape_name"]
+    except Exception as e:
+        print(f"[variant-shape] query failed: {e}")
+    if result:
+        _VARIANT_SHAPE_CACHE["data"] = result
+        _VARIANT_SHAPE_CACHE["ts"] = now
+    return result or _VARIANT_SHAPE_CACHE["data"]
+
+
 def build_variant_diamond_cp_map():
     now = time.time()
     if _VARIANT_DIAMOND_CP_CACHE["data"] and (now - _VARIANT_DIAMOND_CP_CACHE["ts"]) < VARIANT_AGG_TTL_SEC:
@@ -887,7 +958,7 @@ def build_variant_diamond_cp_map():
           SELECT item_code, item_group_name, shape_name, quality_name, stone_color_name,
                  pieces, net_weight,
                  ROW_NUMBER() OVER () AS _prowid,
-                 CASE WHEN item_group_name = 'Diamond' AND pieces IS NOT NULL AND pieces > 0
+                 CASE WHEN item_group_name IN ('Diamond', 'Color Stone', 'Cubic Zirconia') AND pieces IS NOT NULL AND pieces > 0
                       THEN net_weight / pieces END AS carat_weight
           FROM `{TABLE}`
         ),
@@ -908,17 +979,97 @@ def build_variant_diamond_cp_map():
           SELECT * EXCEPT(_rate_rn) FROM priced WHERE _rate_rn = 1
         )
         SELECT item_code,
-          SUM(IFNULL(carat_weight * purchase_rate * pieces, 0)) AS total_diamond_cp
+          SUM(IF(item_group_name = 'Diamond', IFNULL(carat_weight * purchase_rate * pieces, 0), 0)) AS total_diamond_cp,
+          SUM(IF(item_group_name IN ({_GEM_IN_SQL}), IFNULL(carat_weight * purchase_rate * pieces, 0), 0)) AS gemstone_cp
         FROM priced_final
         GROUP BY item_code
     """
     job = bq.query(sql)
-    result = {}
+    result, gem = {}, {}
     for row in job.result(page_size=5000):
         result[row["item_code"]] = round(float(row["total_diamond_cp"]), 2) if row["total_diamond_cp"] is not None else 0.0
+        if row["gemstone_cp"]:
+            gem[row["item_code"]] = round(float(row["gemstone_cp"]), 2)
     _VARIANT_DIAMOND_CP_CACHE["data"] = result
+    _VARIANT_DIAMOND_CP_CACHE["gem"] = gem
     _VARIANT_DIAMOND_CP_CACHE["ts"] = now
     return result
+
+
+def _with_gemstone_cp(md_map):
+    """md_map + each variant's Gemstone CP (split out of the stone-rate CP by
+    build_variant_diamond_cp_map, which must have run first) + its accessories
+    (_with_accessories). New dicts, so the cached maps are never mutated."""
+    gem = _VARIANT_DIAMOND_CP_CACHE.get("gem") or {}
+    return _with_accessories({c: ({**v, "gemstone_cp": gem[c]} if c in gem else v) for c, v in md_map.items()})
+
+
+# Accessories (Ceramic, Silicon band, Stretchable Belt, cord thread, Memory Wire,
+# Alloy ...) -- BOM lines that are neither metal, diamond nor stone (user,
+# 2026-10-30: "band mai rubber band ..."). Product_price has no name or rate for
+# them, so they come from the ERP BOM (Pos.items_bom, rm_id -> the accessory
+# item), costed at that accessory's LATEST purchase rate (consignment-in BOM,
+# newest line with a rate): per piece when its unit (items.uoc_id) is 3, per
+# gram otherwise -- the unit those purchase amounts were billed in. No selling
+# rate exists for them anywhere in the ERP, so they add to CP, not to price.
+ACCESSORY_GROUPS = ("Accessories", "Alloy")
+ITEMS_BOM_TABLE = os.environ.get("ITEMS_BOM_TABLE", "lucirajewelry-prod.Pos.items_bom")
+ERP_ITEMS_TABLE = os.environ.get("ERP_ITEMS_TABLE", "lucirajewelry-prod.ornaverse_erp_master.items")
+PURCHASE_BOM_TABLE = os.environ.get("PURCHASE_BOM_TABLE", "lucirajewelry-prod.Lucira_Prod.consignment_in_items_bom")
+UOC_PER_PIECE = 3
+_VARIANT_ACCESSORY_CACHE = {"ts": 0.0, "data": {}}
+
+
+def build_variant_accessory_map():
+    """{item_code: {"names", "pieces", "cp"}} for every variant with an accessory line."""
+    now = time.time()
+    if _VARIANT_ACCESSORY_CACHE["data"] and (now - _VARIANT_ACCESSORY_CACHE["ts"]) < VARIANT_AGG_TTL_SEC:
+        return _VARIANT_ACCESSORY_CACHE["data"]
+    acc_in_sql = ", ".join(f"'{g}'" for g in ACCESSORY_GROUPS)
+    sql = f"""
+        WITH rate AS (
+          SELECT rm_id, rate FROM `{PURCHASE_BOM_TABLE}` WHERE rate > 0
+          QUALIFY ROW_NUMBER() OVER (PARTITION BY rm_id ORDER BY transaction_bom_id DESC) = 1
+        )
+        SELECT fi.item_code,
+          STRING_AGG(DISTINCT rm.item_name, ', ') AS names,
+          SUM(IFNULL(b.pieces, 0)) AS pieces,
+          SUM(IFNULL(r.rate, 0) * IF(rm.uoc_id = {UOC_PER_PIECE}, IFNULL(b.pieces, 0), IFNULL(b.weight, 0))) AS cp
+        FROM `{ITEMS_BOM_TABLE}` b
+        JOIN `{ERP_ITEMS_TABLE}` rm ON rm.item_id = b.rm_id
+        JOIN `{ITEM_GROUPS_TABLE}` g ON g.item_group_id = rm.item_group_id
+        JOIN `{ERP_ITEMS_TABLE}` fi ON fi.item_id = b.item_id
+        LEFT JOIN rate r ON r.rm_id = b.rm_id
+        WHERE g.item_group_name IN ({acc_in_sql}) AND fi.item_code IS NOT NULL
+        GROUP BY fi.item_code
+    """
+    result = {}
+    try:
+        for r in _client().query(sql).result(page_size=5000):
+            result[r["item_code"]] = {"names": r["names"], "pieces": float(r["pieces"] or 0),
+                                      "cp": round(float(r["cp"] or 0), 2)}
+    except Exception as e:
+        print(f"[variant-accessories] query failed: {e}")
+    if result:
+        _VARIANT_ACCESSORY_CACHE["data"] = result
+        _VARIANT_ACCESSORY_CACHE["ts"] = now
+    return result or _VARIANT_ACCESSORY_CACHE["data"]
+
+
+def _with_accessories(md_map):
+    """Folds each variant's accessories into its Other BOM columns: names onto
+    the Type, pieces onto Pcs, purchase cost onto CP (-> Total CP Cost)."""
+    acc = build_variant_accessory_map()
+    out = {}
+    for c, v in md_map.items():
+        a = acc.get(c)
+        if a:
+            v = {**v,
+                 "gemstone_type": ", ".join(t for t in (v.get("gemstone_type"), a["names"]) if t),
+                 "gemstone_pieces": round((v.get("gemstone_pieces") or 0.0) + a["pieces"], 3),
+                 "gemstone_cp": round((v.get("gemstone_cp") or 0.0) + a["cp"], 2)}
+        out[c] = v
+    return out
 
 
 # Status / Image -- two Shopify-sourced, display-only Variant Level columns
@@ -989,38 +1140,51 @@ def build_variant_shopify_map():
 # Price, Compare Price, G2D Dis%) are dropped from display per that table;
 # sorting (Gold -> Diamond -> Other, Consignment last) is unaffected since
 # it never depended on which columns are shown.
+# Column order + names = the user's sheet (2026-10-08), used by EVERY tab that
+# shows these columns (Ornaverse Variant / Product Default / Shopify / Inventory).
 VARIANT_COLUMNS = [
     "item_code", "product_composition", "item_name", "image_url", "status", "item_group",
-    "net_weight", "weight", "diamond_weight", "purity", "g2d", "g2d_band",
-    "metal_amount", "diamond_amount", "overall_selling_price",
+    "category", "main_shape", "purity", "g2d", "g2d_band",
+    "total_diamond_cp", "labour_charge", "cp_pr_gm_making", "total_cp_cost",
+    "net_weight", "weight", "metal_amount", "diamond_weight", "diamond_pieces", "diamond_amount",
+    "gemstone_type", "gemstone_pieces", "gemstone_weight", "gemstone_amount", "gemstone_cp",
     "making_charge_per_g", "making_amount",
-    "before_gst_overall", "before_gst_value", "original_after_gst_overall",
+    "before_gst_overall", "before_gst_value", "original_after_gst_overall", "margin1_pct",
     "making_discount_pct", "making_discount_amount", "net_making_amount",
-    "diamond_disc_pct", "diamond_discount_amount", "net_diamond_amount",
-    "after_discount", "gst", "final_after_gst_overall",
-    "total_diamond_cp", "cp_pr_gm_making", "total_cp_cost",
-    "cash_back_pct", "final_amount_post_discount", "margin_pct",
-    "additional_disc", "margin2_pct",
+    "diamond_disc_pct", "diamond_discount_amount", "net_diamond_amount", "total_discount",
+    "final_after_gst_overall", "margin_pct", "final_amount_post_discount",
+    # slab-based pricing (2026-10-08): the two requested columns + how they were reached
+    "amount_ex_gst", "free_gold_coin", "free_coin_qty", "free_coin_cp", "actual_sp", "net_margin", "net_margin_pct",
+    "material_type", "slab_status",
 ]
+# Still calculated and stored (Margin / Inventory tabs use them), not in the sheet's list.
+VARIANT_EXTRA_COLUMNS = ["overall_selling_price", "after_discount", "gst", "cash_back_pct", "margin2_pct"]
 VARIANT_LABELS = {
     "item_code": "Item Code", "product_composition": "Product Composition",
     "item_name": "Item Name", "status": "Status", "item_group": "Item Group",
+    "category": "Category", "main_shape": "Main Shape",
     "net_weight": "Net Weight", "weight": "Weight", "diamond_weight": "Diamond Weight",
+    "diamond_pieces": "Diamond Pieces", "gemstone_type": "Other BOM Items", "gemstone_pieces": "Other BOM Pcs",
+    "gemstone_weight": "Other BOM Stone Wt (ct)", "gemstone_amount": "Other BOM Amount", "gemstone_cp": "Other BOM CP",
     "purity": "Purity", "g2d": "G2D Ratio", "g2d_band": "G2D Band",
     "metal_amount": "Metal Amount", "diamond_amount": "Diamond Amount",
     "overall_selling_price": "Overall Selling Price",
     "making_charge_per_g": "Making Charge /g", "making_amount": "Making Amount",
     "before_gst_overall": "Before GST Overall",
-    "before_gst_value": "Before GST Value", "original_after_gst_overall": "Original After GST Overall",
+    "before_gst_value": "GST Value", "original_after_gst_overall": "With GST SP",
+    "margin1_pct": "Margin 1% (without discount)", "total_discount": "Total Discount",
+    "amount_ex_gst": "Amount ex GST", "free_gold_coin": "Free Gold Coin", "free_coin_qty": "Free Coin Qty",
+    "free_coin_cp": "Free Coin Value", "actual_sp": "Actual SP", "net_margin": "Final Margin (SP - CP)",
+    "net_margin_pct": "Final Margin %", "material_type": "Material Type", "slab_status": "Slab Status",
     "making_discount_pct": "Making Discount %", "making_discount_amount": "Making Discount Amount",
     "net_making_amount": "Net Making Amount",
     "diamond_disc_pct": "Diamond Disc%", "diamond_discount_amount": "Diamond Discount Amount",
     "net_diamond_amount": "Net Diamond Amount",
     "after_discount": "After Discount", "gst": "GST", "final_after_gst_overall": "Final After GST Overall",
-    "total_diamond_cp": "Total Diamond CP", "cp_pr_gm_making": "CP. pr gm making",
-    "total_cp_cost": "Total CP Cost", "margin_pct": "Margin %",
+    "total_diamond_cp": "Total Diamond CP", "labour_charge": "Labour Charge", "cp_pr_gm_making": "CP. pr gm making",
+    "total_cp_cost": "Total CP Cost", "margin_pct": "Margin 2% with discount",
     "cash_back_pct": "Cash Back", "final_amount_post_discount": "Final Amount Post Discount",
-    "additional_disc": "Additional Disc", "margin2_pct": "Margin2",
+    "additional_disc": "Addition discount", "margin2_pct": "Margin2",
     "image_url": "Image",
 }
 GROUP_PRIORITY = {"Gold": 1, "Diamond": 2}  # else 3 ("Other")
@@ -1094,7 +1258,7 @@ def _variant_items_detail(codes, mc_case_sql, dp_case_sql, g2d_params):
     sql = f"""
         WITH items_dedup AS (
           SELECT item_code, item_name, sku, weight, net_weight, diamond_weight, purity,
-                 price, compare_price, is_publish, creation_date,
+                 price, compare_price, is_publish, creation_date, item_attribute_id,
                  {_VARIANT_G2D_EXPR} AS g2d,
                  {mc_case_sql},
                  {dp_case_sql},
@@ -1104,7 +1268,10 @@ def _variant_items_detail(codes, mc_case_sql, dp_case_sql, g2d_params):
           FROM `{G2D_TABLE}`
           {where_clause}
         )
-        SELECT * FROM items_dedup WHERE rn = 1
+        SELECT d.*, ca.item_group_name AS labour_group, ca.type_name AS labour_type
+        FROM items_dedup d
+        LEFT JOIN `{ITEM_ATTRIBUTES_TABLE}` ca ON ca.item_attribute_id = d.item_attribute_id
+        WHERE d.rn = 1
     """
     job = bq.query(sql, job_config=bigquery.QueryJobConfig(query_parameters=params))
     out = {}
@@ -1119,7 +1286,203 @@ def _variant_items_detail(codes, mc_case_sql, dp_case_sql, g2d_params):
     return out
 
 
+
+# ══════════════════════════════════════════════════════════════════════
+#  Slab-based pricing (2026-10-08) -- the Slab tab's Excel table
+#  (gold_rates.slab_excel) applied inside _build_variant_row, so every tab
+#  built on it (Ornaverse Variant / Product Default / Shopify / Inventory /
+#  Margin) uses it.
+#   Match: Category (= ERP item type, e.g. Rings) AND Material Type (= ERP
+#   item group, e.g. Diamond Jewellery) -- case/space-insensitive exact --
+#   AND the product's G2D inside the row's G2D range (both ends inclusive).
+#   Making Discount / Diamond Discount / Making Charges: the slab value when
+#   present, else the product keeps its existing value. Blank, "" and "—"
+#   mean "no value", never 0. Discounts written as fractions (0.4) are read
+#   as 40%; values above 1 are taken as already-percent.
+#   Several rows may share Category+Material+G2D (one per Price Range / coin
+#   tier) -- their discount/making values must agree, else "Error".
+#   Free Gold Coin: among those rows, the one whose Price Range contains the
+#   NEW Final After GST; its Free value is the coin SKU, optionally with a
+#   quantity ("2 x LJ-GC0002-916YGPG", "LJ-GC0002-916YGPG x2"; plain = 1).
+#   Two Price Ranges containing the price -> "Error", coin left blank.
+#   Net Margin = Final After GST - Total CP Cost - coin CP x qty, where the
+#   coin's CP is its own Total CP Cost from the published Variant snapshot.
+# ══════════════════════════════════════════════════════════════════════
+import re as _re
+
+_SLAB_BLANKS = {"", "-", "—", "–", "na", "n/a", "none", "null", "nil"}
+
+
+def _slab_num(v):
+    if v is None:
+        return None
+    t = str(v).strip().replace(",", "").replace("₹", "").replace("%", "")
+    if t.lower() in _SLAB_BLANKS:
+        return None
+    try:
+        return float(t)
+    except ValueError:
+        return None
+
+
+def _slab_pct(v):
+    x = _slab_num(v)
+    if x is None:
+        return None
+    return x * 100.0 if abs(x) <= 1 else x
+
+
+def _slab_range(v):
+    """'0.05 to 0.099' / '0.05-0.099' / '1 and above' / 'above 300000' / '>= 2' / '0.07' -> (lo, hi)."""
+    if v is None:
+        return None
+    t = str(v).strip().lower().replace(",", "").replace("₹", "")
+    if t in _SLAB_BLANKS:
+        return None
+    nums = [float(x) for x in _re.findall(r"-?\d+(?:\.\d+)?", t.replace(" - ", " to "))]
+    if not nums:
+        return None
+    if _re.search(r"above|\+|>|more|plus|onwards", t) and len(nums) == 1:
+        return (nums[0], float("inf"))
+    if _re.search(r"below|under|<|upto|up to", t) and len(nums) == 1:
+        return (float("-inf"), nums[0])
+    if len(nums) >= 2:
+        lo, hi = nums[0], nums[1]
+        return (min(lo, hi), max(lo, hi))
+    return (nums[0], nums[0])
+
+
+def _slab_free(v):
+    """'LJ-GC0002-916YGPG' -> (sku, 1); '2 x SKU' / 'SKU x 2' / 'SKU * 2' -> (sku, 2)."""
+    if v is None:
+        return None, 0
+    t = str(v).strip()
+    if t.lower() in _SLAB_BLANKS:
+        return None, 0
+    m = _re.match(r"^(\d+)\s*[x×*]\s*(\S+)$", t, _re.I) or None
+    if m:
+        return m.group(2), int(m.group(1))
+    m = _re.match(r"^(\S+)\s*[x×*]\s*(\d+)$", t, _re.I)
+    if m:
+        return m.group(1), int(m.group(2))
+    return t, 1
+
+
+_SLAB_CACHE = {"ts": 0.0, "data": None}
+
+
+def fetch_slab_rules():
+    """Parsed slab rows, cached like the other small configs."""
+    now = time.time()
+    if _SLAB_CACHE["data"] is not None and (now - _SLAB_CACHE["ts"]) < _SMALL_CONFIG_TTL_SEC:
+        return _SLAB_CACHE["data"]
+    rules = []
+    try:
+        for r in slab_excel_list()["rows"]:
+            # Blank Category / Material Type / G2D = no restriction on that field
+            # (the row applies to every value of it); see slab_match.
+            cat = None if str(r.get("category") or "").strip().lower() in _SLAB_BLANKS else str(r.get("category")).strip().lower()
+            mat = None if str(r.get("material_type") or "").strip().lower() in _SLAB_BLANKS else str(r.get("material_type")).strip().lower()
+            g = _slab_range(r.get("g2d"))
+            sku, qty = _slab_free(r.get("free"))
+            rules.append({
+                "cat": cat, "mat": mat, "g2d": g,
+                "score": (cat is not None) + (mat is not None) + (g is not None),
+                "making_disc": _slab_pct(r.get("making_discount")),
+                "diamond_disc": _slab_pct(r.get("diamond_discount")),
+                "making_charge": _slab_num(r.get("making_charges")),
+                "price": _slab_range(r.get("price_range")), "coin": sku, "coin_qty": qty,
+            })
+    except Exception as e:
+        print(f"[slab] couldn't read slab table: {e}")
+        rules = _SLAB_CACHE["data"] or []
+    _SLAB_CACHE["data"] = rules
+    _SLAB_CACHE["ts"] = now
+    return rules
+
+
+_COIN_CP_CACHE = {"ts": 0.0, "data": {}}
+
+
+# Free gold coin benefit = a FIXED amount per coin (user, 2026-10-10), not the
+# coin's gold value: 1 coin = Rs 1,600, 2 = 3,200, 3 = 4,800 ...
+FREE_COIN_FIXED_VALUE = float(os.environ.get("FREE_COIN_FIXED_VALUE", "1600"))
+
+
+def fetch_coin_value(sku):
+    """Value of ONE free coin -- the fixed FREE_COIN_FIXED_VALUE for every coin SKU."""
+    return FREE_COIN_FIXED_VALUE if sku else None
+
+
+def slab_match(category, material, g2d):
+    """Resolve the slab for one product.
+    A row matches when every FILLED key matches: Category (exact, case/space-
+    insensitive), Material Type (same), G2D inside its range (inclusive); a blank
+    key matches anything. Each value (Making Disc / Diamond Disc / Making Charges)
+    comes from the MOST SPECIFIC matching row that has it filled (most filled
+    keys, then narrowest G2D range); blank everywhere -> keep the existing value.
+    Two equally specific rows giving different values -> error, never a silent
+    pick. Returns (resolved, coin_rows, matched, error)."""
+    c = str(category or "").strip().lower()
+    m = str(material or "").strip().lower()
+    def ok(r):
+        if r["cat"] is not None and r["cat"] != c: return False
+        if r["mat"] is not None and r["mat"] != m: return False
+        if r["g2d"] is not None and (g2d is None or not (r["g2d"][0] <= g2d <= r["g2d"][1])): return False
+        return True
+    hits = [r for r in fetch_slab_rules() if ok(r)]
+    if not hits:
+        return {}, [], False, None
+    def rank(r):  # more filled keys first, then the narrower G2D range
+        width = (r["g2d"][1] - r["g2d"][0]) if r["g2d"] is not None else float("inf")
+        return (-r["score"], width)
+    resolved, errors = {}, []
+    for f in ("making_disc", "diamond_disc", "making_charge"):
+        cands = sorted([h for h in hits if h[f] is not None], key=rank)
+        if not cands:
+            continue
+        top = [h for h in cands if rank(h) == rank(cands[0])]
+        vals = {h[f] for h in top}
+        if len(vals) > 1:
+            errors.append(f)
+        else:
+            resolved[f] = cands[0][f]
+    coin_rows = [h for h in hits if h["price"] and h["coin"]]
+    if coin_rows:
+        best = min(rank(h) for h in coin_rows)
+        coin_rows = [h for h in coin_rows if rank(h) == best]
+    err = (f"Error: equally specific slab rows disagree on {', '.join(errors)}") if errors else None
+    return resolved, coin_rows, True, err
+
+
+def _free_coin_for(slab_coin_rows, amount_ex_gst):
+    """Free gold coin an ex-GST amount earns under the slab's coin rows (steps 2-3
+    of the Free Gold Coin spec in _build_variant_row) -> (coin, qty, value, error)."""
+    free_coin, free_coin_qty, free_coin_value, coin_err = None, 0, None, None
+    if slab_coin_rows:
+        tiers = [h for h in slab_coin_rows
+                 if amount_ex_gst >= h["price"][0] and (h["price"][1] == float("inf") or amount_ex_gst <= h["price"][1])]
+        if tiers:
+            top = max(h["price"][0] for h in tiers)
+            best = [h for h in tiers if h["price"][0] == top]
+            if len({(h["coin"], h["coin_qty"]) for h in best}) > 1:
+                coin_err = "Error: different free coins for the same Price Range"
+            else:
+                h = best[0]
+                steps = int(amount_ex_gst // h["price"][0]) if (h["price"][1] == float("inf") and h["price"][0] > 0) else 1
+                free_coin, free_coin_qty = h["coin"], max(1, steps) * (h["coin_qty"] or 1)
+                unit = fetch_coin_value(free_coin)
+                if unit is None:
+                    coin_err = f"Error: no gold value for {free_coin}"
+                else:
+                    free_coin_value = round(unit * free_coin_qty, 2)
+    return free_coin, free_coin_qty, free_coin_value, coin_err
+
+
 GST_RATE = 0.03  # flat 3%, per spec
+# Finished item's own attribute (item group "Diamond Jewellery" + type "Rings"
+# ...) -- the Labour Rate Slab's key.
+ITEM_ATTRIBUTES_TABLE = os.environ.get("ITEM_ATTRIBUTES_TABLE", "lucirajewelry-prod.ornaverse_erp_master.common_attributes")
 
 
 def _build_variant_row(code, cls_map, item_by_code, price_map, md_map, diamond_discounts,
@@ -1143,16 +1506,51 @@ def _build_variant_row(code, cls_map, item_by_code, price_map, md_map, diamond_d
     making_discount_pct = item.get("discount_pct") or 0.0
     md = md_map.get(code, {})
 
+    # -- Slab override (see slab_match): only filled values replace the existing ones --
+    making_charge_per_g = item.get("making_charge_per_g") or 0.0
+    slab_vals, slab_coin_rows, slab_matched, slab_err = slab_match(
+        item.get("labour_type"), item.get("labour_group"), item.get("g2d"))
+    kept = []
+    if not slab_matched:
+        slab_status = "No slab match"
+    else:
+        # values the slab can't settle (error) also keep the existing value
+        if "making_disc" in slab_vals: making_discount_pct = slab_vals["making_disc"]
+        else: kept.append("making disc")
+        if "diamond_disc" in slab_vals: diamond_disc_pct = slab_vals["diamond_disc"]
+        else: kept.append("diamond disc")
+        if "making_charge" in slab_vals: making_charge_per_g = slab_vals["making_charge"]
+        else: kept.append("making charges")
+        slab_status = "Slab applied" + (f" (kept existing: {', '.join(kept)})" if kept else "")
+        if slab_err:
+            slab_status = f"{slab_status}; {slab_err}"
+
+    # Gold coins (LJ-GC...): no making / diamond discount, fixed Making Charge /g
+    # (user, 2026-10-23) -- overrides both the G2D band and the slab.
+    if _is_gold_coin(code):
+        making_discount_pct = 0.0
+        diamond_disc_pct = 0.0
+        making_charge_per_g = GOLD_COIN_MAKING_CHARGE_PER_G
+        slab_status = "Gold coin: no discount, fixed making"
+
     # -- Pricing waterfall (full precision internally; rounded only when returned) --
     metal_amount = md.get("metal_amount", 0.0) or 0.0
     diamond_amount = md.get("diamond_amount", 0.0) or 0.0
+    # Other BOM amount (colour stone / CZ / accessories, user 2026-10-30) is part of
+    # the price now; no making or diamond discount applies to it.
+    other_amount = md.get("gemstone_amount", 0.0) or 0.0
     net_weight = item.get("net_weight") or 0.0
-    making_charge_per_g = item.get("making_charge_per_g") or 0.0
     making_amount = net_weight * making_charge_per_g
+    if _is_gold_coin(code) and net_weight > 0:
+        # Gold coin (user, 2026-10-23): 1 g and below -> fixed Rs 500; above 1 g ->
+        # exact weight x Rs 500 (1.2 g -> 600, 1.3 g -> 650, 2.3 g -> 1150).
+        making_amount = max(1.0, net_weight) * making_charge_per_g
 
-    overall = metal_amount + diamond_amount + making_amount
+    overall = metal_amount + diamond_amount + making_amount + other_amount
     before_gst_overall = overall
-    before_gst_value = before_gst_overall * GST_RATE
+    # Gold coin making is NOT taxed (user, 2026-10-23): GST only on the rest.
+    coin_untaxed = making_amount if _is_gold_coin(code) else 0.0
+    before_gst_value = (before_gst_overall - coin_untaxed) * GST_RATE
     original_after_gst_overall = before_gst_overall + before_gst_value
 
     making_discount_amount = making_amount * (making_discount_pct / 100.0)
@@ -1160,24 +1558,35 @@ def _build_variant_row(code, cls_map, item_by_code, price_map, md_map, diamond_d
     diamond_discount_amount = diamond_amount * (diamond_disc_pct / 100.0)
     net_diamond_amount = diamond_amount - diamond_discount_amount
 
-    after_discount = metal_amount + net_making_amount + net_diamond_amount
-    gst = after_discount * GST_RATE
+    after_discount = metal_amount + net_making_amount + net_diamond_amount + other_amount
+    gst = (after_discount - (net_making_amount if _is_gold_coin(code) else 0.0)) * GST_RATE
     final_after_gst_overall = after_discount + gst
     final_after_gst_overall_rounded = math.ceil(final_after_gst_overall)  # rounded UP to the nearest whole rupee
-    cash_back_pct = _cash_back_pct(product_composition, cls.get("has_diamond"), final_after_gst_overall_rounded,
-                                    cash_back_rates)
+    # Addition discount / Cash Back REMOVED from pricing (user, 2026-10-10): nothing is
+    # taken off Final After GST any more, so Final Amount Post Discount = Final After GST.
+    cash_back_pct = 0.0
 
     # -- CP. pr gm making / Total CP Cost / Margin % --
     # <= 1.5 GM: a fixed CP_PR_GM_MAKING_FIXED_BELOW_CUTOFF.
-    # >  1.5 GM: Net Weight * the Labour table's "for_all" rate (Slab tab,
-    #            editable, never hard-coded here).
-    labour_rates = labour_rates or {}
+    # >  1.5 GM: Net Weight * Labour Charge from the ERP Labour Rate Slab
+    #            (labour_rates here = fetch_labour_rate_slab(); see LABOUR_*).
     total_diamond_cp = (diamond_cp_map or {}).get(code, 0.0)
-    if net_weight <= LABOUR_NET_WEIGHT_CUTOFF:
+    # Other BOM CP (colour stone / CZ at the stone rate + accessories at their
+    # purchase rate) -- its own column, added into Total CP Cost here.
+    gemstone_cp = md.get("gemstone_cp", 0.0) or 0.0
+    labour_charge = labour_charge_for(labour_rates, item.get("labour_group"), item.get("labour_type"),
+                                      net_weight, item.get("g2d"))
+    if _is_gold_coin(code):
+        # Gold coin (user, 2026-10-23): <= 1 g -> Rs 200 fixed; above that, weight
+        # rounded UP to the next 0.5 g x Rs 200 (1.3/1.5 -> 300, 2 -> 400, 2.3 -> 500).
+        cp_pr_gm_making = max(1.0, math.ceil(net_weight * 2 - 1e-9) / 2.0) * GOLD_COIN_CP_MAKING_PER_G
+    elif net_weight <= LABOUR_NET_WEIGHT_CUTOFF:
         cp_pr_gm_making = CP_PR_GM_MAKING_FIXED_BELOW_CUTOFF
     else:
-        cp_pr_gm_making = net_weight * labour_rates.get("for_all", 0.0)
-    total_cp_cost = total_diamond_cp + cp_pr_gm_making + metal_amount
+        cp_pr_gm_making = net_weight * (labour_charge or 0.0)
+    # CP is GST-inclusive (user, 2026-10-23): the components are ex-GST, so add 3%
+    # to compare like-for-like with the GST-inclusive selling price.
+    total_cp_cost = (total_diamond_cp + gemstone_cp + cp_pr_gm_making + metal_amount) * (1.0 + GST_RATE)
     margin_pct = (
         (final_after_gst_overall_rounded - total_cp_cost) / final_after_gst_overall_rounded * 100.0
         if final_after_gst_overall_rounded else None
@@ -1191,8 +1600,28 @@ def _build_variant_row(code, cls_map, item_by_code, price_map, md_map, diamond_d
     # ((Final After GST Overall - Additional Disc) - Total CP Cost)
     # / (Final After GST Overall - Additional Disc) -- Total CP Cost itself
     # is unchanged, only the effective selling price shrinks.
-    additional_disc = final_after_gst_overall_rounded * (cash_back_pct / 100.0)
+    additional_disc = 0.0  # Addition discount removed (see cash_back_pct above)
     net_after_additional_disc = final_after_gst_overall_rounded - additional_disc
+
+    # -- Free Gold Coin / Actual SP / Final Margin (user's spec, 2026-10-09) --
+    # 1. Amount ex GST = Final Amount Post Discount / 1.03 (slab discounts and
+    #    making are already in it -- applied above).
+    # 2. Free coin: the slab Price Range the ex-GST amount meets or exceeds.
+    #    "Above X" ranges step up: >= X -> 1 coin, >= 2X -> 2, >= 3X -> 3 ...
+    #    (x any quantity written in Free, e.g. "2 x SKU"); a closed range
+    #    ("0 to 100000") gives the Free quantity once. Highest qualifying
+    #    tier wins; two different coins at the same tier -> error.
+    # 3. Coin value = coins x the fixed Rs 1,600 per coin (FREE_COIN_FIXED_VALUE).
+    # 4. Actual SP = amount ex GST - coin value;  Final Margin % = (SP - CP) / SP.
+    amount_ex_gst = net_after_additional_disc / (1.0 + GST_RATE)
+    free_coin, free_coin_qty, free_coin_value, coin_err = _free_coin_for(slab_coin_rows, amount_ex_gst)
+    if coin_err:
+        slab_status = f"{slab_status}; {coin_err}"
+    # Actual SP = Final After GST Overall - Free Coin Value (user, 2026-10-23); the
+    # ex-GST amount above is still what picks the free-coin tier.
+    actual_sp = net_after_additional_disc - (free_coin_value or 0.0)
+    net_margin = actual_sp - total_cp_cost
+    net_margin_pct = (net_margin / actual_sp * 100.0) if actual_sp else None
     margin2_pct = (
         (net_after_additional_disc - total_cp_cost) / net_after_additional_disc * 100.0
         if net_after_additional_disc else None
@@ -1203,8 +1632,11 @@ def _build_variant_row(code, cls_map, item_by_code, price_map, md_map, diamond_d
         "product_composition": product_composition,
         "item_name": item.get("item_name") or cls.get("item_name_pp"),
         "item_group": cls["item_group"],
+        # Category = the finished item's ERP type (Rings, Pendants, ...).
+        "category": item.get("labour_type"),
+        "main_shape": build_variant_shape_map().get(code),
         "metal_amount": round(metal_amount, 2), "diamond_amount": round(diamond_amount, 2),
-        "net_weight": net_weight, "making_charge_per_g": item.get("making_charge_per_g"),
+        "net_weight": net_weight, "making_charge_per_g": making_charge_per_g,
         "making_amount": round(making_amount, 2),
         "overall": round(overall, 2), "before_gst_overall": round(before_gst_overall, 2),
         "before_gst_value": round(before_gst_value, 2),
@@ -1226,6 +1658,11 @@ def _build_variant_row(code, cls_map, item_by_code, price_map, md_map, diamond_d
         "is_publish": item.get("is_publish"), "creation_date": item.get("creation_date"),
         "overall_selling_price": price_map.get(code),
         "total_diamond_cp": total_diamond_cp,
+        "diamond_pieces": md.get("diamond_pieces"),
+        "gemstone_type": md.get("gemstone_type"), "gemstone_pieces": md.get("gemstone_pieces"),
+        "gemstone_weight": md.get("gemstone_weight"), "gemstone_amount": md.get("gemstone_amount"),
+        "gemstone_cp": round(gemstone_cp, 2),
+        "labour_charge": labour_charge,
         "cp_pr_gm_making": round(cp_pr_gm_making, 2),
         "total_cp_cost": round(total_cp_cost, 2),
         "margin_pct": round(margin_pct, 2) if margin_pct is not None else None,
@@ -1239,6 +1676,18 @@ def _build_variant_row(code, cls_map, item_by_code, price_map, md_map, diamond_d
         "final_amount_post_discount": round(net_after_additional_disc, 2),
         "additional_disc": round(additional_disc, 2),
         "margin2_pct": round(margin2_pct, 2) if margin2_pct is not None else None,
+        # Total Discount = Making Discount Amount + Diamond Discount Amount;
+        # Margin 1% = margin on With GST SP (before any discount), same CP.
+        "total_discount": round(making_discount_amount + diamond_discount_amount, 2),
+        "material_type": item.get("labour_group"),
+        "slab_status": slab_status,
+        "amount_ex_gst": round(amount_ex_gst, 2),
+        "free_gold_coin": free_coin, "free_coin_qty": free_coin_qty or None, "free_coin_cp": free_coin_value,
+        "actual_sp": round(actual_sp, 2),
+        "net_margin": round(net_margin, 2),
+        "net_margin_pct": round(net_margin_pct, 2) if net_margin_pct is not None else None,
+        "margin1_pct": (round((original_after_gst_overall - total_cp_cost) / original_after_gst_overall * 100.0, 2)
+                        if original_after_gst_overall else None),
         "status": shop.get("status"),
         "image_url": shop.get("image_url"),
     }
@@ -1320,7 +1769,7 @@ def _variant_search_and_aggregate(q, gold_rates, g2d_bands):
           SELECT item_code, item_group_name, shape_name, quality_name, stone_color_name,
                  pieces, net_weight,
                  ROW_NUMBER() OVER () AS _prowid,
-                 CASE WHEN item_group_name = 'Diamond' AND pieces IS NOT NULL AND pieces > 0
+                 CASE WHEN item_group_name IN ('Diamond', 'Color Stone', 'Cubic Zirconia') AND pieces IS NOT NULL AND pieces > 0
                       THEN net_weight / pieces END AS carat_weight
           FROM filtered_pp
         ),
@@ -1341,7 +1790,9 @@ def _variant_search_and_aggregate(q, gold_rates, g2d_bands):
           SELECT * EXCEPT(_rate_rn) FROM priced WHERE _rate_rn = 1
         ),
         diamond_cp_agg AS (
-          SELECT item_code, SUM(IFNULL(carat_weight * purchase_rate * pieces, 0)) AS total_diamond_cp
+          SELECT item_code,
+            SUM(IF(item_group_name = 'Diamond', IFNULL(carat_weight * purchase_rate * pieces, 0), 0)) AS total_diamond_cp,
+            SUM(IF(item_group_name IN ({_GEM_IN_SQL}), IFNULL(carat_weight * purchase_rate * pieces, 0), 0)) AS gemstone_cp
           FROM priced_final
           GROUP BY item_code
         ),
@@ -1349,13 +1800,14 @@ def _variant_search_and_aggregate(q, gold_rates, g2d_bands):
           SELECT item_code,
             SUM(IF(item_group_name IN ({metal_list_sql}), IFNULL(ROUND({selling_case_sql}, 2), 0), 0)) AS metal_amount,
             SUM(IF(item_group_name = 'Diamond', IFNULL(ROUND({selling_case_sql}, 2), 0), 0)) AS diamond_amount,
-            SUM(ROUND({selling_case_sql}, 2)) AS overall_selling_price
+            SUM(ROUND({selling_case_sql}, 2)) AS overall_selling_price,
+            {_stone_extras_sql(selling_case_sql)}
           FROM filtered_pp
           GROUP BY item_code
         ),
         items_dedup AS (
           SELECT item_code, item_name, sku, weight, net_weight, diamond_weight, purity,
-                 price, compare_price, is_publish, creation_date,
+                 price, compare_price, is_publish, creation_date, item_attribute_id,
                  {_VARIANT_G2D_EXPR} AS g2d,
                  {mc_case_sql},
                  {dp_case_sql},
@@ -1369,14 +1821,18 @@ def _variant_search_and_aggregate(q, gold_rates, g2d_bands):
           cls.item_code, cls.item_name_pp, cls.item_group, cls.is_consignment, cls.any_diamond_type,
           cls.has_diamond, cls.has_gold, cls.has_gems,
           selling_agg.metal_amount, selling_agg.diamond_amount, selling_agg.overall_selling_price,
-          diamond_cp_agg.total_diamond_cp,
+          selling_agg.diamond_pieces, selling_agg.gemstone_type, selling_agg.gemstone_pieces,
+          selling_agg.gemstone_weight, selling_agg.gemstone_amount,
+          diamond_cp_agg.total_diamond_cp, diamond_cp_agg.gemstone_cp,
           id.item_name, id.sku, id.weight, id.net_weight, id.diamond_weight, id.purity,
           id.price, id.compare_price, id.is_publish, id.creation_date,
-          id.g2d, id.making_charge_per_g, id.discount_pct
+          id.g2d, id.making_charge_per_g, id.discount_pct,
+          ca.item_group_name AS labour_group, ca.type_name AS labour_type
         FROM cls
         LEFT JOIN selling_agg USING(item_code)
         LEFT JOIN diamond_cp_agg USING(item_code)
         LEFT JOIN items_dedup id ON id.item_code = cls.item_code AND id.rn = 1
+        LEFT JOIN `{ITEM_ATTRIBUTES_TABLE}` ca ON ca.item_attribute_id = id.item_attribute_id
     """
     params = [bigquery.ScalarQueryParameter("pat", "STRING", pattern)] + selling_params + g2d_params
     job = bq.query(sql, job_config=bigquery.QueryJobConfig(query_parameters=params))
@@ -1398,7 +1854,10 @@ def _variant_search_and_aggregate(q, gold_rates, g2d_bands):
         md_map[item_code] = {
             "metal_amount": round(_f(r["metal_amount"]), 2) if r["metal_amount"] is not None else 0.0,
             "diamond_amount": round(_f(r["diamond_amount"]), 2) if r["diamond_amount"] is not None else 0.0,
+            **(_stone_extras(r) if r["diamond_pieces"] is not None else {}),
+            "gemstone_cp": round(_f(r["gemstone_cp"]), 2) if r["gemstone_cp"] else 0.0,
         }
+        md_map[item_code] = _with_accessories({item_code: md_map[item_code]})[item_code]
         diamond_cp_map[item_code] = (
             round(_f(r["total_diamond_cp"]), 2) if r["total_diamond_cp"] is not None else 0.0
         )
@@ -1411,6 +1870,7 @@ def _variant_search_and_aggregate(q, gold_rates, g2d_bands):
             "creation_date": creation_date.isoformat() if hasattr(creation_date, "isoformat") else creation_date,
             "g2d": _f(r["g2d"]), "making_charge_per_g": _f(r["making_charge_per_g"]),
             "discount_pct": _f(r["discount_pct"]),
+            "labour_group": r["labour_group"], "labour_type": r["labour_type"],
         }
     capped = len(cls_map) > VARIANT_SEARCH_MAX_CODES
     return cls_map, item_by_code, price_map, md_map, diamond_cp_map, capped
@@ -1443,7 +1903,7 @@ def query_variant_targeted(q, page, page_size):
             f_gold = ex.submit(todays_gold_rates)
             f_g2d = ex.submit(fetch_g2d_bands)
             f_slab = ex.submit(fetch_g2d_diamond_discounts)
-            f_labour = ex.submit(fetch_labour_rates)
+            f_labour = ex.submit(fetch_labour_rate_slab)
             gold_rates, g2d_bands = f_gold.result(), f_g2d.result()
             diamond_discounts, labour_rates = f_slab.result(), f_labour.result()
         cls_map, item_by_code, price_map, md_map, diamond_cp_map, capped = _variant_search_and_aggregate(
@@ -1503,7 +1963,8 @@ def query_variant_page(q, page, page_size):
     md_map = build_variant_metal_diamond_map()
     diamond_discounts = fetch_g2d_diamond_discounts()
     diamond_cp_map = build_variant_diamond_cp_map()
-    labour_rates = fetch_labour_rates()
+    md_map = _with_gemstone_cp(md_map)
+    labour_rates = fetch_labour_rate_slab()
     shopify_map = build_variant_shopify_map()
     cash_back_rates = fetch_cash_back_rates()
 
@@ -1526,7 +1987,8 @@ def _variant_build_inputs(codes):
     md_map = build_variant_metal_diamond_map()
     diamond_discounts = fetch_g2d_diamond_discounts()
     diamond_cp_map = build_variant_diamond_cp_map()
-    labour_rates = fetch_labour_rates()
+    md_map = _with_gemstone_cp(md_map)
+    labour_rates = fetch_labour_rate_slab()
     shopify_map = build_variant_shopify_map()
     cash_back_rates = fetch_cash_back_rates()
     return (item_by_code, price_map, md_map, diamond_discounts, diamond_cp_map, labour_rates, shopify_map,
@@ -1576,7 +2038,7 @@ def stream_variant_csv_rows(q):
 CORS = {
     "Access-Control-Allow-Origin":  "*",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, X-Edit-Token",
     "Content-Type":                 "application/json",
     "Cache-Control":                "no-store",
 }
@@ -1631,6 +2093,54 @@ G2D_TABLE = os.environ.get("G2D_TABLE", "lucirajewelry-prod.ds_imputed_reporting
 # match -- exactly one rate (or NULL) per original row.
 STONE_RATES_TABLE = os.environ.get("STONE_RATES_TABLE", "lucirajewelry-prod.Lucira_Prod.stone_rates")
 COMMON_ATTRIBUTES_TABLE = os.environ.get("COMMON_ATTRIBUTES_TABLE", "lucirajewelry-prod.ornaverse_erp_administration.common_attributes")
+# Stone Rate Slab -- view gold_rates.stone_rate_slab (sql/stone_rate_slab_view.sql):
+# stone_rates LEFT JOIN ornaverse_erp_master.common_attributes, only rates valid
+# today, and only the NEWEST from_date per stone + weight slab (older duplicate
+# entries for the same slab removed). Display-only for now: the Slab tab shows
+# it via GET /stone-rate-slab. Purchase Rate matching (_stone_rate_rows_cte)
+# still reads stone_rates directly -- switching it to this view is pending
+# the user's decision.
+STONE_RATE_SLAB_VIEW = os.environ.get("STONE_RATE_SLAB_VIEW", "lucirajewelry-prod.gold_rates.stone_rate_slab")
+
+
+# Labour Rate Slab -- view gold_rates.labour_rate_slab (sql/labour_rate_slab_view.sql):
+# labour_rates LEFT JOIN ornaverse_erp_master.common_attributes. Display-only
+# (Slab tab, GET /labour-rate-slab); purchase_rate = labour charge.
+LABOUR_RATE_SLAB_VIEW = os.environ.get("LABOUR_RATE_SLAB_VIEW", "lucirajewelry-prod.gold_rates.labour_rate_slab")
+
+
+def labour_rate_slab_list():
+    bq = _client()
+    rows = bq.query(
+        f"SELECT item_group_name, type_name, from_weight, to_weight, purchase_rate "
+        f"FROM `{LABOUR_RATE_SLAB_VIEW}` ORDER BY item_group_name, type_name, from_weight, to_weight"
+    ).result()
+    num = lambda v: float(v) if v is not None else None
+    return [{
+        "item_group_name": r["item_group_name"], "type_name": r["type_name"],
+        "from_weight": num(r["from_weight"]), "to_weight": num(r["to_weight"]),
+        "purchase_rate": num(r["purchase_rate"]),
+    } for r in rows]
+
+
+def stone_rate_slab_list():
+    bq = _client()
+    rows = bq.query(
+        f"SELECT item_group_name, attribute, type_code, type_name, shape_code, shape_name, "
+        f"from_weight, to_weight, DATE(from_date) AS from_date, DATE(to_date) AS to_date, "
+        f"purchase_rate, sales_rate FROM `{STONE_RATE_SLAB_VIEW}` "
+        f"ORDER BY item_group_name, type_code, attribute, from_weight, to_weight"
+    ).result()
+    num = lambda v: float(v) if v is not None else None
+    return [{
+        "item_group_name": r["item_group_name"], "attribute": r["attribute"],
+        "type_code": r["type_code"], "type_name": r["type_name"],
+        "shape_code": r["shape_code"], "shape_name": r["shape_name"],
+        "from_weight": num(r["from_weight"]), "to_weight": num(r["to_weight"]),
+        "from_date": r["from_date"].isoformat() if r["from_date"] else None,
+        "to_date": r["to_date"].isoformat() if r["to_date"] else None,
+        "purchase_rate": num(r["purchase_rate"]), "sales_rate": num(r["sales_rate"]),
+    } for r in rows]
 
 
 def _stone_rate_rows_cte():
@@ -1641,6 +2151,7 @@ def _stone_rate_rows_cte():
             LOWER(TRIM(b.shape_name)) AS sh,
             LOWER(TRIM(b.quality_name)) AS ql,
             LOWER(TRIM(b.stone_color_name)) AS sc,
+            b.attribute,
             a.from_weight, a.to_weight, a.purchase_rate
           FROM `{STONE_RATES_TABLE}` a
           LEFT JOIN `{COMMON_ATTRIBUTES_TABLE}` b ON a.item_attribute_id = b.item_attribute_id
@@ -1705,6 +2216,7 @@ def _making_charge_case(rates):
     ]
     case_sql = r"""
         CASE
+          WHEN STARTS_WITH(UPPER(item_code), 'LJ-GC') THEN 500
           WHEN REGEXP_CONTAINS(item_code, r'PG-[0-9.]+$') THEN @mc_pg
           WHEN g2d_ratio IS NULL OR g2d_ratio <= 0 THEN NULL
           WHEN g2d_ratio <= 0.049 THEN @mc_sul
@@ -1732,7 +2244,7 @@ def _g2d_ranked_cte(where_bare, making_case_sql, discount_case_sql="NULL AS disc
         {_stone_rate_rows_cte()},
         joined AS (
           SELECT {_qualified_cols()}, ROW_NUMBER() OVER () AS _prowid,
-            CASE WHEN p.item_group_name = 'Diamond' AND p.pieces IS NOT NULL AND p.pieces > 0
+            CASE WHEN p.item_group_name IN ('Diamond', 'Color Stone', 'Cubic Zirconia') AND p.pieces IS NOT NULL AND p.pieces > 0
                  THEN p.net_weight / p.pieces END AS carat_weight,
             CASE WHEN g.diamond_weight IS NOT NULL AND g.diamond_weight > 0
                       AND g.g2d_net_weight IS NOT NULL AND g.g2d_net_weight > 0
@@ -1741,7 +2253,7 @@ def _g2d_ranked_cte(where_bare, making_case_sql, discount_case_sql="NULL AS disc
           LEFT JOIN g2d_dedup g ON g.item_code = p.item_code AND g.rn = 1
         ),
         priced AS (
-          SELECT j.*, sr.purchase_rate,
+          SELECT j.*, sr.purchase_rate, sr.attribute,
             ROW_NUMBER() OVER (
               PARTITION BY j._prowid
               ORDER BY (sr.to_weight - sr.from_weight) ASC
@@ -1756,16 +2268,33 @@ def _g2d_ranked_cte(where_bare, making_case_sql, discount_case_sql="NULL AS disc
         priced_final AS (
           SELECT * EXCEPT(_rate_rn) FROM priced WHERE _rate_rn = 1
         ),
+        -- Cost Price / Sale Price: this row's Attribute + Carat Weight looked
+        -- up in the Stone Rate Slab (latest rate only) -- the slab whose
+        -- from_weight..to_weight contains the carat weight; narrowest slab
+        -- wins, one rate per row (never duplicates a row).
+        slab_priced AS (
+          SELECT pf.*, ss.purchase_rate AS cost_price, ss.sales_rate AS sale_price,
+            ROW_NUMBER() OVER (
+              PARTITION BY pf._prowid
+              ORDER BY (ss.to_weight - ss.from_weight) ASC
+            ) AS _slab_rn
+          FROM priced_final pf
+          LEFT JOIN `{STONE_RATE_SLAB_VIEW}` ss
+            ON ss.attribute = pf.attribute
+           AND pf.carat_weight IS NOT NULL
+           AND pf.carat_weight >= ss.from_weight AND pf.carat_weight <= ss.to_weight
+        ),
         ranked AS (
           SELECT *,
             ROW_NUMBER() OVER (
               PARTITION BY item_name
               ORDER BY CASE WHEN raw_g2d_ratio IS NOT NULL THEN 0 ELSE 1 END, item_code
             ) AS variant_rank
-          FROM priced_final
+          FROM slab_priced
+          WHERE _slab_rn = 1
         ),
         with_g2d AS (
-          SELECT {", ".join(f"`{c}`" for c in COLUMNS)}, carat_weight, purchase_rate,
+          SELECT {", ".join(f"`{c}`" for c in COLUMNS)}, attribute, cost_price, sale_price, carat_weight, purchase_rate,
             CASE WHEN carat_weight IS NOT NULL AND purchase_rate IS NOT NULL
                  THEN carat_weight * purchase_rate END AS purchase_amount,
             CASE WHEN carat_weight IS NOT NULL AND purchase_rate IS NOT NULL AND pieces IS NOT NULL
@@ -1925,7 +2454,7 @@ def _validate_snapshot_rows(rows, required_cols, min_rows, unique_col=None, labe
 # the Python dict for other callers but not part of VARIANT_COLUMNS) is
 # silently dropped via ignore_unknown_values, not an error.
 PRODUCT_PRICE_SNAPSHOT_SCHEMA = [
-    ("item_code", "STRING"), ("item_name", "STRING"), ("weight", "FLOAT64"), ("pieces", "INTEGER"),
+    ("item_code", "STRING"), ("item_name", "STRING"), ("attribute", "STRING"), ("cost_price", "FLOAT64"), ("sale_price", "FLOAT64"), ("weight", "FLOAT64"), ("pieces", "INTEGER"),
     ("net_weight", "FLOAT64"), ("purity", "FLOAT64"), ("pure_weight", "FLOAT64"), ("bom_rate", "FLOAT64"),
     ("bom_base_amount", "FLOAT64"), ("center_stone", "INTEGER"), ("item_group_name", "STRING"),
     ("discount_pct", "FLOAT64"), ("diamond_disc_pct", "FLOAT64"),
@@ -1940,7 +2469,7 @@ PRODUCT_PRICE_SNAPSHOT_SCHEMA = [
 ]
 VARIANT_SNAPSHOT_SCHEMA = [
     ("item_code", "STRING"), ("product_composition", "STRING"), ("item_name", "STRING"),
-    ("status", "STRING"), ("item_group", "STRING"),
+    ("status", "STRING"), ("item_group", "STRING"), ("category", "STRING"), ("main_shape", "STRING"),
     ("net_weight", "FLOAT64"), ("weight", "FLOAT64"), ("diamond_weight", "FLOAT64"), ("purity", "FLOAT64"),
     ("g2d", "FLOAT64"), ("g2d_band", "STRING"),
     ("metal_amount", "FLOAT64"), ("diamond_amount", "FLOAT64"), ("overall_selling_price", "FLOAT64"),
@@ -1949,12 +2478,22 @@ VARIANT_SNAPSHOT_SCHEMA = [
     ("making_discount_pct", "FLOAT64"), ("making_discount_amount", "FLOAT64"), ("net_making_amount", "FLOAT64"),
     ("diamond_disc_pct", "FLOAT64"), ("diamond_discount_amount", "FLOAT64"), ("net_diamond_amount", "FLOAT64"),
     ("after_discount", "FLOAT64"), ("gst", "FLOAT64"), ("final_after_gst_overall", "FLOAT64"),
-    ("total_diamond_cp", "FLOAT64"), ("cp_pr_gm_making", "FLOAT64"), ("total_cp_cost", "FLOAT64"),
+    ("total_diamond_cp", "FLOAT64"), ("labour_charge", "FLOAT64"), ("cp_pr_gm_making", "FLOAT64"), ("total_cp_cost", "FLOAT64"),
     ("margin_pct", "FLOAT64"), ("cash_back_pct", "FLOAT64"),
+    ("total_discount", "FLOAT64"), ("margin1_pct", "FLOAT64"),
+    ("free_gold_coin", "STRING"), ("net_margin", "FLOAT64"), ("net_margin_pct", "FLOAT64"), ("free_coin_qty", "INTEGER"),
+    ("free_coin_cp", "FLOAT64"), ("material_type", "STRING"), ("slab_status", "STRING"),
+    ("amount_ex_gst", "FLOAT64"), ("actual_sp", "FLOAT64"),
     ("final_amount_post_discount", "FLOAT64"),
     ("additional_disc", "FLOAT64"), ("margin2_pct", "FLOAT64"), ("image_url", "STRING"),
+    ("diamond_pieces", "FLOAT64"), ("gemstone_type", "STRING"), ("gemstone_pieces", "FLOAT64"),
+    ("gemstone_weight", "FLOAT64"), ("gemstone_amount", "FLOAT64"), ("gemstone_cp", "FLOAT64"),
     ("_snapshot_seq", "INTEGER"),
 ]
+# Columns added 2026-10-29 that the daily-history table doesn't have yet (it
+# would need an ALTER TABLE ... ADD COLUMN first); kept out of the archive.
+_VARIANT_HISTORY_SKIP = {"_snapshot_seq", "diamond_pieces", "gemstone_type", "gemstone_pieces",
+                         "gemstone_weight", "gemstone_amount", "gemstone_cp"}
 
 # ══════════════════════════════════════════════════════════════════════
 #  Variant Level daily history -- ONE growing table (never a per-day
@@ -1968,7 +2507,7 @@ VARIANT_HISTORY_TABLE = f"{SNAPSHOT_DATASET}.variant_level_daily_history"
 VARIANT_HISTORY_STAGING_TABLE = f"{SNAPSHOT_DATASET}.variant_level_daily_history_staging"
 VARIANT_HISTORY_SCHEMA = [
     ("snapshot_date", "DATE"), ("snapshot_timestamp", "TIMESTAMP"),
-] + [f for f in VARIANT_SNAPSHOT_SCHEMA if f[0] != "_snapshot_seq"]
+] + [f for f in VARIANT_SNAPSHOT_SCHEMA if f[0] not in _VARIANT_HISTORY_SKIP]
 
 
 def append_variant_level_history():
@@ -2129,6 +2668,23 @@ def refresh_snapshots(triggered_by="scheduler"):
     except Exception as e:
         status, error_message = "FAILED", str(e)
 
+    # Shopify tab dataset (Variant Level on Shopify weights) -- rebuilt right
+    # after Variant Level so the Shopify tab opens instantly. Separate try:
+    # a failure here is logged and never affects the snapshots above.
+    if status == "SUCCESS":
+        try:
+            shopify_snapshot(force=True)
+        except Exception as e:
+            print(f"[shopify-tab] rebuild after refresh failed: {e}")
+        try:
+            inventory_full_snapshot(force=True)  # Inventory Margin tab, same reason
+        except Exception as e:
+            print(f"[inventory-tab] rebuild after refresh failed: {e}")
+        try:
+            mto_margin_snapshot(force=True)  # MTO Margin tab, same reason
+        except Exception as e:
+            print(f"[mto-tab] rebuild after refresh failed: {e}")
+
     duration_sec = round(time.time() - t0, 2)
     bq = _client()
     bq.insert_rows_json(SNAPSHOT_RUNS_TABLE, [{
@@ -2159,6 +2715,812 @@ def _safe_refresh_snapshots(triggered_by):
         return refresh_snapshots(triggered_by=triggered_by)["status"] == "SUCCESS"
     except Exception:
         return False
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  Daily Check (GET /health-check) -- one tick-box list for the dashboard's
+#  "Daily Check" tab: did today's gold rate land, did the daily refresh run
+#  on it, were rate edits deployed, is every slab loaded, and does every
+#  calculation still hold on the published snapshot. Read-only; every check
+#  re-derives its answer from the live tables / snapshot tables -- nothing
+#  here is cached or self-reported. ok: True = tick, False = problem,
+#  None = nothing to tick today (e.g. no rate edits were deployed).
+# ══════════════════════════════════════════════════════════════════════
+# Slabs editable from the Slab tab, and readable names for what changed.
+HC_EDITABLE_SLABS = ["G2D Making Charges", "Slab Excel Table"]  # Cash Back no longer used (2026-10-10)
+HC_SLAB_NAMES = {"slab_excel": "Slab Excel Table", "g2d": "G2D Making Charges", "cash_back": "Cash Back", "diamond_slab": "Diamond Slab",
+                 "labour": "Labour", "item_group_discounts": "Item Group Discounts"}
+HC_FIELD_NAMES = {"making_charge": "Making Charge", "dis_pct": "Dis%", "diamond_dis_pct": "Diamond Discount %",
+                  "threshold": "Above (₹)", "cash_back_pct": "Cash Back %", "disc_pct": "Disc%",
+                  "amount": "Amount", "discount_pct": "Discount %"}
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  Shopify tab (GET /shopify?full=1[&refresh=1]) -- REBUILT 2026-10-05 per the
+#  user: Variant Level's pricing, re-run on SHOPIFY weights.
+#
+#  1. Shopify table: Lucira_Shopify_product_variant_metafields (a) JOIN
+#     ds_imputed_reporting.items (b) ON a.owner_id = b.external_variant_id,
+#     namespace custom / ornaverse, one value per owner_id + key
+#     (ORDER BY namespace DESC -> ornaverse first, as in the user's query),
+#     pivoted to the user's column list; Item Code must not be blank.
+#       diamond_pieces = diamond_pieces,  else total_number_of_diamonds  (first > 0)
+#       diamond_weight = diamond_weight,  else total_weight_approx_      (first > 0)
+#  2. Every Variant Level column is then computed by the SAME function that
+#     builds Variant Level (_build_variant_row), with only the weights swapped:
+#       Net Weight       -> Shopify metal_weight
+#       Diamond Weight   -> Shopify diamond_weight (rule above)
+#       G2D              -> diamond_weight / metal_weight (same formula)
+#       Making /g, Making Discount %, Diamond Disc%  -> that G2D's band
+#       Metal Amount     -> Shopify metal_weight x today's karat rate
+#                           (non-gold: Variant Level metal amount scaled by weight)
+#       Diamond Amount   -> Shopify diamond_weight x the variant's Variant Level
+#                           diamond rate /ct (Diamond Amount / ERP diamond weight)
+#       Total Diamond CP -> Variant Level diamond CP scaled the same way
+#     Labour (CP. pr gm making), GST, Cash Back, CP, Margin, Margin2: unchanged
+#     formulas, now on these inputs. A missing Shopify weight falls back to the
+#     ERP weight and is flagged in weight_basis.
+# ══════════════════════════════════════════════════════════════════════
+SHOPIFY_METAFIELDS_TABLE = os.environ.get(
+    "SHOPIFY_METAFIELDS_TABLE", "lucirajewelry-prod.Lucira_Prod.Lucira_Shopify_product_variant_metafields")
+SHOPIFY_DW_BLOB = f"{SNAPSHOT_GCS_PREFIX}/shopify_variant_level.json.gz"
+SHOPIFY_KEYS = ["color_stone_pieces", "color_stone_weight",
+                "diamond_1_numbers", "diamond_1_weight", "diamond_2_numbers", "diamond_2_weight",
+                "diamond_3_numbers", "diamond_3_weight", "diamond_4_numbers", "diamond_4_weight",
+                "diamond_pieces", "total_number_of_diamonds", "diamond_weight", "total_weight_approx_",
+                "gemstone_1_numbers", "gemstone_1_weight", "metal_purity", "metal_weight",
+                "stone_pieces", "stone_weight"]
+SHOPIFY_TEXT_KEYS = {"metal_purity"}
+SHOPIFY_OUT_KEYS = ["color_stone_pieces", "color_stone_weight",
+                    "diamond_1_numbers", "diamond_1_weight", "diamond_2_numbers", "diamond_2_weight",
+                    "diamond_3_numbers", "diamond_3_weight", "diamond_4_numbers", "diamond_4_weight",
+                    "diamond_pieces", "diamond_weight", "gemstone_1_numbers", "gemstone_1_weight",
+                    "metal_purity", "metal_weight", "stone_pieces", "stone_weight"]
+
+
+def shopify_weight_rows():
+    bq = _client()
+    keys_sql = ", ".join("'" + k + "'" for k in SHOPIFY_KEYS)
+    cast = lambda k: (f"NULLIF(TRIM({k}), '')" if k in SHOPIFY_TEXT_KEYS
+                      else f"SAFE_CAST(TRIM({k}) AS FLOAT64)")
+    sql = f"""
+        WITH kv AS (
+          SELECT * FROM (
+            SELECT a.owner_id, a.key, a.value_st
+            FROM `{SHOPIFY_METAFIELDS_TABLE}` a
+            WHERE LOWER(a.namespace) IN ('custom', 'ornaverse') AND a.key IN ({keys_sql})
+            QUALIFY ROW_NUMBER() OVER (PARTITION BY a.owner_id, a.key ORDER BY a.namespace DESC) = 1
+          )
+          PIVOT (ANY_VALUE(value_st) FOR key IN ({keys_sql}))
+        ),
+        b AS (
+          SELECT external_variant_id, item_code, item_name
+          FROM `{G2D_TABLE}`
+          WHERE external_variant_id IS NOT NULL AND item_code IS NOT NULL AND TRIM(item_code) != ''
+          QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY external_variant_id ORDER BY COALESCE(modified_date, creation_date) DESC) = 1
+        ),
+        sv AS (
+          SELECT v.id AS variant_id, p.status
+          FROM `{SHOPIFY_PRODUCTS_TABLE}` p, UNNEST(p.variants) v
+          WHERE v.id IS NOT NULL
+          QUALIFY ROW_NUMBER() OVER (PARTITION BY v.id ORDER BY p.updated_at DESC) = 1
+        ),
+        -- Synced = the variant has a "components" metafield whose value_st is
+        -- the {{"components":[...]}} JSON with at least one component.
+        comp AS (
+          SELECT owner_id
+          FROM `{SHOPIFY_METAFIELDS_TABLE}`
+          WHERE LOWER(namespace) IN ('custom', 'ornaverse') AND key = 'components'
+          GROUP BY owner_id
+          HAVING LOGICAL_OR(IFNULL(ARRAY_LENGTH(JSON_QUERY_ARRAY(value_st, '$.components')), 0) > 0)
+        )
+        SELECT CAST(kv.owner_id AS STRING) AS owner_id, b.item_code, b.item_name, sv.status,
+          IF(comp.owner_id IS NOT NULL, 'Yes', 'No') AS synced,
+          {", ".join(f"{cast(k)} AS {k}" for k in SHOPIFY_KEYS
+                     if k not in ("diamond_pieces", "total_number_of_diamonds", "diamond_weight", "total_weight_approx_"))},
+          -- first POSITIVE value wins: Ornaverse writes diamond_weight = 0.0 as a
+          -- placeholder on 1,705 variants whose real weight sits in
+          -- custom.total_weight_approx_ (equal to ERP on all of them).
+          COALESCE(IF(SAFE_CAST(TRIM(diamond_pieces) AS FLOAT64) > 0, SAFE_CAST(TRIM(diamond_pieces) AS FLOAT64), NULL),
+                   IF(SAFE_CAST(TRIM(total_number_of_diamonds) AS FLOAT64) > 0, SAFE_CAST(TRIM(total_number_of_diamonds) AS FLOAT64), NULL),
+                   SAFE_CAST(TRIM(diamond_pieces) AS FLOAT64),
+                   SAFE_CAST(TRIM(total_number_of_diamonds) AS FLOAT64)) AS diamond_pieces,
+          COALESCE(IF(SAFE_CAST(TRIM(diamond_weight) AS FLOAT64) > 0, SAFE_CAST(TRIM(diamond_weight) AS FLOAT64), NULL),
+                   IF(SAFE_CAST(TRIM(total_weight_approx_) AS FLOAT64) > 0, SAFE_CAST(TRIM(total_weight_approx_) AS FLOAT64), NULL),
+                   SAFE_CAST(TRIM(diamond_weight) AS FLOAT64),
+                   SAFE_CAST(TRIM(total_weight_approx_) AS FLOAT64)) AS diamond_weight
+        FROM kv
+        JOIN b ON b.external_variant_id = kv.owner_id
+        LEFT JOIN sv ON sv.variant_id = kv.owner_id
+        LEFT JOIN comp ON comp.owner_id = kv.owner_id
+        ORDER BY b.item_code, kv.owner_id
+    """
+    out = []
+    for r in bq.query(sql).result(page_size=20000):
+        d = dict(r)
+        st = d.get("status")
+        d["status"] = st.capitalize() if isinstance(st, str) else None
+        out.append(d)
+    return out
+
+
+def _karat_from_purity(purity, item_code):
+    """'14KT' -> '14'; else the Item Code's metal segment (LJ-x-14WG.. -> 14). None if not gold."""
+    import re
+    m = re.match(r"\s*(\d{1,3})\s*K", str(purity or ""), re.I)
+    d = m.group(1) if m else None
+    if d is None:
+        m = re.match(r"^[^-]+-[^-]+-(\d{1,3})([A-Z]{2})", str(item_code or ""), re.I)
+        if m and m.group(2).upper() != "PT":
+            d = m.group(1)
+    if d is None:
+        return None
+    d = str(int(d))
+    return {"916": "22", "995": "24", "999": "24"}.get(d, d if d in KARAT_PURITY else None)
+
+
+def _calc_context(codes=None):
+    """Everything _build_variant_row needs, fetched once (codes=None -> all items)."""
+    _, cls_map = _variant_matched_sorted_codes("")
+    (item_by_code, price_map, md_map, diamond_discounts, diamond_cp_map, labour_rates, shopify_map,
+     cash_back_rates) = _variant_build_inputs(codes)
+    return {"cls_map": cls_map, "item_by_code": item_by_code, "price_map": price_map, "md_map": md_map,
+            "diamond_discounts": diamond_discounts, "diamond_cp_map": diamond_cp_map, "labour_rates": labour_rates,
+            "shopify_map": shopify_map, "cash_back_rates": cash_back_rates, "gold": todays_gold_rates(),
+            "bands": fetch_g2d_bands(), "defaults": {k: (mc, dp) for k, _, _, mc, dp in _VARIANT_G2D_BANDS}}
+
+
+def _calc_on_weights(code, ctx, net_weight=None, diamond_weight=None, purity_text=None):
+    """Variant Level's own calculation (_build_variant_row) for `code`, with Net
+    Weight / Diamond Weight swapped for the given ones (None -> the ERP item's):
+      G2D -> band -> Making /g + Making Discount %; Metal Amount = weight x today's
+      karat rate (non-gold: Variant Level amount scaled by weight); Diamond Amount
+      and Diamond CP = Variant Level values scaled by diamond weight (the variant's
+      own rate /ct). Returns (row, info) or (None, info) if the code isn't priced."""
+    info = {"basis": []}
+    if code not in ctx["cls_map"]:
+        info["basis"].append("Not in Variant Level")
+        return None, info
+    item = dict(ctx["item_by_code"].get(code, {}))
+    md = ctx["md_map"].get(code, {}) or {}
+    erp_nw = float(item.get("net_weight") or 0.0)
+    erp_dw = float(item.get("diamond_weight") or 0.0)
+    nw = float(net_weight) if (net_weight is not None and net_weight > 0) else erp_nw
+    dw = float(diamond_weight) if diamond_weight is not None else erp_dw
+    if not (net_weight is not None and net_weight > 0):
+        info["basis"].append("metal wt from ERP")
+    if diamond_weight is None:
+        info["basis"].append("diamond wt from ERP")
+    g2d = round(dw / nw, 4) if nw > 0 else None
+    bk = g2d_band_key(g2d)
+    if bk:
+        b = ctx["bands"].get(bk, {})
+        mc_d, dp_d = ctx["defaults"].get(bk, (None, None))
+        item["making_charge_per_g"] = b.get("making_charge", mc_d)
+        item["discount_pct"] = b.get("dis_pct", dp_d)
+    else:
+        item["making_charge_per_g"] = None
+        item["discount_pct"] = None
+    item["net_weight"], item["diamond_weight"], item["g2d"] = nw, dw, g2d
+    kt = _karat_from_purity(purity_text, code)
+    vl_metal = float(md.get("metal_amount") or 0.0)
+    if kt and ctx["gold"].get(kt) is not None:
+        metal_amount = round(nw * ctx["gold"][kt], 2)
+    else:
+        metal_amount = round(vl_metal * (nw / erp_nw), 2) if erp_nw > 0 else vl_metal
+    vl_dia = float(md.get("diamond_amount") or 0.0)
+    vl_cp = float((ctx["diamond_cp_map"] or {}).get(code, 0.0) or 0.0)
+    ratio = (dw / erp_dw) if erp_dw > 0 else (1.0 if dw == 0 else None)
+    if ratio is None:
+        info["basis"].append("no ERP diamond rate")
+        ratio = 0.0
+    row = _build_variant_row(code, ctx["cls_map"], {code: item}, ctx["price_map"],
+                             {code: {**md, "metal_amount": metal_amount, "diamond_amount": round(vl_dia * ratio, 2)}},
+                             ctx["diamond_discounts"], {code: round(vl_cp * ratio, 2)},
+                             ctx["labour_rates"], ctx["shopify_map"], ctx["cash_back_rates"])
+    info.update({"karat": kt, "erp_nw": erp_nw, "erp_dw": erp_dw,
+                 "diamond_rate": round(vl_dia / erp_dw, 2) if erp_dw > 0 and vl_dia > 0 else None})
+    return row, info
+
+
+def shopify_variant_level_rows():
+    """Shopify columns + every Variant Level column, computed by
+    _build_variant_row on Shopify weights (see the header above)."""
+    sh_rows = shopify_weight_rows()
+    ctx = _calc_context(None)
+    out = []
+    for s in sh_rows:
+        code = s["item_code"]
+        rec = {k: s.get(k) for k in ["owner_id", "item_code", "item_name", "status", "synced"] + SHOPIFY_OUT_KEYS}
+        # Shopify diamond weight 0 on an item ERP says has diamonds = missing
+        # (same as metal weight <= 0) -> ERP weight, flagged in weight_basis.
+        dw = s.get("diamond_weight")
+        if dw is not None and dw <= 0 and float((ctx["item_by_code"].get(code) or {}).get("diamond_weight") or 0) > 0:
+            dw = None
+        row, info = _calc_on_weights(code, ctx, s.get("metal_weight"), dw, s.get("metal_purity"))
+        if row is None:
+            rec["weight_basis"] = "Not in Variant Level"
+            out.append(rec)
+            continue
+        for c in VARIANT_COLUMNS + VARIANT_EXTRA_COLUMNS:
+            if c in ("item_code", "item_name", "status", "net_weight", "diamond_weight", "diamond_pieces", "image_url"):
+                continue  # Shopify's own values stay in those columns
+            v = row.get(c)
+            if hasattr(v, "__float__") and not isinstance(v, (int, float, bool)):
+                v = float(v)
+            rec[c] = v
+        rec["karat"] = info["karat"]
+        rec["diamond_rate"] = info["diamond_rate"]
+        rec["erp_net_weight"] = info["erp_nw"]
+        rec["erp_diamond_weight"] = info["erp_dw"]
+        rec["weight_basis"] = "Shopify" if not info["basis"] else "Shopify (" + ", ".join(info["basis"]) + ")"
+        rec["diamond_weight_used"] = float(row.get("diamond_weight") or 0.0)
+        rec["erp_diamond_pieces"] = row.get("diamond_pieces")
+        rec["diamond_wt_check"] = _diamond_wt_check(rec, s.get("diamond_weight"))
+        out.append(rec)
+    return out
+
+
+DIAMOND_WT_TOLERANCE = 0.01  # ct
+
+
+def _diamond_wt_check(rec, shop_dw):
+    """Diamond weight AND pieces are compulsory when Material Type is diamond
+    (or the item carries diamonds anyway, e.g. Platinum Jewellery with LGD):
+    the weight the calc used must be > 0, pieces must exist, Shopify should
+    carry both and agree with ERP, and the weight must have produced a
+    Diamond Amount and Total Diamond CP. First failing rule wins."""
+    used, erp = rec["diamond_weight_used"], float(rec.get("erp_diamond_weight") or 0.0)
+    shop_pcs, erp_pcs = float(rec.get("diamond_pieces") or 0.0), float(rec.get("erp_diamond_pieces") or 0.0)
+    if "diamond" not in str(rec.get("material_type") or "").lower() and not (used > 0 or (shop_dw or 0) > 0):
+        return "Not diamond"
+    if used <= 0:
+        return "Missing weight (Shopify & ERP)"
+    if shop_pcs <= 0 and erp_pcs <= 0:
+        return "Missing pieces (Shopify & ERP)"
+    if not (rec.get("diamond_amount") or 0) > 0 or not (rec.get("total_diamond_cp") or 0) > 0:
+        return "No diamond rate / CP"
+    if not (shop_dw or 0) > 0 or shop_pcs <= 0:
+        return "Shopify blank (ERP used)"
+    if erp > 0 and abs(shop_dw - erp) > DIAMOND_WT_TOLERANCE:
+        return "Shopify wt ≠ ERP"
+    if erp_pcs > 0 and shop_pcs != erp_pcs:
+        return "Shopify pcs ≠ ERP"
+    return "OK"
+
+
+def shopify_validation(rows):
+    ids = [r["owner_id"] for r in rows]
+    st = {}
+    for r in rows:
+        st[r.get("status") or "Not on Shopify"] = st.get(r.get("status") or "Not on Shopify", 0) + 1
+    return {
+        "total_variants": len(rows),
+        "duplicate_owner_id_count": len(ids) - len(set(ids)),
+        "blank_item_code": sum(1 for r in rows if not r.get("item_code")),
+        "priced": sum(1 for r in rows if r.get("final_after_gst_overall") is not None),
+        "not_in_variant_level": sum(1 for r in rows if r.get("weight_basis") == "Not in Variant Level"),
+        "metal_wt_from_erp": sum(1 for r in rows if "metal wt from ERP" in (r.get("weight_basis") or "")),
+        "diamond_wt_from_erp": sum(1 for r in rows if "diamond wt from ERP" in (r.get("weight_basis") or "")),
+        "diamond_wt_null": sum(1 for r in rows if r.get("diamond_weight") is None),
+        "diamond_pieces_null": sum(1 for r in rows if r.get("diamond_pieces") is None),
+        "active_count": st.get("Active", 0), "draft_count": st.get("Draft", 0), "status_counts": st,
+        "synced_yes": sum(1 for r in rows if r.get("synced") == "Yes"),
+        "synced_no": sum(1 for r in rows if r.get("synced") == "No"),
+        "diamond_wt_check": {k: sum(1 for r in rows if r.get("diamond_wt_check") == k)
+                             for k in sorted({r.get("diamond_wt_check") for r in rows if r.get("diamond_wt_check")})},
+    }
+
+
+def shopify_snapshot(force=False):
+    """{snapshot_url, snapshot}; (re)builds the gzip blob when missing, not from today (IST), or force."""
+    import json
+    bucket = _gcs_client().bucket(SNAPSHOT_GCS_BUCKET)
+    blob = bucket.blob(SHOPIFY_DW_BLOB)
+    today = (datetime.now(timezone.utc).astimezone(_IST).date() if _IST else datetime.now(timezone.utc).date())
+    if not force and blob.exists():
+        blob.reload()
+        meta = blob.metadata or {}
+        upd = blob.updated.astimezone(_IST).date() if (_IST and blob.updated) else None
+        if upd == today and meta.get("snapshot"):
+            return {"snapshot_url": f"https://storage.googleapis.com/{SNAPSHOT_GCS_BUCKET}/{SHOPIFY_DW_BLOB}",
+                    "snapshot": json.loads(meta["snapshot"])}
+    rows = shopify_variant_level_rows()
+    validation = shopify_validation(rows)
+    print("[shopify-tab] validation " + json.dumps(validation))
+    snap = {"snapshot_created_at": datetime.now(timezone.utc).isoformat(), "validation": validation}
+    payload = {"rows": rows, "total": len(rows), "snapshot": snap}
+    gz = gzip.compress(json.dumps(payload, separators=(",", ":"), default=str).encode("utf-8"), compresslevel=1)
+    blob.content_encoding = "gzip"
+    blob.metadata = {"snapshot": json.dumps(snap, separators=(",", ":"))}
+    blob.upload_from_string(gz, content_type="application/json")
+    return {"snapshot_url": f"https://storage.googleapis.com/{SNAPSHOT_GCS_BUCKET}/{SHOPIFY_DW_BLOB}", "snapshot": snap}
+
+
+# Company tab (GET /company-inventory) -- live stock per company with its
+# purchase amount (Live_inventory.item_cost, as booked) and the selling amount
+# the dashboard prices that Item Code at: Variant Level's Final After GST from
+# the published snapshot x pieces. One row per inventory piece-line; the tab
+# aggregates by company. Pieces whose Item Code isn't in Variant Level come
+# back with a blank selling amount (shown, never guessed).
+LIVE_INVENTORY_TABLE = os.environ.get("LIVE_INVENTORY_TABLE", "lucirajewelry-prod.ds_imputed_reporting.Live_inventory")
+
+
+def company_inventory_rows():
+    bq = _client()
+    sql = f"""
+        SELECT li.company_code, li.company_name, li.location_name, li.item_code, li.item_name,
+               li.item_group_name, li.document_date, li.pieces, li.item_cost,
+               v.final_after_gst_overall, v.category, v.product_composition
+        FROM `{LIVE_INVENTORY_TABLE}` li
+        LEFT JOIN `{VARIANT_SNAPSHOT_TABLE}` v ON v.item_code = li.item_code
+        ORDER BY li.company_code, li.item_code
+    """
+    out = []
+    for r in bq.query(sql).result(page_size=10000):
+        pcs = int(r["pieces"] or 0)
+        cost = float(r["item_cost"]) if r["item_cost"] is not None else None
+        unit = float(r["final_after_gst_overall"]) if r["final_after_gst_overall"] is not None else None
+        out.append({
+            "company_code": r["company_code"], "company_name": r["company_name"], "location_name": r["location_name"],
+            "item_code": r["item_code"], "item_name": r["item_name"], "item_group": r["item_group_name"],
+            "category": r["category"], "product_composition": r["product_composition"],
+            "document_date": r["document_date"].isoformat() if r["document_date"] else None,
+            "pieces": pcs, "purchase_amount": round(cost, 2) if cost is not None else None,
+            "selling_price": unit, "selling_amount": round(unit * pcs, 2) if unit is not None else None,
+        })
+    snap = latest_snapshot_status().get("latest_success") or {}
+    return {"rows": out, "snapshot": snap}
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  Slab Excel table (GET / POST /slab-excel) -- Slab tab's Excel
+#  Import / Export configuration table, stored in gold_rates.slab_excel.
+#  Values are kept exactly as typed (STRING) so nothing is reformatted; an
+#  import REPLACES the whole table (exact duplicate rows dropped), in one
+#  atomic load job. Used by pricing via slab_match() (see "Slab-based pricing").
+# ══════════════════════════════════════════════════════════════════════
+SLAB_EXCEL_TABLE = os.environ.get("SLAB_EXCEL_TABLE", "lucirajewelry-prod.gold_rates.slab_excel")
+SLAB_EXCEL_FIELDS = ["category", "material_type", "g2d", "making_discount", "diamond_discount",
+                     "making_charges", "price_range", "free"]
+
+
+def slab_excel_list():
+    bq = _client()
+    rows = bq.query(f"SELECT * FROM `{SLAB_EXCEL_TABLE}` ORDER BY sort_order").result()
+    out = []
+    for r in rows:
+        out.append({f: r[f] for f in SLAB_EXCEL_FIELDS})
+    upd = None
+    try:
+        t = bq.get_table(SLAB_EXCEL_TABLE)
+        upd = t.modified.isoformat() if t.modified else None
+    except Exception:
+        pass
+    return {"rows": out, "updated_at": upd}
+
+
+def slab_excel_replace(rows):
+    if not isinstance(rows, list):
+        raise ValueError("rows must be a list")
+    if len(rows) > 10000:
+        raise ValueError("too many rows (max 10,000)")
+    clean, seen = [], set()
+    now = datetime.now(timezone.utc).isoformat()
+    for r in rows:
+        rec = {}
+        for f in SLAB_EXCEL_FIELDS:
+            v = (r or {}).get(f)
+            v = None if v is None else str(v).strip()
+            rec[f] = v if v not in ("", None) else None
+        if all(rec[f] is None for f in SLAB_EXCEL_FIELDS):
+            continue  # fully blank line
+        key = tuple(rec[f] for f in SLAB_EXCEL_FIELDS)
+        if key in seen:
+            continue  # exact duplicate row
+        seen.add(key)
+        rec["sort_order"] = len(clean) + 1
+        rec["updated_at"] = now
+        clean.append(rec)
+    bq = _client()
+    job_config = bigquery.LoadJobConfig(
+        source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+        write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+        schema=[bigquery.SchemaField("sort_order", "INTEGER")]
+               + [bigquery.SchemaField(f, "STRING") for f in SLAB_EXCEL_FIELDS]
+               + [bigquery.SchemaField("updated_at", "TIMESTAMP")],
+    )
+    bq.load_table_from_json(clean, SLAB_EXCEL_TABLE, job_config=job_config).result()
+    _SLAB_CACHE["ts"] = 0.0
+    out = slab_excel_list()
+    out["imported"] = len(clean)
+    out["skipped"] = len(rows) - len(clean)
+    return out
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  Inventory Margin -- full grid (GET /inventory-full): EVERY Live_inventory
+#  column (images_agg dropped -- a long image list; the Gender record
+#  flattened to `gender`) + every Variant Level calculation column for that
+#  Item Code (prefixed calc_, from the published snapshot) + purchase /
+#  selling / margin. Purchase Amount = item_cost (as booked); Selling Amount
+#  = calc_final_after_gst_overall x pieces (blank when the Item Code has no
+#  price or a price of 0). Sent column-wise (one list per column) as a gzip
+#  blob, rebuilt when older than 10 minutes so stock stays near-live.
+# ══════════════════════════════════════════════════════════════════════
+INVENTORY_FULL_BLOB = f"{SNAPSHOT_GCS_PREFIX}/inventory_full.json.gz"
+INVENTORY_FULL_MAX_AGE_SEC = 1800  # piece-level recalculation takes ~1-2 min
+
+
+def inventory_full_rows():
+    """Every Live_inventory column + the Variant Level calculation run on THAT
+    piece's own weights (its net_weight / diamond_weight / karat, today's gold &
+    diamond rates, slab) -> SP. CP = the inventory's item_cost (the price it was
+    actually received at), per piece; every margin uses it:
+      Margin 1% = (With GST SP - CP) / With GST SP
+      Margin 2% with discount = (Final After GST - CP) / Final After GST
+      Net Margin = Final After GST - CP - free coin CP;  Margin2 = after Cash Back.
+    Lines are per piece-line: amounts per line = per-piece x pieces."""
+    from decimal import Decimal
+    bq = _client()
+    raw = list(bq.query(f"""
+        SELECT li.* EXCEPT(images_agg, Gender), li.Gender.gender AS gender
+        FROM `{LIVE_INVENTORY_TABLE}` li
+        ORDER BY li.company_code, li.item_code
+    """).result(page_size=5000))
+    codes = sorted({r["item_code"] for r in raw if r["item_code"]})
+    ctx = _calc_context(codes)
+    calc_cols = [c for c in VARIANT_COLUMNS + VARIANT_EXTRA_COLUMNS if c not in ("item_code", "image_url")]
+    def conv(v):
+        if isinstance(v, Decimal):
+            return str(v) if abs(v) >= 2 ** 53 else float(v)
+        if hasattr(v, "isoformat"):
+            return v.isoformat()
+        return v
+    cols, data = None, []
+    for r in raw:
+        d = {k: conv(v) for k, v in dict(r).items()}
+        pcs = int(d.get("pieces") or 0) or 1
+        nw = (d.get("net_weight") / pcs) if d.get("net_weight") is not None else None
+        dw = (d.get("diamond_weight") / pcs) if d.get("diamond_weight") is not None else None
+        row, info = _calc_on_weights(d.get("item_code"), ctx, nw, dw, d.get("karat_name"))
+        # CP incl. 3% GST (user, 2026-10-23) -- item_cost is booked ex-GST.
+        cost = d.get("item_cost") * (1.0 + GST_RATE) if d.get("item_cost") is not None else None
+        unit_cp = (cost / pcs) if cost is not None else None
+        if row is not None and unit_cp is not None:
+            fin = row.get("final_after_gst_overall") or 0
+            orig = row.get("original_after_gst_overall") or 0
+            add = row.get("additional_disc") or 0
+            sp = row.get("actual_sp") or 0
+            row["total_cp_cost"] = round(unit_cp, 2)
+            row["margin1_pct"] = round((orig - unit_cp) / orig * 100, 2) if orig else None
+            row["margin_pct"] = round((fin - unit_cp) / fin * 100, 2) if fin else None
+            row["margin2_pct"] = round((fin - add - unit_cp) / (fin - add) * 100, 2) if (fin - add) else None
+            row["net_margin"] = round(sp - unit_cp, 2)
+            row["net_margin_pct"] = round((sp - unit_cp) / sp * 100, 2) if sp else None
+        for c in calc_cols:
+            v = row.get(c) if row is not None else None
+            d[f"calc_{c}"] = float(v) if (hasattr(v, "__float__") and not isinstance(v, (int, float, bool))) else v
+        # Gold columns, same basis as everywhere else: selling = Actual SP (Final
+        # After GST - free coin value) x pieces; CP = item_cost incl. 3% GST.
+        fin = d.get("calc_final_after_gst_overall")
+        asp = d.get("calc_actual_sp")
+        sell = round(asp * pcs, 2) if (asp is not None and fin is not None and fin > 0) else None
+        d["purchase_amount"] = round(cost, 2) if cost is not None else None
+        d["selling_amount"] = sell
+        d["margin_amount"] = round(sell - cost, 2) if (sell is not None and cost is not None) else None
+        d["margin_pct"] = round((sell - cost) / sell * 100, 2) if (sell and cost is not None) else None
+        gross = (fin * pcs) if (fin is not None and fin > 0) else None   # old GST-inclusive basis, for comparison
+        d["margin2_pct"] = round((gross - cost) / gross * 100, 2) if (gross and cost is not None) else None
+        if cols is None:
+            lead = ["purchase_amount", "selling_amount", "margin_amount", "margin_pct", "margin2_pct"]
+            cols = [k for k in d.keys() if k not in lead] + lead
+        data.append([d.get(c) for c in cols])
+    return cols or [], data
+
+
+def inventory_full_snapshot(force=False):
+    import json
+    bucket = _gcs_client().bucket(SNAPSHOT_GCS_BUCKET)
+    blob = bucket.blob(INVENTORY_FULL_BLOB)
+    if not force and blob.exists():
+        blob.reload()
+        age = (datetime.now(timezone.utc) - blob.updated).total_seconds() if blob.updated else 1e9
+        meta = blob.metadata or {}
+        if age < INVENTORY_FULL_MAX_AGE_SEC and meta.get("snapshot"):
+            return {"snapshot_url": f"https://storage.googleapis.com/{SNAPSHOT_GCS_BUCKET}/{INVENTORY_FULL_BLOB}",
+                    "snapshot": json.loads(meta["snapshot"])}
+    cols, data = inventory_full_rows()
+    snap = {"snapshot_created_at": datetime.now(timezone.utc).isoformat(), "rows": len(data), "columns": len(cols),
+            "prices": (latest_snapshot_status().get("latest_success") or {}).get("snapshot_date")}
+    payload = {"columns": cols, "data": data, "snapshot": snap}
+    gz = gzip.compress(json.dumps(payload, separators=(",", ":"), default=str).encode("utf-8"), compresslevel=6)
+    blob.content_encoding = "gzip"
+    blob.metadata = {"snapshot": json.dumps(snap, separators=(",", ":"))}
+    blob.upload_from_string(gz, content_type="application/json")
+    return {"snapshot_url": f"https://storage.googleapis.com/{SNAPSHOT_GCS_BUCKET}/{INVENTORY_FULL_BLOB}", "snapshot": snap}
+
+
+# Gold Rate strip (GET /gold-rate-strip) -- shown above every dashboard tab:
+# today's per-gram gold rate per karat (Pos.metal_rates, same source as every
+# calculation) next to the per-gram rate actually baked into the published
+# Product Price snapshot (its METAL rows carry exactly that karat's rate), so
+# anyone can confirm the prices on screen were built on today's rate.
+_GOLD_STRIP_CACHE = {"ts": 0.0, "data": None}
+
+
+def gold_rate_strip():
+    now = time.time()
+    if _GOLD_STRIP_CACHE["data"] and (now - _GOLD_STRIP_CACHE["ts"]) < 120:
+        return _GOLD_STRIP_CACHE["data"]
+    bq = _client()
+    g = list(bq.query(f"""
+        SELECT DATE(a.from_date) AS d, a.sales_rate * 10 AS rate10
+        FROM `{METAL_RATES_TABLE}` a LEFT JOIN `{ITEM_GROUPS_TABLE}` b ON a.metal_type_id = b.item_group_id
+        WHERE b.item_group_name = 'Gold' AND DATE(a.from_date) <= CURRENT_DATE('Asia/Kolkata')
+        ORDER BY a.from_date DESC, a.rate_id DESC LIMIT 1""").result())
+    rates = todays_gold_rates()
+    used = {}
+    for r in bq.query(f"""
+        SELECT IF(TRIM(karat_code) = '999', '24',  -- 24K gold is coded 999 on its METAL rows
+                  IFNULL(NULLIF(LTRIM(TRIM(karat_code), '0'), ''), TRIM(karat_code))) AS kt,
+               APPROX_TOP_COUNT(metal_amount, 1)[OFFSET(0)].value AS rate
+        FROM `{PRODUCT_PRICE_SNAPSHOT_TABLE}`
+        WHERE base_item = 'METAL' AND item_group_name = 'Gold' AND metal_amount > 0
+        GROUP BY kt""").result():
+        used[r["kt"]] = float(r["rate"])
+    snap = latest_snapshot_status().get("latest_success") or {}
+    karats = []
+    for kt in ["24", "22", "18", "14", "9"]:
+        today_rate, pub = rates.get(kt), used.get(kt)
+        karats.append({"kt": kt, "purity_pct": round(KARAT_PURITY[kt] * 100, 1), "today": today_rate,
+                       "published": pub,
+                       "match": (today_rate is not None and pub is not None and abs(today_rate - pub) <= 0.5)
+                                if pub is not None else None})
+    out = {"rate_date": g[0]["d"].isoformat() if g else None,
+           "rate_24k_10g": float(g[0]["rate10"]) if g else None,
+           "snapshot_created_at": snap.get("snapshot_created_at"), "karats": karats}
+    _GOLD_STRIP_CACHE["data"] = out
+    _GOLD_STRIP_CACHE["ts"] = now
+    return out
+
+
+def _hc(group, name, ok, detail):
+    return {"group": group, "name": name, "ok": ok, "detail": detail}
+
+
+def health_check():
+    bq = _client()
+    one = lambda sql: list(bq.query(sql).result())[0]
+    today = (datetime.now(timezone.utc).astimezone(_IST).date() if _IST else datetime.now(timezone.utc).date())
+    checks = []
+
+    # ── Daily refresh ──
+    g = one(f"""
+        SELECT DATE(a.from_date) AS d, a.sales_rate * 10 AS rate10
+        FROM `{METAL_RATES_TABLE}` a LEFT JOIN `{ITEM_GROUPS_TABLE}` b ON a.metal_type_id = b.item_group_id
+        WHERE b.item_group_name = 'Gold' AND DATE(a.from_date) <= CURRENT_DATE('Asia/Kolkata')
+        ORDER BY a.from_date DESC, a.rate_id DESC LIMIT 1""")
+    checks.append(_hc("Daily refresh", "Gold rate updated today", g["d"] == today,
+        f"Latest gold rate is for {g['d'].isoformat()}: 24K ₹{float(g['rate10']):,.0f} / 10 g"
+        + ("" if g["d"] == today else f" — no entry for today ({today.isoformat()}) in Pos.metal_rates")))
+
+    runs = list(bq.query(f"""
+        SELECT snapshot_date, snapshot_created_at, snapshot_status, product_price_rows, variant_level_rows,
+               error_message, triggered_by
+        FROM `{SNAPSHOT_RUNS_TABLE}` ORDER BY snapshot_created_at DESC LIMIT 1""").result())
+    last = runs[0] if runs else None
+    ran_today = bool(last and last["snapshot_date"] == today and last["snapshot_status"] == "SUCCESS")
+    if last:
+        t = last["snapshot_created_at"].astimezone(_IST) if _IST else last["snapshot_created_at"]
+        det = (f"Last run {t.strftime('%d %b %Y %I:%M %p')} IST — {last['snapshot_status']}"
+               f" ({last['product_price_rows'] or 0:,} Product Price rows, {last['variant_level_rows'] or 0:,} variants)")
+        if last["snapshot_status"] != "SUCCESS" and last["error_message"]:
+            det += f" — {last['error_message'][:200]}"
+    else:
+        det = "No refresh has ever run"
+    checks.append(_hc("Daily refresh", "Daily data refresh ran today", ran_today, det))
+
+    rates_now = todays_gold_rates()
+    snap_rate = one(f"""
+        SELECT ANY_VALUE(metal_amount) AS r, COUNT(DISTINCT metal_amount) AS k
+        FROM `{PRODUCT_PRICE_SNAPSHOT_TABLE}`
+        WHERE base_item = 'METAL' AND LTRIM(TRIM(karat_code), '0') = '14'""")
+    want = rates_now.get("14")
+    got = float(snap_rate["r"]) if snap_rate["r"] is not None else None
+    same = want is not None and got is not None and abs(got - want) <= 0.5
+    checks.append(_hc("Daily refresh", "Prices use today's gold rate", bool(same and ran_today),
+        f"14K rate in the published prices ₹{got:,.2f}/g vs today's rate ₹{want:,.2f}/g" if (want and got)
+        else "Couldn't read the 14K rate from the published prices"))
+
+    # Slab edits made from the Slab tab ("Deploy & Refresh Calculations") --
+    # named by slab, with what changed, so it reads as plain English.
+    def _edit_summary(changed_fields_json):
+        try:
+            items = json.loads(changed_fields_json or "[]")
+        except Exception:
+            return "", []
+        by_slab = {}
+        for c in items:
+            slab = HC_SLAB_NAMES.get(c.get("table"), c.get("table") or "?")
+            key = str(c.get("key") or "").replace("_", " ").title().replace("0 1G", "0-1 g")
+            field = HC_FIELD_NAMES.get(c.get("field"), c.get("field") or "")
+            by_slab.setdefault(slab, []).append(f"{key} {field} {c.get('before'):g} → {c.get('after'):g}"
+                                                if isinstance(c.get("before"), (int, float)) and isinstance(c.get("after"), (int, float))
+                                                else f"{key} {field}")
+        text = "; ".join(f"{slab}: " + ", ".join(v[:4]) + (f" +{len(v)-4} more" if len(v) > 4 else "")
+                         for slab, v in by_slab.items())
+        return text, list(by_slab)
+    import json
+    editable = " / ".join(HC_EDITABLE_SLABS)
+    deps = list(bq.query(f"""
+        SELECT version, deployed_at, status, validation_status, changed_fields, error_message
+        FROM `{CONFIG_DEPLOYMENTS_TABLE}`
+        WHERE DATE(deployed_at, 'Asia/Kolkata') = CURRENT_DATE('Asia/Kolkata')
+        ORDER BY deployed_at DESC""").result())
+    if not deps:
+        prev = list(bq.query(f"""
+            SELECT deployed_at, changed_fields FROM `{CONFIG_DEPLOYMENTS_TABLE}`
+            WHERE status = 'SUCCESS' ORDER BY deployed_at DESC LIMIT 1""").result())
+        det = f"No one edited the {' or '.join(HC_EDITABLE_SLABS)} slab today, so there was nothing to apply."
+        if prev:
+            t = prev[0]["deployed_at"].astimezone(_IST) if _IST else prev[0]["deployed_at"]
+            txt, _ = _edit_summary(prev[0]["changed_fields"])
+            det += f" Last edit: {t.strftime('%d %b %Y')} — {txt or 'details not recorded'} (applied OK)."
+        checks.append(_hc("Daily refresh", f"Slab edits applied today ({editable})", None, det))
+    else:
+        d = deps[0]
+        ok = d["status"] == "SUCCESS" and (d["validation_status"] in (None, "PASSED"))
+        t = d["deployed_at"].astimezone(_IST) if _IST else d["deployed_at"]
+        txt, slabs = _edit_summary(d["changed_fields"])
+        name = f"Slab edits applied today ({' / '.join(slabs) if slabs else editable})"
+        det = (f"Edited at {t.strftime('%I:%M %p')} IST — {txt or 'details not recorded'}. "
+               + ("Saved, prices recalculated and checked OK." if ok else
+                  f"NOT applied correctly: {d['status']} / validation {d['validation_status'] or '—'}"
+                  + (f" — {d['error_message'][:200]}" if d["error_message"] else "")))
+        if len(deps) > 1:
+            det += f" ({len(deps)} edits today; showing the latest.)"
+        checks.append(_hc("Daily refresh", name, ok, det))
+
+    # ── Slabs ──
+    kts = ["24", "22", "18", "14", "9"]
+    missing = [k for k in kts if not (rates_now.get(k) or 0) > 0]
+    checks.append(_hc("Slabs", "Metal Rate (24K / 22K / 18K / 14K / 9K)", not missing,
+        ("All 5 karat rates present: " + ", ".join(f"{k}K ₹{rates_now[k]:,.0f}" for k in kts)) if not missing
+        else f"Missing karat rate(s): {', '.join(missing)}"))
+
+    mc = fetch_making_charge_rates()
+    bad_mc = [b for b, _, _ in MAKING_CHARGE_BANDS if not (mc.get(b) or 0) > 0]
+    checks.append(_hc("Slabs", "G2D Making Charges", not bad_mc,
+        f"All {len(MAKING_CHARGE_BANDS)} bands have a making charge" if not bad_mc
+        else f"Band(s) with no making charge: {', '.join(bad_mc)}"))
+
+
+    s = one(f"""
+        SELECT COUNT(*) AS n, COUNTIF(purchase_rate IS NULL OR sales_rate IS NULL) AS blank_rates,
+          (SELECT COUNTIF(attribute IS NOT NULL) FROM `{PRODUCT_PRICE_SNAPSHOT_TABLE}`) AS with_attr,
+          (SELECT COUNTIF(attribute IS NOT NULL AND cost_price IS NULL) FROM `{PRODUCT_PRICE_SNAPSHOT_TABLE}`) AS attr_no_cost
+        FROM `{STONE_RATE_SLAB_VIEW}`""")
+    checks.append(_hc("Slabs", "Stone Rate Slab (latest rates)",
+        s["n"] > 0 and s["blank_rates"] == 0 and s["attr_no_cost"] == 0,
+        f"{s['n']:,} slabs loaded, {s["blank_rates"]} with a blank rate; "
+        f"{s['with_attr'] - s['attr_no_cost']:,} of {s['with_attr']:,} Product Price stone rows got a Cost / Sale Price"))
+
+    l = one(f"""
+        SELECT COUNT(*) AS n, COUNTIF(purchase_rate IS NULL) AS blank_rates,
+          (SELECT COUNTIF(net_weight > {LABOUR_NET_WEIGHT_CUTOFF}) FROM `{VARIANT_SNAPSHOT_TABLE}`) AS heavy,
+          (SELECT COUNTIF(net_weight > {LABOUR_NET_WEIGHT_CUTOFF} AND labour_charge IS NULL) FROM `{VARIANT_SNAPSHOT_TABLE}`) AS heavy_no_lc
+        FROM `{LABOUR_RATE_SLAB_VIEW}`""")
+    lc_cov = (l["heavy"] - l["heavy_no_lc"]) / l["heavy"] * 100 if l["heavy"] else 100.0
+    checks.append(_hc("Slabs", "Labour Rate Slab", l["n"] > 0 and l["blank_rates"] == 0 and lc_cov >= 99.0,
+        f"{l['n']:,} slabs loaded; {lc_cov:.2f}% of variants over {LABOUR_NET_WEIGHT_CUTOFF:g} g found a Labour Charge"
+        + (f" ({l['heavy_no_lc']:,} without — no ERP labour rate for their group)" if l["heavy_no_lc"] else "")))
+
+    # ── Calculations (re-checked on every published row) ──
+    # Columns added 2026-10-29 only exist once a refresh has rebuilt the snapshot.
+    snap_cols = {f.name for f in bq.get_table(VARIANT_SNAPSHOT_TABLE).schema}
+    gem_cp_sql = "IFNULL(gemstone_cp,0)" if "gemstone_cp" in snap_cols else "0"
+    gem_amt_sql = "IFNULL(gemstone_amount,0)" if "gemstone_amount" in snap_cols else "0"
+    dia_pcs_sql = "diamond_pieces" if "diamond_pieces" in snap_cols else "1"
+    v = one(f"""
+        SELECT COUNT(*) AS n, COUNT(DISTINCT item_code) AS uniq,
+          COUNTIF(final_after_gst_overall IS NULL) AS null_final,
+          COUNTIF(ABS(IFNULL(making_amount,0) - IF(STARTS_WITH(UPPER(item_code),'LJ-GC') AND net_weight > 0, GREATEST(1, net_weight)*IFNULL(making_charge_per_g,0), IFNULL(net_weight,0)*IFNULL(making_charge_per_g,0))) > 0.05) AS bad_making,
+          COUNTIF(ABS(IFNULL(after_discount,0) - (IFNULL(metal_amount,0)+IFNULL(net_making_amount,0)+IFNULL(net_diamond_amount,0)+{gem_amt_sql})) > 0.05) AS bad_after,
+          COUNTIF(ABS(IFNULL(gst,0) - (IFNULL(after_discount,0) - IF(STARTS_WITH(UPPER(item_code),'LJ-GC'), IFNULL(net_making_amount,0), 0))*{GST_RATE}) > 0.05) AS bad_gst,
+          COUNTIF(ABS(IFNULL(final_after_gst_overall,0) - CEIL(IFNULL(after_discount,0)+IFNULL(gst,0))) > 1) AS bad_final,
+          COUNTIF((net_weight <= {LABOUR_NET_WEIGHT_CUTOFF} AND ABS(IFNULL(cp_pr_gm_making,0) - {CP_PR_GM_MAKING_FIXED_BELOW_CUTOFF}) > 0.01)
+               OR (net_weight > {LABOUR_NET_WEIGHT_CUTOFF} AND ABS(IFNULL(cp_pr_gm_making,0) - net_weight*IFNULL(labour_charge,0)) > 0.05)) AS bad_labour,
+          COUNTIF(ABS(IFNULL(total_cp_cost,0) - (IFNULL(total_diamond_cp,0)+{gem_cp_sql}+IFNULL(cp_pr_gm_making,0)+IFNULL(metal_amount,0))*(1+{GST_RATE})) > 0.05) AS bad_cp,
+          COUNTIF(final_after_gst_overall > 0 AND margin_pct IS NOT NULL
+                  AND ABS(margin_pct - (final_after_gst_overall-total_cp_cost)/final_after_gst_overall*100) > 0.05) AS bad_margin,
+          COUNTIF(item_group = 'Gold') AS gold, COUNTIF(item_group = 'Gold' AND NOT (metal_amount > 0)) AS gold_no_metal,
+          COUNTIF(item_group = 'Diamond') AS dia, COUNTIF(item_group = 'Diamond' AND NOT (diamond_amount > 0)) AS dia_no_amt,
+          COUNTIF(item_group = 'Diamond' AND NOT (total_diamond_cp > 0)) AS dia_no_cp,
+          COUNTIF(LOWER(material_type) LIKE '%diamond%') AS dia_mt,
+          COUNTIF(LOWER(material_type) LIKE '%diamond%' AND NOT (diamond_weight > 0)) AS dia_mt_no_dw,
+          COUNTIF(LOWER(material_type) LIKE '%diamond%' AND NOT ({dia_pcs_sql} > 0)) AS dia_mt_no_pcs,
+          STRING_AGG(DISTINCT IF(LOWER(material_type) LIKE '%diamond%' AND NOT (diamond_weight > 0 AND {dia_pcs_sql} > 0),
+                                 REGEXP_EXTRACT(item_code, r'^[^-]+-[^-]+'), NULL) LIMIT 10) AS dia_mt_no_dw_styles
+        FROM `{VARIANT_SNAPSHOT_TABLE}`""")
+    p = one(f"""
+        SELECT COUNT(*) AS n,
+          COUNTIF(carat_weight IS NOT NULL AND purchase_rate IS NOT NULL
+                  AND ABS(purchase_amount - carat_weight*purchase_rate) > 0.01) AS bad_pr_amt,
+          COUNTIF(item_group_name = 'Gold' AND NOT (metal_amount > 0)) AS gold_no_rate
+        FROM `{PRODUCT_PRICE_SNAPSHOT_TABLE}`""")
+    n = v["n"]
+    def calc(name, bad, what):
+        checks.append(_hc("Calculations", name, bad == 0,
+            f"All {n:,} variants correct — {what}" if bad == 0 else f"{bad:,} of {n:,} variants don't match — {what}"))
+    checks.append(_hc("Calculations", "Data loaded (Product Price + Variant Level)",
+        p["n"] >= 100000 and n >= 30000 and v["uniq"] == n and v["null_final"] == 0,
+        f"{p['n']:,} Product Price rows, {n:,} variants ({v['uniq']:,} unique), "
+        f"{v['null_final']:,} without a Final After GST"))
+    calc("Making Amount", v["bad_making"], "Net Weight × Making Charge /g")
+    calc("After Discount", v["bad_after"], "Metal + Net Making + Net Diamond")
+    calc("GST 3%", v["bad_gst"], "After Discount × 3%")
+    calc("Final After GST Overall", v["bad_final"], "After Discount + GST, rounded up")
+    calc("CP. pr gm making (Labour)", v["bad_labour"], f"₹{CP_PR_GM_MAKING_FIXED_BELOW_CUTOFF:,.0f} up to {LABOUR_NET_WEIGHT_CUTOFF:g} g, else Net Weight × Labour Charge")
+    calc("Total CP Cost", v["bad_cp"], "Diamond CP + CP making + Metal Amount")
+    calc("Margin %", v["bad_margin"], "(Final After GST − Total CP) ÷ Final After GST")
+    checks.append(_hc("Calculations", "Pr.Ct Amount (Product Price)", p["bad_pr_amt"] == 0 and p["gold_no_rate"] == 0,
+        f"Carat Weight × Purchase Rate on every stone row ({p['bad_pr_amt']:,} mismatches); "
+        f"{p['gold_no_rate']:,} gold rows without a gold rate"))
+    dia_cov = (v["dia"] - v["dia_no_cp"]) / v["dia"] * 100 if v["dia"] else 100.0
+    checks.append(_hc("Calculations", "Metal & Diamond amounts filled",
+        v["gold_no_metal"] == 0 and v["dia_no_amt"] == 0 and dia_cov >= 98.0,
+        f"Gold variants without Metal Amount: {v['gold_no_metal']:,} of {v['gold']:,}; "
+        f"Diamond variants without Diamond Amount: {v['dia_no_amt']:,}; "
+        f"Diamond CP found for {dia_cov:.2f}% of {v['dia']:,} diamond variants"
+        + (f" ({v['dia_no_cp']:,} with no stone rate match)" if v["dia_no_cp"] else "")))
+    # Material Type diamond -> diamond weight AND pieces must not be 0 (user, 2026-10-29)
+    ok_dia = v["dia_mt_no_dw"] == 0 and v["dia_mt_no_pcs"] == 0
+    checks.append(_hc("Calculations", "Diamond weight & pieces — ERP (Variant Level)", ok_dia,
+        (f"All {v['dia_mt']:,} Diamond material-type variants have diamond weight and pieces" if ok_dia else
+         f"Of {v['dia_mt']:,} Diamond material-type variants: {v['dia_mt_no_dw']:,} with diamond weight 0, "
+         f"{v['dia_mt_no_pcs']:,} with diamond pieces 0 (styles: {v['dia_mt_no_dw_styles']}) — Diamond Amount / CP are 0 for them")
+        + ("" if "diamond_pieces" in snap_cols else " · pieces not checked yet: runs after the next data refresh")))
+    s = one(f"""
+        WITH kv AS (
+          SELECT * FROM (
+            SELECT a.owner_id, a.key, a.value_st FROM `{SHOPIFY_METAFIELDS_TABLE}` a
+            WHERE LOWER(a.namespace) IN ('custom', 'ornaverse')
+              AND a.key IN ('diamond_weight', 'total_weight_approx_', 'diamond_pieces', 'total_number_of_diamonds')
+            QUALIFY ROW_NUMBER() OVER (PARTITION BY a.owner_id, a.key ORDER BY a.namespace DESC) = 1)
+          PIVOT (ANY_VALUE(value_st) FOR key IN ('diamond_weight', 'total_weight_approx_', 'diamond_pieces', 'total_number_of_diamonds'))
+        ),
+        own AS (SELECT DISTINCT owner_id FROM `{SHOPIFY_METAFIELDS_TABLE}` WHERE LOWER(namespace) IN ('custom', 'ornaverse')),
+        b AS (
+          SELECT external_variant_id, item_code, item_attribute_id FROM `{G2D_TABLE}`
+          WHERE external_variant_id IS NOT NULL AND item_code IS NOT NULL AND TRIM(item_code) != ''
+          QUALIFY ROW_NUMBER() OVER (PARTITION BY external_variant_id ORDER BY COALESCE(modified_date, creation_date) DESC) = 1
+        ),
+        x AS (
+          SELECT b.item_code,
+            GREATEST(IFNULL(SAFE_CAST(TRIM(kv.diamond_weight) AS FLOAT64), 0), IFNULL(SAFE_CAST(TRIM(kv.total_weight_approx_) AS FLOAT64), 0)) AS dw,
+            GREATEST(IFNULL(SAFE_CAST(TRIM(kv.diamond_pieces) AS FLOAT64), 0), IFNULL(SAFE_CAST(TRIM(kv.total_number_of_diamonds) AS FLOAT64), 0)) AS pcs
+          FROM own JOIN b ON b.external_variant_id = own.owner_id
+          LEFT JOIN kv ON kv.owner_id = own.owner_id
+          LEFT JOIN `{ITEM_ATTRIBUTES_TABLE}` ca ON ca.item_attribute_id = b.item_attribute_id
+          WHERE LOWER(ca.item_group_name) LIKE '%diamond%'
+        )
+        SELECT COUNT(*) AS n, COUNTIF(dw <= 0) AS no_dw, COUNTIF(pcs <= 0) AS no_pcs,
+          STRING_AGG(DISTINCT IF(dw <= 0 OR pcs <= 0, REGEXP_EXTRACT(item_code, r'^[^-]+-[^-]+'), NULL) LIMIT 10) AS styles,
+          COUNT(DISTINCT IF(dw <= 0 OR pcs <= 0, REGEXP_EXTRACT(item_code, r'^[^-]+-[^-]+'), NULL)) AS n_styles
+        FROM x""")
+    ok_sh = s["no_dw"] == 0 and s["no_pcs"] == 0
+    checks.append(_hc("Calculations", "Diamond weight & pieces — Shopify", ok_sh,
+        f"All {s['n']:,} Diamond material-type Shopify variants have diamond weight and pieces" if ok_sh else
+        f"Of {s['n']:,} Diamond material-type Shopify variants: {s['no_dw']:,} with diamond weight blank/0, "
+        f"{s['no_pcs']:,} with diamond pieces blank/0 ({s['n_styles']:,} styles, e.g. {s['styles']}) — "
+        f"the Shopify tab prices these on the ERP weight"))
+
+    return {"date": today.isoformat(), "checked_at": datetime.now(timezone.utc).isoformat(), "checks": checks,
+            "passed": sum(1 for c in checks if c["ok"] is True),
+            "failed": sum(1 for c in checks if c["ok"] is False),
+            "blank": sum(1 for c in checks if c["ok"] is None)}
 
 
 def latest_snapshot_status():
@@ -2204,7 +3566,7 @@ def latest_snapshot_status():
 #      -> apply each change via the SAME *_update() functions the
 #         individual panels already use (each one also invalidates its
 #         own in-memory TTL cache -- see the comments in diamond_slab_
-#         update / labour_rates_update / cash_back_rates_update /
+#         update / cash_back_rates_update /
 #         g2d_config_update)
 #      -> ONE refresh_snapshots() rebuild for the whole batch
 #      -> spot-check a handful of real SKUs, recomputed live through the
@@ -2240,11 +3602,6 @@ def _config_dispatch():
             "list": diamond_slab_list, "key_field": "code",
             "update": lambda c: diamond_slab_update(c["code"], c["disc_pct"]),
             "value_fields": ["disc_pct"],
-        },
-        "labour": {
-            "list": labour_rates_list, "key_field": "rate_key",
-            "update": lambda c: labour_rates_update(c["rate_key"], c["amount"]),
-            "value_fields": ["amount"],
         },
         "cash_back": {
             "list": cash_back_rates_list, "key_field": "rate_key",
@@ -2417,6 +3774,49 @@ def deploy_config(changes):
     }
 
 
+def deploy_slab_excel():
+    """'Deploy to Dashboard' on the Slab Excel Table: re-read the slab, rebuild
+    every published dataset with it (Ornaverse BOM / Variant / Product Default,
+    Shopify, Inventory -- refresh_snapshots), spot-check, and log one
+    config_deployments row (so Daily Check shows it)."""
+    import json
+    _SLAB_CACHE["ts"] = 0.0
+    _COIN_CP_CACHE["ts"] = 0.0; _COIN_CP_CACHE["data"] = {}
+    rules = fetch_slab_rules()
+    version = _next_config_version()
+    snap = refresh_snapshots(triggered_by=f"slab_deploy:{version}")
+    validation_status, validation_detail = "SKIPPED", None
+    if snap["status"] == "SUCCESS":
+        validation_status, validation_detail = _validate_deployed_snapshot()
+    status = "SUCCESS" if (snap["status"] == "SUCCESS" and validation_status == "PASSED") else "FAILED"
+    error_message = (snap.get("error") if snap["status"] != "SUCCESS"
+                     else (None if validation_status == "PASSED" else f"post-deploy validation {validation_status.lower()}: {validation_detail}"))
+    summary = {}
+    try:
+        r = list(_client().query(f"""
+            SELECT COUNTIF(slab_status LIKE 'Slab applied%') AS applied,
+                   COUNTIF(slab_status LIKE '%kept existing%') AS kept_existing,
+                   COUNTIF(slab_status = 'No slab match') AS no_match,
+                   COUNTIF(slab_status LIKE '%Error%') AS errors,
+                   COUNTIF(free_gold_coin IS NOT NULL) AS with_coin, COUNT(*) AS total
+            FROM `{VARIANT_SNAPSHOT_TABLE}`""").result())[0]
+        summary = dict(r.items())
+    except Exception as e:
+        summary = {"error": str(e)}
+    deployed_at = datetime.now(timezone.utc).isoformat()
+    changed = [{"table": "slab_excel", "key": "slab rows", "field": "rows", "before": None, "after": len(rules)}]
+    _client().insert_rows_json(CONFIG_DEPLOYMENTS_TABLE, [{
+        "version": version, "deployed_at": deployed_at, "status": status,
+        "changed_fields": json.dumps(changed, separators=(",", ":")),
+        "product_price_rows": snap.get("product_price_rows"), "variant_level_rows": snap.get("variant_level_rows"),
+        "duration_sec": snap.get("duration_sec"), "validation_status": validation_status,
+        "validation_detail": validation_detail, "error_message": error_message,
+    }])
+    return {"version": version, "status": status, "deployed_at": deployed_at, "slab_rows": len(rules),
+            "summary": summary, "duration_sec": snap.get("duration_sec"),
+            "validation_status": validation_status, "validation_detail": validation_detail, "error_message": error_message}
+
+
 def list_config_deployments(limit=20):
     bq = _client()
     rows = list(bq.query(
@@ -2439,68 +3839,213 @@ def list_config_deployments(limit=20):
 
 
 # ══════════════════════════════════════════════════════════════════════
-#  MTO Daily Margin -- reuses the EXISTING Sales Analytics fact table
-#  (sales_dashboard.sales_reporting, rebuilt daily 10:00 IST, already
-#  deduped/GST-adjusted) filtered to sale_type='MTO', joined to the SAME
-#  SKU-then-style cost fallback (cost_reference / cost_reference_style)
-#  the existing Sales dashboard uses for margin. NOT a new calculation
-#  engine and NOT the Product Pricing / Variant Level engine (those price
-#  a catalog SKU in the abstract; this reports what an MTO order actually
-#  sold for and actually cost) -- Cost is left blank (never guessed) for
-#  any SKU/style the cost tables don't cover yet.
+#  MTO Margin (GET /mto-margin) -- every MTO + Online_MTO order line booked
+#  in marketing_sale (cancel_order lines never count), costed on the day it
+#  was punched. CP = the Ornaverse Variant calculation (_calc_on_weights) on
+#  the order line's own net / diamond weight + karat, with THAT DAY's gold
+#  rate (Pos.metal_rates, newest from_date <= order date) instead of today's;
+#  diamond / gemstone / labour CP use the current rate cards (no history is
+#  kept for those). SP = the MTO order rate as booked: net_sale, which is
+#  GST-INCLUSIVE in marketing_sale (tax_amount = net_sale - net_sale/1.03 on
+#  441/463 MTO lines; Online_MTO tax is the GST inside net_sale + discount),
+#  so it compares like-for-like with the GST-inclusive Total CP:
+#    Margin 1%  = (Gross - CP) / Gross,  Gross = net_sale + discount + additional_discount
+#    Margin 2%  = (net_sale - CP) / net_sale
+#    Final Margin % = (Actual SP - CP) / Actual SP,  Actual SP = net_sale - free coin value
+#  Free coin = the Slab Excel rule on the order's ex-GST amount (same as the
+#  Variant tab), except in an order that already bills a gold coin line
+#  (LJ-GC...) -- that coin is costed on its own line instead. A line whose
+#  calculation has no metal value or no diamond CP keeps its CP blank (never
+#  a fake-high margin) and says why in cp_basis.
 # ══════════════════════════════════════════════════════════════════════
-SALES_REPORTING_TABLE = os.environ.get(
-    "SALES_REPORTING_TABLE", "lucirajewelry-prod.sales_dashboard.sales_reporting")
-COST_REFERENCE_TABLE = os.environ.get(
-    "COST_REFERENCE_TABLE", "lucirajewelry-prod.sales_dashboard.cost_reference")
-COST_REFERENCE_STYLE_TABLE = os.environ.get(
-    "COST_REFERENCE_STYLE_TABLE", "lucirajewelry-prod.sales_dashboard.cost_reference_style")
+MARKETING_SALE_TABLE = os.environ.get(
+    "MARKETING_SALE_TABLE", "lucirajewelry-prod.ds_imputed_reporting.marketing_sale")
+MTO_FULFILLMENTS = ("MTO", "Online_MTO")
+MTO_MARGIN_BLOB = f"{SNAPSHOT_GCS_PREFIX}/mto_margin.json.gz"
+MTO_MARGIN_MAX_AGE_SEC = 1800
+# Pos.metal_rates has no Gold row between 2025-06-27 and Oct 2025, so an order
+# whose newest Pos rate is older than this falls back to the old
+# gold_rates.daily_gold_prices table (same per-10g 999 convention) for its day.
+DAILY_GOLD_PRICES_TABLE = os.environ.get("DAILY_GOLD_PRICES_TABLE", "lucirajewelry-prod.gold_rates.daily_gold_prices")
+MTO_RATE_MAX_GAP_DAYS = 3
 
 
-def mto_daily_margin(date_str):
+def gold_rate_history():
+    """[(date, 24K rate per gram)] ascending -- one row per from_date, the same
+    'Gold' row (and same-day tie-break) todays_gold_rates() reads."""
     bq = _client()
-    rows = list(bq.query(
-        f"""
-        SELECT sr.date, sr.document_no, sr.sku, sr.product_name, sr.store, sr.channel,
-               sr.gross, sr.discount, sr.net,
-               COALESCE(cr.unit_cost_sku, crs.unit_cost_style) AS cost
-        FROM `{SALES_REPORTING_TABLE}` sr
-        LEFT JOIN `{COST_REFERENCE_TABLE}` cr ON cr.full_sku = sr.sku
-        LEFT JOIN `{COST_REFERENCE_STYLE_TABLE}` crs ON crs.style_token = sr.style
-        WHERE sr.sale_type = 'MTO' AND sr.date = @d
-        ORDER BY sr.document_no, sr.sku
-        """,
-        job_config=bigquery.QueryJobConfig(query_parameters=[
-            bigquery.ScalarQueryParameter("d", "DATE", date_str),
-        ]),
-    ).result())
+    rows = bq.query(f"""
+        SELECT DATE(a.from_date) AS d, a.sales_rate * 10 AS rate10
+        FROM `{METAL_RATES_TABLE}` a LEFT JOIN `{ITEM_GROUPS_TABLE}` b ON a.metal_type_id = b.item_group_id
+        WHERE b.item_group_name = 'Gold' AND a.sales_rate IS NOT NULL
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY DATE(a.from_date) ORDER BY a.from_date DESC, a.rate_id DESC) = 1
+        ORDER BY d""").result()
+    return [(r["d"], float(r["rate10"]) / 10.0) for r in rows]
+
+
+def daily_gold_price_history():
+    """[(date, 24K rate per gram)] ascending from the old daily_gold_prices table
+    (STRING columns, some dates repeated -> the day's highest)."""
+    bq = _client()
+    rows = bq.query(f"""
+        SELECT SAFE.PARSE_DATE('%Y-%m-%d', date) AS d, MAX(SAFE_CAST(gold_999_price AS FLOAT64)) AS rate10
+        FROM `{DAILY_GOLD_PRICES_TABLE}` GROUP BY d
+        HAVING d IS NOT NULL AND rate10 IS NOT NULL ORDER BY d""").result()
+    return [(r["d"], float(r["rate10"]) / 10.0) for r in rows]
+
+
+def _rate_on(hist, day):
+    """Newest (date, rate) in an ascending history on or before `day`, else (None, None)."""
+    import bisect
+    i = bisect.bisect_right([h[0] for h in hist], day) - 1
+    return hist[i] if i >= 0 else (None, None)
+
+
+def mto_margin_rows():
+    from decimal import Decimal
+    bq = _client()
+    fulfil_sql = ", ".join(f"'{f}'" for f in MTO_FULFILLMENTS)
+    raw = list(bq.query(f"""
+        SELECT m.Transaction_Date AS order_date, m.Fullfillment AS order_type, m.document_no,
+               CAST(m.item_line_no AS STRING) AS item_line_no,
+               m.company_code, m.Channel AS channel, m.Full_sku AS item_code, m.Product_Title AS product_name,
+               m.item_group_name, m.type_name AS category, m.karat_name, m.metal_color_name,
+               m.pieces, m.net_weight, m.diamond_weight, m.discount, m.additional_discount, m.net_sale
+        FROM `{MARKETING_SALE_TABLE}` m
+        WHERE m.Fullfillment IN ({fulfil_sql})
+          -- a line also booked as cancel_order never counts, whatever its own Fullfillment says
+          AND NOT EXISTS (SELECT 1 FROM `{MARKETING_SALE_TABLE}` c
+                          WHERE c.Fullfillment = 'cancel_order'
+                            AND c.document_no = m.document_no AND c.Full_sku = m.Full_sku)
+        ORDER BY m.Transaction_Date DESC, m.document_no, m.item_line_no
+    """).result())
+    hist, old_hist = gold_rate_history(), daily_gold_price_history()
+    ctx = _calc_context(sorted({r["item_code"] for r in raw if r["item_code"]}))
+    coin_docs = {r["document_no"] for r in raw if _is_gold_coin(r["item_code"])}
+    num = lambda v: float(v) if isinstance(v, Decimal) else v
     out = []
-    for r in rows:
-        net = float(r["net"]) if r["net"] is not None else 0.0
-        cost = float(r["cost"]) if r["cost"] is not None else None
-        margin_amt = (net - cost) if cost is not None else None
-        margin_pct = (margin_amt / net * 100.0) if (margin_amt is not None and net) else None
-        out.append({
-            "date": r["date"].isoformat() if r["date"] else None,
-            "document_no": r["document_no"], "sku": r["sku"], "product_name": r["product_name"],
-            "store": r["store"], "channel": r["channel"],
-            "gross": round(float(r["gross"]), 2) if r["gross"] is not None else None,
-            "discount": round(float(r["discount"]), 2) if r["discount"] is not None else None,
-            "net": round(net, 2),
-            "cost": round(cost, 2) if cost is not None else None,
-            "margin_amt": round(margin_amt, 2) if margin_amt is not None else None,
-            "margin_pct": round(margin_pct, 2) if margin_pct is not None else None,
+    for r in raw:
+        d = {k: num(v) for k, v in dict(r).items()}
+        code, pcs = d["item_code"], int(d.get("pieces") or 0) or 1
+        basis = []
+        rate_date, r24 = _rate_on(hist, d["order_date"])
+        if rate_date is None or (d["order_date"] - rate_date).days > MTO_RATE_MAX_GAP_DAYS:
+            old_date, old_r24 = _rate_on(old_hist, d["order_date"])
+            if old_date and (rate_date is None or old_date > rate_date):
+                rate_date, r24 = old_date, old_r24
+                basis.append("gold rate from daily_gold_prices (no Pos rate that week)")
+        if r24:
+            gold = {kt: round(r24 * mult, 2) for kt, mult in KARAT_PURITY.items()}
+        else:
+            gold = ctx["gold"]
+            basis.append("no gold rate on/before order date -> today's")
+        nw = (d["net_weight"] / pcs) if d.get("net_weight") else None
+        dw = (d["diamond_weight"] / pcs) if d.get("diamond_weight") is not None else None
+        # 0 diamond weight on an item ERP says has diamonds = not captured -> ERP weight
+        if dw is not None and dw <= 0 and float((ctx["item_by_code"].get(code) or {}).get("diamond_weight") or 0) > 0:
+            dw = None
+        row, info = _calc_on_weights(code, {**ctx, "gold": gold}, nw, dw, d.get("karat_name"))
+        basis += info["basis"]
+        kt = _karat_from_purity(d.get("karat_name"), code)
+        if row is not None and not (kt and gold.get(kt) is not None):
+            basis.append("metal at today's rate (not gold)")
+        net = d.get("net_sale") or 0.0
+        disc = (d.get("discount") or 0.0) + (d.get("additional_discount") or 0.0)
+        gross = net + disc
+        rec = {
+            "order_date": d["order_date"].isoformat() if d["order_date"] else None,
+            "order_month": d["order_date"].strftime("%Y-%m") if d["order_date"] else None,
+            "order_type": d["order_type"], "document_no": d["document_no"], "item_line_no": d["item_line_no"],
+            "company_code": d["company_code"],
+            "channel": d["channel"], "item_code": code, "product_name": d["product_name"],
+            "item_group_name": d["item_group_name"], "category": d["category"], "karat_name": d["karat_name"],
+            "metal_color_name": d["metal_color_name"], "pieces": pcs, "net_weight": d["net_weight"],
+            "diamond_weight": d["diamond_weight"],
+            "gold_rate_date": rate_date.isoformat() if rate_date else None,
+            "gold_rate_24k": round(r24, 2) if r24 else None,
+            "karat_rate": gold.get(kt) if kt else None,
+            "gross_amount": round(gross, 2), "discount": round(disc, 2), "net_sale": round(net, 2),
+            "order_ex_gst": round(net / (1.0 + GST_RATE), 2),
+        }
+        if row is None:
+            rec["cp_basis"] = ", ".join(basis) or "Not priced"
+            out.append(rec)
+            continue
+        dash = (row.get("final_after_gst_overall") or 0) * pcs
+        rec.update({
+            "metal_value": round(row["metal_amount"] * pcs, 2),
+            "diamond_cp": round((row.get("total_diamond_cp") or 0.0) * pcs, 2),
+            "gemstone_cp": round((row.get("gemstone_cp") or 0.0) * pcs, 2),
+            "labour_cp": round((row.get("cp_pr_gm_making") or 0.0) * pcs, 2),
+            "dashboard_price": round(dash, 2),
+            "price_vs_dashboard_pct": round((net - dash) / dash * 100.0, 2) if dash else None,
         })
+        missing = []
+        if not (row["metal_amount"] or 0) > 0:
+            missing.append("no metal value" if (row.get("net_weight") or 0) > 0 else "no metal weight")
+        if float(row.get("diamond_weight") or 0) > 0 and not (row.get("total_diamond_cp") or 0) > 0:
+            missing.append("no diamond CP")
+        if missing:
+            rec["cp_basis"] = ", ".join(basis + [f"CP incomplete: {' & '.join(missing)}"])
+            out.append(rec)
+            continue
+        cp = row["total_cp_cost"] * pcs
+        coin_qty, coin_value = 0, 0.0
+        if d["document_no"] in coin_docs:
+            basis.append("coin billed in order")
+        else:
+            _, coin_rows, _, _ = slab_match(row.get("category"), row.get("material_type"), row.get("g2d"))
+            _, q, v, _ = _free_coin_for(coin_rows, net / pcs / (1.0 + GST_RATE))
+            coin_qty, coin_value = (q or 0) * pcs, (v or 0.0) * pcs
+        actual_sp = net - coin_value
+        rec.update({
+            "total_cp": round(cp, 2),
+            "margin1_pct": round((gross - cp) / gross * 100.0, 2) if gross else None,
+            "margin2_amount": round(net - cp, 2),
+            "margin2_pct": round((net - cp) / net * 100.0, 2) if net else None,
+            "free_coin_qty": coin_qty or None, "free_coin_value": round(coin_value, 2) if coin_value else None,
+            "actual_sp": round(actual_sp, 2),
+            "final_margin": round(actual_sp - cp, 2),
+            "final_margin_pct": round((actual_sp - cp) / actual_sp * 100.0, 2) if actual_sp else None,
+            "cp_basis": ", ".join(basis) or "Order weights",
+        })
+        out.append(rec)
     return out
 
 
-def mto_available_dates(limit=60):
-    bq = _client()
-    rows = list(bq.query(
-        f"SELECT DISTINCT date FROM `{SALES_REPORTING_TABLE}` WHERE sale_type='MTO' "
-        f"ORDER BY date DESC LIMIT {int(limit)}"
-    ).result())
-    return [r["date"].isoformat() for r in rows]
+MTO_MARGIN_COLUMNS = [
+    "order_date", "order_month", "order_type", "document_no", "item_line_no", "company_code", "channel", "item_code",
+    "product_name", "item_group_name", "category", "karat_name", "metal_color_name", "pieces", "net_weight",
+    "diamond_weight", "gold_rate_date", "gold_rate_24k", "karat_rate", "metal_value", "diamond_cp",
+    "gemstone_cp", "labour_cp", "total_cp", "gross_amount", "discount", "net_sale", "order_ex_gst",
+    "dashboard_price", "price_vs_dashboard_pct", "margin1_pct", "margin2_amount", "margin2_pct", "free_coin_qty", "free_coin_value",
+    "extra_discount", "actual_sp", "final_margin", "final_margin_pct", "cp_basis",
+]
+
+
+def mto_margin_snapshot(force=False):
+    """Column-wise gzip blob of mto_margin_rows(), same shape/caching as
+    inventory_full_snapshot (rebuilt when older than MTO_MARGIN_MAX_AGE_SEC)."""
+    import json
+    bucket = _gcs_client().bucket(SNAPSHOT_GCS_BUCKET)
+    blob = bucket.blob(MTO_MARGIN_BLOB)
+    if not force and blob.exists():
+        blob.reload()
+        age = (datetime.now(timezone.utc) - blob.updated).total_seconds() if blob.updated else 1e9
+        meta = blob.metadata or {}
+        if age < MTO_MARGIN_MAX_AGE_SEC and meta.get("snapshot"):
+            return {"snapshot_url": f"https://storage.googleapis.com/{SNAPSHOT_GCS_BUCKET}/{MTO_MARGIN_BLOB}",
+                    "snapshot": json.loads(meta["snapshot"])}
+    rows = mto_margin_rows()
+    snap = {"snapshot_created_at": datetime.now(timezone.utc).isoformat(), "rows": len(rows),
+            "orders": len({r["document_no"] for r in rows})}
+    payload = {"columns": MTO_MARGIN_COLUMNS, "data": [[r.get(c) for c in MTO_MARGIN_COLUMNS] for r in rows],
+               "snapshot": snap}
+    gz = gzip.compress(json.dumps(payload, separators=(",", ":"), default=str).encode("utf-8"), compresslevel=6)
+    blob.content_encoding = "gzip"
+    blob.metadata = {"snapshot": json.dumps(snap, separators=(",", ":"))}
+    blob.upload_from_string(gz, content_type="application/json")
+    return {"snapshot_url": f"https://storage.googleapis.com/{SNAPSHOT_GCS_BUCKET}/{MTO_MARGIN_BLOB}", "snapshot": snap}
 
 
 def query_snapshot_rows(table_fqn):
@@ -2608,10 +4153,168 @@ def g2d_config_update(band_key, making_charge=None, dis_pct=None, diamond_dis_pc
     return g2d_config_list()
 
 
+# MTO Extra Discount (user, 2026-10-30): a discount given to the customer on
+# top of the booked order rate, typed in per order line on the MTO tab by an
+# editor. It comes off the sale price before Final Margin only (Actual SP =
+# Order Rate - free coin - extra discount); Margin 1 / 2 are untouched. Kept in
+# its own small table keyed by document_no + item_line_no (unique per MTO line)
+# and read live by the tab, so an edit shows at once -- the 30-min margin blob
+# is never rebuilt for it. DML only (no streaming inserts), so a value can be
+# changed or cleared right after it was saved.
+MTO_EXTRA_DISCOUNT_TABLE = os.environ.get(
+    "MTO_EXTRA_DISCOUNT_TABLE", "lucirajewelry-prod.gold_rates.mto_extra_discounts")
+
+
+def _ensure_mto_extra_discount_table():
+    _client().query(f"""
+        CREATE TABLE IF NOT EXISTS `{MTO_EXTRA_DISCOUNT_TABLE}` (
+          document_no STRING, item_line_no STRING, item_code STRING, extra_discount FLOAT64,
+          updated_by STRING, updated_at TIMESTAMP)""").result()
+
+
+def mto_extra_discount_list():
+    """{"document_no|item_line_no": {"amount", "by", "at"}}"""
+    from google.api_core.exceptions import NotFound
+    try:
+        rows = _client().query(
+            f"SELECT document_no, item_line_no, extra_discount, updated_by, updated_at FROM `{MTO_EXTRA_DISCOUNT_TABLE}`"
+        ).result()
+    except NotFound:
+        return {}
+    return {f"{r['document_no']}|{r['item_line_no']}": {
+                "amount": float(r["extra_discount"]), "by": r["updated_by"],
+                "at": r["updated_at"].isoformat() if r["updated_at"] else None} for r in rows}
+
+
+def mto_extra_discount_set(document_no, item_line_no, item_code, amount, editor):
+    """Save (amount > 0) or clear (blank / 0) one line's extra discount."""
+    document_no, item_line_no = str(document_no or "").strip(), str(item_line_no or "").strip()
+    if not document_no or not item_line_no:
+        raise ValueError("document_no and item_line_no are required")
+    if amount is not None and (not math.isfinite(amount) or amount < 0):
+        raise ValueError("extra_discount must be a number of 0 or more")
+    _ensure_mto_extra_discount_table()
+    params = [bigquery.ScalarQueryParameter("doc", "STRING", document_no),
+              bigquery.ScalarQueryParameter("line", "STRING", item_line_no)]
+    if not amount:
+        sql = f"DELETE FROM `{MTO_EXTRA_DISCOUNT_TABLE}` WHERE document_no = @doc AND item_line_no = @line"
+    else:
+        sql = f"""
+            MERGE `{MTO_EXTRA_DISCOUNT_TABLE}` t
+            USING (SELECT @doc AS document_no, @line AS item_line_no) s
+            ON t.document_no = s.document_no AND t.item_line_no = s.item_line_no
+            WHEN MATCHED THEN UPDATE SET extra_discount = @amt, item_code = @code, updated_by = @by,
+                                         updated_at = CURRENT_TIMESTAMP()
+            WHEN NOT MATCHED THEN INSERT (document_no, item_line_no, item_code, extra_discount, updated_by, updated_at)
+              VALUES (@doc, @line, @code, @amt, @by, CURRENT_TIMESTAMP())"""
+        params += [bigquery.ScalarQueryParameter("amt", "FLOAT64", round(float(amount), 2)),
+                   bigquery.ScalarQueryParameter("code", "STRING", str(item_code or "")),
+                   bigquery.ScalarQueryParameter("by", "STRING", editor)]
+    _client().query(sql, job_config=bigquery.QueryJobConfig(query_parameters=params)).result()
+    return {"key": f"{document_no}|{item_line_no}", "amount": round(float(amount), 2) if amount else None, "by": editor}
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  Editor access (user, 2026-10-30): only EDITOR_EMAILS may change anything
+#  -- every slab / rate-card write and the MTO extra discount; everyone
+#  else who can open the dashboard is view-only. An editor signs in with
+#  their email + their own password (EDITOR_PASSWORDS env,
+#  "email=password;email=password") at POST /editor-login and gets a signed
+#  token (HMAC-SHA256, key derived from EDIT_SECRET, else REFRESH_TOKEN),
+#  valid EDITOR_TOKEN_TTL_SEC, which the page sends as X-Edit-Token on every
+#  write. Every POST/PUT/DELETE to an EDIT_PATHS endpoint without a valid
+#  token is refused (403) -- the API itself is public, so the check lives
+#  here, not only in the page. Dropping an email from EDITOR_EMAILS revokes
+#  it at once, even for a token already issued.
+# ══════════════════════════════════════════════════════════════════════
+EDITOR_EMAILS = tuple(e.strip().lower() for e in os.environ.get(
+    "EDITOR_EMAILS", "data@lucirajewelry.com,data.cat@lucirajewelry.com,tech@lucirajewelry.com").split(",") if e.strip())
+EDITOR_TOKEN_TTL_SEC = int(os.environ.get("EDITOR_TOKEN_TTL_SEC", str(12 * 3600)))
+EDIT_PATHS = ("/config-deploy", "/g2d-config", "/item-group-discounts", "/slab-excel", "/slab-excel/deploy",
+              "/diamond-slab-config", "/cash-back-config", "/mto-extra-discount")
+
+
+def _edit_key():
+    secret = os.environ.get("EDIT_SECRET") or REFRESH_TOKEN
+    return hashlib.sha256(f"pp-editor:{secret}".encode()).digest() if secret else None
+
+
+def _editor_passwords():
+    out = {}
+    for part in os.environ.get("EDITOR_PASSWORDS", "").split(";"):
+        email, sep, pw = part.partition("=")
+        email = email.strip().lower()
+        if sep and pw and email in EDITOR_EMAILS:
+            out[email] = pw
+    return out
+
+
+def issue_editor_token(email, password):
+    email = str(email or "").strip().lower()
+    key, pw = _edit_key(), _editor_passwords().get(email)
+    if not (key and pw and hmac.compare_digest(pw.encode(), str(password or "").encode())):
+        time.sleep(1)  # slows password guessing
+        return None
+    exp = int(time.time()) + EDITOR_TOKEN_TTL_SEC
+    sig = hmac.new(key, f"{email}|{exp}".encode(), hashlib.sha256).hexdigest()
+    return {"token": base64.urlsafe_b64encode(f"{email}|{exp}|{sig}".encode()).decode(), "email": email, "expires": exp}
+
+
+def editor_from_token(token):
+    """The editor's email for a valid, unexpired token, else None."""
+    try:
+        email, exp, sig = base64.urlsafe_b64decode(str(token or "").encode()).decode().split("|")
+        exp = int(exp)
+    except Exception:
+        return None
+    key = _edit_key()
+    if not key or exp < time.time() or email not in EDITOR_EMAILS:
+        return None
+    good = hmac.new(key, f"{email}|{exp}".encode(), hashlib.sha256).hexdigest()
+    return email if hmac.compare_digest(good, sig) else None
+
+
 @functions_framework.http
 def pos_price(request):
     if request.method == "OPTIONS":
         return ("", 204, CORS)
+    import json  # local, like every handler below (they make `json` a local name here)
+    path = (request.path or "/").rstrip("/")
+    if path.endswith("/editor-login"):
+        if request.method != "POST":
+            return (json.dumps({"error": "use POST"}), 405, CORS)
+        body = request.get_json(force=True, silent=True) or {}
+        tok = issue_editor_token(body.get("email"), body.get("password"))
+        if not tok:
+            return (json.dumps({"error": "Wrong email or password, or this email has no edit access."}), 401, CORS)
+        print(f"[editor] login {tok['email']}")
+        return (json.dumps(tok), 200, CORS)
+    if path.endswith("/editor-check"):
+        email = editor_from_token(request.headers.get("X-Edit-Token"))
+        return (json.dumps({"email": email, "can_edit": bool(email), "editors": list(EDITOR_EMAILS)}), 200, CORS)
+    editor = None
+    if request.method in ("POST", "PUT", "DELETE") and path.endswith(EDIT_PATHS):
+        editor = editor_from_token(request.headers.get("X-Edit-Token"))
+        if not editor:
+            return (json.dumps({"error": "View only — editor login required. Only " + ", ".join(EDITOR_EMAILS)
+                                + " can make changes."}), 403, CORS)
+        print(f"[editor] {editor} {request.method} {path}")
+    if path.endswith("/mto-extra-discounts"):
+        try:
+            return (json.dumps({"rows": mto_extra_discount_list()}, separators=(",", ":")), 200, CORS)
+        except Exception as e:
+            return (json.dumps({"error": str(e)}), 500, CORS)
+    if path.endswith("/mto-extra-discount"):
+        if request.method != "POST":
+            return (json.dumps({"error": "use POST"}), 405, CORS)
+        try:
+            body = request.get_json(force=True, silent=True) or {}
+            amt = body.get("extra_discount")
+            amt = float(amt) if amt not in (None, "") else None
+            return (json.dumps(mto_extra_discount_set(body.get("document_no"), body.get("item_line_no"),
+                                                      body.get("item_code"), amt, editor)), 200, CORS)
+        except Exception as e:
+            return (json.dumps({"error": str(e)}), 400, CORS)
     if (request.path or "/").rstrip("/").endswith("/refresh-snapshot"):
         # Cloud Scheduler -> here, once a day at 12:01 PM IST (see deploy.sh
         # / the scheduler job created alongside this service). This is the
@@ -2656,19 +4359,11 @@ def pos_price(request):
             return (json.dumps(latest_snapshot_status(), separators=(",", ":")), 200, CORS)
         except Exception as e:
             return (json.dumps({"error": str(e)}), 500, CORS)
-    if (request.path or "/").rstrip("/").endswith("/mto-daily-margin"):
+    if (request.path or "/").rstrip("/").endswith("/mto-margin"):
         import json
         try:
-            date_str = (request.args.get("date") or "").strip()
-            if not date_str:
-                dates = mto_available_dates(limit=1)
-                if not dates:
-                    return (json.dumps({"date": None, "available_dates": [], "rows": []}), 200, CORS)
-                date_str = dates[0]
-            rows = mto_daily_margin(date_str)
-            available_dates = mto_available_dates()
-            return (json.dumps({"date": date_str, "available_dates": available_dates, "rows": rows},
-                                separators=(",", ":")), 200, CORS)
+            force = (request.args.get("refresh") or "").strip().lower() in ("1", "true", "yes")
+            return (json.dumps(mto_margin_snapshot(force=force), separators=(",", ":")), 200, CORS)
         except Exception as e:
             return (json.dumps({"error": str(e)}), 500, CORS)
     if (request.path or "/").rstrip("/").endswith("/config-deploy"):
@@ -2732,6 +4427,69 @@ def pos_price(request):
             return (json.dumps({"error": "method not allowed"}), 405, CORS)
         except Exception as e:
             return (json.dumps({"error": str(e)}), 400, CORS)
+    if (request.path or "/").rstrip("/").endswith("/labour-rate-slab"):
+        import json
+        try:
+            return (json.dumps({"rows": labour_rate_slab_list()}, separators=(",", ":")), 200, CORS)
+        except Exception as e:
+            return (json.dumps({"error": str(e)}), 400, CORS)
+    if (request.path or "/").rstrip("/").endswith("/slab-excel/deploy"):
+        import json
+        try:
+            if request.method not in ("POST", "PUT"):
+                return (json.dumps({"error": "use POST"}), 405, CORS)
+            return (json.dumps(deploy_slab_excel(), separators=(",", ":"), default=str), 200, CORS)
+        except Exception as e:
+            return (json.dumps({"error": str(e)}), 500, CORS)
+    if (request.path or "/").rstrip("/").endswith("/slab-excel"):
+        import json
+        try:
+            if request.method == "GET":
+                return (json.dumps(slab_excel_list(), separators=(",", ":"), default=str), 200, CORS)
+            if request.method in ("POST", "PUT"):
+                body = request.get_json(force=True, silent=True) or {}
+                return (json.dumps(slab_excel_replace(body.get("rows")), separators=(",", ":"), default=str), 200, CORS)
+            return (json.dumps({"error": "method not allowed"}), 405, CORS)
+        except Exception as e:
+            return (json.dumps({"error": str(e)}), 400, CORS)
+    if (request.path or "/").rstrip("/").endswith("/inventory-full"):
+        import json
+        try:
+            force = (request.args.get("refresh") or "").strip().lower() in ("1", "true", "yes")
+            return (json.dumps(inventory_full_snapshot(force=force), separators=(",", ":")), 200, CORS)
+        except Exception as e:
+            return (json.dumps({"error": str(e)}), 500, CORS)
+    if (request.path or "/").rstrip("/").endswith("/company-inventory"):
+        import json
+        try:
+            return (json.dumps(company_inventory_rows(), separators=(",", ":")), 200, CORS)
+        except Exception as e:
+            return (json.dumps({"error": str(e)}), 500, CORS)
+    if (request.path or "/").rstrip("/").endswith("/shopify"):
+        import json
+        try:
+            force = (request.args.get("refresh") or "").strip().lower() in ("1", "true", "yes")
+            return (json.dumps(shopify_snapshot(force=force), separators=(",", ":")), 200, CORS)
+        except Exception as e:
+            return (json.dumps({"error": str(e)}), 500, CORS)
+    if (request.path or "/").rstrip("/").endswith("/gold-rate-strip"):
+        import json
+        try:
+            return (json.dumps(gold_rate_strip(), separators=(",", ":")), 200, CORS)
+        except Exception as e:
+            return (json.dumps({"error": str(e)}), 500, CORS)
+    if (request.path or "/").rstrip("/").endswith("/health-check"):
+        import json
+        try:
+            return (json.dumps(health_check(), separators=(",", ":")), 200, CORS)
+        except Exception as e:
+            return (json.dumps({"error": str(e)}), 500, CORS)
+    if (request.path or "/").rstrip("/").endswith("/stone-rate-slab"):
+        import json
+        try:
+            return (json.dumps({"rows": stone_rate_slab_list()}, separators=(",", ":")), 200, CORS)
+        except Exception as e:
+            return (json.dumps({"error": str(e)}), 400, CORS)
     if (request.path or "/").rstrip("/").endswith("/diamond-slab-config"):
         import json
         try:
@@ -2741,21 +4499,6 @@ def pos_price(request):
                 body = request.get_json(force=True, silent=True) or {}
                 rows = diamond_slab_update(str(body.get("code") or "").strip(), float(body.get("disc_pct")))
                 snapshot_refreshed = (_safe_refresh_snapshots("config_edit:diamond_slab")
-                                     if (body.get("refresh", True)) else None)
-                return (json.dumps({"rows": rows, "snapshot_refreshed": snapshot_refreshed},
-                                    separators=(",", ":")), 200, CORS)
-            return (json.dumps({"error": "method not allowed"}), 405, CORS)
-        except Exception as e:
-            return (json.dumps({"error": str(e)}), 400, CORS)
-    if (request.path or "/").rstrip("/").endswith("/labour-config"):
-        import json
-        try:
-            if request.method == "GET":
-                return (json.dumps({"rows": labour_rates_list()}, separators=(",", ":")), 200, CORS)
-            if request.method in ("POST", "PUT"):
-                body = request.get_json(force=True, silent=True) or {}
-                rows = labour_rates_update(str(body.get("rate_key") or "").strip(), float(body.get("amount")))
-                snapshot_refreshed = (_safe_refresh_snapshots("config_edit:labour")
                                      if (body.get("refresh", True)) else None)
                 return (json.dumps({"rows": rows, "snapshot_refreshed": snapshot_refreshed},
                                     separators=(",", ":")), 200, CORS)

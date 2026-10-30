@@ -63,6 +63,18 @@ def ppi_js():
     return send_from_directory(app.static_folder, "ppi.js")
 
 
+# The page + its script must never come from a stale browser cache -- after a
+# deploy, a plain reload has to show the new version (users were seeing old
+# buttons/labels). ppi_data.js (~11 MB, rarely changes) is left cacheable.
+@app.after_request
+def _no_stale_page(resp):
+    if request.path in ("/", "/ppi.js"):
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+    return resp
+
+
 @app.get("/ppi_data.js")
 def ppi_data_js():
     return send_from_directory(app.static_folder, "ppi_data.js")
