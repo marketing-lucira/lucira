@@ -44,7 +44,7 @@ them to. A full `mto_margin_rows()` run takes 2–4 minutes.
 
 ## 3. Deploy
 
-Run from the repo root (the folder with `.git`), not from a sub-folder:
+The script works from any folder; the path below is relative to the repo root (the folder with `.git`):
 
 ```powershell
 cd (git rev-parse --show-toplevel)
@@ -52,7 +52,8 @@ powershell -ExecutionPolicy Bypass -File .agents/skills/pp-dashboard/scripts/dep
 powershell -ExecutionPolicy Bypass -File .agents/skills/pp-dashboard/scripts/deploy.ps1 -Refresh  # + rebuild prices
 ```
 
-`-Api` or `-Page` deploys only that part. Use `-Refresh` whenever prices or MTO costs change (about 10 minutes; logs
+`-Api` or `-Page` deploys only that part. `-SetEditorPasswords` asks for each editor's dashboard password (hidden
+typing) and saves them on the API — needed once, and again whenever a password changes. Use `-Refresh` whenever prices or MTO costs change (about 10 minutes; logs
 only appear when it finishes). The script copies the page files into `pp-dashboard-web/static/` itself.
 
 ## 4. Verify live
