@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Store Access — Lucira</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%238b6f56'/%3E%3Ctext x='16' y='22' font-family='Inter,sans-serif' font-size='17' font-weight='700' fill='%23fff8f0' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f4f3f0; --card:#ffffff; --card2:#f8f7f4; --line:#e4e2dc;
+  --tx:#141414; --tx2:#52514e; --tx3:#8a8983; --series-1:#2a78d6; --series-1-soft:#cde2fb;
+  --good:#16833a; --good-bg:#e5f4ea; --bad:#c62828; --bad-bg:#fde8e8;
+  --brand:#8b6f56; --brand-dark:#6e5744; --brand-cream:#fff8f0;
+  --shadow:0 1px 2px rgba(20,20,20,.05),0 4px 16px rgba(20,20,20,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#121211; --card:#1b1b1a; --card2:#222220; --line:#33332f;
+    --tx:#f4f4f2; --tx2:#c3c2b7; --tx3:#8f8e86; --series-1:#3987e5; --series-1-soft:#1c3a5e;
+    --good:#4cc26f; --good-bg:#15301f; --bad:#f06a6a; --bad-bg:#3a1a1a;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --card:#1b1b1a; --card2:#222220; --line:#33332f;
+  --tx:#f4f4f2; --tx2:#c3c2b7; --tx3:#8f8e86; --series-1:#3987e5; --series-1-soft:#1c3a5e;
+  --good:#4cc26f; --good-bg:#15301f; --bad:#f06a6a; --bad-bg:#3a1a1a;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font:14px/1.5 Inter,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+header{background:var(--brand);color:#fff;border-bottom:2px solid var(--brand-dark)}
+header .bar{max-width:1040px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brandmark{width:36px;height:36px;border-radius:10px;background:var(--brand-cream);color:var(--brand);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px}
+header h1{font-size:17px;margin:0}
+header .sub{font-size:12px;opacity:.85}
+.spacer{flex:1}
+.hbtn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:6px 11px;cursor:pointer;font-size:12.5px;font-weight:600;text-decoration:none}
+.hbtn:hover{background:rgba(255,255,255,.24)}
+.wrap{max-width:1040px;margin:0 auto;padding:18px 16px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 18px;margin-bottom:16px}
+.card h2{font-size:15px;margin:0 0 4px}
+.muted{color:var(--tx3)} .small{font-size:12.5px}
+label.l{display:block;font-size:11.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--tx3);margin:14px 0 6px}
+input[type=email],input[type=text]{width:100%;max-width:420px;border:1px solid var(--line);background:var(--card2);border-radius:8px;padding:8px 10px}
+.stores{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card2);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px;user-select:none}
+.chip:has(input:checked){border-color:var(--series-1);background:var(--series-1-soft)}
+.btn{border:1px solid var(--line);background:var(--card2);border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;font-weight:600}
+.btn:hover{border-color:var(--series-1)}
+.btn.pri{background:var(--brand);border-color:var(--brand-dark);color:#fff}
+.btn.danger:hover{border-color:var(--bad);color:var(--bad)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.msg{border-radius:10px;padding:12px 14px;margin-bottom:16px;border:1px solid var(--line);overflow-wrap:anywhere}
+.msg.ok{background:var(--good-bg);border-color:var(--good)}
+.msg.err{background:var(--bad-bg);border-color:var(--bad)}
+.msg code,.t code{background:var(--card);border:1px solid var(--line);padding:1px 6px;border-radius:5px;font-size:12.5px}
+.tw{overflow-x:auto}
+table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+.t th,.t td{border-top:1px solid var(--line);padding:9px 8px;text-align:left;vertical-align:top}
+.t th{font-size:11.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--tx3);border-top:0}
+.tag{display:inline-block;border:1px solid var(--line);border-radius:6px;padding:1px 7px;margin:1px 3px 1px 0;font-size:12px;font-weight:600;background:var(--card2)}
+.acts{white-space:nowrap}
+.acts .btn{padding:4px 9px;font-size:12px}
+ol.how{margin:6px 0 0;padding-left:20px;color:var(--tx2)}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <div class="brandmark">L</div>
+  <div><h1>Store Access</h1><div class="sub">Emails that see only some stores on the Meeting Journey dashboard</div></div>
+  <div class="spacer"></div>
+  <a class="hbtn" href="/">← Dashboard</a>
+</div></header>
+
+<div class="wrap">
+  <div id="msg"></div>
+
+  <div class="card">
+    <h2 id="formTitle">Limit an email to some stores</h2>
+    <div class="muted small" id="formHelp"></div>
+    <label class="l" for="email">Email id</label>
+    <input type="email" id="email" placeholder="name@lucirajewelry.com" autocomplete="off">
+    <label class="l">Stores this email may see</label>
+    <div class="stores" id="stores"></div>
+    <label class="l" for="extra">New store not in the list? Type its code (optional)</label>
+    <input type="text" id="extra" placeholder="e.g. HSR" autocomplete="off" style="max-width:200px">
+    <div class="row">
+      <button class="btn pri" id="save">Save access</button>
+      <button class="btn" id="clear">Clear</button>
+      <span class="muted small" id="preview"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Emails limited to some stores</h2>
+    <div class="tw"><table class="t"><thead><tr><th>Email</th><th>Stores</th><th>Their link</th><th>Updated (IST)</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <h2>How it works</h2>
+    <ol class="how" id="how"></ol>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+function $(id){ return document.getElementById(id); }
+function esc(s){ return (s==null?'':''+s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+var STATE={stores:[],users:[]}, MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmt(ts){ if(!ts) return '—'; var h=+ts.slice(11,13), ap=h>=12?'PM':'AM'; return (+ts.slice(8,10))+' '+MON[+ts.slice(5,7)-1]+' '+ts.slice(0,4)+', '+(h%12||12)+':'+ts.slice(14,16)+' '+ap; }
+function isAll(stores){ return stores.indexOf('ALL')>=0; }
+function link(stores){ return location.origin+'/'+(isAll(stores)?'':stores.join('-')); }
+function tags(stores){ return isAll(stores)?'<span class="tag">All stores</span>':stores.map(function(k){ return '<span class="tag">'+esc(k)+'</span>'; }).join(''); }
+function ticked(){
+  var v=[].slice.call(document.querySelectorAll('#stores input:checked')).map(function(c){ return c.value; });
+  $('extra').value.split(/[\s,]+/).forEach(function(x){ x=x.toUpperCase().replace(/[^A-Z0-9]/g,''); if(x && v.indexOf(x)<0) v.push(x); });
+  return v;
+}
+function preview(){ var v=ticked(); $('preview').textContent=v.length?'Link: '+link(v):''; }
+function renderStores(sel){
+  sel=sel||[];
+  $('stores').innerHTML=STATE.stores.map(function(s){
+    return '<label class="chip"><input type="checkbox" value="'+esc(s.key)+'"'+(sel.indexOf(s.key)>=0?' checked':'')+'>'+esc(s.label)+'</label>'; }).join('');
+  [].forEach.call(document.querySelectorAll('#stores input'),function(c){ c.onchange=preview; });
+  preview();
+}
+function renderRows(){
+  var u=STATE.users;
+  $('rows').innerHTML=u.length?u.map(function(x){
+    var l=link(x.stores);
+    return '<tr><td><b>'+esc(x.email)+'</b></td><td>'+tags(x.stores)+'</td>'+
+      '<td><code>'+esc(l)+'</code></td><td>'+esc(fmt(x.updated_at))+'</td>'+
+      '<td class="acts"><button class="btn" data-a="edit" data-e="'+esc(x.email)+'">Edit</button> <button class="btn" data-a="copy" data-l="'+esc(l)+'">Copy link</button> '+
+      (STATE.google?'':'<button class="btn" data-a="reset" data-e="'+esc(x.email)+'">New password</button> ')+'<button class="btn danger" data-a="delete" data-e="'+esc(x.email)+'">Remove</button></td></tr>';
+  }).join(''):'<tr><td colspan="5" class="muted">'+(STATE.google?'No email is limited — everyone who signs in sees every store.':'No email added yet. Everyone on the shared team login sees every store.')+'</td></tr>';
+}
+function show(kind,html){ $('msg').innerHTML=html?'<div class="msg '+kind+'">'+html+'</div>':''; if(html) window.scrollTo({top:0,behavior:'smooth'}); }
+function apply(j){
+  STATE.stores=j.stores||[]; STATE.users=j.users||[]; STATE.google=!!j.google_login; STATE.admin=j.admin_email||'the admin';
+  var adm=esc(STATE.admin);
+  $('formHelp').innerHTML=STATE.google
+    ?'Everyone who signs in with Google sees the full dashboard. An email added here sees <b>only the ticked stores</b>. Change the ticks any time — their link follows automatically.'
+    :'The person logs in with this email and their own password, and sees only the ticked stores. Change the ticks any time — their link follows automatically.';
+  $('how').innerHTML=STATE.google
+    ?'<li>Everyone signs in with Google (no password). An email that is <b>not</b> in this list sees the full dashboard — all tabs, every store.</li>'+
+     '<li>To limit someone: type their email, tick the stores, press <b>Save access</b>. Send them the link.</li>'+
+     '<li>They get only those stores — every number on every tab. Changing the address does not show another store.</li>'+
+     '<li>New store later? Press <b>Edit</b>, tick it, save. Their old link opens with the new store added.</li>'+
+     '<li><b>Remove</b> takes the limit off: within a minute that email sees every store again.</li>'+
+     '<li>Only '+adm+' can open this page, and '+adm+' always sees every store.</li>'
+    :'<li>Type the email, tick the stores, press <b>Save access</b>. A password is shown <b>once</b> — send the link and the password to that person.</li>'+
+     '<li>They open the link, enter their email as the user name and that password. They get only those stores — every number on every tab.</li>'+
+     '<li>New store later? Press <b>Edit</b>, tick it, save. No new link or password needed: their old link opens with the new store added.</li>'+
+     '<li><b>Remove</b> stops the access at once (within a minute). <b>New password</b> replaces a lost one.</li>'+
+     '<li>Only '+adm+' can open this page. The shared team login still sees every store.</li>';
+  renderRows();
+}
+function resetForm(){ $('email').value=''; $('email').readOnly=false; $('extra').value=''; $('formTitle').textContent='Limit an email to some stores'; renderStores([]); }
+function call(body){
+  return fetch('/api/access',body?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{credentials:'same-origin',cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if(!j.ok) throw new Error(j.error||'Something went wrong.'); return j; });
+}
+function done(j){
+  apply(j); resetForm();
+  var u=STATE.users.filter(function(x){ return x.email===j.email; })[0];
+  if(j.saved==='delete') return show('ok','<b>'+esc(j.email)+'</b> removed. '+(STATE.google?'Within a minute this email sees every store again.':'Their login stops working within a minute.'));
+  var l=u?link(u.stores):'';
+  if(j.password) show('ok','<b>'+esc(j.email)+'</b> — '+(j.saved==='reset'?'new password set.':'access saved.')+' Send them these three things (the password is shown only this once):<br>'+
+    'Link: <code>'+esc(l)+'</code><br>User name: <code>'+esc(j.email)+'</code><br>Password: <code>'+esc(j.password)+'</code>');
+  else if(STATE.google) show('ok','<b>'+esc(j.email)+'</b> now sees: <b>'+esc(isAll(u.stores)?'all stores':u.stores.join(', '))+'</b>. Send them this link — they sign in with Google using this email, no password:<br><code>'+esc(l)+'</code>');
+  else show('ok','<b>'+esc(j.email)+'</b> now sees: '+esc(u.stores.join(', '))+'. Same password as before; their link now opens as <code>'+esc(l)+'</code>.');
+}
+function fail(e){ show('err',esc(e.message||String(e))); }
+
+$('save').onclick=function(){
+  var email=$('email').value.trim().toLowerCase(), stores=ticked();
+  if(!email) return fail(new Error('Type the email id first.'));
+  if(!stores.length) return fail(new Error('Tick at least one store.'));
+  call({action:'save',email:email,stores:stores}).then(done,fail);
+};
+$('clear').onclick=function(){ resetForm(); show('',''); };
+$('extra').oninput=preview;
+$('rows').onclick=function(e){
+  var b=e.target.closest('button'); if(!b) return;
+  var a=b.getAttribute('data-a'), em=b.getAttribute('data-e');
+  if(a==='copy'){ var l=b.getAttribute('data-l');
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(l).then(function(){ b.textContent='✓ Copied'; setTimeout(function(){ b.textContent='Copy link'; },1500); },function(){ prompt('Copy this link',l); });
+    else prompt('Copy this link',l); return; }
+  if(a==='edit'){ var u=STATE.users.filter(function(x){ return x.email===em; })[0]; if(!u) return;
+    $('email').value=u.email; $('email').readOnly=true; $('extra').value=''; $('formTitle').textContent='Change stores for '+u.email;
+    u.stores.forEach(function(k){ if(!STATE.stores.some(function(s){ return s.key===k; })) STATE.stores.push({key:k,label:k}); });
+    renderStores(u.stores); show('',''); window.scrollTo({top:0,behavior:'smooth'}); return; }
+  if(a==='reset'){ if(confirm('Set a new password for '+em+'? The old one stops working.')) call({action:'reset',email:em}).then(done,fail); return; }
+  if(a==='delete'){ if(confirm('Remove store access for '+em+'?')) call({action:'delete',email:em}).then(done,fail); }
+};
+try{ var th=localStorage.getItem('mj_theme'); if(th) document.documentElement.setAttribute('data-theme',th); }catch(e){}
+call().then(function(j){ apply(j); renderStores([]); },fail);
+})();
+</script>
+</body>
+</html>
