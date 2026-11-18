@@ -3239,7 +3239,66 @@ def inventory_full_snapshot(force=False):
     blob.content_encoding = "gzip"
     blob.metadata = {"snapshot": json.dumps(snap, separators=(",", ":"))}
     blob.upload_from_string(gz, content_type="application/json")
+    try:
+        save_inventory_margin_table(cols, data, snap["snapshot_created_at"])
+    except Exception as exc:  # the tab reads the blob; a failed table copy must not break it
+        print(f"inventory_margin table save failed: {exc}")
     return {"snapshot_url": f"https://storage.googleapis.com/{SNAPSHOT_GCS_BUCKET}/{INVENTORY_FULL_BLOB}", "snapshot": snap}
+
+
+# BigQuery copy of the Inventory Margin tab (user, 2026-11-13): the same rows
+# the tab shows, replaced on every rebuild of the blob above, so the margin
+# can be queried / used in Looker. Inventory columns keep Live_inventory's own
+# types; calculated columns are FLOAT64 unless they hold text.
+INVENTORY_MARGIN_TABLE = f"{SNAPSHOT_DATASET}.inventory_margin"
+
+
+def save_inventory_margin_table(cols, data, created_at):
+    if not cols or not data:
+        return 0
+    bq = _client()
+    src = {f.name: f.field_type for f in bq.get_table(LIVE_INVENTORY_TABLE).schema}
+    simple = {"STRING", "INTEGER", "INT64", "NUMERIC", "BIGNUMERIC", "FLOAT", "FLOAT64", "DATE", "DATETIME",
+              "TIMESTAMP", "BOOLEAN", "BOOL"}
+    types = []
+    for i, c in enumerate(cols):
+        t = src.get(c)
+        if t not in simple:
+            vals = [r[i] for r in data if r[i] is not None]
+            if vals and all(isinstance(v, bool) for v in vals):
+                t = "BOOL"
+            elif all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in vals):
+                t = "FLOAT64"
+            else:
+                t = "STRING"
+        types.append(t)
+
+    def cell(v, t):
+        if v is None:
+            return None
+        if t == "STRING":
+            return v if isinstance(v, str) else json.dumps(v, default=str) if isinstance(v, (dict, list)) else str(v)
+        if t in ("INTEGER", "INT64"):
+            return int(v)
+        if t == "NUMERIC":
+            return round(float(v), 9)
+        if t == "BIGNUMERIC":
+            return str(int(v)) if isinstance(v, float) and v.is_integer() else str(v)
+        if t == "FLOAT64" and isinstance(v, float) and not math.isfinite(v):
+            return None
+        return v
+
+    rows = []
+    for r in data:
+        row = {c: cell(r[i], types[i]) for i, c in enumerate(cols)}
+        row["snapshot_created_at"] = created_at
+        rows.append(row)
+    schema = [bigquery.SchemaField(c, t) for c, t in zip(cols, types)]
+    schema.append(bigquery.SchemaField("snapshot_created_at", "TIMESTAMP"))
+    job_config = bigquery.LoadJobConfig(schema=schema, write_disposition="WRITE_TRUNCATE",
+                                        source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON)
+    bq.load_table_from_json(rows, INVENTORY_MARGIN_TABLE, job_config=job_config).result()
+    return len(rows)
 
 
 # Gold Rate strip (GET /gold-rate-strip) -- shown above every dashboard tab:

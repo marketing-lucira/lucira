@@ -3231,6 +3231,68 @@ async function mtoSaveExtra(r, input){
     MTO_STATE._sortCache = null; _mtoUniqueCache.clear();
   }catch(e){ alert(`Extra Discount not saved: ${e.message}`); }
   renderMTO();
+  if(MTO_ORDER_OPEN) openMtoOrder(MTO_ORDER_OPEN);
+}
+/* Order detail panel (2026-10-30): click an Order No. -> every line of that
+   order, every column grouped (product, punch-day gold rate, cost, selling,
+   margin), with the order's own totals on top. Extra Discount stays editable
+   here for editors. Esc / ✕ / clicking outside closes it. */
+let MTO_ORDER_OPEN = null;
+const MTO_DETAIL_GROUPS = [
+  ["Product", ["item_line_no","item_code","product_name","item_group_name","category","karat_name","metal_color_name","pieces","net_weight","diamond_weight"]],
+  ["Gold rate on the order date", ["gold_rate_date","gold_rate_24k","karat_rate"]],
+  ["Cost (CP)", ["metal_value","diamond_cp","gemstone_cp","labour_cp","total_cp","cp_basis"]],
+  ["Selling", ["gross_amount","discount","net_sale","order_ex_gst","dashboard_price","price_vs_dashboard_pct"]],
+  ["Margin", ["margin1_pct","margin2_amount","margin2_pct","free_coin_qty","free_coin_value","extra_discount","actual_sp","final_margin","final_margin_pct"]],
+];
+function closeMtoOrder(){
+  MTO_ORDER_OPEN = null;
+  const m = $("#mtoOrderModal"); if(m){ m.style.display = "none"; m.innerHTML = ""; }
+  document.removeEventListener("keydown", _mtoOrderEsc);
+}
+function _mtoOrderEsc(e){ if(e.key==="Escape") closeMtoOrder(); }
+function openMtoOrder(doc){
+  const lines = (MTO_STATE.rows||[]).filter(r=>r.document_no===doc);
+  if(!lines.length) return;
+  MTO_ORDER_OPEN = doc;
+  let m = $("#mtoOrderModal");
+  if(!m){ m = document.createElement("div"); m.id = "mtoOrderModal"; m.className = "mto-modal"; document.body.appendChild(m); }
+  const f = lines[0], a = mtoAgg(lines), tone = p=>p==null ? "" : mgTone(p);
+  const kpi = (lbl, val, sub, cls)=>`<div class="card kpi"><div class="lbl">${lbl}</div><div class="val${cls?" "+cls:""}" style="font-size:20px">${val}</div>${sub?`<div class="muted" style="font-size:11.5px;margin-top:4px">${sub}</div>`:""}</div>`;
+  const head = `<tr><th>Line</th>${lines.map((r,i)=>`<th class="num">${i+1}</th>`).join("")}</tr>`;
+  const body = MTO_DETAIL_GROUPS.map(([g, cols])=>
+    `<tr class="grp"><td colspan="${lines.length+1}">${esc(g)}</td></tr>` +
+    cols.map(c=>`<tr><th>${esc(mtoLabel(c))}</th>${lines.map(r=>`<td class="${MTO_NUMERIC.has(c)?"num":""}">${mtoCell(r,c)}</td>`).join("")}</tr>`).join("")
+  ).join("");
+  m.innerHTML = `<div class="card mto-modal-box">
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
+        <div>
+          <div class="h2" style="margin:0">Order ${esc(doc)}</div>
+          <div class="muted" style="font-size:12.5px;margin-top:3px">${esc(mtoFmtDateLong(f.order_date))} · ${esc(f.order_type||"")} · Store ${esc(f.company_code||"—")} · ${esc(f.channel||"")} · ${int(lines.length)} line${lines.length===1?"":"s"}
+            ${f.gold_rate_24k!=null?` · Gold 24K ${rupee(f.gold_rate_24k)}/g (rate dated ${esc(f.gold_rate_date||"")})`:""}</div>
+        </div>
+        <span style="flex:1"></span>
+        <button class="btn sm" id="mtoOrderClose" type="button" title="Close (Esc)">✕ Close</button>
+      </div>
+      <div class="grid kpis" style="margin-bottom:12px">
+        ${kpi("Order Value", rupee(a.sale), "net_sale, GST incl.")}
+        ${kpi("Total CP", a.cp?rupee(round2(a.cp)):"—", a.noCp?`${int(a.noCp)} line(s) with CP missing`:"punch-day gold rate")}
+        ${kpi("Margin 1%", a.m1==null?"—":pct(a.m1), `on Gross ${rupee(round2(a.gross))}`, tone(a.m1))}
+        ${kpi("Margin 2%", a.m2==null?"—":pct(a.m2), "after discount", tone(a.m2))}
+        ${kpi("Final Margin", a.fin==null?"—":pct(a.fin), `${rupee(round2(a.finAmt))} after ${rupee(a.coin)} coin${a.extra?` + ${rupee(a.extra)} extra`:""}`, tone(a.fin))}
+      </div>
+      <div class="tbl-wrap" style="max-height:none"><table class="mto-detail"><thead>${head}</thead><tbody>${body}</tbody></table></div>
+    </div>`;
+  m.style.display = "flex";
+  $("#mtoOrderClose").addEventListener("click", closeMtoOrder);
+  m.onclick = e=>{ if(e.target===m) closeMtoOrder(); };
+  document.removeEventListener("keydown", _mtoOrderEsc);
+  document.addEventListener("keydown", _mtoOrderEsc);
+  const byKey = new Map(lines.map(r=>[mtoKey(r), r]));
+  $$("#mtoOrderModal .mto-xd").forEach(inp=>{
+    inp.addEventListener("change",()=>{ const r = byKey.get(inp.dataset.key); if(r) mtoSaveExtra(r, inp); });
+    inp.addEventListener("keydown",e=>{ if(e.key==="Enter") inp.blur(); });
+  });
 }
 const MTO_PCT_COLS = new Set(["margin1_pct","margin2_pct","final_margin_pct"]);
 // Final Margin % bands for the top filter; "na" = CP incomplete / not priced.
@@ -3323,6 +3385,7 @@ function mtoCell(r,c){
     return `<input type="number" min="0" step="1" class="search mto-xd" data-key="${esc(mtoKey(r))}" value="${v==null?"":v}" placeholder="0"${x?` title="Saved by ${esc(x.by||"")}"`:""}>`;
   }
   if(v==null || v==="") return `<span class="muted">—</span>`;
+  if(c==="document_no") return `<a href="#" class="mto-doc" data-doc="${esc(v)}" title="Open all details of this order">${esc(v)}</a>`;
   if(MTO_PCT_COLS.has(c)) return mgPct(Number(v));
   if(c==="price_vs_dashboard_pct") return `<span${v<-25?` style="color:var(--crit)"`:""}>${dec(v,1)}%</span>`;
   if(c==="net_weight"||c==="diamond_weight") return dec(v,3);
@@ -3429,7 +3492,7 @@ function renderMTO(){
       <button class="btn sm" id="mtoCsv" ${s.rows?"":"disabled"}>⭳ Download (CSV)</button>
       <button class="btn sm primary" id="mtoPrintBtn" type="button" ${s.rows?"":"disabled"}>🖨 Print</button>
     </div>
-    <div class="sub no-print">Every <b>MTO</b> (store) and <b>Online_MTO</b> order line booked in <b>marketing_sale</b> — <b>cancel_order lines are excluded</b>. Each line is costed on the <b>day it was punched</b>: <b>Total CP</b> = the Ornaverse Variant calculation on the order's own net / diamond weight and karat with <b>that day's gold rate</b> (metal), plus diamond, other BOM (colour stone / CZ / accessories) and labour CP (current rate cards), incl. 3% GST. <b>Selling rate = the MTO order rate</b> (net_sale, GST incl.). <b>Margin 1%</b> = (Gross before discount − CP) ÷ Gross; <b>Margin 2% with discount</b> = (Order Rate − CP) ÷ Order Rate; <b>Final Margin %</b> = (Actual SP − CP) ÷ Actual SP, Actual SP = Order Rate − free coin (Slab rule, ₹1,600 a coin; none when the order already bills a gold coin) − <b>Extra Discount</b> (any extra discount given to the customer, typed in per line by an editor — saved at once). Lines whose CP is incomplete (no metal value / no diamond CP) show — and are left out of the margins. The top search box searches Order No. / SKU / Product.</div>`;
+    <div class="sub no-print">Every <b>MTO</b> (store) and <b>Online_MTO</b> order line booked in <b>marketing_sale</b> — <b>cancel_order lines are excluded</b>. Each line is costed on the <b>day it was punched</b>: <b>Total CP</b> = the Ornaverse Variant calculation on the order's own net / diamond weight and karat with <b>that day's gold rate</b> (metal), plus diamond, other BOM (colour stone / CZ / accessories) and labour CP (current rate cards), incl. 3% GST. <b>Selling rate = the MTO order rate</b> (net_sale, GST incl.). <b>Margin 1%</b> = (Gross before discount − CP) ÷ Gross; <b>Margin 2% with discount</b> = (Order Rate − CP) ÷ Order Rate; <b>Final Margin %</b> = (Actual SP − CP) ÷ Actual SP, Actual SP = Order Rate − free coin (Slab rule, ₹1,600 a coin; none when the order already bills a gold coin) − <b>Extra Discount</b> (any extra discount given to the customer, typed in per line by an editor — saved at once). Click an <b>Order No.</b> to see every detail of that order. Lines whose CP is incomplete (no metal value / no diamond CP) show — and are left out of the margins. The top search box searches Order No. / SKU / Product.</div>`;
   const wire = ()=>{
     const r = $("#mtoReload"); if(r) r.addEventListener("click",()=>fetchMTO(true));
     const c = $("#mtoCsv"); if(c) c.addEventListener("click",mtoCsv);
@@ -3512,6 +3575,7 @@ function renderMTO(){
     inp.addEventListener("change",()=>{ const r = byKey.get(inp.dataset.key); if(r) mtoSaveExtra(r, inp); });
     inp.addEventListener("keydown",e=>{ if(e.key==="Enter") inp.blur(); });
   });
+  $$("#page-mto .mto-doc").forEach(a=>a.addEventListener("click",e=>{ e.preventDefault(); openMtoOrder(a.dataset.doc); }));
   const rerender = ()=>{ s.page = 1; renderMTO(); };
   $("#mtoFrom").addEventListener("change",e=>{ s.from = e.target.value; rerender(); });
   $("#mtoTo").addEventListener("change",e=>{ s.to = e.target.value; rerender(); });

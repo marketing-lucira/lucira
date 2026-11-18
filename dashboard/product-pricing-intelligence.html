@@ -177,9 +177,16 @@ body.can-edit .view-only{display:none !important}
 .ed-l{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:10px}
 .ed-l input{display:block;width:100%;min-width:0;margin-top:4px;box-sizing:border-box}
 .mto-xd{width:96px;min-width:0;text-align:right;padding:4px 7px}
+.mto-doc{color:var(--s1);text-decoration:underline;text-underline-offset:2px;cursor:pointer;font-weight:600}
+.mto-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;z-index:900;padding:28px 16px;overflow:auto}
+.mto-modal-box{width:min(1180px,100%)}
+.mto-detail th{text-align:left;white-space:nowrap;color:var(--ink-2);font-weight:700}
+.mto-detail thead th{text-align:right}
+.mto-detail thead th:first-child{text-align:left}
+.mto-detail tr.grp td{background:var(--surface-2);font-weight:800;font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)}
 #mtoPrintHead{display:none}
 @media print{
-  header.app, aside.filters, .toolbar, #page-mto .no-print{display:none !important}
+  header.app, aside.filters, .toolbar, #page-mto .no-print, .mto-modal{display:none !important}
   .shell{display:block !important}
   main{padding:0 !important}
   .page{display:none !important}
